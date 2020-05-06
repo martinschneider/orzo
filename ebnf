@@ -1,0 +1,34 @@
+(char is a shortcut for any valid ASCII-character and EOL represents a line ending)
+
+letter = 'a' | 'b' | ... | 'z' | 'A' | 'B' | ... 'Z'
+digit = '0' | '1' | ... | '9'
+identifier = letter {letter|digit}
+keyword = "if" | "else" |" while" | "do" | "return" | "void" | basicType | scope
+scope = "public" | "private"
+basicType = "int" | "double" | "String"
+numeric = integer | double
+integer = digit {digit}
+double = {digit} [.] digit {digit}
+parenthesis = "(" | ")" | "[" | "]" | "{" | "}"
+symbol = "." | ";" | ","
+operator = "-" | "+" | "*" | "/" | "%" | ">" | "<" | "<=" | ">=" | "!="
+string = """ {char} """
+comment = "/* {char} "*/" | "//" {char} EOL"
+class = [scope] "class" identifier "{" {method} "}"
+mainMethod = "public" "static" "void" "main" "String" "args" "[" "]" "{" statementSequence "}"
+method = ([scope] returnType identifier "{" statementSequence "}") | mainMethod
+returnType = basicType | "void"
+statementSequence = [statement] { ";" statement }
+statement = assignment | declaration | ifStatement | whileStatement | doStatement
+ifStatement = "if" "(" expression ")" "{" statementSequence "}" {elseifBlock} [elseBlock]
+elseifBlock = "else" "if" "(" expression ")" "{" statementSequence "}"
+elseBlock = "else" "(" expression ")" "{" statementSequence "}"
+whileStatement = "while" "(" expression ")" "{" statementSequence "}"
+doStatement = "do" "(" statementSequence ")" "while" "(" expression ")"
+assignment = identifier selector "=" expression
+declaration = basicType identifier ["=" value]
+selector = {"." identifier | "[" expression "]"}
+factor = identifier selector | number | "(" expression ")"
+expression = simpleExpression [("=", "<", ">", "<=", ">=", "!=") simpleExpression]
+simpleExpression = ["+"|"-"] term {("+"|"-") term}
+term = factor {("*" | "/" | "%") factor} 

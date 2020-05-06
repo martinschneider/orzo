@@ -1,0 +1,40 @@
+Scanner
+
+The scanner reads data from an input char by char. In most cases the input is a file, however for unit testing it is useful to be able to define input strings directly in the code, so we also provide a method to parse input from a String-parameter. We use a PushbackReader to progress the data. This offers the advantage to move through the input stream in both directions (using the read()- and unread()-methods), which prooved to be useful as we need a look-ahead to implement our scanner.
+
+We implemented several methods, one for each type of token and a list to hold all found tokens. When called each of the methods decides, if there is a given token (e.g. an identifier) beginning at the current position of the input reader. If a token is found, it is added to the tokenList, if not the processed char is "unread" from the PushbackReader. Every char of the input could possibly be the start of any token, but since we haven chosen our grammar to have no ambiguities, we can always clearly decide which token it is. Therefore the order in which we check for different types of tokens does not matter, the output of the scanner will always be the same. We call the methods one after the other until one of them finds a token, which is completely scanned and added to the token list. Then we repeat this procedure with the next char until we reach the end of the input.
+
+We differentiate the following eight types of tokens:
+identifiers
+keywords
+numerics
+parentheses
+symbols
+operators
+comments
+string literals
+
+For example an identifier is a letter followed by an arbitrary number of either letters or digits. Keywords (e.g. "if", "else") are actually a subset of identifiers, so they can be scanned for at the same time. That means after we found a token matching the pattern "letter {letter|digit}" we check if it is a keyword and do not have to do this again later.
+
+The following is the complete EBNF for the scanner, where char is a shortcut for any valid unicode-character and EOL represents a line ending:
+
+letter = 'a' | 'b' | ... | 'z' | 'A' | 'B' | ... 'Z'
+digit = '0' | '1' | ... | '9'
+identifier = letter {letter|digit}
+keyword = "if" | "else" |" while" | "do" | "return" | basicType | scope
+scope = "public" | "private"
+basicType = "int" | "double" | "void", "String"
+numeric = integer | double
+integer = digit {digit}
+double = {digit} [.] digit {digit}
+parenthesis = "(" | ")" | "[" | "]" | "{" | "}"
+symbol = "." | ";" | ","
+operator = "-" | "+" | "*" | "/" | "%" | ">" | "<" | "<=" | ">=" | "!="
+string = """ {char} """
+comment = "/* {char} "*/" | "// EOL"
+
+Comments are scanned but not added to the tokenList as they are not of any interest for the parser.
+
+A scan is started by calling one of the getTokens()-methods. Besides returning a list of tokens, this method also adds possible errors to an error component, which can be asked for afterwards using the getErrors()-method. This does not include I/O exceptions, but only errors resulting from invalid input data. E.g. in our grammar the char "!" must always be followed by "=", thus buidling the token "!=". If "!" is followed by any other char an error message is added to the error component. The scanning process, however, does not stop. If several errors occur, all of them will be reported.
+
+We also wrote several unit test to check all parts of our scanner (the code coverage of the scanner is just slightly under 100%) against predefined input data. We also scan random data to check, that the scanner does not crash on any given input.
