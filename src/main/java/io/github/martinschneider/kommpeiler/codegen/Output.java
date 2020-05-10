@@ -8,29 +8,28 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 public class Output {
-
   private PrintStream[] outputs;
 
   public Output(PrintStream... outputs) {
     this.outputs = outputs;
   }
 
+  public void close() {
+    for (PrintStream out : outputs) {
+      out.close();
+    }
+  }
+
+  public void flush() {
+    for (PrintStream out : outputs) {
+      out.flush();
+    }
+  }
+
   public void write(byte output) {
     for (PrintStream out : outputs) {
       out.write(output);
     }
-  }
-
-  public void write(short output) {
-    write(shortToByteArray(output));
-  }
-
-  public void write(int output) {
-    write(intToByteArray(output));
-  }
-
-  public void write(long output) {
-    write(longToByteArray(output));
   }
 
   public void write(byte[] output) {
@@ -43,15 +42,15 @@ public class Output {
     }
   }
 
-  public void flush() {
-    for (PrintStream out : outputs) {
-      out.flush();
-    }
+  public void write(int output) {
+    write(intToByteArray(output));
   }
 
-  public void close() {
-    for (PrintStream out : outputs) {
-      out.close();
-    }
+  public void write(long output) {
+    write(longToByteArray(output));
+  }
+
+  public void write(short output) {
+    write(shortToByteArray(output));
   }
 }

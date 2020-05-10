@@ -9,20 +9,11 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
  * @author Martin Schneider
  */
 public class IdFactor implements Factor {
-
   private Selector selector;
-
   private Token token;
-
-  private ValueType valueType = ValueType.MEMORY;
 
   /** empty constructor */
   public IdFactor() {}
-
-  @Override
-  public Object getValue() {
-    return token.getValue();
-  }
 
   /** @param token token */
   public IdFactor(final Token token) {
@@ -32,35 +23,30 @@ public class IdFactor implements Factor {
     }
   }
 
-  public void setToken(final Token token) {
-    this.token = token;
+  public Selector getSelector() {
+    return selector;
   }
 
   public Token getToken() {
     return token;
   }
 
-  /** {@inheritDoc} * */
   @Override
-  public String toString() {
-    return token.toString();
+  public Object getValue() {
+    return token.getValue();
   }
 
   public void setSelector(final Selector selector) {
     this.selector = selector;
   }
 
-  public Selector getSelector() {
-    return selector;
+  public void setToken(final Token token) {
+    this.token = token;
   }
 
+  /** {@inheritDoc} * */
   @Override
-  public ValueType getValueType() {
-    return valueType;
-  }
-
-  @Override
-  public void setValueType(final ValueType valueType) {
-    this.valueType = valueType;
+  public String toString() {
+    return token.toString();
   }
 }

@@ -8,21 +8,6 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 public class IntFactor implements Factor {
   private int value;
 
-  private ValueType valueType = ValueType.IMMEDIATE;
-
-  @Override
-  public Object getValue() {
-    return value;
-  }
-
-  public int getIntValue() {
-    return value;
-  }
-
-  public void setValue(final Object value) {
-    this.value = ((Integer) value).intValue();
-  }
-
   /** empty constructor */
   public IntFactor() {}
 
@@ -31,19 +16,22 @@ public class IntFactor implements Factor {
     this.value = value;
   }
 
+  public int getIntValue() {
+    return value;
+  }
+
+  @Override
+  public Object getValue() {
+    return value;
+  }
+
+  public void setValue(final Object value) {
+    this.value = ((Integer) value).intValue();
+  }
+
   /** {@inheritDoc} * */
   @Override
   public String toString() {
     return Integer.toString(value);
-  }
-
-  @Override
-  public ValueType getValueType() {
-    return valueType;
-  }
-
-  @Override
-  public void setValueType(final ValueType valueType) {
-    this.valueType = valueType;
   }
 }

@@ -1,23 +1,5 @@
-// IntegerConstants
-/** Expected output:
--32769
--32768
--129
--128
--2
--1
-0
-1
-2
-3
-4
-5
-6
-127
-128
-32767
-32768
-*/
+package io.github.martinschneider.kommpeiler.examples;
+
 public class IntegerConstants
 {
 	public static void main(String[] args)

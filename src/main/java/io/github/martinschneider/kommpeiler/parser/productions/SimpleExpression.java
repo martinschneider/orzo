@@ -9,10 +9,13 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
  * @author Martin Schneider
  */
 public class SimpleExpression extends Term {
-
   private Object simpleExpressionValue = null;
+  private ExpressionType type;
 
-  private ValueType valueType = ValueType.UNKNOWN;
+  /** empty constructor */
+  public SimpleExpression() {
+    super();
+  }
 
   /**
    * @param left left side of expression
@@ -21,11 +24,27 @@ public class SimpleExpression extends Term {
    */
   public SimpleExpression(final Factor left, final Token operator, final Factor right) {
     super(left, operator, right);
+    if (this.getLeft() instanceof IntFactor && this.getRight() instanceof IntFactor) {
+      setType(ExpressionType.VALUE);
+      int value;
+      if (this.getOperator().getValue().equals("PLUS")) {
+        value =
+            ((IntFactor) this.getLeft()).getIntValue()
+                + ((IntFactor) this.getRight()).getIntValue();
+        this.setValue(value);
+      } else if (this.getOperator().getValue().equals("MINUS")) {
+        value =
+            ((IntFactor) this.getLeft()).getIntValue()
+                - ((IntFactor) this.getRight()).getIntValue();
+        this.setValue(value);
+      }
+    } else if (this.getLeft() instanceof IdFactor && this.getRight() instanceof IdFactor) {
+      setType(ExpressionType.VARIABLE_AND_VARIABLE);
+    }
   }
 
-  /** empty constructor */
-  public SimpleExpression() {
-    super();
+  public ExpressionType getType() {
+    return type;
   }
 
   /** {@inheritDoc} */
@@ -35,41 +54,9 @@ public class SimpleExpression extends Term {
     this.getRight().getValue();
     if (simpleExpressionValue != null) {
       return simpleExpressionValue;
-    } else if (this.getLeft().getValueType().equals(ValueType.IMMEDIATE)
-        && this.getRight().getValueType().equals(ValueType.IMMEDIATE)) {
-      int value;
-      if (this.getOperator().getValue().equals("PLUS")) {
-        value =
-            ((IntFactor) this.getLeft()).getIntValue()
-                + ((IntFactor) this.getRight()).getIntValue();
-        this.setValue(value);
-        this.setValueType(ValueType.IMMEDIATE);
-        return value;
-      } else if (this.getOperator().getValue().equals("MINUS")) {
-        value =
-            ((IntFactor) this.getLeft()).getIntValue()
-                - ((IntFactor) this.getRight()).getIntValue();
-        this.setValue(value);
-        return value;
-      }
     }
     // else
     return null;
-  }
-
-  @Override
-  public void setValue(final Object value) {
-    simpleExpressionValue = value;
-  }
-
-  @Override
-  public void setValueType(final ValueType valueType) {
-    this.valueType = valueType;
-  }
-
-  @Override
-  public ValueType getValueType() {
-    return valueType;
   }
 
   /**
@@ -84,6 +71,16 @@ public class SimpleExpression extends Term {
   }
 
   /**
+   * Sets the operator (and resets the expression's value)
+   *
+   * @param operator operator
+   */
+  public void setOperator(final Operator operator) {
+    super.setOperator(operator);
+    simpleExpressionValue = null;
+  }
+
+  /**
    * Sets the value on the right side of the operator (and resets the expression's value)
    *
    * @param right right
@@ -94,13 +91,12 @@ public class SimpleExpression extends Term {
     simpleExpressionValue = null;
   }
 
-  /**
-   * Sets the operator (and resets the expression's value)
-   *
-   * @param operator operator
-   */
-  public void setOperator(final Operator operator) {
-    super.setOperator(operator);
-    simpleExpressionValue = null;
+  public void setType(ExpressionType type) {
+    this.type = type;
+  }
+
+  @Override
+  public void setValue(final Object value) {
+    simpleExpressionValue = value;
   }
 }

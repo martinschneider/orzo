@@ -8,6 +8,11 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
  * @author Martin Schneider
  */
 public class Declaration extends Statement {
+  private boolean hasValue;
+  private Identifier name;
+  private String type;
+  private Factor value;
+
   /**
    * @param name name
    * @param type type
@@ -23,44 +28,46 @@ public class Declaration extends Statement {
     this.hasValue = hasValue;
   }
 
-  private String type;
-
-  private Identifier name;
-
-  private Factor value;
-
-  private boolean hasValue;
-
-  public String getType() {
-    return type;
-  }
-
-  public void setType(final String type) {
-    this.type = type;
-  }
-
   public Identifier getName() {
     return name;
   }
 
-  public void setName(final Identifier name) {
-    this.name = name;
+  public String getType() {
+    return type;
   }
 
   public Factor getValue() {
     return value;
   }
 
-  public void setValue(final Factor value) {
-    this.value = value;
+  /** @return true if value is known */
+  public boolean hasValue() {
+    return hasValue;
   }
 
   public void setHasValue(final boolean hasValue) {
     this.hasValue = hasValue;
   }
 
-  /** @return true if value is known */
-  public boolean hasValue() {
-    return hasValue;
+  public void setName(final Identifier name) {
+    this.name = name;
+  }
+
+  public void setType(final String type) {
+    this.type = type;
+  }
+
+  public void setValue(final Factor value) {
+    this.value = value;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder strBuilder = new StringBuilder(type);
+    strBuilder.append(' ');
+    strBuilder.append(name);
+    strBuilder.append('=');
+    strBuilder.append(value);
+    return strBuilder.toString();
   }
 }

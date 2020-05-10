@@ -3,58 +3,76 @@ package io.github.martinschneider.kommpeiler;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.kommpeiler.codegen.Kommpeiler;
-import java.io.BufferedReader;
+import io.github.martinschneider.kommpeiler.codegen.Output;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.stream.Collectors;
+import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class KommpeilerTest {
+  private class ByteClassLoader extends ClassLoader {
+    private HashMap<String, byte[]> byteDataMap = new HashMap<>();
 
-  private static Stream<Arguments> testKommpeiler() {
-    return Stream.of(Arguments.of("HelloWorld"), Arguments.of("IntegerConstants"));
+    public ByteClassLoader(ClassLoader parent) {
+      super(parent);
+    }
+
+    @Override
+    protected Class<?> findClass(String className) throws ClassNotFoundException {
+      byte[] extractedBytes = byteDataMap.get(className);
+      return defineClass(className, extractedBytes, 0, extractedBytes.length);
+    }
+
+    public void put(String className, byte[] byteData) {
+      byteDataMap.put(className, byteData);
+    }
   }
 
-  /**
-   * verify that demo programs generate the same output (stdout when executed) when compared with
-   * Kommpeiler and javac (this requires javac on the PATH)
-   */
+  private static Stream<Arguments> testKommpeiler() {
+    return Stream.of(
+        Arguments.of("HelloWorld"),
+        Arguments.of("IntegerConstants"),
+        Arguments.of("VariableAssignments"),
+        Arguments.of("IntegerExpressions"));
+  }
+
   @ParameterizedTest
   @MethodSource
-  public void testKommpeiler(String programName) throws IOException, InterruptedException {
-    String tmpDir = System.getProperty("java.io.tmpdir");
-    String inputPath = this.getClass().getResource(programName + ".code").getPath();
-    String outputPath = tmpDir + programName + ".class";
-    Files.deleteIfExists(Paths.get(outputPath));
-    Files.deleteIfExists(Paths.get(tmpDir + programName + ".java"));
-
-    // compile using Kommpeiler and run using java
-    Kommpeiler.main(new String[] {inputPath, outputPath});
-    Runtime rt = Runtime.getRuntime();
-    Process proc = rt.exec(new String[] {"java", "-cp", tmpDir, programName});
-    proc.waitFor();
-    String actual =
-        new BufferedReader(new InputStreamReader(proc.getInputStream()))
-            .lines()
-            .collect(Collectors.joining("\n"));
-    Files.deleteIfExists(Paths.get(outputPath));
-
-    // compile using javac and run using java
-    rt.exec(new String[] {"cp", inputPath, tmpDir + programName + ".java"}).waitFor();
-    rt.exec(new String[] {"javac", tmpDir + programName + ".java"}).waitFor();
-    proc = rt.exec(new String[] {"java", "-cp", tmpDir, programName});
-    proc.waitFor();
+  public void testKommpeiler(String programName)
+      throws IOException, ClassNotFoundException, IllegalAccessException, IllegalArgumentException,
+          InvocationTargetException, NoSuchMethodException, SecurityException {
+    String inputPath =
+        this.getClass().getResource("examples" + File.separator + programName + ".java").getPath();
+    // compile using Kommpeiler
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    PrintStream ps = new PrintStream(baos);
+    new Kommpeiler(new File(inputPath), new Output(ps), null).compile();
+    ps.flush();
+    ByteClassLoader classLoader = new ByteClassLoader(ClassLoader.getSystemClassLoader());
+    classLoader.put(programName, baos.toByteArray());
+    Class<?> clazz = classLoader.loadClass(programName);
+    baos = new ByteArrayOutputStream();
+    ps = new PrintStream(baos);
+    PrintStream old = System.out;
+    System.setOut(ps);
+    clazz.getMethod("main", String[].class).invoke(null, (Object) null);
+    System.out.flush();
+    System.setOut(old);
+    String actual = baos.toString();
     String expected =
-        new BufferedReader(new InputStreamReader(proc.getInputStream()))
-            .lines()
-            .collect(Collectors.joining("\n"));
-
-    // compare stdout for both executions
+        Files.readString(
+            Path.of(
+                this.getClass()
+                    .getResource("examples" + File.separator + programName + ".output")
+                    .getPath()));
     assertEquals(expected, actual);
   }
 }

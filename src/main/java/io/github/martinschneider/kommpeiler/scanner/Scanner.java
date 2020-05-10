@@ -27,28 +27,29 @@ import java.util.List;
  * @author Martin Schneider
  */
 public class Scanner {
-
+  private final String[] basicTypes = {"void", "int", "double", "String"};
+  private StringBuffer buffer;
+  private char character;
+  private CompilerErrors errors = new CompilerErrors();
   // a PushbackReader is used to be able to jump forward and backward in the input stream
   private PushbackReader inputReader;
-  private StringBuffer buffer;
-  private List<Token> tokenList;
-  private char character;
   private final String[] keywords = {
-    "if", "else", "do", "while", "return", "public", "private", "protected", "static", "class"
+    "if",
+    "else",
+    "do",
+    "while",
+    "return",
+    "public",
+    "private",
+    "protected",
+    "static",
+    "class",
+    "package"
   };
-  private final String[] basicTypes = {"void", "int", "double", "String"};
-  private CompilerErrors errors = new CompilerErrors();
+  private List<Token> tokenList;
 
-  /**
-   * @param string input stream
-   * @return a list of tokens
-   * @throws IOException I/O-error
-   */
-  public List<Token> getTokens(final String string) throws IOException {
-    errors.clear();
-    Reader reader = new StringReader(string);
-    inputReader = new PushbackReader(reader);
-    return getTokens(inputReader);
+  public CompilerErrors getErrors() {
+    return errors;
   }
 
   /**
@@ -70,7 +71,7 @@ public class Scanner {
    */
   public List<Token> getTokens(final PushbackReader fileReader) throws IOException {
     errors.clear();
-    tokenList = new ArrayList<Token>();
+    tokenList = new ArrayList<>();
     buffer = new StringBuffer();
     int tokenCount;
     int c;
@@ -109,6 +110,87 @@ public class Scanner {
   }
 
   /**
+   * @param string input stream
+   * @return a list of tokens
+   * @throws IOException I/O-error
+   */
+  public List<Token> getTokens(final String string) throws IOException {
+    errors.clear();
+    Reader reader = new StringReader(string);
+    inputReader = new PushbackReader(reader);
+    return getTokens(inputReader);
+  }
+
+  /**
+   * Scans for comments.
+   *
+   * @throws IOException
+   */
+  private void scanComment() throws IOException {
+    if ((character == '/')) {
+      if ((character = (char) inputReader.read()) == '*') {
+        scanComment1();
+      } else if (character == '/') {
+        scanComment2();
+      }
+    }
+  }
+
+  /**
+   * Scans comment text until closing tag is found. Can handle nested comments.
+   *
+   * @throws IOException
+   */
+  private void scanComment1() throws IOException {
+    int c;
+    int nested = 1;
+    while ((c = inputReader.read()) != -1) {
+      if ((character = (char) c) == '*') {
+        if (((character = (char) inputReader.read()) == '/')) {
+          nested--;
+          if (nested == 0) {
+            break;
+          }
+        }
+      } else if (character == '/') {
+        if (((character = (char) inputReader.read()) == '*')) {
+          nested++;
+        }
+      }
+    }
+    if (c == -1) {
+      errors.addError("No closing */ for comment found.", ErrorType.SCANNER);
+    }
+  }
+
+  /**
+   * Scans for a comment until the end of the line.
+   *
+   * @throws IOException
+   */
+  private void scanComment2() throws IOException {
+    int c;
+    do {
+      c = inputReader.read();
+    } while (c != 10 && c != 13 && c != -1);
+    inputReader.unread(c);
+  }
+
+  /**
+   * Scans for double after '.' was found.
+   *
+   * @throws IOException
+   */
+  private void scanDouble() throws IOException {
+    while (Character.isDigit(character = (char) inputReader.read())) {
+      buffer.append(character);
+    }
+    inputReader.unread(character);
+    tokenList.add(new DoubleNum(buffer.toString()));
+    buffer.setLength(0);
+  }
+
+  /**
    * Scans for identifiers, primitive types and keywords. identifier = letter {letter|digit},
    * keyword = "if" | "else" |" while" | "do" | "return" | basicType | scope, scope = "public" |
    * "private" | "protected", basicType = "int" | "double" | "void", "String"
@@ -121,7 +203,6 @@ public class Scanner {
       }
       inputReader.unread(character);
       String str = buffer.toString();
-
       // keywords
       for (int i = 0; i < keywords.length; i++) {
         if (str.equals(keywords[i])) {
@@ -129,7 +210,6 @@ public class Scanner {
           buffer.setLength(0);
         }
       }
-
       // basic types
       for (int i = 0; i < basicTypes.length; i++) {
         if (str.equals(basicTypes[i])) {
@@ -137,7 +217,6 @@ public class Scanner {
           buffer.setLength(0);
         }
       }
-
       if (buffer.length() > 0) {
         tokenList.add(new Identifier(buffer.toString()));
       }
@@ -163,59 +242,6 @@ public class Scanner {
         inputReader.unread(character);
         tokenList.add(new IntNum(buffer.toString()));
         buffer.setLength(0);
-      }
-    }
-  }
-
-  /**
-   * Scans for double after '.' was found.
-   *
-   * @throws IOException
-   */
-  private void scanDouble() throws IOException {
-    while (Character.isDigit(character = (char) inputReader.read())) {
-      buffer.append(character);
-    }
-    inputReader.unread(character);
-    tokenList.add(new DoubleNum(buffer.toString()));
-    buffer.setLength(0);
-  }
-
-  /** Scans for different kinds of parentheses. parenthesis = [ "(" | ")" | "{" | "}" ] */
-  private void scanParen() {
-    if (character == '(') {
-      tokenList.add(new Sym(TokenType.LPAREN));
-    } else if (character == ')') {
-      tokenList.add(new Sym(TokenType.RPAREN));
-    } else if (character == '{') {
-      tokenList.add(new Sym(TokenType.LBRACE));
-    } else if (character == '}') {
-      tokenList.add(new Sym(TokenType.RBRACE));
-    } else if (character == '[') {
-      tokenList.add(new Sym(TokenType.LBRAK));
-    } else if (character == ']') {
-      tokenList.add(new Sym(TokenType.RBRAK));
-    }
-  }
-
-  /**
-   * Scans for symbols. symbol = "," | "." | ";"
-   *
-   * @throws IOException
-   */
-  private void scanSym() throws IOException {
-    if (character == ',') {
-      tokenList.add(new Sym(TokenType.COMMA));
-    } else if (character == ';') {
-      tokenList.add(new Sym(TokenType.SEMICOLON));
-    } else if (character == '.') {
-      if (Character.isDigit(character = (char) inputReader.read())) {
-        buffer.append('.');
-        buffer.append(character);
-        scanDouble();
-      } else {
-        inputReader.unread(character);
-        tokenList.add(new Sym(TokenType.DOT));
       }
     }
   }
@@ -282,59 +308,21 @@ public class Scanner {
     }
   }
 
-  /**
-   * Scans for comments.
-   *
-   * @throws IOException
-   */
-  private void scanComment() throws IOException {
-    if ((character == '/')) {
-      if ((character = (char) inputReader.read()) == '*') {
-        scanComment1();
-      } else if (character == '/') {
-        scanComment2();
-      }
+  /** Scans for different kinds of parentheses. parenthesis = [ "(" | ")" | "{" | "}" ] */
+  private void scanParen() {
+    if (character == '(') {
+      tokenList.add(new Sym(TokenType.LPAREN));
+    } else if (character == ')') {
+      tokenList.add(new Sym(TokenType.RPAREN));
+    } else if (character == '{') {
+      tokenList.add(new Sym(TokenType.LBRACE));
+    } else if (character == '}') {
+      tokenList.add(new Sym(TokenType.RBRACE));
+    } else if (character == '[') {
+      tokenList.add(new Sym(TokenType.LBRAK));
+    } else if (character == ']') {
+      tokenList.add(new Sym(TokenType.RBRAK));
     }
-  }
-
-  /**
-   * Scans comment text until closing tag is found. Can handle nested comments.
-   *
-   * @throws IOException
-   */
-  private void scanComment1() throws IOException {
-    int c;
-    int nested = 1;
-    while ((c = inputReader.read()) != -1) {
-      if ((character = (char) c) == '*') {
-        if (((character = (char) inputReader.read()) == '/')) {
-          nested--;
-          if (nested == 0) {
-            break;
-          }
-        }
-      } else if (character == '/') {
-        if (((character = (char) inputReader.read()) == '*')) {
-          nested++;
-        }
-      }
-    }
-    if (c == -1) {
-      errors.addError("No closing */ for comment found.", ErrorType.SCANNER);
-    }
-  }
-
-  /**
-   * Scans for a comment until the end of the line.
-   *
-   * @throws IOException
-   */
-  private void scanComment2() throws IOException {
-    int c;
-    do {
-      c = inputReader.read();
-    } while (c != 10 && c != 13 && c != -1);
-    inputReader.unread(c);
   }
 
   /**
@@ -359,7 +347,25 @@ public class Scanner {
     }
   }
 
-  public CompilerErrors getErrors() {
-    return errors;
+  /**
+   * Scans for symbols. symbol = "," | "." | ";"
+   *
+   * @throws IOException
+   */
+  private void scanSym() throws IOException {
+    if (character == ',') {
+      tokenList.add(new Sym(TokenType.COMMA));
+    } else if (character == ';') {
+      tokenList.add(new Sym(TokenType.SEMICOLON));
+    } else if (character == '.') {
+      if (Character.isDigit(character = (char) inputReader.read())) {
+        buffer.append('.');
+        buffer.append(character);
+        scanDouble();
+      } else {
+        inputReader.unread(character);
+        tokenList.add(new Sym(TokenType.DOT));
+      }
+    }
   }
 }

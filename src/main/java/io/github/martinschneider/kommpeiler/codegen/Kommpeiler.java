@@ -10,9 +10,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Kommpeiler {
-  private static Output createOutput(File outputFile) {
+  private static Output fileOutput(File outputFile) {
     PrintStream fileOutput;
     Output out = null;
     try {
@@ -25,8 +26,20 @@ public class Kommpeiler {
   }
 
   public static void main(String args[]) throws IOException {
-    File input = new File(args[0]);
-    File output = new File(args[1]);
+    new Kommpeiler(new File(args[0]), fileOutput(new File(args[1])), args[1]).compile();
+  }
+
+  private File input;
+  private Output output;
+  private String outputPath;
+
+  public Kommpeiler(File input, Output output, String outputPath) {
+    this.input = input;
+    this.output = output;
+    this.outputPath = outputPath;
+  }
+
+  public void compile() throws IOException {
     System.out.println(
         "╦╔═╔═╗╔╦╗╔╦╗╔═╗╔═╗╦╦  ╔═╗╦═╗\n"
             + "╠╩╗║ ║║║║║║║╠═╝║╣ ║║  ║╣ ╠╦╝\n"
@@ -34,13 +47,18 @@ public class Kommpeiler {
     System.out.println("Reading from: " + input.getAbsolutePath());
     Scanner scanner = new Scanner();
     List<Token> tokens = scanner.getTokens(input);
-    System.out.println("Scanner output: " + tokens);
+    System.out.println(
+        "Scanner output: "
+            + tokens.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     Parser parser = new Parser(tokens);
     Clazz clazz = parser.parseClass();
     System.out.println("Parser output: " + clazz);
-    System.out.println("Writing to: " + output.getAbsolutePath());
-    CodeGenerator codeGen = new CodeGenerator(clazz, createOutput(output));
-    System.out.println("Ok bye!\n");
+    if (outputPath != null) {
+      System.out.println("Writing to: " + outputPath);
+    }
+    CodeGenerator codeGen = new CodeGenerator(clazz, output);
     codeGen.generate();
+    // System.out.println(Files.size(Path.of(output.toURI())) + " bytes");
+    System.out.println("Ok bye!\n");
   }
 }

@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 public class Clazz {
   private List<Method> body;
   private Identifier name;
+  private String packageName;
   private Scope scope;
 
   /**
@@ -19,7 +20,9 @@ public class Clazz {
    * @param name name
    * @param body body
    */
-  public Clazz(final Scope scope, final Identifier name, final List<Method> body) {
+  public Clazz(
+      final String packageName, final Scope scope, final Identifier name, final List<Method> body) {
+    this.packageName = packageName;
     this.scope = scope;
     this.name = name;
     this.body = body;
@@ -31,6 +34,10 @@ public class Clazz {
 
   public Identifier getName() {
     return name;
+  }
+
+  public String getPackageName() {
+    return packageName;
   }
 
   public Scope getScope() {
@@ -45,13 +52,22 @@ public class Clazz {
     this.name = name;
   }
 
+  public void setPackageName(String packageName) {
+    this.packageName = packageName;
+  }
+
   public void setScope(final Scope scope) {
     this.scope = scope;
   }
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder(name.toString());
+    StringBuilder strBuilder = new StringBuilder();
+    if (packageName != null || !packageName.isEmpty()) {
+      strBuilder.append(packageName);
+      strBuilder.append('.');
+    }
+    strBuilder.append(name.toString());
     strBuilder.append(", methods[");
     strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     strBuilder.append("]");
