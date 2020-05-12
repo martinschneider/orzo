@@ -7,11 +7,11 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
  *
  * @author Martin Schneider
  */
-public class Declaration extends Statement {
+public class Declaration implements Statement {
   private boolean hasValue;
   private Identifier name;
-  private String type;
-  private Factor value;
+  private Type type;
+  private Expression value;
 
   /**
    * @param name name
@@ -19,8 +19,8 @@ public class Declaration extends Statement {
    * @param value value
    * @param hasValue true if value is known
    */
-  public Declaration(
-      final Identifier name, final String type, final Factor value, final boolean hasValue) {
+  public Declaration(final Identifier name, final Type type, final Expression value,
+      final boolean hasValue) {
     super();
     this.type = type;
     this.name = name;
@@ -32,11 +32,11 @@ public class Declaration extends Statement {
     return name;
   }
 
-  public String getType() {
+  public Type getType() {
     return type;
   }
 
-  public Factor getValue() {
+  public Expression getValue() {
     return value;
   }
 
@@ -53,17 +53,17 @@ public class Declaration extends Statement {
     this.name = name;
   }
 
-  public void setType(final String type) {
+  public void setType(final Type type) {
     this.type = type;
   }
 
-  public void setValue(final Factor value) {
+  public void setValue(final Expression value) {
     this.value = value;
   }
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder(type);
+    StringBuilder strBuilder = new StringBuilder(type.toString());
     strBuilder.append(' ');
     strBuilder.append(name);
     strBuilder.append('=');

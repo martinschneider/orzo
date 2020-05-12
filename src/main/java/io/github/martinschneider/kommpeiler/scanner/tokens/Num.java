@@ -6,6 +6,5 @@ package io.github.martinschneider.kommpeiler.scanner.tokens;
  * @author Martin Schneider
  */
 public interface Num {
-  /** {@inheritDoc} * */
-  String toString();
+  void changeSign();
 }

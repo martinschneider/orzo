@@ -23,4 +23,9 @@ public class FieldSelector extends Selector {
   public Identifier getIdentifier() {
     return identifier;
   }
+
+  @Override
+  public String toString() {
+    return identifier.toString();
+  }
 }

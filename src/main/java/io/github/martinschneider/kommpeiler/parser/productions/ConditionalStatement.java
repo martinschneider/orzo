@@ -8,33 +8,28 @@ import java.util.List;
  *
  * @author Martin Schneider
  */
-public abstract class ConditionalStatement extends Statement {
-
-  private Factor condition;
+public abstract class ConditionalStatement implements Statement {
   private List<Statement> body;
-
-  /**
-   * @param left left
-   * @param right right
-   */
-  public ConditionalStatement(final Identifier left, final Factor right) {
-    super();
-  }
+  private Condition condition;
 
   /** empty constructor */
   public ConditionalStatement() {}
 
   /**
-   * set the condition
-   *
-   * @param condition condition
+   * @param left left
+   * @param right right
    */
-  void setCondition(final Factor condition) {
-    this.condition = condition;
+  public ConditionalStatement(final Identifier left, final Expression right) {
+    super();
+  }
+
+  /** @return body */
+  List<Statement> getBody() {
+    return body;
   }
 
   /** @return condition */
-  Factor getCondition() {
+  Condition getCondition() {
     return condition;
   }
 
@@ -47,8 +42,12 @@ public abstract class ConditionalStatement extends Statement {
     this.body = body;
   }
 
-  /** @return body */
-  List<Statement> getBody() {
-    return body;
+  /**
+   * set the condition
+   *
+   * @param condition condition
+   */
+  void setCondition(final Condition condition) {
+    this.condition = condition;
   }
 }

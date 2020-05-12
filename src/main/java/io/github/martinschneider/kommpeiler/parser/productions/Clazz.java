@@ -1,6 +1,7 @@
 package io.github.martinschneider.kommpeiler.parser.productions;
 
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Scope;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,8 +21,8 @@ public class Clazz {
    * @param name name
    * @param body body
    */
-  public Clazz(
-      final String packageName, final Scope scope, final Identifier name, final List<Method> body) {
+  public Clazz(final String packageName, final Scope scope, final Identifier name,
+      final List<Method> body) {
     this.packageName = packageName;
     this.scope = scope;
     this.name = name;

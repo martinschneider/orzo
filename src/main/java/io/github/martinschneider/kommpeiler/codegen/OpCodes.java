@@ -23,6 +23,9 @@ public class OpCodes {
   public static final byte ISTORE_2 = (byte) 61;
   public static final byte ISTORE_3 = (byte) 62;
   public static final byte ISUB = (byte) 100;
+  public static final byte IMUL = (byte) 104;
+  public static final byte IDIV = (byte) 108;
+  public static final byte IREM = (byte) 112;
   public static final byte LDC = (byte) 18;
   public static final byte RETURN = (byte) 177;
   public static final byte SIPUSH = (byte) 17;

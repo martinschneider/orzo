@@ -1,39 +1,67 @@
 package io.github.martinschneider.kommpeiler.parser;
 
+import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.DOUBLE;
+import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.INT;
+import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.VOID;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.CLASS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.DO;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.IF;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.PACKAGE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.STATIC;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.WHILE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MINUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.PLUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.TIMES;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.DEFAULT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.PRIVATE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.PROTECTED;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.PUBLIC;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.COMMA;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.DOT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.LBRACE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.LBRAK;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.LPAREN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RBRACE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RBRAK;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RPAREN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.eof;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.integer;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.keyword;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.scope;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
 import io.github.martinschneider.kommpeiler.error.ErrorType;
 import io.github.martinschneider.kommpeiler.parser.productions.Argument;
 import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
-import io.github.martinschneider.kommpeiler.parser.productions.BasicType;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
+import io.github.martinschneider.kommpeiler.parser.productions.Condition;
 import io.github.martinschneider.kommpeiler.parser.productions.ConditionalStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
 import io.github.martinschneider.kommpeiler.parser.productions.DoStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
-import io.github.martinschneider.kommpeiler.parser.productions.ExpressionFactor;
-import io.github.martinschneider.kommpeiler.parser.productions.Factor;
 import io.github.martinschneider.kommpeiler.parser.productions.FieldSelector;
-import io.github.martinschneider.kommpeiler.parser.productions.IdFactor;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
-import io.github.martinschneider.kommpeiler.parser.productions.IntFactor;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
-import io.github.martinschneider.kommpeiler.parser.productions.Scope;
 import io.github.martinschneider.kommpeiler.parser.productions.Selector;
-import io.github.martinschneider.kommpeiler.parser.productions.SimpleExpression;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
-import io.github.martinschneider.kommpeiler.parser.productions.StringFactor;
-import io.github.martinschneider.kommpeiler.parser.productions.Term;
+import io.github.martinschneider.kommpeiler.parser.productions.Type;
 import io.github.martinschneider.kommpeiler.parser.productions.WhileStatement;
-import io.github.martinschneider.kommpeiler.parser.symboltable.SymbolTable;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Comparator;
+import io.github.martinschneider.kommpeiler.scanner.tokens.EOF;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
-import io.github.martinschneider.kommpeiler.scanner.tokens.IntNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Keyword;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Num;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Operator;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Scope;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Scopes;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Str;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Sym;
-import io.github.martinschneider.kommpeiler.scanner.tokens.SymbolType;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +74,6 @@ import java.util.List;
 public class Parser {
   private CompilerErrors errors = new CompilerErrors();
   private int index;
-  private SymbolTable symbolTable = new SymbolTable();
   private Token token;
   private List<Token> tokenList;
 
@@ -66,64 +93,20 @@ public class Parser {
     return errors;
   }
 
-  public SymbolTable getSymbolTable() {
-    return symbolTable;
-  }
-
-  /**
-   * @param token
-   * @return true if the token is a legal operator in an expression
-   */
-  private boolean isExprOp(final Token token) {
-    if (token.getValue().equals("EQUAL")
-        || token.getValue().equals("NOTEQUAL")
-        || token.getValue().equals("SMALLER")
-        || token.getValue().equals("GREATER")
-        || token.getValue().equals("SMALLEREQ")
-        || token.getValue().equals("GREATEREQ")) {
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * @param token
-   * @return true if the token is a legal operator in a factor
-   */
-  private boolean isFacOp(final Token token) {
-    if (token.getValue().equals("TIMES")
-        || token.getValue().equals("DIV")
-        || token.getValue().equals("MOD")) {
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * @param token
-   * @return true if the token is a legal operator in a SimpleExpression
-   */
-  private boolean isSimpleExprOp(final Token token) {
-    if (token.getValue().equals("PLUS") || token.getValue().equals("MINUS")) {
-      return true;
-    }
-    return false;
-  }
-
   /**
    * reads the next token
    *
-   * <p>returns false if EOF and true otherwise
+   * <p>
+   * returns false if EOF and true otherwise
    */
   private boolean nextToken() {
     index++;
-    if (index < tokenList.size()) {
+    if (index >= tokenList.size()) {
+      token = eof();
+      return false;
+    } else {
       token = tokenList.get(index);
       return true;
-    } else {
-      // FIXME
-      token = new Token("EOF"); // EOF
-      return false;
     }
   }
 
@@ -134,20 +117,21 @@ public class Parser {
 
   private List<Argument> parseArguments() {
     List<Argument> arguments = new ArrayList<>();
-    while (!token.getValue().equals("RPAREN")) {
+    while (!token.eq(sym(RPAREN))) {
       String type = null;
       Identifier name = null;
-      switch (token.getValue()) {
-        case "STRING":
-          type = "Ljava/lang/String;";
-          break;
-        default:
-          type = token.getValue();
+      if (!(token instanceof Type)) {
+        break;
+      }
+      if (token.eq(type("STRING"))) {
+        type = "Ljava/lang/String;";
+      } else {
+        type = token.getValue().toString();
       }
       nextToken();
-      if (token.getValue().equals("LBRAK")) {
+      if (token.eq(sym(LBRAK))) {
         nextToken();
-        if (token.getValue().equals("RBRAK")) {
+        if (token.eq(sym(RBRAK))) {
           type = "[" + type;
         } else {
           errors.addParserError("missing ] in type declaration");
@@ -159,7 +143,7 @@ public class Parser {
       }
       arguments.add(new Argument(type, name));
       nextToken();
-      if (token.getValue().equals(",")) {
+      if (token.eq(sym(COMMA))) {
         nextToken();
       } else {
         break;
@@ -175,7 +159,7 @@ public class Parser {
    */
   public Assignment parseAssignment() {
     Identifier left;
-    Factor right;
+    Expression right;
     if (token instanceof Identifier) {
       left = (Identifier) token;
     } else {
@@ -187,17 +171,12 @@ public class Parser {
       left.setSelector(selector);
       nextToken();
     }
-    if (token instanceof Operator && token.getValue().equals("ASSIGN")) {
+    if (token instanceof Operator && token.eq(op(ASSIGN))) {
       nextToken();
       if ((right = parseExpression()) == null) {
         previousToken();
       } else {
-        symbolTable.update(left.toString(), right);
-        if (right instanceof Term) {
-          // ((Term)right).generateCode(instructionList, registers);
-        }
         Assignment assignment = new Assignment(left, right);
-        // assignment.generateCode(instructionList, registers);
         return assignment;
       }
     } else {
@@ -207,38 +186,26 @@ public class Parser {
     return null;
   }
 
-  /**
-   * class = [scope] "class" identifier "{" {method} "}"
-   *
-   * @return Clazz
-   */
   public Clazz parseClass() {
     int saveIndex = index;
-    Scope scope = Scope.PRIVATE;
     Identifier name;
     List<Method> body;
-    String packageName = parsePackageDeclaration();
-    if (token.getClass().equals(Keyword.class)) {
-      if (token.getValue().equals("PUBLIC")) {
-        scope = Scope.PUBLIC;
+    String packageDeclaration = parsePackageDeclaration();
+    Scope scope = parseScope();
+    if (scope != null) {
+      nextToken();
+    }
+    if (token instanceof Keyword) {
+      if (token.eq(keyword(CLASS))) {
         nextToken();
-      } else if (token.getValue().equals("PRIVATE")) {
-        scope = Scope.PRIVATE;
-        nextToken();
-      } else if (token.getValue().equals("PROTECTED")) {
-        scope = Scope.PROTECTED;
-        nextToken();
-      }
-      if (token.getValue().equals("CLASS")) {
-        nextToken();
-        if (token.getClass().equals(Identifier.class)) {
+        if (token instanceof Identifier) {
           name = (Identifier) token;
         } else {
           name = null;
           errors.addParserError("identifier expected");
         }
         nextToken();
-        if (!token.getValue().equals("LBRACE")) {
+        if (!token.eq(sym(LBRACE))) {
           previousToken();
           errors.addParserError("class-declaration must be followed by {");
         }
@@ -247,15 +214,31 @@ public class Parser {
         if (body == null) {
           errors.addParserError("invalid class body");
         }
-        if (!token.getValue().equals("RBRACE")) {
+        if (!token.eq(sym(RBRACE))) {
           previousToken();
           errors.addParserError("method must be closed by }");
         }
-        return new Clazz(packageName, scope, name, body);
+        return new Clazz(packageDeclaration, scope, name, body);
       }
     }
     index = saveIndex;
     token = tokenList.get(index);
+    return null;
+  }
+
+  private Scope parseScope() {
+    if (token instanceof Scope) {
+      switch ((Scopes) token.getValue()) {
+        case PUBLIC:
+          return scope(PUBLIC);
+        case PRIVATE:
+          return scope(PRIVATE);
+        case PROTECTED:
+          return scope(PROTECTED);
+        default:
+          return scope(DEFAULT);
+      }
+    }
     return null;
   }
 
@@ -278,29 +261,42 @@ public class Parser {
     }
   }
 
+  public Condition parseCondition() {
+    Expression left;
+    Comparator operator;
+    Expression right;
+    left = parseExpression();
+    if (left != null && token instanceof Comparator) {
+      operator = (Comparator) token;
+      nextToken();
+      right = parseExpression();
+      if (right != null) {
+        return new Condition(left, operator, right);
+      }
+    }
+    return null;
+  }
+
   /**
    * declaration = basicType identifier ["=" value]
    *
    * @return Declaration
    */
   public Declaration parseDeclaration() {
-    String type;
+    Type type;
     Identifier name;
-    Factor value;
-    if (token.getValue() != "void") {
-      type = token.getValue();
+    Expression value;
+    if (token instanceof Type && !token.eq(type(VOID))) {
+      type = (Type) token;
       nextToken();
       if (token instanceof Identifier) {
         name = (Identifier) token;
         nextToken();
-        if (token instanceof Operator && token.getValue().equals("ASSIGN")) {
+        if (token instanceof Operator && token.eq(op(ASSIGN))) {
           nextToken();
-          if ((value = parseSimpleExpression()) != null) {
+          if ((value = parseExpression()) != null) {
             return new Declaration(name, type, value, true);
-          } else {
-            previousToken();
           }
-        } else {
           previousToken();
         }
         return new Declaration(name, type, null, false);
@@ -316,17 +312,15 @@ public class Parser {
    *
    * @return DoStatement
    */
-  // CHECKSTYLE:OFF
   public DoStatement parseDoStatement() {
-    // CHECKSTYLE:ON
-    Factor condition;
+    Condition condition;
     List<Statement> body;
     if (token == null) {
       return null;
     }
-    if (token.getClass().equals(Keyword.class) && token.getValue().equals("DO")) {
+    if (token instanceof Keyword && token.eq(keyword(DO))) {
       nextToken();
-      if (!token.getValue().equals("LBRACE")) {
+      if (!token.eq(sym(LBRACE))) {
         previousToken();
         errors.addParserError("do must be followed by {");
       }
@@ -336,28 +330,28 @@ public class Parser {
         previousToken();
         errors.addParserError("do{ must be followed by a valid statement sequence");
       }
-      if (!token.getValue().equals("RBRACE")) {
+      if (!token.eq(sym(RBRACE))) {
         previousToken();
         errors.addParserError("missing } in do-clause");
       }
       nextToken();
-      if (!(token.getClass().equals(Keyword.class) && token.getValue().equals("WHILE"))) {
+      if (!(token instanceof Keyword && token.eq(keyword(WHILE)))) {
         previousToken();
         errors.addParserError("missing while in do-clause");
       }
       nextToken();
-      if (!token.getValue().equals("LPAREN")) {
+      if (!token.eq(sym(LPAREN))) {
         previousToken();
         errors.addParserError("missing ( in do-clause");
       }
       nextToken();
-      condition = parseExpression();
+      condition = parseCondition();
       if (condition == null) {
         previousToken();
         errors.addParserError("invalid condition in do-clause");
       }
       nextToken();
-      if (!token.getValue().equals("RPAREN")) {
+      if (!token.eq(sym(RPAREN))) {
         previousToken();
         errors.addParserError("missing ) in do-clause");
       }
@@ -367,95 +361,37 @@ public class Parser {
     }
   }
 
-  /**
-   * expression = simpleExpression [ ("==", "<", ">", "<=", ">=", "!=") simpleExpression ]
-   *
-   * @return Factor
-   */
-  public Factor parseExpression() {
-    Factor left;
-    Factor right;
-    Token operator;
-    if ((left = parseSimpleExpression()) == null) {
-      return left;
-    } else {
-      index++;
-      if (index < tokenList.size()) {
-        token = tokenList.get(index);
-      } else {
-        return left;
-      }
-      if ((token instanceof Operator) && isExprOp(token)) {
-        operator = token;
-      } else {
-        previousToken();
-        return left;
-      }
+  public Expression parseExpression() {
+    Expression expression = new Expression();
+    boolean negative = false;
+    if (token instanceof Operator && token.eq(op(MINUS))) {
+      negative = true;
       nextToken();
-      int saveIndex = index;
-      if ((right = parseSimpleExpression()) == null) {
-        index = saveIndex;
-        if ((right = parseTerm()) == null) {
-          previousToken();
-          return null;
-        } else {
-          return new Expression(left, operator, right);
+      if (token instanceof Num) {
+        Num number = (Num) token;
+        if (negative) {
+          number.changeSign();
         }
-      } else {
-        return new Expression(left, operator, right);
-      }
-    }
-  }
-
-  /**
-   * factor = identifier selector | number | "(" expression ")"
-   *
-   * @return Factor
-   */
-  public Factor parseFactor() {
-    if (token.getValue().equals("MINUS")) {
-      int pointer = savePointer();
-      nextToken();
-      Factor factor = parseFactor();
-      if (factor != null && factor instanceof IntFactor) {
-        return new IntFactor(((IntNum) token).parseValue() * -1);
-      } else {
-        restorePointer(pointer);
-        return null;
-      }
-    } else if (token instanceof Identifier) {
-      Identifier identifier = (Identifier) token;
-      nextToken();
-      Selector selector = parseSelector();
-      if (selector != null) {
-        identifier.setSelector(selector);
+        expression.addToken(token);
         nextToken();
+      } else if (token instanceof Identifier) {
+        expression.addToken(sym(LPAREN));
+        expression.addToken(integer(-1));
+        expression.addToken(sym(RPAREN));
+        expression.addToken(op(TIMES));
+        expression.addToken(token);
       } else {
-        previousToken();
-      }
-      return new IdFactor(identifier);
-    } else if (token instanceof IntNum) {
-      return new IntFactor(((IntNum) token).parseValue());
-    } else if (token instanceof Str) {
-      return new StringFactor(((Str) token).getValue());
-    } else {
-      int saveIndex = index;
-      if (!token.getValue().equals("LPAREN")) {
+        errors.addParserError("Unexpected symbol " + token + " after starting \"-\" in expression");
         return null;
       }
-      nextToken();
-      Factor expression = parseExpression();
-      if (expression == null) {
-        return null;
-      }
-      nextToken();
-      if (token.getValue().equals("RPAREN")) {
-        return new ExpressionFactor(expression);
-      }
-      index = saveIndex;
-      token = tokenList.get(index);
-      return null;
     }
+    // TODO: support parentheses
+    while (token instanceof Num || token instanceof Str || token instanceof Identifier
+        || token instanceof Operator) {
+      expression.addToken(token);
+      nextToken();
+    }
+    return (expression.size() > 0) ? expression : null;
   }
 
   /**
@@ -464,30 +400,30 @@ public class Parser {
    * @return IfStatement
    */
   public IfStatement parseIfStatement() {
-    Factor condition;
+    Condition condition;
     List<Statement> body;
     if (token == null) {
       return null;
     }
-    if (token.getClass().equals(Keyword.class) && token.getValue().equals("IF")) {
+    if (token instanceof Keyword && token.eq(keyword(IF))) {
       nextToken();
-      if (!token.getValue().equals("LPAREN")) {
+      if (!token.eq(sym(LPAREN))) {
         previousToken();
         errors.addParserError("if must be followed by (");
       }
       nextToken();
-      condition = parseExpression();
+      condition = parseCondition();
       if (condition == null) {
         previousToken();
         errors.addParserError("if( must be followed by a valid expression");
       }
       nextToken();
-      if (!token.getValue().equals("RPAREN")) {
+      if (!token.eq(sym(RPAREN))) {
         previousToken();
         errors.addParserError("missing ) in if-clause");
       }
       nextToken();
-      if (!token.getValue().equals("LBRACE")) {
+      if (!token.eq(sym(LBRACE))) {
         previousToken();
         errors.addParserError("missing { in if-clause");
       }
@@ -496,7 +432,7 @@ public class Parser {
       if (body == null) {
         errors.addParserError("invalid body of if-clause");
       }
-      if (!token.getValue().equals("RBRACE")) {
+      if (!token.eq(sym(RBRACE))) {
         previousToken();
         errors.addParserError("missing } in if-clause");
       }
@@ -513,62 +449,50 @@ public class Parser {
    */
   // CHECKSTYLE:OFF
   public Method parseMethod()
-        // CHECKSTYLE:ON
-      {
+  // CHECKSTYLE:ON
+  {
     int saveIndex = index;
-    Scope scope = Scope.PRIVATE;
-    BasicType type;
+    Scope scope = scope(DEFAULT);
+    Type type;
     Identifier name;
     List<Argument> arguments = new ArrayList<>();
     List<Statement> body;
-    if ((token instanceof Keyword) || (token instanceof SymbolType)) {
-      if (token.getValue().equals("PUBLIC")) {
-        scope = Scope.PUBLIC;
-        nextToken();
-      } else if (token.getValue().equals("PRIVATE")) {
-        scope = Scope.PRIVATE;
-        nextToken();
-      } else if (token.getValue().equals("PROTECTED")) {
-        scope = Scope.PROTECTED;
-        nextToken();
-      }
-      if (token.getValue().equals("STATIC")) {
-        // TODO: handle static (for now we just ignore it)
-        nextToken();
-      }
-      if (token.getValue().equals("INT")) {
-        type = BasicType.INT;
-        nextToken();
-      } else if (token.getValue().equals("DOUBLE")) {
-        type = BasicType.DOUBLE;
-        nextToken();
-      } else if (token.getValue().equals("VOID")) {
-        type = BasicType.VOID;
+    if (token instanceof Scope) {
+      scope = (Scope) token;
+      nextToken();
+    }
+    if (token instanceof Keyword && token.eq(keyword(STATIC))) {
+      // TODO: handle static (for now we just ignore it)
+      nextToken();
+    }
+    if (token instanceof Type) {
+      if (token.eq(type(INT)) || token.eq(type(DOUBLE)) || token.eq(type(VOID))) {
+        type = (Type) token;
         nextToken();
       } else {
         index = saveIndex;
         nextToken();
         return null;
       }
-      if (token.getClass().equals(Identifier.class)) {
+      if (token instanceof Identifier) {
         name = (Identifier) token;
       } else {
         name = null;
         errors.addParserError("identifier expected");
       }
       nextToken();
-      if (!token.getValue().equals("LPAREN")) {
+      if (!token.eq(sym(LPAREN))) {
         previousToken();
         errors.addParserError("missing ( in method-declaration");
       }
       nextToken();
       arguments = parseArguments();
-      if (!token.getValue().equals("RPAREN")) {
+      if (!token.eq(sym(RPAREN))) {
         previousToken();
         errors.addParserError("missing ) in method-declaration");
       }
       nextToken();
-      if (!token.getValue().equals("LBRACE")) {
+      if (!token.eq(sym(LBRACE))) {
         previousToken();
         errors.addParserError("method-declaration must be followed by {");
       }
@@ -577,7 +501,7 @@ public class Parser {
       if (body == null) {
         errors.addParserError("invalid method body");
       }
-      if (!token.getValue().equals("RBRACE")) {
+      if (!token.eq(sym(RBRACE))) {
         previousToken();
         errors.addParserError("method must be closed by }");
       }
@@ -593,13 +517,13 @@ public class Parser {
    * @return method call
    */
   public MethodCall parseMethodCall() {
-    List<Factor> parameters;
+    List<Expression> parameters;
     List<Identifier> names = new ArrayList<>();
     if (token instanceof Identifier) {
       do {
         names.add((Identifier) token);
         nextToken();
-      } while ((token.getValue().equals("DOT") && nextToken()));
+      } while ((token.eq(sym(DOT)) && nextToken()));
       parameters = parseParameters();
       return new MethodCall(names, parameters);
     }
@@ -607,11 +531,11 @@ public class Parser {
   }
 
   private String parsePackageDeclaration() {
-    if (token.getValue().equals("PACKAGE")) {
+    if (token.eq(keyword(PACKAGE))) {
       nextToken();
       StringBuilder packageName = new StringBuilder();
-      while (!token.getValue().equals("SEMICOLON") && !token.getValue().equals("EOF")) {
-        if (token.getValue().equals("DOT")) {
+      while (!token.eq(sym(SEMICOLON)) && !(token instanceof EOF)) {
+        if (token.eq(sym(DOT))) {
           packageName.append('.');
         } else if (token instanceof Identifier) {
           packageName.append(token.getValue());
@@ -632,25 +556,23 @@ public class Parser {
    *
    * @return parameters
    */
-  public List<Factor> parseParameters() {
-    List<Factor> parameters = new ArrayList<>();
-    if (token.getValue().equals("LPAREN")) {
+  public List<Expression> parseParameters() {
+    List<Expression> parameters = new ArrayList<>();
+    if (token.eq(sym(LPAREN))) {
       nextToken();
-      Factor factor;
-      if ((factor = parseFactor()) != null) {
+      Expression factor;
+      if ((factor = parseExpression()) != null) {
         parameters.add(factor);
       }
-      nextToken();
-      while (token instanceof Sym && ((Sym) token).getValue().equals("COMMA")) {
+      while (token instanceof Sym && token.eq(sym(COMMA))) {
         nextToken();
-        if ((factor = parseFactor()) != null) {
+        if ((factor = parseExpression()) != null) {
           parameters.add(factor);
         }
-        nextToken();
         // FIXME: else
       }
       nextToken();
-      if (!token.getValue().equals("RPAREN")) {
+      if (!token.eq(sym(RPAREN))) {
         errors.addError(") expected", ErrorType.PARSER);
       }
       return parameters;
@@ -665,7 +587,7 @@ public class Parser {
    * @return Selector
    */
   public Selector parseSelector() {
-    if (token.getValue().equals("DOT")) {
+    if (token instanceof Sym && token.eq(sym(DOT))) {
       nextToken();
       if (token instanceof Identifier) {
         return new FieldSelector((Identifier) token);
@@ -673,12 +595,11 @@ public class Parser {
         errors.addError("identifier expected", ErrorType.PARSER);
         previousToken();
       }
-    } else if (token instanceof Sym && token.getValue().equals("LBRAK")) {
+    } else if (token instanceof Sym && token.eq(sym(LBRAK))) {
       nextToken();
-      Factor expression = parseExpression();
+      Expression expression = parseExpression();
       if (expression != null) {
-        nextToken();
-        if (token instanceof Sym && token.getValue().equals("RBRAK")) {
+        if (token instanceof Sym && token.eq(sym(RBRAK))) {
           return new ArraySelector(expression);
         } else {
           errors.addError("] expected", ErrorType.PARSER);
@@ -691,76 +612,22 @@ public class Parser {
   }
 
   /**
-   * simpleExpression = ["+"|"-"] term {("+"|"-") term}.
-   *
-   * @return Factor
-   */
-  public Factor parseSimpleExpression() {
-    Factor left;
-    Factor right;
-    Operator operator;
-    int factor = parseSimpleExpressionSign();
-    if (factor == 0) // simple expression starts with an invalid operator (only + and - are
-    // allowed)
-    {
-      return null;
-    }
-    if ((left = parseTerm()) == null) // no term
-    {
-      return null;
-    } else {
-      index++;
-      if (index < tokenList.size()) {
-        token = tokenList.get(index);
-      } else {
-        return left;
-      }
-      if ((token instanceof Operator) && isSimpleExprOp(token)) {
-        operator = (Operator) token;
-      } else {
-        previousToken();
-        if (factor == -1) {
-          previousToken();
-          return null;
-        } else {
-          return left;
-        }
-      }
-      nextToken();
-      int saveIndex = index;
-      if ((right = parseSimpleExpression()) == null) {
-        index = saveIndex;
-        if ((right = parseTerm()) == null) {
-          previousToken();
-          return null;
-        } else {
-          // FIXME: exchange left with new Term(left,times,-1)
-          ((Term) left).setValue(((Term) left).getIntValue() * factor);
-          return new SimpleExpression(left, operator, right);
-        }
-      } else {
-        return new SimpleExpression(left, operator, right);
-      }
-    }
-  }
-
-  /**
    * A simple expression may start with "+" or "-". This is checked here.
    *
    * @return 1 if a + or no symbol is detected (that means the value of the first term in the
-   *     expression is positive), -1 for a - and 0 for any other operator (not allowed for a simple
-   *     expression)
+   *         expression is positive), -1 for a - and 0 for any other operator (not allowed for a
+   *         simple expression)
    */
   public int parseSimpleExpressionSign() {
     Token symbol;
     if (index >= tokenList.size()) {
       return 0;
     }
-    if ((symbol = tokenList.get(index)).getClass().equals(Operator.class)) {
-      if (symbol.getValue().equals("MINUS")) {
+    if ((symbol = tokenList.get(index)) instanceof Operator) {
+      if (symbol.eq(op(MINUS))) {
         nextToken();
         return -1;
-      } else if (symbol.getValue().equals("PLUS")) {
+      } else if (symbol.eq(op(PLUS))) {
         nextToken();
         return 1;
       } else {
@@ -783,8 +650,7 @@ public class Parser {
     MethodCall methodCall;
     int idx = savePointer();
     if ((assignment = parseAssignment()) != null) {
-      nextToken();
-      if (token.getClass().equals(Sym.class) && token.getValue().equals("SEMICOLON")) {
+      if (token instanceof Sym && token.eq(sym(SEMICOLON))) {
         return new Assignment(assignment.getLeft(), assignment.getRight());
       } else {
         return assignment;
@@ -796,7 +662,6 @@ public class Parser {
     } else if (restorePointer(idx) && (conditionalStatement = parseWhileStatement()) != null) {
       return conditionalStatement;
     } else if (restorePointer(idx) && (declaration = parseDeclaration()) != null) {
-      nextToken();
       return declaration;
     } else if (restorePointer(idx) && (methodCall = parseMethodCall()) != null) {
       return methodCall;
@@ -816,7 +681,7 @@ public class Parser {
     if ((statement = parseStatement()) != null) {
       statementSequence.add(statement);
     }
-    while (token instanceof Sym && ((Sym) token).getValue().equals("SEMICOLON")) {
+    while (token instanceof Sym && token.eq(sym(SEMICOLON))) {
       nextToken();
       if ((statement = parseStatement()) != null) {
         statementSequence.add(statement);
@@ -827,73 +692,35 @@ public class Parser {
   }
 
   /**
-   * term = factor {("*" | "/" | "%") factor}
-   *
-   * @return Factor
-   */
-  public Factor parseTerm() {
-    Factor left;
-    Factor right;
-    Token operator;
-    if ((left = parseFactor()) == null) {
-      return null;
-    } else {
-      index++;
-      if (index < tokenList.size()) {
-        token = tokenList.get(index);
-      } else {
-        return left;
-      }
-      if ((token instanceof Operator) && isFacOp(token)) {
-        operator = token;
-      } else {
-        previousToken();
-        return left;
-      }
-      nextToken();
-      if ((right = parseTerm()) == null) {
-        if ((right = parseFactor()) == null) {
-          previousToken();
-          return null;
-        } else {
-          return new Term(left, operator, right);
-        }
-      } else {
-        return new Term(left, operator, right);
-      }
-    }
-  }
-
-  /**
    * whileStatement = "while" "(" expression ")" "{" statementSequence "}"
    *
    * @return WhileStatement
    */
   public WhileStatement parseWhileStatement() {
-    Factor condition;
+    Condition condition;
     List<Statement> body;
     if (token == null) {
       return null;
     }
-    if (token.getClass().equals(Keyword.class) && token.getValue().equals("WHILE")) {
+    if (token instanceof Keyword && token.eq(keyword(WHILE))) {
       nextToken();
-      if (!token.getValue().equals("LPAREN")) {
+      if (!token.eq(sym(LPAREN))) {
         previousToken();
         errors.addParserError("while must be followed by (");
       }
       nextToken();
-      condition = parseExpression();
+      condition = parseCondition();
       if (condition == null) {
         previousToken();
         errors.addParserError("while( must be followed by a valid expression");
       }
       nextToken();
-      if (!token.getValue().equals("RPAREN")) {
+      if (!token.eq(sym(RPAREN))) {
         previousToken();
         errors.addParserError("missing ) in while-clause");
       }
       nextToken();
-      if (!token.getValue().equals("LBRACE")) {
+      if (!token.eq(sym(LBRACE))) {
         previousToken();
         errors.addParserError("missing { in while-clause");
       }
@@ -902,7 +729,7 @@ public class Parser {
       if (body == null) {
         errors.addParserError("invalid body of while-clause");
       }
-      if (!token.getValue().equals("RBRACE")) {
+      if (!token.eq(sym(RBRACE))) {
         errors.addParserError("Missing } in while-clause");
       }
       return new WhileStatement(condition, body);
@@ -914,7 +741,11 @@ public class Parser {
   /** reads the previous token */
   private void previousToken() {
     index--;
-    token = tokenList.get(index);
+    if (index >= tokenList.size()) {
+      token = new Token("EOF");
+    } else {
+      token = tokenList.get(index);
+    }
   }
 
   private boolean restorePointer(int idx) {

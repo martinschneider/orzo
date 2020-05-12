@@ -3,7 +3,7 @@ package io.github.martinschneider.kommpeiler.codegen;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
 
 /** @author Martin Schneider */
-public class DynamicByteArray {
+public class DynamicByteArray implements HasOutput {
   private int size = 2;
   private byte[] array = new byte[size];
   private int pointer = 0;

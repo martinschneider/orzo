@@ -1,38 +1,44 @@
 package io.github.martinschneider.kommpeiler.parser.productions;
 
-import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Comparator;
 
-/**
- * Assignment
- *
- * @author Martin Schneider
- */
-public class Assignment implements Statement {
-  private Identifier left;
+public class Condition {
+  private Expression left;
+  private Comparator operator;
   private Expression right;
 
   /** empty constructor */
-  public Assignment() {}
+  public Condition() {}
 
   /**
-   * @param left left side of assignment
-   * @param right right side of assignment
+   * @param left left side of term
+   * @param operator operator
+   * @param right right side of term
    */
-  public Assignment(final Identifier left, final Expression right) {
+  public Condition(final Expression left, final Comparator operator, final Expression right) {
     this.left = left;
+    this.operator = operator;
     this.right = right;
   }
 
-  public Identifier getLeft() {
+  public Expression getLeft() {
     return left;
+  }
+
+  public Comparator getOperator() {
+    return operator;
   }
 
   public Expression getRight() {
     return right;
   }
 
-  public void setLeft(final Identifier left) {
+  public void setLeft(final Expression left) {
     this.left = left;
+  }
+
+  public void setOperator(final Comparator operator) {
+    this.operator = operator;
   }
 
   public void setRight(final Expression right) {
@@ -44,6 +50,7 @@ public class Assignment implements Statement {
     final int prime = 31;
     int result = 1;
     result = prime * result + ((left == null) ? 0 : left.hashCode());
+    result = prime * result + ((operator == null) ? 0 : operator.hashCode());
     result = prime * result + ((right == null) ? 0 : right.hashCode());
     return result;
   }
@@ -59,12 +66,19 @@ public class Assignment implements Statement {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    Assignment other = (Assignment) obj;
+    Condition other = (Condition) obj;
     if (left == null) {
       if (other.left != null) {
         return false;
       }
     } else if (!left.equals(other.left)) {
+      return false;
+    }
+    if (operator == null) {
+      if (other.operator != null) {
+        return false;
+      }
+    } else if (!operator.equals(other.operator)) {
       return false;
     }
     if (right == null) {
@@ -80,6 +94,6 @@ public class Assignment implements Statement {
   /** {@inheritDoc} * */
   @Override
   public String toString() {
-    return left.toString() + ":=" + right.toString();
+    return left.toString() + " " + operator.toString() + " " + right.toString();
   }
 }

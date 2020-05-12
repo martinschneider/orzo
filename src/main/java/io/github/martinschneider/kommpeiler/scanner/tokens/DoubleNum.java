@@ -7,17 +7,18 @@ package io.github.martinschneider.kommpeiler.scanner.tokens;
  */
 public class DoubleNum extends Token implements Num {
   /** @param value value */
-  public DoubleNum(final String value) {
+  public DoubleNum(final Double value) {
     super(value);
   }
 
-  /** @return double-value */
-  public double parseValue() {
-    return Double.parseDouble(getValue());
+  /** {@inheritDoc} * */
+  @Override
+  public String toString() {
+    return "DOUBLE(" + getValue() + ")";
   }
 
-  /** {@inheritDoc} * */
-  public String toString() {
-    return "NUM(" + getValue() + ")";
+  @Override
+  public void changeSign() {
+    setValue((Double) getValue() * -1);
   }
 }

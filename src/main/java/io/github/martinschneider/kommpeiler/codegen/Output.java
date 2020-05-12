@@ -3,11 +3,10 @@ package io.github.martinschneider.kommpeiler.codegen;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.intToByteArray;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.longToByteArray;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
-
 import java.io.IOException;
 import java.io.PrintStream;
 
-public class Output {
+public class Output implements HasOutput {
   private PrintStream[] outputs;
 
   public Output(PrintStream... outputs) {
@@ -26,6 +25,7 @@ public class Output {
     }
   }
 
+  @Override
   public void write(byte output) {
     for (PrintStream out : outputs) {
       out.write(output);

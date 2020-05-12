@@ -1,7 +1,7 @@
 package io.github.martinschneider.kommpeiler.scanner.tokens;
 
-public class Keyword extends Token {
-  public Keyword(final Keywords value) {
+public class Comparator extends Sym {
+  public Comparator(final Comparators value) {
     super(value);
   }
 }

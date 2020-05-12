@@ -1,7 +1,26 @@
 package io.github.martinschneider.kommpeiler.scanner;
 
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.EQUAL;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.GREATER;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.GREATEREQ;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.NOTEQUAL;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.SMALLER;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.SMALLEREQ;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MINUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MOD;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.PLUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.TIMES;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.COMMA;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.DOT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.cmp;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Comparator;
 import io.github.martinschneider.kommpeiler.scanner.tokens.DoubleNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import io.github.martinschneider.kommpeiler.scanner.tokens.IntNum;
@@ -20,7 +39,6 @@ import org.junit.jupiter.api.Test;
  * @author Martin Schneider
  */
 public class ScannerTest {
-
   private Scanner scanner = new Scanner();
   private List<Token> results;
 
@@ -42,50 +60,55 @@ public class ScannerTest {
     for (int i = 2; i <= 8; i += 2) {
       assertEquals(results.get(i).getClass(), IntNum.class);
     }
-
-    assertEquals(((IntNum) results.get(2)).parseValue(), 12);
-    assertEquals(((IntNum) results.get(4)).parseValue(), 13);
-    assertEquals(((IntNum) results.get(6)).parseValue(), 15);
-    assertEquals(((IntNum) results.get(8)).parseValue(), 17);
-
+    assertEquals(((Integer) results.get(2).getValue()).intValue(), 12);
+    assertEquals(((Integer) results.get(4).getValue()).intValue(), 13);
+    assertEquals(((Integer) results.get(6).getValue()).intValue(), 15);
+    assertEquals(((Integer) results.get(8).getValue()).intValue(), 17);
     results = scanner.getTokens("x=0.9");
     assertEquals(results.get(2).getClass(), DoubleNum.class);
-    assertEquals(((DoubleNum) results.get(2)).parseValue(), 0.9, 0);
-
+    assertEquals(((Double) results.get(2).getValue()).doubleValue(), 0.9, 0);
     results = scanner.getTokens("y==.87");
     assertEquals(results.get(2).getClass(), DoubleNum.class);
-    assertEquals(((DoubleNum) results.get(2)).parseValue(), 0.87, 0);
+    assertEquals(((Double) results.get(2).getValue()).doubleValue(), 0.87, 0);
   }
 
   @Test
   public void opTest() throws IOException {
-    results = scanner.getTokens("1+2-3*4/5%6=7<8<=9>10>=11!=12==13");
-    for (int i = 1; i <= 23; i += 2) {
-      assertEquals(results.get(i).getClass(), Operator.class);
+    results = scanner.getTokens("1+2-3*4/5%6=7");
+    for (int i = 1; i < results.size(); i += 2) {
+      assertTrue(results.get(i) instanceof Operator);
     }
-    assertEquals(((Operator) results.get(1)).getValue(), "PLUS");
-    assertEquals(((Operator) results.get(3)).getValue(), "MINUS");
-    assertEquals(((Operator) results.get(5)).getValue(), "TIMES");
-    assertEquals(((Operator) results.get(7)).getValue(), "DIV");
-    assertEquals(((Operator) results.get(9)).getValue(), "MOD");
-    assertEquals(((Operator) results.get(11)).getValue(), "ASSIGN");
-    assertEquals(((Operator) results.get(13)).getValue(), "SMALLER");
-    assertEquals(((Operator) results.get(15)).getValue(), "SMALLEREQ");
-    assertEquals(((Operator) results.get(17)).getValue(), "GREATER");
-    assertEquals(((Operator) results.get(19)).getValue(), "GREATEREQ");
-    assertEquals(((Operator) results.get(21)).getValue(), "NOTEQUAL");
-    assertEquals(((Operator) results.get(23)).getValue(), "EQUAL");
+    assertEquals(results.get(1), op(PLUS));
+    assertEquals(results.get(3), op(MINUS));
+    assertEquals(results.get(5), op(TIMES));
+    assertEquals(results.get(7), op(DIV));
+    assertEquals(results.get(9), op(MOD));
+    assertEquals(results.get(11), op(ASSIGN));
+  }
+
+  @Test
+  public void cmpTest() throws IOException {
+    results = scanner.getTokens("7<8<=9>10>=11!=12==13");
+    for (int i = 1; i < results.size(); i += 2) {
+      assertTrue(results.get(i) instanceof Comparator);
+    }
+    assertEquals(results.get(1), cmp(SMALLER));
+    assertEquals(results.get(3), cmp(SMALLEREQ));
+    assertEquals(results.get(5), cmp(GREATER));
+    assertEquals(results.get(7), cmp(GREATEREQ));
+    assertEquals(results.get(9), cmp(NOTEQUAL));
+    assertEquals(results.get(11), cmp(EQUAL));
   }
 
   @Test
   public void symTest() throws IOException {
     results = scanner.getTokens("noch.ein,test;");
-    for (int i = 1; i <= 5; i += 2) {
-      assertEquals(results.get(i).getClass(), Sym.class);
+    for (int i = 1; i < results.size(); i += 2) {
+      assertTrue(results.get(i) instanceof Sym);
     }
-    assertEquals(((Sym) results.get(1)).getValue(), "DOT");
-    assertEquals(((Sym) results.get(3)).getValue(), "COMMA");
-    assertEquals(((Sym) results.get(5)).getValue(), "SEMICOLON");
+    assertEquals(results.get(1), sym(DOT));
+    assertEquals(results.get(3), sym(COMMA));
+    assertEquals(results.get(5), sym(SEMICOLON));
   }
 
   @Test
@@ -114,16 +137,12 @@ public class ScannerTest {
   public void commentTest() throws IOException {
     results = scanner.getTokens("/* das ist ein kommentar */ /*und noch einer*/");
     assertEquals(results.size(), 0);
-
     results = scanner.getTokens("// test \n");
     assertEquals(results.size(), 0);
-
     results = scanner.getTokens("/* abc//123\"\"\\$@ */ /*und noch einer*/\n//x=y+1;\n");
     assertEquals(results.size(), 0);
-
     results = scanner.getTokens("// test");
     assertEquals(results.size(), 0);
-
     results = scanner.getTokens("/* /* /* test */ */ */");
     assertEquals(results.size(), 0);
   }

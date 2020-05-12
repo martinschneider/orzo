@@ -9,15 +9,15 @@ import java.util.stream.Collectors;
  *
  * @author Martin Schneider
  */
-public class MethodCall extends Statement {
+public class MethodCall implements Statement {
   private List<Identifier> names;
-  private List<Factor> parameters;
+  private List<Expression> parameters;
 
   /**
    * @param name name
    * @param parameters list of parameters
    */
-  public MethodCall(final List<Identifier> names, final List<Factor> parameters) {
+  public MethodCall(final List<Identifier> names, final List<Expression> parameters) {
     super();
     this.names = names;
     this.parameters = parameters;
@@ -27,38 +27,29 @@ public class MethodCall extends Statement {
     return names;
   }
 
-  public List<Factor> getParameters() {
+  public List<Expression> getParameters() {
     return parameters;
   }
 
   public String getQualifiedName() {
-    if (names.isEmpty()) {
-      return "";
-    } else {
-      StringBuilder strBuilder = new StringBuilder(names.get(0).getValue());
-      for (int i = 1; i < names.size(); i++) {
-        strBuilder.append('.');
-        strBuilder.append(names.get(i).getValue());
-      }
-      return strBuilder.toString();
-    }
+    return names.stream().map(x -> x.getValue().toString()).collect(Collectors.joining("."));
   }
 
   public void setName(final List<Identifier> names) {
     this.names = names;
   }
 
-  public void setParameters(final List<Factor> parameters) {
+  public void setParameters(final List<Expression> parameters) {
     this.parameters = parameters;
   }
 
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();
-    strBuilder.append(names.stream().map(x -> x.getValue()).collect(Collectors.joining(".")));
+    strBuilder
+        .append(names.stream().map(x -> x.getValue().toString()).collect(Collectors.joining(".")));
     strBuilder.append('(');
-    strBuilder.append(
-        parameters.stream().map(x -> x.getValue().toString()).collect(Collectors.joining(", ")));
+    strBuilder.append(parameters.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     strBuilder.append(')');
     return strBuilder.toString();
   }

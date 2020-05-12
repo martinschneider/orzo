@@ -6,18 +6,18 @@ package io.github.martinschneider.kommpeiler.parser.productions;
  * @author Martin Schneider
  */
 public class ArraySelector extends Selector {
-  private Factor expression;
+  private Expression expression;
 
-  public void setExpression(final Factor expression) {
+  public void setExpression(final Expression expression) {
     this.expression = expression;
   }
 
-  public Factor getExpression() {
+  public Expression getExpression() {
     return expression;
   }
 
   /** @param expression expression */
-  public ArraySelector(final Factor expression) {
+  public ArraySelector(final Expression expression) {
     super();
     this.expression = expression;
   }

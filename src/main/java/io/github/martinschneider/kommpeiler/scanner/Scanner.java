@@ -1,17 +1,40 @@
 package io.github.martinschneider.kommpeiler.scanner;
 
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.EQUAL;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.GREATER;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.GREATEREQ;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.NOTEQUAL;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.SMALLER;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.SMALLEREQ;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MINUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MOD;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.PLUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.TIMES;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.COMMA;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.DOT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.LBRACE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.LBRAK;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.LPAREN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RBRACE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RBRAK;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RPAREN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.cmp;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.fp;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.id;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.integer;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.keyword;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.scope;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.str;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
 import io.github.martinschneider.kommpeiler.error.ErrorType;
-import io.github.martinschneider.kommpeiler.scanner.tokens.DoubleNum;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
-import io.github.martinschneider.kommpeiler.scanner.tokens.IntNum;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Keyword;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Operator;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Str;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Sym;
-import io.github.martinschneider.kommpeiler.scanner.tokens.SymbolType;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Scopes;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
-import io.github.martinschneider.kommpeiler.scanner.tokens.TokenType;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -33,19 +56,9 @@ public class Scanner {
   private CompilerErrors errors = new CompilerErrors();
   // a PushbackReader is used to be able to jump forward and backward in the input stream
   private PushbackReader inputReader;
-  private final String[] keywords = {
-    "if",
-    "else",
-    "do",
-    "while",
-    "return",
-    "public",
-    "private",
-    "protected",
-    "static",
-    "class",
-    "package"
-  };
+  private final String[] keywords =
+      {"if", "else", "do", "while", "return", "static", "class", "package"};
+  private final String[] scopes = {"public", "private", "protected"};
   private List<Token> tokenList;
 
   public CompilerErrors getErrors() {
@@ -186,7 +199,7 @@ public class Scanner {
       buffer.append(character);
     }
     inputReader.unread(character);
-    tokenList.add(new DoubleNum(buffer.toString()));
+    tokenList.add(fp(buffer.toString()));
     buffer.setLength(0);
   }
 
@@ -206,19 +219,26 @@ public class Scanner {
       // keywords
       for (int i = 0; i < keywords.length; i++) {
         if (str.equals(keywords[i])) {
-          tokenList.add(new Keyword(str));
+          tokenList.add(keyword(str));
+          buffer.setLength(0);
+        }
+      }
+      // scopes types
+      for (int i = 0; i < scopes.length; i++) {
+        if (str.equals(scopes[i])) {
+          tokenList.add(scope(Scopes.valueOf(str.toUpperCase())));
           buffer.setLength(0);
         }
       }
       // basic types
       for (int i = 0; i < basicTypes.length; i++) {
         if (str.equals(basicTypes[i])) {
-          tokenList.add(new SymbolType(str));
+          tokenList.add(type(str));
           buffer.setLength(0);
         }
       }
       if (buffer.length() > 0) {
-        tokenList.add(new Identifier(buffer.toString()));
+        tokenList.add(id(buffer.toString()));
       }
       buffer.setLength(0);
     }
@@ -240,7 +260,7 @@ public class Scanner {
         scanDouble();
       } else {
         inputReader.unread(character);
-        tokenList.add(new IntNum(buffer.toString()));
+        tokenList.add(integer(buffer.toString()));
         buffer.setLength(0);
       }
     }
@@ -256,10 +276,10 @@ public class Scanner {
   // CHECKSTYLE:OFF
   // don't care ;)
   private void scanOps() throws IOException
-        // CHECKSTYLE:ON
-      {
+  // CHECKSTYLE:ON
+  {
     if (character == '-') {
-      tokenList.add(new Operator(TokenType.MINUS));
+      tokenList.add(op(MINUS));
     } else if (character == '/') {
       // look-ahead to check for comment
       char character;
@@ -269,38 +289,38 @@ public class Scanner {
         scanComment2();
       } else {
         inputReader.unread(character);
-        tokenList.add(new Operator(TokenType.DIV));
+        tokenList.add(op(DIV));
       }
     } else if (character == '%') {
-      tokenList.add(new Operator(TokenType.MOD));
+      tokenList.add(op(MOD));
     } else if (character == '*') {
-      tokenList.add(new Operator(TokenType.TIMES));
+      tokenList.add(op(TIMES));
     } else if (character == '+') {
-      tokenList.add(new Operator(TokenType.PLUS));
+      tokenList.add(op(PLUS));
     } else if (character == '>') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(new Operator(TokenType.GREATEREQ));
+        tokenList.add(cmp(GREATEREQ));
       } else {
-        tokenList.add(new Operator(TokenType.GREATER));
+        tokenList.add(cmp(GREATER));
         inputReader.unread(character);
       }
     } else if (character == '<') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(new Operator(TokenType.SMALLEREQ));
+        tokenList.add(cmp(SMALLEREQ));
       } else {
-        tokenList.add(new Operator(TokenType.SMALLER));
+        tokenList.add(cmp(SMALLER));
         inputReader.unread(character);
       }
     } else if (character == '=') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(new Operator(TokenType.EQUAL));
+        tokenList.add(cmp(EQUAL));
       } else {
-        tokenList.add(new Operator(TokenType.ASSIGN));
+        tokenList.add(op(ASSIGN));
         inputReader.unread(character);
       }
     } else if (character == '!') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(new Operator(TokenType.NOTEQUAL));
+        tokenList.add(cmp(NOTEQUAL));
       } else {
         inputReader.unread(character);
         errors.addError("! must be followed by =", ErrorType.SCANNER);
@@ -311,17 +331,17 @@ public class Scanner {
   /** Scans for different kinds of parentheses. parenthesis = [ "(" | ")" | "{" | "}" ] */
   private void scanParen() {
     if (character == '(') {
-      tokenList.add(new Sym(TokenType.LPAREN));
+      tokenList.add(sym(LPAREN));
     } else if (character == ')') {
-      tokenList.add(new Sym(TokenType.RPAREN));
+      tokenList.add(sym(RPAREN));
     } else if (character == '{') {
-      tokenList.add(new Sym(TokenType.LBRACE));
+      tokenList.add(sym(LBRACE));
     } else if (character == '}') {
-      tokenList.add(new Sym(TokenType.RBRACE));
+      tokenList.add(sym(RBRACE));
     } else if (character == '[') {
-      tokenList.add(new Sym(TokenType.LBRAK));
+      tokenList.add(sym(LBRAK));
     } else if (character == ']') {
-      tokenList.add(new Sym(TokenType.RBRAK));
+      tokenList.add(sym(RBRAK));
     }
   }
 
@@ -342,9 +362,10 @@ public class Scanner {
       if (c == -1) {
         errors.addError("No closing \" for input string found.", ErrorType.SCANNER);
       } else {
-        tokenList.add(new Str(buffer.toString()));
+        tokenList.add(str(buffer.toString()));
       }
     }
+    buffer.setLength(0);
   }
 
   /**
@@ -354,9 +375,9 @@ public class Scanner {
    */
   private void scanSym() throws IOException {
     if (character == ',') {
-      tokenList.add(new Sym(TokenType.COMMA));
+      tokenList.add(sym(COMMA));
     } else if (character == ';') {
-      tokenList.add(new Sym(TokenType.SEMICOLON));
+      tokenList.add(sym(SEMICOLON));
     } else if (character == '.') {
       if (Character.isDigit(character = (char) inputReader.read())) {
         buffer.append('.');
@@ -364,7 +385,7 @@ public class Scanner {
         scanDouble();
       } else {
         inputReader.unread(character);
-        tokenList.add(new Sym(TokenType.DOT));
+        tokenList.add(sym(DOT));
       }
     }
   }

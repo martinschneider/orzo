@@ -5,10 +5,5 @@ package io.github.martinschneider.kommpeiler.parser.productions;
  *
  * @author Martin Schneider
  */
-public class Statement {
-
-  /** empty constructor */
-  public Statement() {
-    super();
-  }
+public interface Statement {
 }
