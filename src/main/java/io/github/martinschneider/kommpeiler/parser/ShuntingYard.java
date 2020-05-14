@@ -2,6 +2,7 @@ package io.github.martinschneider.kommpeiler.parser;
 
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
+
 import io.github.martinschneider.kommpeiler.scanner.tokens.Operator;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Symbols;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;

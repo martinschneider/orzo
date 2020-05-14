@@ -62,4 +62,13 @@ public class ByteUtils {
   public static byte[] combine(short left, byte right) {
     return combine(shortToByteArray(left), right);
   }
+
+  public static String bytesToHex(byte[] bytes) {
+    StringBuilder result = new StringBuilder();
+    for (byte temp : bytes) {
+      int decimal = temp & 0xff;
+      result.append(Integer.toHexString(decimal));
+    }
+    return result.toString();
+  }
 }

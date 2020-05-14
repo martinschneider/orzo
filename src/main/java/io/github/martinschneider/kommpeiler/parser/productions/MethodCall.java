@@ -46,8 +46,8 @@ public class MethodCall implements Statement {
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();
-    strBuilder
-        .append(names.stream().map(x -> x.getValue().toString()).collect(Collectors.joining(".")));
+    strBuilder.append(
+        names.stream().map(x -> x.getValue().toString()).collect(Collectors.joining(".")));
     strBuilder.append('(');
     strBuilder.append(parameters.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     strBuilder.append(')');

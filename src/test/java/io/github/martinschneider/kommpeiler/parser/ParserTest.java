@@ -15,6 +15,7 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
@@ -61,17 +62,20 @@ public class ParserTest {
 
   private static Stream<Arguments> testMethodCall() throws IOException {
     return Stream.of(
-        Arguments.of("calculateSomething()", List.of(id("calculateSomething")),
-            Collections.emptyList()),
+        Arguments.of(
+            "calculateSomething()", List.of(id("calculateSomething")), Collections.emptyList()),
         Arguments.of("calculateSomething(x)", List.of(id("calculateSomething")), List.of(exp("x"))),
-        Arguments.of("calculateSomething(a,b,c)", List.of(id("calculateSomething")),
+        Arguments.of(
+            "calculateSomething(a,b,c)",
+            List.of(id("calculateSomething")),
             List.of(exp("a"), exp("b"), exp("c"))));
   }
 
   @ParameterizedTest
   @MethodSource
-  public void testMethodCall(String input, List<String> expectedNames,
-      List<List<Token>> expectedParameters) throws IOException {
+  public void testMethodCall(
+      String input, List<String> expectedNames, List<List<Token>> expectedParameters)
+      throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
     MethodCall methodCall = parser.parseMethodCall();
@@ -98,8 +102,30 @@ public class ParserTest {
   @Test
   public void randomTokensTest() throws IOException {
     final int nrOfTokens = 100000;
-    List<String> tokenList = Arrays.asList("while", "do", "if", "public", "private", "protected",
-        "x", "y", "0", "=", "==", "!=", "{", "}", "<", ">", ">=", "<=", "+", "-", "[", "]");
+    List<String> tokenList =
+        Arrays.asList(
+            "while",
+            "do",
+            "if",
+            "public",
+            "private",
+            "protected",
+            "x",
+            "y",
+            "0",
+            "=",
+            "==",
+            "!=",
+            "{",
+            "}",
+            "<",
+            ">",
+            ">=",
+            "<=",
+            "+",
+            "-",
+            "[",
+            "]");
     StringBuffer stringBuffer = new StringBuffer();
     for (int i = 1; i <= nrOfTokens; i++) {
       int index = (int) (Math.random() * tokenList.size());
@@ -112,7 +138,8 @@ public class ParserTest {
   }
 
   private static Stream<Arguments> testParameters() throws IOException {
-    return Stream.of(Arguments.of("()", Collections.emptyList()),
+    return Stream.of(
+        Arguments.of("()", Collections.emptyList()),
         Arguments.of("(x)", List.of(exp("x"))),
         Arguments.of("(ab,cd,efg)", List.of(exp("ab"), exp("cd"), exp("efg"))));
   }
@@ -139,7 +166,8 @@ public class ParserTest {
     assertTrue(assignment instanceof Assignment);
     assertNotNull(assignment.getLeft().getSelector());
     assertTrue(assignment.getLeft().getSelector() instanceof ArraySelector);
-    assertEquals(expectedSelector,
+    assertEquals(
+        expectedSelector,
         ((ArraySelector) assignment.getLeft().getSelector()).getExpression().getInfix());
   }
 
@@ -156,12 +184,14 @@ public class ParserTest {
     assertTrue(assignment instanceof Assignment);
     assertNotNull(assignment.getLeft().getSelector());
     assertTrue(assignment.getLeft().getSelector() instanceof FieldSelector);
-    assertEquals(expectedSelector,
+    assertEquals(
+        expectedSelector,
         ((FieldSelector) assignment.getLeft().getSelector()).getIdentifier().getValue());
   }
 
   private static Stream<Arguments> testAssignment() throws IOException {
-    return Stream.of(Arguments.of("x=5", id("x"), exp("5")),
+    return Stream.of(
+        Arguments.of("x=5", id("x"), exp("5")),
         Arguments.of("x=5*12-3/6+12%4", id("x"), exp("5*12-3/6+12%4")));
   }
 
@@ -178,16 +208,17 @@ public class ParserTest {
 
   private static Stream<Arguments> testClass() throws IOException {
     return Stream.of(
-        Arguments.of("public class Martin{public void test(){x=0;}}", id("Martin"), scope(PUBLIC),
-            1),
+        Arguments.of(
+            "public class Martin{public void test(){x=0;}}", id("Martin"), scope(PUBLIC), 1),
         Arguments.of("private class Laura{}", id("Laura"), scope(PRIVATE), 0),
         Arguments.of("class Empty{}", id("Empty"), null, 0));
   }
 
   @ParameterizedTest
   @MethodSource
-  public void testClass(String input, Identifier expectedName, Scope expectedScope,
-      int expectedMethodCount) throws IOException {
+  public void testClass(
+      String input, Identifier expectedName, Scope expectedScope, int expectedMethodCount)
+      throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
     Clazz clazz = parser.parseClass();
@@ -197,16 +228,19 @@ public class ParserTest {
   }
 
   private static Stream<Arguments> testCondition() throws IOException {
-    return Stream.of(Arguments.of("y==0", exp("y"), cmp(Comparators.EQUAL), exp("0")),
+    return Stream.of(
+        Arguments.of("y==0", exp("y"), cmp(Comparators.EQUAL), exp("0")),
         Arguments.of("x<=z", exp("x"), cmp(Comparators.SMALLEREQ), exp("z")),
-        Arguments.of("abc<xyz", exp("abc"), cmp(Comparators.SMALLER), exp("xyz")), Arguments.of(
+        Arguments.of("abc<xyz", exp("abc"), cmp(Comparators.SMALLER), exp("xyz")),
+        Arguments.of(
             "basketball > fussball", exp("basketball"), cmp(Comparators.GREATER), exp("fussball")));
   }
 
   @ParameterizedTest
   @MethodSource
-  public void testCondition(String input, Expression expectedLeft, Comparator expectedOperator,
-      Expression expectedRight) throws IOException {
+  public void testCondition(
+      String input, Expression expectedLeft, Comparator expectedOperator, Expression expectedRight)
+      throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
     Condition condition = parser.parseCondition();
@@ -216,14 +250,15 @@ public class ParserTest {
   }
 
   private static Stream<Arguments> testDoStatement() throws IOException {
-    return Stream
-        .of(Arguments.of("do{x=x*3-1;}while(x>0);", cond("x>0"), List.of(assign("x=x*3-1;"))));
+    return Stream.of(
+        Arguments.of("do{x=x*3-1;}while(x>0);", cond("x>0"), List.of(assign("x=x*3-1;"))));
   }
 
   @ParameterizedTest
   @MethodSource
-  public void testDoStatement(String input, Condition expectedCondition,
-      List<Statement> expectedStatements) throws IOException {
+  public void testDoStatement(
+      String input, Condition expectedCondition, List<Statement> expectedStatements)
+      throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
     DoStatement doStatement = parser.parseDoStatement();
@@ -233,26 +268,60 @@ public class ParserTest {
   }
 
   private static Stream<Arguments> testExpression() {
-    return Stream.of(Arguments.of("", null),
+    return Stream.of(
+        Arguments.of("", null),
         Arguments.of("3+4", List.of(new IntNum(3), new IntNum(4), new Operator(Operators.PLUS))),
-        Arguments.of("3+x*y-7",
-            List.of(new IntNum(3), new Identifier("x"), new Identifier("y"),
-                new Operator(Operators.TIMES), new Operator(Operators.PLUS), new IntNum(7),
+        Arguments.of(
+            "3+x*y-7",
+            List.of(
+                new IntNum(3),
+                new Identifier("x"),
+                new Identifier("y"),
+                new Operator(Operators.TIMES),
+                new Operator(Operators.PLUS),
+                new IntNum(7),
                 new Operator(Operators.MINUS))),
-        Arguments.of("-5*7+4",
-            List.of(new IntNum(-5), new IntNum(7), new Operator(Operators.TIMES), new IntNum(4),
+        Arguments.of(
+            "-5*7+4",
+            List.of(
+                new IntNum(-5),
+                new IntNum(7),
+                new Operator(Operators.TIMES),
+                new IntNum(4),
                 new Operator(Operators.PLUS))),
-        Arguments.of("x*3+7-8/1+0%6",
-            List.of(new Identifier("x"), new IntNum(3), new Operator(Operators.TIMES),
-                new IntNum(7), new Operator(Operators.PLUS), new IntNum(8), new IntNum(1),
-                new Operator(Operators.DIV), new Operator(Operators.MINUS), new IntNum(0),
-                new IntNum(6), new Operator(Operators.MOD), new Operator(Operators.PLUS))),
+        Arguments.of(
+            "x*3+7-8/1+0%6",
+            List.of(
+                new Identifier("x"),
+                new IntNum(3),
+                new Operator(Operators.TIMES),
+                new IntNum(7),
+                new Operator(Operators.PLUS),
+                new IntNum(8),
+                new IntNum(1),
+                new Operator(Operators.DIV),
+                new Operator(Operators.MINUS),
+                new IntNum(0),
+                new IntNum(6),
+                new Operator(Operators.MOD),
+                new Operator(Operators.PLUS))),
         Arguments.of("3+4;", List.of(new IntNum(3), new IntNum(4), new Operator(Operators.PLUS))),
-        Arguments.of("5+7/2;",
-            List.of(new IntNum(5), new IntNum(7), new IntNum(2), new Operator(Operators.DIV),
+        Arguments.of(
+            "5+7/2;",
+            List.of(
+                new IntNum(5),
+                new IntNum(7),
+                new IntNum(2),
+                new Operator(Operators.DIV),
                 new Operator(Operators.PLUS))),
-        Arguments.of("(5+7)/2;", List.of(new IntNum(5), new IntNum(7), new Operator(Operators.PLUS),
-            new IntNum(2), new Operator(Operators.DIV))));
+        Arguments.of(
+            "(5+7)/2;",
+            List.of(
+                new IntNum(5),
+                new IntNum(7),
+                new Operator(Operators.PLUS),
+                new IntNum(2),
+                new Operator(Operators.DIV))));
   }
 
   @MethodSource
@@ -271,8 +340,9 @@ public class ParserTest {
 
   @ParameterizedTest
   @MethodSource
-  public void testIfStatement(String input, Condition expectedCondition,
-      List<Statement> expectedStatements) throws IOException {
+  public void testIfStatement(
+      String input, Condition expectedCondition, List<Statement> expectedStatements)
+      throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
     IfStatement ifStatement = parser.parseIfStatement();
@@ -283,22 +353,42 @@ public class ParserTest {
 
   private static Stream<Arguments> testMethod() throws IOException {
     return Stream.of(
-        Arguments.of("public void test(){x=1;y=2;if(x==y){fehler=1;}", scope(PUBLIC), type(VOID),
+        Arguments.of(
+            "public void test(){x=1;y=2;if(x==y){fehler=1;}",
+            scope(PUBLIC),
+            type(VOID),
             id("test"),
-            List.of(assign("x=1"), assign("y=2"),
-                ifStmt(cond("x==y"), List.of(assign("fehler=1"))))),
-        Arguments.of("void test(){x=100;while(x>0){x=x-1;}", scope(DEFAULT), type(VOID), id("test"),
+            List.of(
+                assign("x=1"), assign("y=2"), ifStmt(cond("x==y"), List.of(assign("fehler=1"))))),
+        Arguments.of(
+            "void test(){x=100;while(x>0){x=x-1;}",
+            scope(DEFAULT),
+            type(VOID),
+            id("test"),
             List.of(assign("x=100"), whileStmt(cond("x>0"), List.of(assign("x=x-1"))))),
-        Arguments.of("protected int huber(){do{}while(x>0)}", scope(PROTECTED), type(INT),
-            id("huber"), List.of(doStmt(cond("x>0"), Collections.emptyList()))),
-        Arguments.of("private double calculateMean(){}", scope(PRIVATE), type(DOUBLE),
-            id("calculateMean"), Collections.emptyList()));
+        Arguments.of(
+            "protected int huber(){do{}while(x>0)}",
+            scope(PROTECTED),
+            type(INT),
+            id("huber"),
+            List.of(doStmt(cond("x>0"), Collections.emptyList()))),
+        Arguments.of(
+            "private double calculateMean(){}",
+            scope(PRIVATE),
+            type(DOUBLE),
+            id("calculateMean"),
+            Collections.emptyList()));
   }
 
   @MethodSource
   @ParameterizedTest
-  public void testMethod(String input, Scope expectedScope, Type expectedType,
-      Identifier expectedName, List<Statement> expectedStatements) throws IOException {
+  public void testMethod(
+      String input,
+      Scope expectedScope,
+      Type expectedType,
+      Identifier expectedName,
+      List<Statement> expectedStatements)
+      throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
     Method method = parser.parseMethod();
@@ -339,11 +429,14 @@ public class ParserTest {
   }
 
   private static Stream<Arguments> testStatement() {
-    return Stream.of(Arguments.of("x=5*12-3/6+12;", true), Arguments.of("if (x==1){ x=2; }", true),
+    return Stream.of(
+        Arguments.of("x=5*12-3/6+12;", true),
+        Arguments.of("if (x==1){ x=2; }", true),
         Arguments.of("while (x>=0){ x=x-1; }", true),
         Arguments.of("do{x=y+1;y=y-1;} while(i>0)", true),
         Arguments.of("while (x>=0){ x=x-1; }", true),
-        Arguments.of("do{x=y+1;y=y-1;} while(i>0)", true), Arguments.of("int z;", true),
+        Arguments.of("do{x=y+1;y=y-1;} while(i>0)", true),
+        Arguments.of("int z;", true),
         Arguments.of("int z=300;", true));
   }
 
@@ -357,8 +450,11 @@ public class ParserTest {
   }
 
   private static Stream<Arguments> testStatementSequence() {
-    return Stream.of(Arguments.of("", 0), Arguments.of("x=5*12-3/6+12%4;", 1),
-        Arguments.of("x=5*12-3/6+12%4;abc=9", 2), Arguments.of("y=9%(4+7)*3;", 1),
+    return Stream.of(
+        Arguments.of("", 0),
+        Arguments.of("x=5*12-3/6+12%4;", 1),
+        Arguments.of("x=5*12-3/6+12%4;abc=9", 2),
+        Arguments.of("y=9%(4+7)*3;", 1),
         Arguments.of("int x=10;x=x+1;int y=20;y=x+2;double z=x+y", 5));
   }
 
@@ -372,15 +468,17 @@ public class ParserTest {
   }
 
   private static Stream<Arguments> testDeclaration() {
-    return Stream.of(Arguments.of("int x=100;", type("INT"), "x", true),
+    return Stream.of(
+        Arguments.of("int x=100;", type("INT"), "x", true),
         Arguments.of("String martin", type("STRING"), "martin", false),
         Arguments.of("double d=1.23", type("DOUBLE"), "d", true));
   }
 
   @MethodSource
   @ParameterizedTest
-  public void testDeclaration(String input, Type expectedType, String expectedName,
-      boolean hasExpression) throws IOException {
+  public void testDeclaration(
+      String input, Type expectedType, String expectedName, boolean hasExpression)
+      throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
     Declaration declaration = parser.parseDeclaration();
@@ -391,14 +489,16 @@ public class ParserTest {
   }
 
   private static Stream<Arguments> testWhileStatement() throws IOException {
-    return Stream.of(Arguments.of("while (x==9){x=8;y=7;};", cond("x==9"),
-        List.of(assign("x=8;"), assign("y=7;"))));
+    return Stream.of(
+        Arguments.of(
+            "while (x==9){x=8;y=7;};", cond("x==9"), List.of(assign("x=8;"), assign("y=7;"))));
   }
 
   @ParameterizedTest
   @MethodSource
-  public void testWhileStatement(String input, Condition expectedCondition,
-      List<Statement> expectedStatements) throws IOException {
+  public void testWhileStatement(
+      String input, Condition expectedCondition, List<Statement> expectedStatements)
+      throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
     WhileStatement whileStatement = parser.parseWhileStatement();

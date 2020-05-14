@@ -20,6 +20,7 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.github.martinschneider.kommpeiler.scanner.tokens.Comparator;
 import io.github.martinschneider.kommpeiler.scanner.tokens.DoubleNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;

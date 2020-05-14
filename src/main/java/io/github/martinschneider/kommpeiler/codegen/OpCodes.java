@@ -29,4 +29,16 @@ public class OpCodes {
   public static final byte LDC = (byte) 18;
   public static final byte RETURN = (byte) 177;
   public static final byte SIPUSH = (byte) 17;
+  public static final byte IF_ICMPEQ = (byte) 159;
+  public static final byte IF_ICMPNE = (byte) 160;
+  public static final byte IF_ICMPLT = (byte) 161;
+  public static final byte IF_ICMPGE = (byte) 162;
+  public static final byte IF_ICMPGT = (byte) 163;
+  public static final byte IF_ICMPLE = (byte) 164;
+  public static final byte IFEQ = (byte) 153;
+  public static final byte IFNE = (byte) 154;
+  public static final byte IFLT = (byte) 155;
+  public static final byte IFGE = (byte) 156;
+  public static final byte IFGT = (byte) 157;
+  public static final byte IFLE = (byte) 158;
 }

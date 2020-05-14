@@ -5,5 +5,4 @@ package io.github.martinschneider.kommpeiler.parser.productions;
  *
  * @author Martin Schneider
  */
-public interface Statement {
-}
+public interface Statement {}

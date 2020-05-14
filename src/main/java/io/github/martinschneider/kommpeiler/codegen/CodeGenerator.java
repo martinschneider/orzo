@@ -1,5 +1,6 @@
 package io.github.martinschneider.kommpeiler.codegen;
 
+import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.BIPUSH;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GETSTATIC;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IADD;
@@ -11,6 +12,18 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_4;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_5;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_M1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IDIV;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IFEQ;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IFGE;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IFGT;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IFLE;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IFLT;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IFNE;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPEQ;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPGE;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPGT;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPLE;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPLT;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPNE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ILOAD;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ILOAD_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ILOAD_1;
@@ -37,11 +50,14 @@ import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTyp
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.INT;
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.VOID;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
+
 import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
+import io.github.martinschneider.kommpeiler.parser.productions.Condition;
 import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
+import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
@@ -57,7 +73,7 @@ import java.util.List;
 import java.util.Map;
 
 public class CodeGenerator {
-  private static final short JAVA_CLASS_MAJOR_VERSION = 50;
+  private static final short JAVA_CLASS_MAJOR_VERSION = 49;
   private static final short JAVA_CLASS_MINOR_VERSION = 0;
   private static final int INTEGER_DEFAULT_VALUE = 0;
   private Clazz clazz;
@@ -75,9 +91,9 @@ public class CodeGenerator {
   }
 
   private void assignInteger(Map<Identifier, Integer> variables, HasOutput out, Identifier var) {
-    int index = variables.size();
+    variables.computeIfAbsent(var, x -> variables.size());
+    int index = variables.get(var);
     storeInteger(out, index);
-    variables.put(var, index);
   }
 
   private void attributes() {
@@ -116,8 +132,8 @@ public class CodeGenerator {
     out.flush();
   }
 
-  private void generateCode(Map<Identifier, Integer> variables, DynamicByteArray out,
-      Statement statement) {
+  private void generateCode(
+      Map<Identifier, Integer> variables, DynamicByteArray out, Statement statement) {
     if (statement instanceof Declaration) {
       Declaration decl = (Declaration) statement;
       if (decl.hasValue()) {
@@ -132,22 +148,122 @@ public class CodeGenerator {
       Assignment assignment = (Assignment) statement;
       // TODO: store type in variable map
       // TODO: type conversion
-      Type type = evaluateExpression(variables, out, assignment.getRight());
-      assignValue(variables, out, type, assignment.getLeft());
+      ExpressionResult result = evaluateExpression(variables, out, assignment.getRight());
+      assignValue(variables, out, result.getType(), assignment.getLeft());
     } else if (statement instanceof MethodCall) {
       MethodCall methodCall = (MethodCall) statement;
       if ("System.out.println".equals(methodCall.getQualifiedName())) {
         for (Expression param : methodCall.getParameters()) {
           getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
-          Type type = evaluateExpression(variables, out, param);
-          print(out, type);
+          ExpressionResult result = evaluateExpression(variables, out, param);
+          print(out, result.getType());
         }
       }
+    } else if (statement instanceof IfStatement) {
+      IfStatement ifStatement = (IfStatement) statement;
+      DynamicByteArray bodyOut = new DynamicByteArray();
+      for (Statement stmt : ifStatement.getBody()) {
+        generateCode(variables, bodyOut, stmt);
+      }
+      DynamicByteArray conditionOut = new DynamicByteArray();
+      short branchBytes = (short) (3 + bodyOut.getBytes().length);
+      generateCondition(variables, conditionOut, ifStatement.getCondition(), branchBytes);
+      out.write(conditionOut.getBytes());
+      out.write(bodyOut.getBytes());
     }
   }
 
-  private void assignValue(Map<Identifier, Integer> variables, DynamicByteArray out, Type type,
-      Identifier name) {
+  private void generateCondition(
+      Map<Identifier, Integer> variables,
+      DynamicByteArray out,
+      Condition condition,
+      short branchBytes) {
+    // TODO: support other boolean conditions
+    ExpressionResult left = evaluateExpression(variables, out, condition.getLeft(), false);
+    ExpressionResult right = evaluateExpression(variables, out, condition.getRight(), false);
+    boolean leftZero = isZero(left.getValue());
+    boolean rightZero = isZero(right.getValue());
+    if (!leftZero && rightZero) {
+      switch (condition.getOperator().cmpValue()) {
+          // use the inverse comparison because jumping means we execute the "else" part of the
+          // condition
+        case EQUAL:
+          out.write(IFNE);
+          break;
+        case NOTEQUAL:
+          out.write(IFEQ);
+          break;
+        case GREATER:
+          out.write(IFLE);
+          break;
+        case GREATEREQ:
+          out.write(IFLT);
+          break;
+        case SMALLER:
+          out.write(IFGE);
+          break;
+        case SMALLEREQ:
+          out.write(IFGT);
+          break;
+      }
+      out.write(shortToByteArray(branchBytes));
+      return;
+    }
+    if (leftZero && !rightZero) {
+      switch (condition.getOperator().cmpValue()) {
+        case EQUAL:
+          out.write(IFEQ);
+          break;
+        case NOTEQUAL:
+          out.write(IFNE);
+          break;
+        case GREATER:
+          out.write(IFGT);
+          break;
+        case GREATEREQ:
+          out.write(IFGE);
+          break;
+        case SMALLER:
+          out.write(IFLT);
+          break;
+        case SMALLEREQ:
+          out.write(IFLE);
+          break;
+      }
+      out.write(shortToByteArray(branchBytes));
+      return;
+    }
+    switch (condition.getOperator().cmpValue()) {
+        // use the inverse comparison because jumping means we execute the "else" part of the
+        // condition
+      case EQUAL:
+        out.write(IF_ICMPNE);
+        break;
+      case NOTEQUAL:
+        out.write(IF_ICMPEQ);
+        break;
+      case GREATER:
+        out.write(IF_ICMPLE);
+        break;
+      case GREATEREQ:
+        out.write(IF_ICMPLT);
+        break;
+      case SMALLER:
+        out.write(IF_ICMPGE);
+        break;
+      case SMALLEREQ:
+        out.write(IF_ICMPGT);
+        break;
+    }
+    out.write(shortToByteArray(branchBytes));
+  }
+
+  private boolean isZero(Object value) {
+    return (value instanceof Integer && ((Integer) value).intValue() == 0);
+  }
+
+  private void assignValue(
+      Map<Identifier, Integer> variables, DynamicByteArray out, Type type, Identifier name) {
     if (type.getValue().equals(INT.name())) {
       assignInteger(variables, out, name);
     }
@@ -158,22 +274,34 @@ public class CodeGenerator {
    *
    * @return the "return" type of the expression
    */
-  private Type evaluateExpression(Map<Identifier, Integer> variables, DynamicByteArray out,
-      Expression expression) {
+  private ExpressionResult evaluateExpression(
+      Map<Identifier, Integer> variables, DynamicByteArray out, Expression expression) {
+    return evaluateExpression(variables, out, expression, true);
+  }
+
+  private ExpressionResult evaluateExpression(
+      Map<Identifier, Integer> variables,
+      DynamicByteArray out,
+      Expression expression,
+      boolean pushIfZero) {
     // TODO: support String concatenation
     // TODO: support different types
     // TODO: error handling, e.g. only "+" operator is valid for String concatenation, "%" is not
     // valid for doubles etc.
     Type type = type(VOID);
+    Object value = null;
     for (Token token : expression.getPostfix()) {
       if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
         loadInteger(out, variables.get(id));
         type = type(INT);
       } else if (token instanceof IntNum) {
-        Integer value = ((IntNum) token).intValue();
-        pushInteger(out, value);
+        Integer intValue = ((IntNum) token).intValue();
+        if (intValue != 0 || pushIfZero) {
+          pushInteger(out, intValue);
+        }
         type = type(INT);
+        value = intValue;
       } else if (token instanceof Str) {
         ldc(out, CONSTANT_STRING, ((Str) token).strValue());
         type = type("java.lang.String");
@@ -199,11 +327,11 @@ public class CodeGenerator {
         }
       }
     }
-    return type;
+    return new ExpressionResult(type, value);
   }
 
-  private DynamicByteArray getStatic(DynamicByteArray out, String clazz, String field,
-      String type) {
+  private DynamicByteArray getStatic(
+      DynamicByteArray out, String clazz, String field, String type) {
     out.write(GETSTATIC);
     out.write(constantPool.indexOf(CONSTANT_FIELDREF, clazz, field, type));
     return out;
@@ -219,8 +347,8 @@ public class CodeGenerator {
     out.write((short) 0);
   }
 
-  private DynamicByteArray invokeVirtual(DynamicByteArray out, String clazz, String field,
-      String type) {
+  private DynamicByteArray invokeVirtual(
+      DynamicByteArray out, String clazz, String field, String type) {
     out.write(INVOKEVIRTUAL);
     out.write(constantPool.indexOf(CONSTANT_METHODREF, clazz, field, type));
     return out;
@@ -260,17 +388,17 @@ public class CodeGenerator {
       out.write(constantPool.indexOf(CONSTANT_UTF8, method.getTypeDescr()));
       out.write((short) 1); // attribute size
       out.write(constantPool.indexOf(CONSTANT_UTF8, "Code"));
-      DynamicByteArray code = new DynamicByteArray();
+      DynamicByteArray methodCode = new DynamicByteArray();
       for (Statement statement : method.getBody()) {
-        generateCode(variables, code, statement);
+        generateCode(variables, methodCode, statement);
       }
-      code.write(RETURN);
-      out.write(code.size() + 12); // stack size (2) + local var size (2) + code size (4) +
+      methodCode.write(RETURN);
+      out.write(methodCode.size() + 12); // stack size (2) + local var size (2) + code size (4) +
       // exception table size (2) + attribute count size (2)
       out.write((short) 3); // max stack size
       out.write((short) (1 + variables.size())); // max local var size
-      out.write(code.size());
-      out.write(code.flush());
+      out.write(methodCode.size());
+      out.write(methodCode.flush());
       out.write((short) 0); // exception table of size 0
       out.write((short) 0); // attribute count for this attribute of 0
     }

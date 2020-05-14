@@ -21,8 +21,8 @@ public class Clazz {
    * @param name name
    * @param body body
    */
-  public Clazz(final String packageName, final Scope scope, final Identifier name,
-      final List<Method> body) {
+  public Clazz(
+      final String packageName, final Scope scope, final Identifier name, final List<Method> body) {
     this.packageName = packageName;
     this.scope = scope;
     this.name = name;
@@ -64,7 +64,7 @@ public class Clazz {
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();
-    if (packageName != null || !packageName.isEmpty()) {
+    if (packageName != null && !packageName.isEmpty()) {
       strBuilder.append(packageName);
       strBuilder.append('.');
     }

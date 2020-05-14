@@ -31,6 +31,7 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.scope;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.str;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
+
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
 import io.github.martinschneider.kommpeiler.error.ErrorType;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scopes;
@@ -56,8 +57,9 @@ public class Scanner {
   private CompilerErrors errors = new CompilerErrors();
   // a PushbackReader is used to be able to jump forward and backward in the input stream
   private PushbackReader inputReader;
-  private final String[] keywords =
-      {"if", "else", "do", "while", "return", "static", "class", "package"};
+  private final String[] keywords = {
+    "if", "else", "do", "while", "return", "static", "class", "package"
+  };
   private final String[] scopes = {"public", "private", "protected"};
   private List<Token> tokenList;
 
@@ -276,8 +278,8 @@ public class Scanner {
   // CHECKSTYLE:OFF
   // don't care ;)
   private void scanOps() throws IOException
-  // CHECKSTYLE:ON
-  {
+        // CHECKSTYLE:ON
+      {
     if (character == '-') {
       tokenList.add(op(MINUS));
     } else if (character == '/') {

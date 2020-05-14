@@ -23,8 +23,12 @@ public class Method {
    * @param name name
    * @param body method-body
    */
-  public Method(final Scope scope, final Type type, final Identifier name,
-      final List<Argument> arguments, final List<Statement> body) {
+  public Method(
+      final Scope scope,
+      final Type type,
+      final Identifier name,
+      final List<Argument> arguments,
+      final List<Statement> body) {
     this.scope = scope;
     this.type = type;
     this.name = name;
@@ -89,8 +93,10 @@ public class Method {
     strBuilder.append(' ');
     strBuilder.append(name);
     strBuilder.append(", args{");
-    strBuilder.append(arguments.stream().map(x -> x.getName().getValue().toString())
-        .collect(Collectors.joining(", ")));
+    strBuilder.append(
+        arguments.stream()
+            .map(x -> x.getName().getValue().toString())
+            .collect(Collectors.joining(", ")));
     strBuilder.append("}");
     strBuilder.append(", code{");
     strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));

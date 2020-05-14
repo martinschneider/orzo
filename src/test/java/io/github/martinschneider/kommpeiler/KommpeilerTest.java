@@ -41,7 +41,8 @@ public class KommpeilerTest {
         Arguments.of("HelloWorld"),
         Arguments.of("IntegerConstants"),
         Arguments.of("VariableAssignments"),
-        Arguments.of("IntegerExpressions"));
+        Arguments.of("IntegerExpressions"),
+        Arguments.of("IfConditions"));
   }
 
   @ParameterizedTest

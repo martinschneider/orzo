@@ -1,5 +1,6 @@
 package io.github.martinschneider.kommpeiler.codegen;
 
+import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.bytesToHex;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
 
 /** @author Martin Schneider */
@@ -8,6 +9,7 @@ public class DynamicByteArray implements HasOutput {
   private byte[] array = new byte[size];
   private int pointer = 0;
 
+  @Override
   public void write(byte b) {
     if (pointer >= size) {
       size *= 2;
@@ -58,5 +60,10 @@ public class DynamicByteArray implements HasOutput {
 
   public void write(short value) {
     write(shortToByteArray(value));
+  }
+
+  @Override
+  public String toString() {
+    return bytesToHex(array);
   }
 }

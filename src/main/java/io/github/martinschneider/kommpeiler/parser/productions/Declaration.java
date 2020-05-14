@@ -19,8 +19,8 @@ public class Declaration implements Statement {
    * @param value value
    * @param hasValue true if value is known
    */
-  public Declaration(final Identifier name, final Type type, final Expression value,
-      final boolean hasValue) {
+  public Declaration(
+      final Identifier name, final Type type, final Expression value, final boolean hasValue) {
     super();
     this.type = type;
     this.name = name;

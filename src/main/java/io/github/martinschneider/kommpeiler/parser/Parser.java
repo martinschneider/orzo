@@ -33,6 +33,7 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.scope;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
+
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
 import io.github.martinschneider.kommpeiler.error.ErrorType;
 import io.github.martinschneider.kommpeiler.parser.productions.Argument;
@@ -96,8 +97,7 @@ public class Parser {
   /**
    * reads the next token
    *
-   * <p>
-   * returns false if EOF and true otherwise
+   * <p>returns false if EOF and true otherwise
    */
   private boolean nextToken() {
     index++;
@@ -108,6 +108,10 @@ public class Parser {
       token = tokenList.get(index);
       return true;
     }
+  }
+
+  private void insertToken(Token token) {
+    tokenList.add(index + 1, token);
   }
 
   /** Parse a list of tokens. */
@@ -386,7 +390,9 @@ public class Parser {
       }
     }
     // TODO: support parentheses
-    while (token instanceof Num || token instanceof Str || token instanceof Identifier
+    while (token instanceof Num
+        || token instanceof Str
+        || token instanceof Identifier
         || token instanceof Operator) {
       expression.addToken(token);
       nextToken();
@@ -417,7 +423,6 @@ public class Parser {
         previousToken();
         errors.addParserError("if( must be followed by a valid expression");
       }
-      nextToken();
       if (!token.eq(sym(RPAREN))) {
         previousToken();
         errors.addParserError("missing ) in if-clause");
@@ -435,6 +440,9 @@ public class Parser {
       if (!token.eq(sym(RBRACE))) {
         previousToken();
         errors.addParserError("missing } in if-clause");
+      } else {
+        insertToken(sym(SEMICOLON));
+        nextToken();
       }
       return new IfStatement(condition, body);
     } else {
@@ -449,8 +457,8 @@ public class Parser {
    */
   // CHECKSTYLE:OFF
   public Method parseMethod()
-  // CHECKSTYLE:ON
-  {
+        // CHECKSTYLE:ON
+      {
     int saveIndex = index;
     Scope scope = scope(DEFAULT);
     Type type;
@@ -615,8 +623,8 @@ public class Parser {
    * A simple expression may start with "+" or "-". This is checked here.
    *
    * @return 1 if a + or no symbol is detected (that means the value of the first term in the
-   *         expression is positive), -1 for a - and 0 for any other operator (not allowed for a
-   *         simple expression)
+   *     expression is positive), -1 for a - and 0 for any other operator (not allowed for a simple
+   *     expression)
    */
   public int parseSimpleExpressionSign() {
     Token symbol;
@@ -681,7 +689,7 @@ public class Parser {
     if ((statement = parseStatement()) != null) {
       statementSequence.add(statement);
     }
-    while (token instanceof Sym && token.eq(sym(SEMICOLON))) {
+    while (token.eq(sym(SEMICOLON))) {
       nextToken();
       if ((statement = parseStatement()) != null) {
         statementSequence.add(statement);

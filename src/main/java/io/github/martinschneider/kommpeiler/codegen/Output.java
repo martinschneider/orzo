@@ -1,12 +1,15 @@
 package io.github.martinschneider.kommpeiler.codegen;
 
+import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.bytesToHex;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.intToByteArray;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.longToByteArray;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
+
 import java.io.IOException;
 import java.io.PrintStream;
 
 public class Output implements HasOutput {
+  private DynamicByteArray array = new DynamicByteArray();
   private PrintStream[] outputs;
 
   public Output(PrintStream... outputs) {
@@ -30,6 +33,7 @@ public class Output implements HasOutput {
     for (PrintStream out : outputs) {
       out.write(output);
     }
+    array.write(output);
   }
 
   public void write(byte[] output) {
@@ -37,6 +41,7 @@ public class Output implements HasOutput {
       for (PrintStream out : outputs) {
         out.write(output);
       }
+      array.write(output);
     } catch (IOException e) {
       throw new RuntimeException("Error writing byte-code", e);
     }
@@ -52,5 +57,10 @@ public class Output implements HasOutput {
 
   public void write(short output) {
     write(shortToByteArray(output));
+  }
+
+  @Override
+  public String toString() {
+    return bytesToHex(array.getBytes());
   }
 }
