@@ -3,18 +3,23 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** WhileStatement */
-public class WhileStatement extends ConditionalStatement {
+/** ForStatement */
+public class ForStatement extends ConditionalStatement {
   private List<Statement> body;
   private Condition condition;
+  private Statement initialization;
+  private Statement loopStatement;
 
-  /**
-   * @param condition condition
-   * @param body body
-   */
-  public WhileStatement(final Condition condition, final List<Statement> body) {
-    this.condition = condition;
+  public ForStatement(
+      Statement initialization,
+      Condition condition,
+      Statement loopStatement,
+      List<Statement> body) {
+    super();
     this.body = body;
+    this.condition = condition;
+    this.initialization = initialization;
+    this.loopStatement = loopStatement;
   }
 
   /** {@inheritDoc} * */
@@ -41,6 +46,22 @@ public class WhileStatement extends ConditionalStatement {
     this.condition = condition;
   }
 
+  public Statement getInitialization() {
+    return initialization;
+  }
+
+  public void setInitialization(Statement initialization) {
+    this.initialization = initialization;
+  }
+
+  public Statement getLoopStatement() {
+    return loopStatement;
+  }
+
+  public void setLoopStatement(Statement loopStep) {
+    this.loopStatement = loopStep;
+  }
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -61,7 +82,7 @@ public class WhileStatement extends ConditionalStatement {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    WhileStatement other = (WhileStatement) obj;
+    ForStatement other = (ForStatement) obj;
     if (body == null) {
       if (other.body != null) {
         return false;
@@ -82,8 +103,12 @@ public class WhileStatement extends ConditionalStatement {
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();
-    strBuilder.append("while ");
+    strBuilder.append("for ");
+    strBuilder.append(initialization);
+    strBuilder.append("; ");
     strBuilder.append(condition);
+    strBuilder.append("; ");
+    strBuilder.append(loopStatement);
     strBuilder.append(" {");
     strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     strBuilder.append("}");

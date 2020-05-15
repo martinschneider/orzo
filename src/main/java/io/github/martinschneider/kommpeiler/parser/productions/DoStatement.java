@@ -1,6 +1,7 @@
 package io.github.martinschneider.kommpeiler.parser.productions;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /** DoStatement */
 public class DoStatement extends ConditionalStatement {
@@ -76,5 +77,17 @@ public class DoStatement extends ConditionalStatement {
       return false;
     }
     return true;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder strBuilder = new StringBuilder();
+    strBuilder.append("do ");
+    strBuilder.append(" {");
+    strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
+    strBuilder.append("}");
+    strBuilder.append(" while ");
+    strBuilder.append(condition);
+    return strBuilder.toString();
   }
 }

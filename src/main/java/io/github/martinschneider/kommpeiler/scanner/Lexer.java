@@ -34,6 +34,8 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
 import io.github.martinschneider.kommpeiler.error.ErrorType;
+import io.github.martinschneider.kommpeiler.parser.productions.BasicType;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Keywords;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scopes;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.io.File;
@@ -50,17 +52,12 @@ import java.util.List;
  *
  * @author Martin Schneider
  */
-public class Scanner {
-  private final String[] basicTypes = {"void", "int", "double", "String"};
+public class Lexer {
   private StringBuffer buffer;
   private char character;
   private CompilerErrors errors = new CompilerErrors();
   // a PushbackReader is used to be able to jump forward and backward in the input stream
   private PushbackReader inputReader;
-  private final String[] keywords = {
-    "if", "else", "do", "while", "return", "static", "class", "package"
-  };
-  private final String[] scopes = {"public", "private", "protected"};
   private List<Token> tokenList;
 
   public CompilerErrors getErrors() {
@@ -213,28 +210,28 @@ public class Scanner {
   private void scanId() throws IOException {
     if (Character.isLetter(character)) {
       buffer.append(character);
-      while (Character.isLetter(character = (char) inputReader.read())) {
+      while (isAlphanumeric(character = (char) inputReader.read())) {
         buffer.append(character);
       }
       inputReader.unread(character);
       String str = buffer.toString();
       // keywords
-      for (int i = 0; i < keywords.length; i++) {
-        if (str.equals(keywords[i])) {
+      for (Keywords keyword : Keywords.values()) {
+        if (str.equalsIgnoreCase(keyword.name())) {
           tokenList.add(keyword(str));
           buffer.setLength(0);
         }
       }
       // scopes types
-      for (int i = 0; i < scopes.length; i++) {
-        if (str.equals(scopes[i])) {
+      for (Scopes scope : Scopes.values()) {
+        if (str.equalsIgnoreCase(scope.name())) {
           tokenList.add(scope(Scopes.valueOf(str.toUpperCase())));
           buffer.setLength(0);
         }
       }
       // basic types
-      for (int i = 0; i < basicTypes.length; i++) {
-        if (str.equals(basicTypes[i])) {
+      for (BasicType type : BasicType.values()) {
+        if (str.equalsIgnoreCase(type.name())) {
           tokenList.add(type(str));
           buffer.setLength(0);
         }
@@ -244,6 +241,10 @@ public class Scanner {
       }
       buffer.setLength(0);
     }
+  }
+
+  private boolean isAlphanumeric(char c) {
+    return Character.isAlphabetic(c) || Character.isDigit(c) || c == '_';
   }
 
   /**

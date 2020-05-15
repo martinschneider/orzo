@@ -42,7 +42,11 @@ public class KommpeilerTest {
         Arguments.of("IntegerConstants"),
         Arguments.of("VariableAssignments"),
         Arguments.of("IntegerExpressions"),
-        Arguments.of("IfConditions"));
+        Arguments.of("IfConditions"),
+        Arguments.of("WhileLoop"),
+        Arguments.of("ForLoop"),
+        Arguments.of("DoLoop"),
+        Arguments.of("Fibonacci"));
   }
 
   @ParameterizedTest

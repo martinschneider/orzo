@@ -3,6 +3,7 @@ package io.github.martinschneider.kommpeiler.codegen;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.BIPUSH;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GETSTATIC;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GOTO;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IADD;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_1;
@@ -56,12 +57,15 @@ import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Condition;
 import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
+import io.github.martinschneider.kommpeiler.parser.productions.DoStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
+import io.github.martinschneider.kommpeiler.parser.productions.ForStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.parser.productions.Type;
+import io.github.martinschneider.kommpeiler.parser.productions.WhileStatement;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import io.github.martinschneider.kommpeiler.scanner.tokens.IntNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Operator;
@@ -170,6 +174,45 @@ public class CodeGenerator {
       generateCondition(variables, conditionOut, ifStatement.getCondition(), branchBytes);
       out.write(conditionOut.getBytes());
       out.write(bodyOut.getBytes());
+    } else if (statement instanceof WhileStatement) {
+      WhileStatement whileStatement = (WhileStatement) statement;
+      DynamicByteArray bodyOut = new DynamicByteArray();
+      for (Statement stmt : whileStatement.getBody()) {
+        generateCode(variables, bodyOut, stmt);
+      }
+      DynamicByteArray conditionOut = new DynamicByteArray();
+      short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
+      generateCondition(variables, conditionOut, whileStatement.getCondition(), branchBytes);
+      out.write(conditionOut.getBytes());
+      out.write(bodyOut.getBytes());
+      out.write(GOTO);
+      out.write(shortToByteArray(-(bodyOut.getBytes().length + conditionOut.getBytes().length)));
+    } else if (statement instanceof DoStatement) {
+      DoStatement doStatement = (DoStatement) statement;
+      DynamicByteArray bodyOut = new DynamicByteArray();
+      for (Statement stmt : doStatement.getBody()) {
+        generateCode(variables, bodyOut, stmt);
+      }
+      DynamicByteArray conditionOut = new DynamicByteArray();
+      short branchBytes = (short) -(bodyOut.getBytes().length + conditionOut.getBytes().length);
+      generateCondition(variables, conditionOut, doStatement.getCondition(), branchBytes, true);
+      out.write(bodyOut.getBytes());
+      out.write(conditionOut.getBytes());
+    } else if (statement instanceof ForStatement) {
+      ForStatement forStatement = (ForStatement) statement;
+      generateCode(variables, out, forStatement.getInitialization());
+      DynamicByteArray bodyOut = new DynamicByteArray();
+      for (Statement stmt : forStatement.getBody()) {
+        generateCode(variables, bodyOut, stmt);
+      }
+      generateCode(variables, bodyOut, forStatement.getLoopStatement());
+      DynamicByteArray conditionOut = new DynamicByteArray();
+      short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
+      generateCondition(variables, conditionOut, forStatement.getCondition(), branchBytes);
+      out.write(conditionOut.getBytes());
+      out.write(bodyOut.getBytes());
+      out.write(GOTO);
+      out.write(shortToByteArray(-(bodyOut.getBytes().length + conditionOut.getBytes().length)));
     }
   }
 
@@ -178,84 +221,132 @@ public class CodeGenerator {
       DynamicByteArray out,
       Condition condition,
       short branchBytes) {
+    generateCondition(variables, out, condition, branchBytes, false);
+  }
+
+  private void generateCondition(
+      Map<Identifier, Integer> variables,
+      DynamicByteArray out,
+      Condition condition,
+      short branchBytes,
+      boolean isDoLoop) {
+    DynamicByteArray conditionOut = new DynamicByteArray();
     // TODO: support other boolean conditions
-    ExpressionResult left = evaluateExpression(variables, out, condition.getLeft(), false);
-    ExpressionResult right = evaluateExpression(variables, out, condition.getRight(), false);
+    ExpressionResult left = evaluateExpression(variables, conditionOut, condition.getLeft(), false);
+    ExpressionResult right =
+        evaluateExpression(variables, conditionOut, condition.getRight(), false);
     boolean leftZero = isZero(left.getValue());
     boolean rightZero = isZero(right.getValue());
-    if (!leftZero && rightZero) {
+    if (leftZero ^ rightZero) {
+      boolean reverseOperator =
+          (isDoLoop && leftZero && !rightZero) || (!isDoLoop && !leftZero && rightZero);
       switch (condition.getOperator().cmpValue()) {
           // use the inverse comparison because jumping means we execute the "else" part of the
           // condition
         case EQUAL:
-          out.write(IFNE);
+          if (reverseOperator) {
+            conditionOut.write(IFNE);
+          } else {
+            conditionOut.write(IFEQ);
+          }
           break;
         case NOTEQUAL:
-          out.write(IFEQ);
+          if (reverseOperator) {
+            conditionOut.write(IFEQ);
+          } else {
+            conditionOut.write(IFNE);
+          }
           break;
         case GREATER:
-          out.write(IFLE);
+          if (reverseOperator) {
+            conditionOut.write(IFLE);
+          } else {
+            conditionOut.write(IFGT);
+          }
           break;
         case GREATEREQ:
-          out.write(IFLT);
+          if (reverseOperator) {
+            conditionOut.write(IFLT);
+          } else {
+            conditionOut.write(IFGE);
+          }
           break;
         case SMALLER:
-          out.write(IFGE);
+          if (reverseOperator) {
+            conditionOut.write(IFGE);
+          } else {
+            conditionOut.write(IFLT);
+          }
           break;
         case SMALLEREQ:
-          out.write(IFGT);
+          if (reverseOperator) {
+            conditionOut.write(IFGT);
+          } else {
+            conditionOut.write(IFLE);
+          }
           break;
       }
-      out.write(shortToByteArray(branchBytes));
-      return;
-    }
-    if (leftZero && !rightZero) {
-      switch (condition.getOperator().cmpValue()) {
-        case EQUAL:
-          out.write(IFEQ);
-          break;
-        case NOTEQUAL:
-          out.write(IFNE);
-          break;
-        case GREATER:
-          out.write(IFGT);
-          break;
-        case GREATEREQ:
-          out.write(IFGE);
-          break;
-        case SMALLER:
-          out.write(IFLT);
-          break;
-        case SMALLEREQ:
-          out.write(IFLE);
-          break;
-      }
-      out.write(shortToByteArray(branchBytes));
+      writeBranchOffset(out, branchBytes, isDoLoop, conditionOut);
       return;
     }
     switch (condition.getOperator().cmpValue()) {
-        // use the inverse comparison because jumping means we execute the "else" part of the
-        // condition
       case EQUAL:
-        out.write(IF_ICMPNE);
+        if (isDoLoop) {
+          conditionOut.write(IF_ICMPEQ);
+        } else {
+          conditionOut.write(IF_ICMPNE);
+        }
         break;
       case NOTEQUAL:
-        out.write(IF_ICMPEQ);
+        if (isDoLoop) {
+          conditionOut.write(IF_ICMPNE);
+        } else {
+          conditionOut.write(IF_ICMPEQ);
+        }
         break;
       case GREATER:
-        out.write(IF_ICMPLE);
+        if (isDoLoop) {
+          conditionOut.write(IF_ICMPGT);
+        } else {
+          conditionOut.write(IF_ICMPLE);
+        }
         break;
       case GREATEREQ:
-        out.write(IF_ICMPLT);
+        if (isDoLoop) {
+          conditionOut.write(IF_ICMPGE);
+        } else {
+          conditionOut.write(IF_ICMPLT);
+        }
         break;
       case SMALLER:
-        out.write(IF_ICMPGE);
+        if (isDoLoop) {
+          conditionOut.write(IF_ICMPLT);
+        } else {
+          conditionOut.write(IF_ICMPGE);
+        }
         break;
       case SMALLEREQ:
-        out.write(IF_ICMPGT);
+        if (isDoLoop) {
+          conditionOut.write(IF_ICMPLE);
+        } else {
+          conditionOut.write(IF_ICMPGT);
+        }
         break;
     }
-    out.write(shortToByteArray(branchBytes));
+    writeBranchOffset(out, branchBytes, isDoLoop, conditionOut);
+  }
+
+  private void writeBranchOffset(
+      DynamicByteArray out,
+      short branchBytes,
+      boolean addConditionToBranchOffset,
+      DynamicByteArray conditionOut) {
+    if (addConditionToBranchOffset) {
+      branchBytes -= conditionOut.getBytes().length;
+      branchBytes++;
+    }
+    conditionOut.write(shortToByteArray(branchBytes));
+    out.write(conditionOut.getBytes());
   }
 
   private boolean isZero(Object value) {

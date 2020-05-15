@@ -31,7 +31,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.Selector;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.parser.productions.Type;
 import io.github.martinschneider.kommpeiler.parser.productions.WhileStatement;
-import io.github.martinschneider.kommpeiler.scanner.Scanner;
+import io.github.martinschneider.kommpeiler.scanner.Lexer;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Comparator;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Comparators;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
@@ -57,7 +57,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 public class ParserTest {
   private Parser parser;
-  private Scanner scanner = new Scanner();
+  private Lexer scanner = new Lexer();
   private List<Token> tokens;
 
   private static Stream<Arguments> testMethodCall() throws IOException {
@@ -509,15 +509,15 @@ public class ParserTest {
 
   // Helper
   private static Expression exp(String input) throws IOException {
-    return new Expression(new Scanner().getTokens(input));
+    return new Expression(new Lexer().getTokens(input));
   }
 
   private static Assignment assign(String input) throws IOException {
-    return new Parser(new Scanner().getTokens(input)).parseAssignment();
+    return new Parser(new Lexer().getTokens(input)).parseAssignment();
   }
 
   private static Condition cond(String input) throws IOException {
-    return new Parser(new Scanner().getTokens(input)).parseCondition();
+    return new Parser(new Lexer().getTokens(input)).parseCondition();
   }
 
   private static IfStatement ifStmt(Condition condition, List<Statement> body) throws IOException {

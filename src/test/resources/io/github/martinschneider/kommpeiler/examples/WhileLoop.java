@@ -1,9 +1,11 @@
 package io.github.martinschneider.kommpeiler.examples;
 
-public class ForLoop {
+public class WhileLoop {
   public static void main(String[] args) {
-    for (int i = 1; i <= 10; i = i + 1) {
-      System.out.println(i);
+    int x = 10;
+    while (x > 0) {
+      System.out.println(x);
+      x = x - 1;
     }
   }
 }

@@ -5,6 +5,7 @@ import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.VOID;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.CLASS;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.DO;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.FOR;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.IF;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.PACKAGE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.STATIC;
@@ -46,6 +47,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
 import io.github.martinschneider.kommpeiler.parser.productions.DoStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.parser.productions.FieldSelector;
+import io.github.martinschneider.kommpeiler.parser.productions.ForStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
@@ -669,10 +671,68 @@ public class Parser {
       return conditionalStatement;
     } else if (restorePointer(idx) && (conditionalStatement = parseWhileStatement()) != null) {
       return conditionalStatement;
+    } else if (restorePointer(idx) && (conditionalStatement = parseForStatement()) != null) {
+      return conditionalStatement;
     } else if (restorePointer(idx) && (declaration = parseDeclaration()) != null) {
       return declaration;
     } else if (restorePointer(idx) && (methodCall = parseMethodCall()) != null) {
       return methodCall;
+    } else {
+      return null;
+    }
+  }
+
+  private ConditionalStatement parseForStatement() {
+    Statement initialization;
+    Condition condition;
+    Statement loopStatement;
+    List<Statement> body;
+    if (token == null) {
+      return null;
+    }
+    if (token instanceof Keyword && token.eq(keyword(FOR))) {
+      nextToken();
+      if (!token.eq(sym(LPAREN))) {
+        previousToken();
+        errors.addParserError("for must be followed by (");
+      }
+      nextToken();
+      initialization = parseStatement();
+      if (initialization == null) {
+        previousToken();
+        errors.addParserError("for statement must contain an initialization statement");
+      }
+      nextToken();
+      condition = parseCondition();
+      if (condition == null) {
+        previousToken();
+        errors.addParserError("for statement must contain a condition");
+      }
+      nextToken();
+      loopStatement = parseStatement();
+      if (loopStatement == null) {
+        previousToken();
+        errors.addParserError("for statement must contain a loop statement");
+      }
+      nextToken();
+      if (!token.eq(sym(RPAREN))) {
+        previousToken();
+        errors.addParserError("missing ) in for statement");
+      }
+      nextToken();
+      if (!token.eq(sym(LBRACE))) {
+        previousToken();
+        errors.addParserError("missing { in for statement");
+      }
+      nextToken();
+      body = parseStatementSequence();
+      if (body == null) {
+        errors.addParserError("invalid body of for statement");
+      }
+      if (!token.eq(sym(RBRACE))) {
+        errors.addParserError("Missing } in for statement");
+      }
+      return new ForStatement(initialization, condition, loopStatement, body);
     } else {
       return null;
     }
@@ -694,7 +754,6 @@ public class Parser {
       if ((statement = parseStatement()) != null) {
         statementSequence.add(statement);
       }
-      // FIXME: else
     }
     return statementSequence;
   }

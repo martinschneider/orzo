@@ -5,6 +5,7 @@ public enum Keywords {
   ELSE,
   DO,
   WHILE,
+  FOR,
   RETURN,
   STATIC,
   CLASS,

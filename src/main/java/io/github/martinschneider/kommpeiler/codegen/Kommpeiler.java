@@ -2,7 +2,7 @@ package io.github.martinschneider.kommpeiler.codegen;
 
 import io.github.martinschneider.kommpeiler.parser.Parser;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
-import io.github.martinschneider.kommpeiler.scanner.Scanner;
+import io.github.martinschneider.kommpeiler.scanner.Lexer;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -45,7 +45,7 @@ public class Kommpeiler {
             + "╠╩╗║ ║║║║║║║╠═╝║╣ ║║  ║╣ ╠╦╝\n"
             + "╩ ╩╚═╝╩ ╩╩ ╩╩  ╚═╝╩╩═╝╚═╝╩╚═");
     System.out.println("Reading from: " + input.getAbsolutePath());
-    Scanner scanner = new Scanner();
+    Lexer scanner = new Lexer();
     List<Token> tokens = scanner.getTokens(input);
     System.out.println(
         "Scanner output: "

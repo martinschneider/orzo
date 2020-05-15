@@ -41,4 +41,5 @@ public class OpCodes {
   public static final byte IFGE = (byte) 156;
   public static final byte IFGT = (byte) 157;
   public static final byte IFLE = (byte) 158;
+  public static final byte GOTO = (byte) 167;
 }
