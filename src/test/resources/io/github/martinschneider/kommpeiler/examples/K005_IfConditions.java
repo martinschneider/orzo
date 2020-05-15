@@ -1,6 +1,6 @@
 package io.github.martinschneider.kommpeiler.examples;
 
-public class IfConditions {
+public class K005_IfConditions {
   public static void main(String[] args) {
     int a = 1;
     int b = 1;

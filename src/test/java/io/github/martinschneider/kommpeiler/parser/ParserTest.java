@@ -192,6 +192,7 @@ public class ParserTest {
   private static Stream<Arguments> testAssignment() throws IOException {
     return Stream.of(
         Arguments.of("x=5", id("x"), exp("5")),
+        Arguments.of("i++", id("i"), exp("i++")),
         Arguments.of("x=5*12-3/6+12%4", id("x"), exp("5*12-3/6+12%4")));
   }
 

@@ -4,19 +4,10 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * MethodCall
- *
- * @author Martin Schneider
- */
 public class MethodCall implements Statement {
   private List<Identifier> names;
   private List<Expression> parameters;
 
-  /**
-   * @param name name
-   * @param parameters list of parameters
-   */
   public MethodCall(final List<Identifier> names, final List<Expression> parameters) {
     super();
     this.names = names;

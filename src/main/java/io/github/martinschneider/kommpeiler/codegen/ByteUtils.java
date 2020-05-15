@@ -1,6 +1,5 @@
 package io.github.martinschneider.kommpeiler.codegen;
 
-/** @author Martin Schneider */
 public class ByteUtils {
   public static byte[] shortToByteArray(short value) {
     return new byte[] {(byte) ((value >> 8) & 0xff), (byte) (value & 0xff)};

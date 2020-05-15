@@ -1,10 +1,5 @@
 package io.github.martinschneider.kommpeiler.parser.productions;
 
-/**
- * BasicType
- *
- * @author Martin Schneider
- */
 public enum BasicType {
   INT("I"),
   DOUBLE("D"),

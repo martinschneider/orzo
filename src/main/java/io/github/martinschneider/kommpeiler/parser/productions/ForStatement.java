@@ -3,7 +3,6 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** ForStatement */
 public class ForStatement extends ConditionalStatement {
   private List<Statement> body;
   private Condition condition;

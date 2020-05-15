@@ -1,6 +1,6 @@
 package io.github.martinschneider.kommpeiler.examples;
 
-public class DoLoop {
+public class K008_DoLoop {
   public static void main(String[] args) {
     int n = -5;
     do {

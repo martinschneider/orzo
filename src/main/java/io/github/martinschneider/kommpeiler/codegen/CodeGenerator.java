@@ -25,6 +25,7 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPGT;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPLE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPLT;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPNE;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IINC;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ILOAD;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ILOAD_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ILOAD_1;
@@ -50,6 +51,9 @@ import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTyp
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.INT;
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.VOID;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_DECREMENT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_INCREMENT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 
 import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
@@ -360,11 +364,6 @@ public class CodeGenerator {
     }
   }
 
-  /**
-   * evaluates expression
-   *
-   * @return the "return" type of the expression
-   */
   private ExpressionResult evaluateExpression(
       Map<Identifier, Integer> variables, DynamicByteArray out, Expression expression) {
     return evaluateExpression(variables, out, expression, true);
@@ -381,10 +380,18 @@ public class CodeGenerator {
     // valid for doubles etc.
     Type type = type(VOID);
     Object value = null;
-    for (Token token : expression.getPostfix()) {
+    List<Token> tokens = expression.getPostfix();
+    for (int i = 0; i < tokens.size(); i++) {
+      Token token = tokens.get(i);
       if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
-        loadInteger(out, variables.get(id));
+        // look ahead for ++ or -- operators because in that case we do not push the value to the
+        // stack
+        if (i + 1 == tokens.size()
+            || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
+                && !tokens.get(i + 1).eq(op(POST_INCREMENT)))) {
+          loadInteger(out, variables.get(id).byteValue());
+        }
         type = type(INT);
       } else if (token instanceof IntNum) {
         Integer intValue = ((IntNum) token).intValue();
@@ -414,11 +421,23 @@ public class CodeGenerator {
           case MOD:
             out.write(IREM);
             break;
+          case POST_INCREMENT:
+            incInteger(out, variables.get(tokens.get(i - 1)).byteValue(), (byte) 1);
+            break;
+          case POST_DECREMENT:
+            incInteger(out, variables.get(tokens.get(i - 1)).byteValue(), (byte) -1);
           default:
         }
       }
     }
     return new ExpressionResult(type, value);
+  }
+
+  private void incInteger(DynamicByteArray out, byte idx, byte value) {
+    out.write(IINC);
+    out.write(idx);
+    out.write(value);
+    loadInteger(out, idx);
   }
 
   private DynamicByteArray getStatic(
@@ -451,7 +470,7 @@ public class CodeGenerator {
     return out;
   }
 
-  private DynamicByteArray loadInteger(DynamicByteArray out, Integer idx) {
+  private DynamicByteArray loadInteger(DynamicByteArray out, byte idx) {
     if (idx == 0) {
       out.write(ILOAD_0);
     } else if (idx == 1) {
@@ -462,7 +481,7 @@ public class CodeGenerator {
       out.write(ILOAD_3);
     } else {
       out.write(ILOAD);
-      out.write(idx.byteValue());
+      out.write(idx);
     }
     return out;
   }

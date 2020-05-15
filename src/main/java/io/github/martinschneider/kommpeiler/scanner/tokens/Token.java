@@ -3,15 +3,9 @@ package io.github.martinschneider.kommpeiler.scanner.tokens;
 import io.github.martinschneider.kommpeiler.parser.productions.BasicType;
 import io.github.martinschneider.kommpeiler.parser.productions.Type;
 
-/**
- * Token
- *
- * @author Martin Schneider
- */
 public class Token {
   private Object value;
 
-  /** @param value value */
   public Token(final Object value) {
     this.value = value;
   }
@@ -54,7 +48,6 @@ public class Token {
     this.value = value;
   }
 
-  /** {@inheritDoc} * */
   @Override
   public String toString() {
     return value.toString();

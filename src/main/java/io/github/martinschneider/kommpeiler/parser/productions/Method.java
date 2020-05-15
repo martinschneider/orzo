@@ -5,11 +5,6 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Scope;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Method
- *
- * @author Martin Schneider
- */
 public class Method {
   private List<Argument> arguments;
   private List<Statement> body;

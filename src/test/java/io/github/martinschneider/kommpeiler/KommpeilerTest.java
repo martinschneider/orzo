@@ -38,15 +38,16 @@ public class KommpeilerTest {
 
   private static Stream<Arguments> testKommpeiler() {
     return Stream.of(
-        Arguments.of("HelloWorld"),
-        Arguments.of("IntegerConstants"),
-        Arguments.of("VariableAssignments"),
-        Arguments.of("IntegerExpressions"),
-        Arguments.of("IfConditions"),
-        Arguments.of("WhileLoop"),
-        Arguments.of("ForLoop"),
-        Arguments.of("DoLoop"),
-        Arguments.of("Fibonacci"));
+        Arguments.of("K001_HelloWorld"),
+        Arguments.of("K002_IntegerConstants"),
+        Arguments.of("K003_VariableAssignments"),
+        Arguments.of("K004_IntegerExpressions"),
+        Arguments.of("K005_IfConditions"),
+        Arguments.of("K006_WhileLoop"),
+        Arguments.of("K007_ForLoop"),
+        Arguments.of("K008_DoLoop"),
+        Arguments.of("K009_Fibonacci"),
+        Arguments.of("K010_NestedLoops"));
   }
 
   @ParameterizedTest

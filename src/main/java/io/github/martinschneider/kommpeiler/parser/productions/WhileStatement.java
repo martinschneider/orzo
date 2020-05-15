@@ -3,39 +3,30 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** WhileStatement */
 public class WhileStatement extends ConditionalStatement {
   private List<Statement> body;
   private Condition condition;
 
-  /**
-   * @param condition condition
-   * @param body body
-   */
   public WhileStatement(final Condition condition, final List<Statement> body) {
     this.condition = condition;
     this.body = body;
   }
 
-  /** {@inheritDoc} * */
   @Override
   public List<Statement> getBody() {
     return body;
   }
 
-  /** {@inheritDoc} * */
   @Override
   public Condition getCondition() {
     return condition;
   }
 
-  /** {@inheritDoc} * */
   @Override
   public void setBody(final List<Statement> body) {
     this.body = body;
   }
 
-  /** {@inheritDoc} * */
   @Override
   public void setCondition(final Condition condition) {
     this.condition = condition;

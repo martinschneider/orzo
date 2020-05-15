@@ -11,6 +11,8 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MINUS;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MOD;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.PLUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_DECREMENT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_INCREMENT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.TIMES;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.COMMA;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.DOT;
@@ -47,11 +49,6 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Scanner class for Kommpeiler
- *
- * @author Martin Schneider
- */
 public class Lexer {
   private StringBuffer buffer;
   private char character;
@@ -64,11 +61,6 @@ public class Lexer {
     return errors;
   }
 
-  /**
-   * @param file input stream
-   * @return a list of tokens
-   * @throws IOException I/O-error
-   */
   public List<Token> getTokens(final File file) throws IOException {
     errors.clear();
     Reader reader = new FileReader(file);
@@ -76,11 +68,6 @@ public class Lexer {
     return getTokens(inputReader);
   }
 
-  /**
-   * @param fileReader reader for the input
-   * @return a list of tokens
-   * @throws IOException I/O-error
-   */
   public List<Token> getTokens(final PushbackReader fileReader) throws IOException {
     errors.clear();
     tokenList = new ArrayList<>();
@@ -121,11 +108,6 @@ public class Lexer {
     return tokenList;
   }
 
-  /**
-   * @param string input stream
-   * @return a list of tokens
-   * @throws IOException I/O-error
-   */
   public List<Token> getTokens(final String string) throws IOException {
     errors.clear();
     Reader reader = new StringReader(string);
@@ -133,11 +115,6 @@ public class Lexer {
     return getTokens(inputReader);
   }
 
-  /**
-   * Scans for comments.
-   *
-   * @throws IOException
-   */
   private void scanComment() throws IOException {
     if ((character == '/')) {
       if ((character = (char) inputReader.read()) == '*') {
@@ -148,11 +125,6 @@ public class Lexer {
     }
   }
 
-  /**
-   * Scans comment text until closing tag is found. Can handle nested comments.
-   *
-   * @throws IOException
-   */
   private void scanComment1() throws IOException {
     int c;
     int nested = 1;
@@ -175,11 +147,6 @@ public class Lexer {
     }
   }
 
-  /**
-   * Scans for a comment until the end of the line.
-   *
-   * @throws IOException
-   */
   private void scanComment2() throws IOException {
     int c;
     do {
@@ -188,11 +155,7 @@ public class Lexer {
     inputReader.unread(c);
   }
 
-  /**
-   * Scans for double after '.' was found.
-   *
-   * @throws IOException
-   */
+  /** Scans for double after '.' was found. */
   private void scanDouble() throws IOException {
     while (Character.isDigit(character = (char) inputReader.read())) {
       buffer.append(character);
@@ -202,11 +165,7 @@ public class Lexer {
     buffer.setLength(0);
   }
 
-  /**
-   * Scans for identifiers, primitive types and keywords. identifier = letter {letter|digit},
-   * keyword = "if" | "else" |" while" | "do" | "return" | basicType | scope, scope = "public" |
-   * "private" | "protected", basicType = "int" | "double" | "void", "String"
-   */
+  /** Scans for identifiers, primitive types and keywords */
   private void scanId() throws IOException {
     if (Character.isLetter(character)) {
       buffer.append(character);
@@ -247,11 +206,7 @@ public class Lexer {
     return Character.isAlphabetic(c) || Character.isDigit(c) || c == '_';
   }
 
-  /**
-   * Scans for numerics. integer = digit {digit}, double = {digit} [.] digit {digit}
-   *
-   * @throws IOException
-   */
+  /** scans for numbers. */
   private void scanNum() throws IOException {
     if (Character.isDigit(character)) {
       buffer.append(character);
@@ -269,20 +224,16 @@ public class Lexer {
     }
   }
 
-  /**
-   * Scans for operators. operator = "-" | "+" | "*" | "/" | "%" | ">" | "<" | "<=" | ">=" | "!=" |
-   * "=" | "==" ]
-   *
-   * @throws IOException
-   * @throws ScannerException
-   */
-  // CHECKSTYLE:OFF
-  // don't care ;)
-  private void scanOps() throws IOException
-        // CHECKSTYLE:ON
-      {
+  /** scans for operators. */
+  private void scanOps() throws IOException {
     if (character == '-') {
-      tokenList.add(op(MINUS));
+      if ((character = (char) inputReader.read()) == '-') {
+        // TODO: distinction between pre and post increment operators
+        tokenList.add(op(POST_DECREMENT));
+      } else {
+        inputReader.unread(character);
+        tokenList.add(op(MINUS));
+      }
     } else if (character == '/') {
       // look-ahead to check for comment
       char character;
@@ -299,7 +250,14 @@ public class Lexer {
     } else if (character == '*') {
       tokenList.add(op(TIMES));
     } else if (character == '+') {
-      tokenList.add(op(PLUS));
+      char character;
+      if ((character = (char) inputReader.read()) == '+') {
+        // TODO: distinction between pre and post increment operators
+        tokenList.add(op(POST_INCREMENT));
+      } else {
+        inputReader.unread(character);
+        tokenList.add(op(PLUS));
+      }
     } else if (character == '>') {
       if ((character = (char) inputReader.read()) == '=') {
         tokenList.add(cmp(GREATEREQ));
@@ -331,7 +289,7 @@ public class Lexer {
     }
   }
 
-  /** Scans for different kinds of parentheses. parenthesis = [ "(" | ")" | "{" | "}" ] */
+  /** scans for different kinds of parentheses. */
   private void scanParen() {
     if (character == '(') {
       tokenList.add(sym(LPAREN));
@@ -348,11 +306,7 @@ public class Lexer {
     }
   }
 
-  /**
-   * Scans for strings. string = """ { char } """
-   *
-   * @throws IOException
-   */
+  /** scans for strings. */
   private void scanStr() throws IOException {
     if ((character == '"')) {
       int c;
@@ -371,11 +325,7 @@ public class Lexer {
     buffer.setLength(0);
   }
 
-  /**
-   * Scans for symbols. symbol = "," | "." | ";"
-   *
-   * @throws IOException
-   */
+  /** scans for symbols. */
   private void scanSym() throws IOException {
     if (character == ',') {
       tokenList.add(sym(COMMA));

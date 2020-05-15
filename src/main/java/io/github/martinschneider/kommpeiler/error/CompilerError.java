@@ -1,15 +1,6 @@
 package io.github.martinschneider.kommpeiler.error;
 
-/**
- * Class for compiler error
- *
- * @author Martin Schneider
- */
 public class CompilerError {
-  /**
-   * @param message error-message
-   * @param type error-type
-   */
   public CompilerError(final String message, final ErrorType type) {
     this.message = message;
     this.type = type;

@@ -12,7 +12,8 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.STATI
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.WHILE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MINUS;
-import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.PLUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_DECREMENT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_INCREMENT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.TIMES;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.DEFAULT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.PRIVATE;
@@ -69,22 +70,12 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Parser class for Kommpeiler
- *
- * @author Martin Schneider
- */
 public class Parser {
   private CompilerErrors errors = new CompilerErrors();
   private int index;
   private Token token;
   private List<Token> tokenList;
 
-  /**
-   * Constructor
-   *
-   * @param tokenList list of tokens
-   */
   public Parser(final List<Token> tokenList) {
     this.tokenList = tokenList;
     if (tokenList != null && tokenList.size() > 0) {
@@ -158,11 +149,6 @@ public class Parser {
     return arguments;
   }
 
-  /**
-   * assignment = identifier selector "=" expression
-   *
-   * @return Assignment
-   */
   public Assignment parseAssignment() {
     Identifier left;
     Expression right;
@@ -177,8 +163,15 @@ public class Parser {
       left.setSelector(selector);
       nextToken();
     }
-    if (token instanceof Operator && token.eq(op(ASSIGN))) {
-      nextToken();
+    if (token instanceof Operator) {
+      if (token.eq(op(ASSIGN))) {
+        nextToken();
+      } else if (token.eq(op(POST_INCREMENT)) || token.eq(op(POST_DECREMENT))) {
+        previousToken();
+      } else {
+        previousToken();
+        return null;
+      }
       if ((right = parseExpression()) == null) {
         previousToken();
       } else {
@@ -248,11 +241,6 @@ public class Parser {
     return null;
   }
 
-  /**
-   * Parse the class body
-   *
-   * @return list of methods
-   */
   public List<Method> parseClassBody() {
     List<Method> classBody = new ArrayList<>();
     Method method;
@@ -283,11 +271,6 @@ public class Parser {
     return null;
   }
 
-  /**
-   * declaration = basicType identifier ["=" value]
-   *
-   * @return Declaration
-   */
   public Declaration parseDeclaration() {
     Type type;
     Identifier name;
@@ -313,11 +296,6 @@ public class Parser {
     return null;
   }
 
-  /**
-   * doStatement = "do" "(" statementSequence ")" "while" "(" expression ")"
-   *
-   * @return DoStatement
-   */
   public DoStatement parseDoStatement() {
     Condition condition;
     List<Statement> body;
@@ -402,11 +380,6 @@ public class Parser {
     return (expression.size() > 0) ? expression : null;
   }
 
-  /**
-   * ifStatement = "if" "(" expression ")" "{" statementSequence "}" {elseifBlock} [elseBlock]
-   *
-   * @return IfStatement
-   */
   public IfStatement parseIfStatement() {
     Condition condition;
     List<Statement> body;
@@ -452,15 +425,7 @@ public class Parser {
     }
   }
 
-  /**
-   * method = [scope] returnType identifier "{" StatementSequence "}"
-   *
-   * @return method
-   */
-  // CHECKSTYLE:OFF
-  public Method parseMethod()
-        // CHECKSTYLE:ON
-      {
+  public Method parseMethod() {
     int saveIndex = index;
     Scope scope = scope(DEFAULT);
     Type type;
@@ -561,11 +526,6 @@ public class Parser {
     return null;
   }
 
-  /**
-   * parameters = "(" [expression {"," expression}] ")"
-   *
-   * @return parameters
-   */
   public List<Expression> parseParameters() {
     List<Expression> parameters = new ArrayList<>();
     if (token.eq(sym(LPAREN))) {
@@ -591,11 +551,6 @@ public class Parser {
     return null;
   }
 
-  /**
-   * selector = {"." identifier | "[" expression "]"}
-   *
-   * @return Selector
-   */
   public Selector parseSelector() {
     if (token instanceof Sym && token.eq(sym(DOT))) {
       nextToken();
@@ -621,38 +576,6 @@ public class Parser {
     return null;
   }
 
-  /**
-   * A simple expression may start with "+" or "-". This is checked here.
-   *
-   * @return 1 if a + or no symbol is detected (that means the value of the first term in the
-   *     expression is positive), -1 for a - and 0 for any other operator (not allowed for a simple
-   *     expression)
-   */
-  public int parseSimpleExpressionSign() {
-    Token symbol;
-    if (index >= tokenList.size()) {
-      return 0;
-    }
-    if ((symbol = tokenList.get(index)) instanceof Operator) {
-      if (symbol.eq(op(MINUS))) {
-        nextToken();
-        return -1;
-      } else if (symbol.eq(op(PLUS))) {
-        nextToken();
-        return 1;
-      } else {
-        previousToken();
-        return 0;
-      }
-    }
-    return 1;
-  }
-
-  /**
-   * statement = [ assignment declaration | ifStatement | whileStatement | doStatement]
-   *
-   * @return Assignment
-   */
   public Statement parseStatement() {
     Assignment assignment;
     ConditionalStatement conditionalStatement;
@@ -738,11 +661,6 @@ public class Parser {
     }
   }
 
-  /**
-   * StatementSequence = statement {";" statement }
-   *
-   * @return StatementSequence
-   */
   public List<Statement> parseStatementSequence() {
     List<Statement> statementSequence = new ArrayList<>();
     Statement statement;
@@ -758,11 +676,6 @@ public class Parser {
     return statementSequence;
   }
 
-  /**
-   * whileStatement = "while" "(" expression ")" "{" statementSequence "}"
-   *
-   * @return WhileStatement
-   */
   public WhileStatement parseWhileStatement() {
     Condition condition;
     List<Statement> body;

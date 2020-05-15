@@ -34,7 +34,6 @@ public class ShuntingYard {
           output.add(stack.pop());
         }
         stack.pop();
-        // digit
       } else {
         output.add(token);
       }

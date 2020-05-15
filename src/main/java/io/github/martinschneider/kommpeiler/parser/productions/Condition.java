@@ -7,14 +7,8 @@ public class Condition {
   private Comparator operator;
   private Expression right;
 
-  /** empty constructor */
   public Condition() {}
 
-  /**
-   * @param left left side of term
-   * @param operator operator
-   * @param right right side of term
-   */
   public Condition(final Expression left, final Comparator operator, final Expression right) {
     this.left = left;
     this.operator = operator;

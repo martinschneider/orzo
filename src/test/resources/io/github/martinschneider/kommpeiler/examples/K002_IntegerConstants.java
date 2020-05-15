@@ -1,6 +1,6 @@
 package io.github.martinschneider.kommpeiler.examples;
 
-public class IntegerConstants
+public class K002_IntegerConstants
 {
 	public static void main(String[] args)
 	{

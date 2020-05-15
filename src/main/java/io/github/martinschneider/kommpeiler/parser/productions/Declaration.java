@@ -2,23 +2,12 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 
-/**
- * Declaration
- *
- * @author Martin Schneider
- */
 public class Declaration implements Statement {
   private boolean hasValue;
   private Identifier name;
   private Type type;
   private Expression value;
 
-  /**
-   * @param name name
-   * @param type type
-   * @param value value
-   * @param hasValue true if value is known
-   */
   public Declaration(
       final Identifier name, final Type type, final Expression value, final boolean hasValue) {
     super();
@@ -40,7 +29,6 @@ public class Declaration implements Statement {
     return value;
   }
 
-  /** @return true if value is known */
   public boolean hasValue() {
     return hasValue;
   }

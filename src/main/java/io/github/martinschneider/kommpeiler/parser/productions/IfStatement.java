@@ -3,15 +3,10 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** IfStatement */
 public class IfStatement extends ConditionalStatement {
   private List<Statement> body;
   private Condition condition;
 
-  /**
-   * @param condition condition
-   * @param body body
-   */
   public IfStatement(final Condition condition, final List<Statement> body) {
     super();
     this.condition = condition;

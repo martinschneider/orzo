@@ -2,22 +2,12 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 
-/**
- * Assignment
- *
- * @author Martin Schneider
- */
 public class Assignment implements Statement {
   private Identifier left;
   private Expression right;
 
-  /** empty constructor */
   public Assignment() {}
 
-  /**
-   * @param left left side of assignment
-   * @param right right side of assignment
-   */
   public Assignment(final Identifier left, final Expression right) {
     this.left = left;
     this.right = right;
@@ -77,7 +67,6 @@ public class Assignment implements Statement {
     return true;
   }
 
-  /** {@inheritDoc} * */
   @Override
   public String toString() {
     return left.toString() + ":=" + right.toString();

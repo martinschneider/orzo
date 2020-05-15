@@ -5,22 +5,12 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Scope;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Class
- *
- * @author Martin Schneider
- */
 public class Clazz {
   private List<Method> body;
   private Identifier name;
   private String packageName;
   private Scope scope;
 
-  /**
-   * @param scope scope
-   * @param name name
-   * @param body body
-   */
   public Clazz(
       final String packageName, final Scope scope, final Identifier name, final List<Method> body) {
     this.packageName = packageName;

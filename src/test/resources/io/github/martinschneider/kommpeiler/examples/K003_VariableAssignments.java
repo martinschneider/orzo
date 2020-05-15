@@ -1,6 +1,6 @@
 package io.github.martinschneider.kommpeiler.examples;
 
-public class VariableAssignments
+public class K003_VariableAssignments
 {
 	public static void main(String[] args)
 	{

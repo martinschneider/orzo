@@ -2,11 +2,6 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 
-/**
- * FieldSelector
- *
- * @author Martin Schneider
- */
 public class FieldSelector extends Selector {
   private Identifier identifier;
 
@@ -14,7 +9,6 @@ public class FieldSelector extends Selector {
     this.identifier = identifier;
   }
 
-  /** @param identifier identifier */
   public FieldSelector(final Identifier identifier) {
     super();
     this.identifier = identifier;
