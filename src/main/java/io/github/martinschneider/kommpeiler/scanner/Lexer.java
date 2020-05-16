@@ -181,7 +181,7 @@ public class Lexer {
           buffer.setLength(0);
         }
       }
-      // scopes types
+      // scopes
       for (Scopes scope : Scopes.values()) {
         if (str.equalsIgnoreCase(scope.name())) {
           tokenList.add(scope(Scopes.valueOf(str.toUpperCase())));
@@ -206,7 +206,6 @@ public class Lexer {
     return Character.isAlphabetic(c) || Character.isDigit(c) || c == '_';
   }
 
-  /** scans for numbers. */
   private void scanNum() throws IOException {
     if (Character.isDigit(character)) {
       buffer.append(character);
@@ -224,7 +223,6 @@ public class Lexer {
     }
   }
 
-  /** scans for operators. */
   private void scanOps() throws IOException {
     if (character == '-') {
       if ((character = (char) inputReader.read()) == '-') {
@@ -289,7 +287,6 @@ public class Lexer {
     }
   }
 
-  /** scans for different kinds of parentheses. */
   private void scanParen() {
     if (character == '(') {
       tokenList.add(sym(LPAREN));
@@ -306,7 +303,6 @@ public class Lexer {
     }
   }
 
-  /** scans for strings. */
   private void scanStr() throws IOException {
     if ((character == '"')) {
       int c;
@@ -325,7 +321,6 @@ public class Lexer {
     buffer.setLength(0);
   }
 
-  /** scans for symbols. */
   private void scanSym() throws IOException {
     if (character == ',') {
       tokenList.add(sym(COMMA));

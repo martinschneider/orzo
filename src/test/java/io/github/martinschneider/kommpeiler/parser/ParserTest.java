@@ -27,6 +27,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.FieldSelector;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
+import io.github.martinschneider.kommpeiler.parser.productions.Return;
 import io.github.martinschneider.kommpeiler.parser.productions.Selector;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.parser.productions.Type;
@@ -331,7 +332,8 @@ public class ParserTest {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
     Expression expression = parser.parseExpression();
-    List<Token> actual = (expression != null) ? expression.getPostfix() : null;
+    List<Token> actual =
+        (expression != null) ? new ExpressionParser().postfix(expression.getInfix()) : null;
     assertEquals(expected, actual);
   }
 
@@ -350,6 +352,21 @@ public class ParserTest {
     assertNotNull(ifStatement);
     assertEquals(expectedCondition, ifStatement.getCondition());
     assertEquals(expectedStatements, ifStatement.getBody());
+  }
+
+  private static Stream<Arguments> testReturn() throws IOException {
+    return Stream.of(
+        Arguments.of("return a;", new Return(exp("a"))), Arguments.of("return;", new Return(null)));
+  }
+
+  @ParameterizedTest
+  @MethodSource
+  public void testReturn(String input, Return expectedReturn) throws IOException {
+    tokens = scanner.getTokens(input);
+    parser = new Parser(tokens);
+    Return returnValue = parser.parseReturn();
+    assertNotNull(returnValue);
+    assertEquals(expectedReturn, returnValue);
   }
 
   private static Stream<Arguments> testMethod() throws IOException {

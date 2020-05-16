@@ -63,4 +63,9 @@ public class Output implements HasOutput {
   public String toString() {
     return bytesToHex(array.getBytes());
   }
+
+  @Override
+  public byte[] getBytes() {
+    return array.getBytes();
+  }
 }

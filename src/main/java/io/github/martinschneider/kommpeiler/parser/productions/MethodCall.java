@@ -1,15 +1,18 @@
 package io.github.martinschneider.kommpeiler.parser.productions;
 
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MethodCall implements Statement {
+// extending Token is not the most elegant solution but it helps with parsing method calls as part
+// of expressions
+public class MethodCall extends Token implements Statement {
   private List<Identifier> names;
   private List<Expression> parameters;
 
   public MethodCall(final List<Identifier> names, final List<Expression> parameters) {
-    super();
+    super(names);
     this.names = names;
     this.parameters = parameters;
   }

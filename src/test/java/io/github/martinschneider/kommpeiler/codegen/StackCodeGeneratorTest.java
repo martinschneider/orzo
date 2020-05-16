@@ -13,15 +13,13 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_M1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.SIPUSH;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
+import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class CodeGeneratorTest {
-
-  private CodeGenerator target = new CodeGenerator(null, null);
-
+public class StackCodeGeneratorTest {
   private static Stream<Arguments> testIntegerConstants() {
     return Stream.of(
         Arguments.of(-32768, combine(SIPUSH, shortToByteArray(-32768))),
@@ -45,6 +43,9 @@ public class CodeGeneratorTest {
   @MethodSource
   /** verify that ICONST_*, BIPUSH and SIPUSH are used where applicable */
   public void testIntegerConstants(int value, byte[] expected) {
-    assertArrayEquals(target.pushInteger(new DynamicByteArray(), value).getBytes(), expected);
+    assertArrayEquals(
+        StackCodeGenerator.pushInteger(new DynamicByteArray(), new ConstantPool(), value)
+            .getBytes(),
+        expected);
   }
 }

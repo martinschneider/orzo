@@ -8,6 +8,7 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.DO;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.FOR;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.IF;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.PACKAGE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.RETURN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.STATIC;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.WHILE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.ASSIGN;
@@ -52,6 +53,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.ForStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
+import io.github.martinschneider.kommpeiler.parser.productions.Return;
 import io.github.martinschneider.kommpeiler.parser.productions.Selector;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.parser.productions.Type;
@@ -65,9 +67,9 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Operator;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scope;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scopes;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Str;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Sym;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Parser {
@@ -80,6 +82,8 @@ public class Parser {
     this.tokenList = tokenList;
     if (tokenList != null && tokenList.size() > 0) {
       token = tokenList.get(0);
+    } else {
+      token = eof();
     }
   }
 
@@ -251,7 +255,7 @@ public class Parser {
     if (!classBody.isEmpty()) {
       return classBody;
     } else {
-      return new ArrayList<>();
+      return Collections.emptyList();
     }
   }
 
@@ -281,7 +285,7 @@ public class Parser {
       if (token instanceof Identifier) {
         name = (Identifier) token;
         nextToken();
-        if (token instanceof Operator && token.eq(op(ASSIGN))) {
+        if (token.eq(op(ASSIGN))) {
           nextToken();
           if ((value = parseExpression()) != null) {
             return new Declaration(name, type, value, true);
@@ -319,7 +323,7 @@ public class Parser {
         errors.addParserError("missing } in do-clause");
       }
       nextToken();
-      if (!(token instanceof Keyword && token.eq(keyword(WHILE)))) {
+      if (!token.eq(keyword(WHILE))) {
         previousToken();
         errors.addParserError("missing while in do-clause");
       }
@@ -348,7 +352,7 @@ public class Parser {
   public Expression parseExpression() {
     Expression expression = new Expression();
     boolean negative = false;
-    if (token instanceof Operator && token.eq(op(MINUS))) {
+    if (token.eq(op(MINUS))) {
       negative = true;
       nextToken();
       if (token instanceof Num) {
@@ -369,11 +373,21 @@ public class Parser {
         return null;
       }
     }
-    // TODO: support parentheses
+    int parenthesis = 0;
     while (token instanceof Num
         || token instanceof Str
         || token instanceof Identifier
-        || token instanceof Operator) {
+        || token instanceof Operator
+        || token.eq(sym(LPAREN))
+        || token.eq(sym(RPAREN))) {
+      if (token.eq(sym(LPAREN))) {
+        parenthesis--;
+      } else if (token.eq(sym(RPAREN))) {
+        parenthesis++;
+      }
+      if (parenthesis > 0) {
+        break;
+      }
       expression.addToken(token);
       nextToken();
     }
@@ -386,7 +400,7 @@ public class Parser {
     if (token == null) {
       return null;
     }
-    if (token instanceof Keyword && token.eq(keyword(IF))) {
+    if (token.eq(keyword(IF))) {
       nextToken();
       if (!token.eq(sym(LPAREN))) {
         previousToken();
@@ -436,7 +450,7 @@ public class Parser {
       scope = (Scope) token;
       nextToken();
     }
-    if (token instanceof Keyword && token.eq(keyword(STATIC))) {
+    if (token.eq(keyword(STATIC))) {
       // TODO: handle static (for now we just ignore it)
       nextToken();
     }
@@ -486,11 +500,6 @@ public class Parser {
     }
   }
 
-  /**
-   * MethodCall = ident [parameters]
-   *
-   * @return method call
-   */
   public MethodCall parseMethodCall() {
     List<Expression> parameters;
     List<Identifier> names = new ArrayList<>();
@@ -534,7 +543,7 @@ public class Parser {
       if ((factor = parseExpression()) != null) {
         parameters.add(factor);
       }
-      while (token instanceof Sym && token.eq(sym(COMMA))) {
+      while (token.eq(sym(COMMA))) {
         nextToken();
         if ((factor = parseExpression()) != null) {
           parameters.add(factor);
@@ -552,7 +561,7 @@ public class Parser {
   }
 
   public Selector parseSelector() {
-    if (token instanceof Sym && token.eq(sym(DOT))) {
+    if (token.eq(sym(DOT))) {
       nextToken();
       if (token instanceof Identifier) {
         return new FieldSelector((Identifier) token);
@@ -560,11 +569,11 @@ public class Parser {
         errors.addError("identifier expected", ErrorType.PARSER);
         previousToken();
       }
-    } else if (token instanceof Sym && token.eq(sym(LBRAK))) {
+    } else if (token.eq(sym(LBRAK))) {
       nextToken();
       Expression expression = parseExpression();
       if (expression != null) {
-        if (token instanceof Sym && token.eq(sym(RBRAK))) {
+        if (token.eq(sym(RBRAK))) {
           return new ArraySelector(expression);
         } else {
           errors.addError("] expected", ErrorType.PARSER);
@@ -581,9 +590,10 @@ public class Parser {
     ConditionalStatement conditionalStatement;
     Declaration declaration;
     MethodCall methodCall;
+    Return returnValue;
     int idx = savePointer();
     if ((assignment = parseAssignment()) != null) {
-      if (token instanceof Sym && token.eq(sym(SEMICOLON))) {
+      if (token.eq(sym(SEMICOLON))) {
         return new Assignment(assignment.getLeft(), assignment.getRight());
       } else {
         return assignment;
@@ -600,9 +610,21 @@ public class Parser {
       return declaration;
     } else if (restorePointer(idx) && (methodCall = parseMethodCall()) != null) {
       return methodCall;
+    } else if (restorePointer(idx) && (returnValue = parseReturn()) != null) {
+      return returnValue;
     } else {
       return null;
     }
+  }
+
+  public Return parseReturn() {
+    if (token.eq(keyword(RETURN))) {
+      nextToken();
+      Expression expression = parseExpression();
+      nextToken();
+      return new Return(expression);
+    }
+    return null;
   }
 
   private ConditionalStatement parseForStatement() {
@@ -613,7 +635,7 @@ public class Parser {
     if (token == null) {
       return null;
     }
-    if (token instanceof Keyword && token.eq(keyword(FOR))) {
+    if (token.eq(keyword(FOR))) {
       nextToken();
       if (!token.eq(sym(LPAREN))) {
         previousToken();
@@ -682,7 +704,7 @@ public class Parser {
     if (token == null) {
       return null;
     }
-    if (token instanceof Keyword && token.eq(keyword(WHILE))) {
+    if (token.eq(keyword(WHILE))) {
       nextToken();
       if (!token.eq(sym(LPAREN))) {
         previousToken();

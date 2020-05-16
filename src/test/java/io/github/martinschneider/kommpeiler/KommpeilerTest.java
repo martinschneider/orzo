@@ -47,7 +47,8 @@ public class KommpeilerTest {
         Arguments.of("K007_ForLoop"),
         Arguments.of("K008_DoLoop"),
         Arguments.of("K009_Fibonacci"),
-        Arguments.of("K010_NestedLoops"));
+        Arguments.of("K010_NestedLoops"),
+        Arguments.of("K011_MethodCalls"));
   }
 
   @ParameterizedTest

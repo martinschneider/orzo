@@ -1,6 +1,5 @@
 package io.github.martinschneider.kommpeiler.parser.productions;
 
-import io.github.martinschneider.kommpeiler.parser.ShuntingYard;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,10 +22,6 @@ public class Expression {
 
   public List<Token> getInfix() {
     return tokens;
-  }
-
-  public List<Token> getPostfix() {
-    return new ShuntingYard().postfix(tokens);
   }
 
   public int size() {

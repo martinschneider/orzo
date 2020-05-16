@@ -9,8 +9,8 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-public class ShuntingYardTest {
-  private ShuntingYard target = new ShuntingYard();
+public class ExpressionParserTest {
+  private ExpressionParser target = new ExpressionParser();
 
   @Test
   public void testExpressionParsing() {

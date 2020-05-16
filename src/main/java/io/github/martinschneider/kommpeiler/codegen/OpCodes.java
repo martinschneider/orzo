@@ -27,6 +27,8 @@ public class OpCodes {
   public static final byte IDIV = (byte) 108;
   public static final byte IREM = (byte) 112;
   public static final byte LDC = (byte) 18;
+  public static final byte IRETURN = (byte) 172;
+  public static final byte DRETURN = (byte) 175;
   public static final byte RETURN = (byte) 177;
   public static final byte SIPUSH = (byte) 17;
   public static final byte IF_ICMPEQ = (byte) 159;
