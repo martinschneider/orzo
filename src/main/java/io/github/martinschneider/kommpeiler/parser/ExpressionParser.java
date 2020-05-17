@@ -33,7 +33,8 @@ public class ExpressionParser {
   public List<Token> postfix(List<Token> tokens) {
     List<Token> output = new ArrayList<>();
     Deque<Token> stack = new LinkedList<>();
-    for (Token token : tokens) {
+    for (int i = 0; i < tokens.size(); i++) {
+      Token token = tokens.get(i);
       if (token instanceof Operator) {
         while (!stack.isEmpty() && isHigerPrec((Operator) token, stack.peek())) {
           output.add(stack.pop());
@@ -47,9 +48,12 @@ public class ExpressionParser {
         }
         stack.pop();
       } else {
-        MethodCall methodCall = parseMethodCall(tokens);
-        if (methodCall != null) {
+        List<Token> sublist = new ArrayList<>(tokens).subList(i, tokens.size() - 1);
+        Pair<MethodCall, Integer> parseResult = parseMethodCall(sublist);
+        if (parseResult != null) {
+          MethodCall methodCall = parseResult.getLeft();
           output.add(methodCall);
+          i += parseResult.getRight();
         } else {
           output.add(token);
         }
@@ -61,11 +65,32 @@ public class ExpressionParser {
     return output;
   }
 
-  private MethodCall parseMethodCall(List<Token> tokens) {
-    MethodCall methodCall = new Parser(tokens).parseMethodCall();
+  private Pair<MethodCall, Integer> parseMethodCall(List<Token> tokens) {
+    Parser parser = new Parser(tokens);
+    int idx = parser.savePointer();
+    MethodCall methodCall = parser.parseMethodCall();
+    int diff = parser.savePointer() - idx;
     if (methodCall != null && methodNames.contains(methodCall.getNames().get(0))) {
-      return methodCall;
+      return new Pair<>(methodCall, diff);
     }
     return null;
+  }
+
+  private class Pair<S, T> {
+    S left;
+    T right;
+
+    public Pair(S left, T right) {
+      this.left = left;
+      this.right = right;
+    }
+
+    public S getLeft() {
+      return left;
+    }
+
+    public T getRight() {
+      return right;
+    }
   }
 }

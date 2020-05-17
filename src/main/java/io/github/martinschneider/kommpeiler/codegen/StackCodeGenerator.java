@@ -1,6 +1,5 @@
 package io.github.martinschneider.kommpeiler.codegen;
 
-import static io.github.martinschneider.kommpeiler.codegen.ExpressionCodeGenerator.evaluateExpression;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.BIPUSH;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DRETURN;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GETSTATIC;
@@ -17,6 +16,7 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ILOAD_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ILOAD_1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ILOAD_2;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ILOAD_3;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.INVOKESTATIC;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.INVOKEVIRTUAL;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IRETURN;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISTORE;
@@ -40,7 +40,18 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.Map;
 
 public class StackCodeGenerator {
-  public static HasOutput pushInteger(DynamicByteArray out, ConstantPool constantPool, int number) {
+  private ExpressionCodeGenerator ecg;
+  private ConstantPool constantPool;
+
+  public StackCodeGenerator(ConstantPool constantPool) {
+    this.constantPool = constantPool;
+  }
+
+  public void setExpressionCodeGenerator(ExpressionCodeGenerator ecg) {
+    this.ecg = ecg;
+  }
+
+  public HasOutput pushInteger(DynamicByteArray out, ConstantPool constantPool, int number) {
     if (number == -1) {
       out.write(ICONST_M1);
     } else if (number == 0) {
@@ -60,19 +71,18 @@ public class StackCodeGenerator {
     } else if (number >= -32768 && number < 32768) {
       sipush(out, number);
     } else {
-      ldc(out, constantPool, CONSTANT_INTEGER, number);
+      ldc(out, CONSTANT_INTEGER, number);
     }
     return out;
   }
 
-  public static HasOutput ldc(
-      DynamicByteArray out, ConstantPool constantPool, byte type, Object key) {
+  public HasOutput ldc(DynamicByteArray out, byte type, Object key) {
     out.write(LDC);
     out.write((byte) constantPool.indexOf(type, key));
     return out;
   }
 
-  public static HasOutput loadInteger(DynamicByteArray out, byte idx) {
+  public HasOutput loadInteger(DynamicByteArray out, byte idx) {
     if (idx == 0) {
       out.write(ILOAD_0);
     } else if (idx == 1) {
@@ -88,13 +98,13 @@ public class StackCodeGenerator {
     return out;
   }
 
-  public static HasOutput sipush(DynamicByteArray out, int number) {
+  public HasOutput sipush(DynamicByteArray out, int number) {
     out.write(SIPUSH);
     out.write((short) number);
     return out;
   }
 
-  public static HasOutput storeInteger(HasOutput out, int idx) {
+  public HasOutput storeInteger(HasOutput out, int idx) {
     if (idx == 0) {
       out.write(ISTORE_0);
     } else if (idx == 1) {
@@ -110,20 +120,20 @@ public class StackCodeGenerator {
     return out;
   }
 
-  public static HasOutput bipush(DynamicByteArray out, int number) {
+  public HasOutput bipush(DynamicByteArray out, int number) {
     out.write(BIPUSH);
     out.write((byte) number);
     return out;
   }
 
-  public static HasOutput ret(
+  public HasOutput ret(
       DynamicByteArray out,
       Clazz clazz,
       Map<Identifier, Integer> variables,
       ConstantPool constantPool,
       String type,
       Expression retValue) {
-    evaluateExpression(out, clazz, variables, constantPool, retValue);
+    ecg.evaluateExpression(out, variables, retValue);
     switch (type) {
       case "INT":
         out.write(IRETURN);
@@ -138,7 +148,7 @@ public class StackCodeGenerator {
     return out;
   }
 
-  public static HasOutput assignValue(
+  public HasOutput assignValue(
       DynamicByteArray out, Map<Identifier, Integer> variables, Type type, Identifier name) {
     if (type.getValue().equals(INT.name())) {
       return assignInteger(variables, out, name);
@@ -146,14 +156,14 @@ public class StackCodeGenerator {
     return out;
   }
 
-  public static HasOutput assignInteger(
+  public HasOutput assignInteger(
       Map<Identifier, Integer> variables, HasOutput out, Identifier var) {
     variables.computeIfAbsent(var, x -> variables.size());
     int index = variables.get(var);
     return storeInteger(out, index);
   }
 
-  public static HasOutput incInteger(DynamicByteArray out, byte idx, byte value) {
+  public HasOutput incInteger(DynamicByteArray out, byte idx, byte value) {
     out.write(IINC);
     out.write(idx);
     out.write(value);
@@ -161,16 +171,23 @@ public class StackCodeGenerator {
     return out;
   }
 
-  public static HasOutput getStatic(
+  public HasOutput getStatic(
       DynamicByteArray out, ConstantPool constantPool, String clazz, String field, String type) {
     out.write(GETSTATIC);
     out.write(constantPool.indexOf(CONSTANT_FIELDREF, clazz, field, type));
     return out;
   }
 
-  public static HasOutput invokeVirtual(
+  public HasOutput invokeVirtual(
       DynamicByteArray out, ConstantPool constantPool, String clazz, String field, String type) {
     out.write(INVOKEVIRTUAL);
+    out.write(constantPool.indexOf(CONSTANT_METHODREF, clazz, field, type));
+    return out;
+  }
+
+  public HasOutput invokeStatic(
+      DynamicByteArray out, ConstantPool constantPool, String clazz, String field, String type) {
+    out.write(INVOKESTATIC);
     out.write(constantPool.indexOf(CONSTANT_METHODREF, clazz, field, type));
     return out;
   }

@@ -5,10 +5,6 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IDIV;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IMUL;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IREM;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISUB;
-import static io.github.martinschneider.kommpeiler.codegen.StackCodeGenerator.incInteger;
-import static io.github.martinschneider.kommpeiler.codegen.StackCodeGenerator.ldc;
-import static io.github.martinschneider.kommpeiler.codegen.StackCodeGenerator.loadInteger;
-import static io.github.martinschneider.kommpeiler.codegen.StackCodeGenerator.pushInteger;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.INT;
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.VOID;
@@ -22,6 +18,7 @@ import io.github.martinschneider.kommpeiler.parser.ExpressionParser;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
+import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
 import io.github.martinschneider.kommpeiler.parser.productions.Type;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import io.github.martinschneider.kommpeiler.scanner.tokens.IntNum;
@@ -34,20 +31,30 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ExpressionCodeGenerator {
-  public static ExpressionResult evaluateExpression(
-      DynamicByteArray out,
+  private StackCodeGenerator scg;
+  private Clazz clazz;
+  private ConstantPool constantPool;
+  private Map<String, Method> methodMap;
+
+  public void setStackCodeGenerator(
       Clazz clazz,
-      Map<Identifier, Integer> variables,
       ConstantPool constantPool,
-      Expression expression) {
-    return evaluateExpression(out, clazz, variables, constantPool, expression, true);
+      Map<String, Method> methodMap,
+      StackCodeGenerator scg) {
+    this.clazz = clazz;
+    this.constantPool = constantPool;
+    this.methodMap = methodMap;
+    this.scg = scg;
   }
 
-  public static ExpressionResult evaluateExpression(
+  public ExpressionResult evaluateExpression(
+      DynamicByteArray out, Map<Identifier, Integer> variables, Expression expression) {
+    return evaluateExpression(out, variables, expression, true);
+  }
+
+  public ExpressionResult evaluateExpression(
       DynamicByteArray out,
-      Clazz clazz,
       Map<Identifier, Integer> variables,
-      ConstantPool constantPool,
       Expression expression,
       boolean pushIfZero) {
     // TODO: support String concatenation
@@ -56,6 +63,9 @@ public class ExpressionCodeGenerator {
     // valid for doubles etc.
     Type type = type(VOID);
     Object value = null;
+    if (expression == null) {
+      return null;
+    }
     List<Token> tokens = new ExpressionParser(getMethodNames(clazz)).postfix(expression.getInfix());
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
@@ -66,19 +76,34 @@ public class ExpressionCodeGenerator {
         if (i + 1 == tokens.size()
             || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
                 && !tokens.get(i + 1).eq(op(POST_INCREMENT)))) {
-          loadInteger(out, variables.get(id).byteValue());
+          scg.loadInteger(out, variables.get(id).byteValue());
         }
         type = type(INT);
       } else if (token instanceof IntNum) {
         Integer intValue = ((IntNum) token).intValue();
         if (intValue != 0 || pushIfZero) {
-          pushInteger(out, constantPool, intValue);
+          scg.pushInteger(out, constantPool, intValue);
         }
         type = type(INT);
         value = intValue;
       } else if (token instanceof Str) {
-        ldc(out, constantPool, CONSTANT_STRING, ((Str) token).strValue());
+        scg.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
         type = type("java.lang.String");
+      } else if (token instanceof MethodCall) {
+        MethodCall methodCall = (MethodCall) token;
+        String methodName =
+            methodCall.getNames().get(methodCall.getNames().size() - 1).getValue().toString();
+        Method method = methodMap.get(methodName);
+        for (Expression exp : methodCall.getParameters()) {
+          evaluateExpression(out, variables, exp);
+        }
+        scg.invokeStatic(
+            out,
+            constantPool,
+            clazz.getName().getValue().toString(),
+            methodName,
+            method.getTypeDescr());
+        type = method.getType();
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
         switch (op) {
@@ -98,10 +123,10 @@ public class ExpressionCodeGenerator {
             out.write(IREM);
             break;
           case POST_INCREMENT:
-            incInteger(out, variables.get(tokens.get(i - 1)).byteValue(), (byte) 1);
+            scg.incInteger(out, variables.get(tokens.get(i - 1)).byteValue(), (byte) 1);
             break;
           case POST_DECREMENT:
-            incInteger(out, variables.get(tokens.get(i - 1)).byteValue(), (byte) -1);
+            scg.incInteger(out, variables.get(tokens.get(i - 1)).byteValue(), (byte) -1);
           default:
         }
       }
@@ -109,7 +134,7 @@ public class ExpressionCodeGenerator {
     return new ExpressionResult(type, value);
   }
 
-  private static List<Identifier> getMethodNames(Clazz clazz) {
+  private List<Identifier> getMethodNames(Clazz clazz) {
     return clazz.getBody().stream().map(Method::getName).collect(Collectors.toList());
   }
 }

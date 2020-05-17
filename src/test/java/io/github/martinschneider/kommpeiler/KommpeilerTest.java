@@ -43,12 +43,15 @@ public class KommpeilerTest {
         Arguments.of("K003_VariableAssignments"),
         Arguments.of("K004_IntegerExpressions"),
         Arguments.of("K005_IfConditions"),
-        Arguments.of("K006_WhileLoop"),
-        Arguments.of("K007_ForLoop"),
-        Arguments.of("K008_DoLoop"),
+        Arguments.of("K006_WhileLoops"),
+        Arguments.of("K007_ForLoops"),
+        Arguments.of("K008_DoLoops"),
         Arguments.of("K009_Fibonacci"),
         Arguments.of("K010_NestedLoops"),
-        Arguments.of("K011_MethodCalls"));
+        Arguments.of("K011_MethodCalls"),
+        Arguments.of("K012_Factorial"),
+        Arguments.of("K013_CollatzConjecture"),
+        Arguments.of("K014_ParallelAssignments"));
   }
 
   @ParameterizedTest

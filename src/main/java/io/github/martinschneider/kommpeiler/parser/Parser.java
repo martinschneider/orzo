@@ -42,6 +42,7 @@ import io.github.martinschneider.kommpeiler.error.ErrorType;
 import io.github.martinschneider.kommpeiler.parser.productions.Argument;
 import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
+import io.github.martinschneider.kommpeiler.parser.productions.BasicType;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Condition;
 import io.github.martinschneider.kommpeiler.parser.productions.ConditionalStatement;
@@ -53,6 +54,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.ForStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
+import io.github.martinschneider.kommpeiler.parser.productions.ParallelAssignment;
 import io.github.martinschneider.kommpeiler.parser.productions.Return;
 import io.github.martinschneider.kommpeiler.parser.productions.Selector;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
@@ -127,7 +129,7 @@ public class Parser {
       if (token.eq(type("STRING"))) {
         type = "Ljava/lang/String;";
       } else {
-        type = token.getValue().toString();
+        type = BasicType.valueOf(token.getValue().toString()).getLabel();
       }
       nextToken();
       if (token.eq(sym(LBRAK))) {
@@ -137,8 +139,8 @@ public class Parser {
         } else {
           errors.addParserError("missing ] in type declaration");
         }
+        nextToken();
       }
-      nextToken();
       if (token instanceof Identifier) {
         name = (Identifier) token;
       }
@@ -151,6 +153,35 @@ public class Parser {
       }
     }
     return arguments;
+  }
+
+  public ParallelAssignment parseParallelAssignment() {
+    List<Identifier> left = new ArrayList<>();
+    List<Expression> right = new ArrayList<>();
+    while (token instanceof Identifier || token.eq(sym(COMMA))) {
+      if (token instanceof Identifier) {
+        left.add((Identifier) token);
+      }
+      nextToken();
+    }
+    if (!token.eq(op(ASSIGN))) {
+      return null;
+    }
+    nextToken();
+    Expression expression;
+    while ((expression = parseExpression()) != null || token.eq(sym(COMMA))) {
+      if (expression != null) {
+        right.add(expression);
+      } else {
+        nextToken();
+      }
+    }
+    if (left.size() != right.size()) {
+      errors.addParserError(
+          "left and right side must have the same number of variables in parallel assignment");
+      return null;
+    }
+    return new ParallelAssignment(left, right);
   }
 
   public Assignment parseAssignment() {
@@ -339,9 +370,12 @@ public class Parser {
         errors.addParserError("invalid condition in do-clause");
       }
       nextToken();
-      if (!token.eq(sym(RPAREN))) {
+      if (!token.eq(sym(RBRACE))) {
         previousToken();
-        errors.addParserError("missing ) in do-clause");
+        errors.addParserError("missing } in do-clause");
+      } else {
+        insertToken(sym(SEMICOLON));
+        nextToken();
       }
       return new DoStatement(condition, body);
     } else {
@@ -509,7 +543,7 @@ public class Parser {
         nextToken();
       } while ((token.eq(sym(DOT)) && nextToken()));
       parameters = parseParameters();
-      return new MethodCall(names, parameters);
+      return (parameters == null) ? null : new MethodCall(names, parameters);
     }
     return null;
   }
@@ -587,17 +621,14 @@ public class Parser {
 
   public Statement parseStatement() {
     Assignment assignment;
+    ParallelAssignment parallelAssignment;
     ConditionalStatement conditionalStatement;
     Declaration declaration;
     MethodCall methodCall;
     Return returnValue;
     int idx = savePointer();
     if ((assignment = parseAssignment()) != null) {
-      if (token.eq(sym(SEMICOLON))) {
-        return new Assignment(assignment.getLeft(), assignment.getRight());
-      } else {
-        return assignment;
-      }
+      return assignment;
     } else if (restorePointer(idx) && (conditionalStatement = parseIfStatement()) != null) {
       return conditionalStatement;
     } else if (restorePointer(idx) && (conditionalStatement = parseDoStatement()) != null) {
@@ -612,6 +643,8 @@ public class Parser {
       return methodCall;
     } else if (restorePointer(idx) && (returnValue = parseReturn()) != null) {
       return returnValue;
+    } else if (restorePointer(idx) && (parallelAssignment = parseParallelAssignment()) != null) {
+      return parallelAssignment;
     } else {
       return null;
     }
@@ -675,7 +708,11 @@ public class Parser {
         errors.addParserError("invalid body of for statement");
       }
       if (!token.eq(sym(RBRACE))) {
-        errors.addParserError("Missing } in for statement");
+        previousToken();
+        errors.addParserError("missing } in for-clause");
+      } else {
+        insertToken(sym(SEMICOLON));
+        nextToken();
       }
       return new ForStatement(initialization, condition, loopStatement, body);
     } else {
@@ -732,7 +769,11 @@ public class Parser {
         errors.addParserError("invalid body of while-clause");
       }
       if (!token.eq(sym(RBRACE))) {
-        errors.addParserError("Missing } in while-clause");
+        previousToken();
+        errors.addParserError("missing } in while-clause");
+      } else {
+        insertToken(sym(SEMICOLON));
+        nextToken();
       }
       return new WhileStatement(condition, body);
     } else {
@@ -760,8 +801,7 @@ public class Parser {
     return true;
   }
 
-  /** helper methods * */
-  private int savePointer() {
+  public int savePointer() {
     return index;
   }
 }

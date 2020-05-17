@@ -1,7 +1,6 @@
 package io.github.martinschneider.kommpeiler.codegen;
 
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
-import static io.github.martinschneider.kommpeiler.codegen.ExpressionCodeGenerator.evaluateExpression;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IFEQ;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IFGE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IFGT;
@@ -22,7 +21,13 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.Map;
 
 public class ConditionalCodeGenerator {
-  public static HasOutput generateCondition(
+  private ExpressionCodeGenerator ecg;
+
+  public void setExpressionCodeGenerator(ExpressionCodeGenerator ecg) {
+    this.ecg = ecg;
+  }
+
+  public HasOutput generateCondition(
       DynamicByteArray out,
       Clazz clazz,
       Map<Identifier, Integer> variables,
@@ -32,7 +37,7 @@ public class ConditionalCodeGenerator {
     return generateCondition(out, clazz, variables, constantPool, condition, branchBytes, false);
   }
 
-  public static HasOutput generateCondition(
+  public HasOutput generateCondition(
       DynamicByteArray out,
       Clazz clazz,
       Map<Identifier, Integer> variables,
@@ -43,11 +48,9 @@ public class ConditionalCodeGenerator {
     DynamicByteArray conditionOut = new DynamicByteArray();
     // TODO: support other boolean conditions
     ExpressionResult left =
-        evaluateExpression(
-            conditionOut, clazz, variables, constantPool, condition.getLeft(), false);
+        ecg.evaluateExpression(conditionOut, variables, condition.getLeft(), false);
     ExpressionResult right =
-        evaluateExpression(
-            conditionOut, clazz, variables, constantPool, condition.getRight(), false);
+        ecg.evaluateExpression(conditionOut, variables, condition.getRight(), false);
     boolean leftZero = isZero(left.getValue());
     boolean rightZero = isZero(right.getValue());
     if (leftZero ^ rightZero) {
@@ -148,7 +151,7 @@ public class ConditionalCodeGenerator {
     return writeBranchOffset(out, branchBytes, isDoLoop, conditionOut);
   }
 
-  public static HasOutput writeBranchOffset(
+  public HasOutput writeBranchOffset(
       DynamicByteArray out,
       short branchBytes,
       boolean addConditionToBranchOffset,

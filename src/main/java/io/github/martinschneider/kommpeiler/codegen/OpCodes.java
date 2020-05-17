@@ -17,6 +17,7 @@ public class OpCodes {
   public static final byte ILOAD_2 = (byte) 28;
   public static final byte ILOAD_3 = (byte) 29;
   public static final byte INVOKEVIRTUAL = (byte) 182;
+  public static final byte INVOKESTATIC = (byte) 184;
   public static final byte ISTORE = (byte) 54;
   public static final byte ISTORE_0 = (byte) 59;
   public static final byte ISTORE_1 = (byte) 60;

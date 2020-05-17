@@ -20,6 +20,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class StackCodeGeneratorTest {
+  private StackCodeGenerator target = new StackCodeGenerator(new ConstantPool());
+
   private static Stream<Arguments> testIntegerConstants() {
     return Stream.of(
         Arguments.of(-32768, combine(SIPUSH, shortToByteArray(-32768))),
@@ -44,8 +46,6 @@ public class StackCodeGeneratorTest {
   /** verify that ICONST_*, BIPUSH and SIPUSH are used where applicable */
   public void testIntegerConstants(int value, byte[] expected) {
     assertArrayEquals(
-        StackCodeGenerator.pushInteger(new DynamicByteArray(), new ConstantPool(), value)
-            .getBytes(),
-        expected);
+        target.pushInteger(new DynamicByteArray(), new ConstantPool(), value).getBytes(), expected);
   }
 }
