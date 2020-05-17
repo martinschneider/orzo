@@ -126,14 +126,13 @@ public class CodeGenerator {
         Expression right = assignment.getRight().get(i);
         byte leftIdx = variables.get(left).byteValue();
         ecg.evaluateExpression(out, variables, right);
-        // TODO: replace recursively
-        if (assignment.getRight().contains(new Expression(List.of(left)))) {
-          Identifier tmpId = id("tmp_" + tmpCount);
-          assignment.getRight().replaceAll(x -> new Expression(List.of(tmpId)));
+        if (replaceIds(assignment.getRight(), left, tmpCount)) {
+          replaceIds(assignment.getRight(), left, tmpCount);
           byte tmpIdx =
               variables.computeIfAbsent(id("tmp_" + tmpCount), x -> variables.size()).byteValue();
           scg.loadInteger(out, leftIdx);
           scg.storeInteger(out, tmpIdx);
+          tmpCount++;
         }
         scg.storeInteger(out, leftIdx);
       }
@@ -228,6 +227,18 @@ public class CodeGenerator {
           method.getType().getValue().toString(),
           returnStatement.getRetValue());
     }
+  }
+
+  private boolean replaceIds(List<Expression> expressions, Identifier id, int idx) {
+    Identifier tmpId = new Identifier("tmp_" + idx);
+    boolean retValue = false;
+    for (Expression expression : expressions) {
+      expression.getInfix().replaceAll(x -> (x.eq(id)) ? tmpId : x);
+      if (expression.getInfix().contains(tmpId)) {
+        retValue = true;
+      }
+    }
+    return retValue;
   }
 
   private void header() {
