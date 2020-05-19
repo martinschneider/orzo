@@ -1,6 +1,6 @@
 package io.github.martinschneider.kommpeiler.examples;
 
-public class K011_MethodCalls {
+public class K012_MethodCalls {
   public static void main(String[] args) {
     int j = 100;
     System.out.println(getResult(100));

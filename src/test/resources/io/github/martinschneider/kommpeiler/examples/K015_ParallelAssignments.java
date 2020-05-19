@@ -1,6 +1,6 @@
 package io.github.martinschneider.kommpeiler.examples;
 
-public class K014_ParallelAssignments {
+public class K015_ParallelAssignments {
   public static void main(String[] args) {
     int a = 1;
     int b = 2;

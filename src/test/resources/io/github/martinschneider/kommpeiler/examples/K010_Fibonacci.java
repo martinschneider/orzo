@@ -1,6 +1,6 @@
 package io.github.martinschneider.kommpeiler.examples;
 
-public class K009_Fibonacci {
+public class K010_Fibonacci {
   public static void main(String[] args) {
     int f1 = 0;
     int f2 = 1;

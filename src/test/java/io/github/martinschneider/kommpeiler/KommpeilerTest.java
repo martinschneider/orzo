@@ -43,15 +43,17 @@ public class KommpeilerTest {
         Arguments.of("K003_VariableAssignments"),
         Arguments.of("K004_IntegerExpressions"),
         Arguments.of("K005_IfConditions"),
-        Arguments.of("K006_WhileLoops"),
-        Arguments.of("K007_ForLoops"),
-        Arguments.of("K008_DoLoops"),
-        Arguments.of("K009_Fibonacci"),
-        Arguments.of("K010_NestedLoops"),
-        Arguments.of("K011_MethodCalls"),
-        Arguments.of("K012_Factorial"),
-        Arguments.of("K013_CollatzConjecture"),
-        Arguments.of("K014_ParallelAssignments"));
+        Arguments.of("K006_IfElseConditions"),
+        Arguments.of("K007_WhileLoops"),
+        Arguments.of("K008_ForLoops"),
+        Arguments.of("K009_DoLoops"),
+        Arguments.of("K010_Fibonacci"),
+        Arguments.of("K011_NestedLoops"),
+        Arguments.of("K012_MethodCalls"),
+        Arguments.of("K013_Factorial"),
+        Arguments.of("K014_CollatzConjecture"),
+        Arguments.of("K015_ParallelAssignments"),
+        Arguments.of("K016_BreakLoops"));
   }
 
   @ParameterizedTest
@@ -81,7 +83,13 @@ public class KommpeilerTest {
         Files.readString(
             Path.of(
                 this.getClass()
-                    .getResource("examples" + File.separator + programName + ".output")
+                    .getResource(
+                        "examples"
+                            + File.separator
+                            + "output"
+                            + File.separator
+                            + programName
+                            + ".output")
                     .getPath()));
     assertEquals(expected, actual);
   }

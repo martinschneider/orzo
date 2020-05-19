@@ -20,7 +20,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class StackCodeGeneratorTest {
-  private StackCodeGenerator target = new StackCodeGenerator(new ConstantPool());
+  private OpsCodeGenerator target = new OpsCodeGenerator(new ConstantPool());
 
   private static Stream<Arguments> testIntegerConstants() {
     return Stream.of(

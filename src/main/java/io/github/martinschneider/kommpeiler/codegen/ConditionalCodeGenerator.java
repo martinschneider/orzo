@@ -21,10 +21,10 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.Map;
 
 public class ConditionalCodeGenerator {
-  private ExpressionCodeGenerator ecg;
+  private ExpressionCodeGenerator expressionCodeGenerator;
 
-  public void setExpressionCodeGenerator(ExpressionCodeGenerator ecg) {
-    this.ecg = ecg;
+  public void setExpressionCodeGenerator(ExpressionCodeGenerator expressionCodeGenerator) {
+    this.expressionCodeGenerator = expressionCodeGenerator;
   }
 
   public HasOutput generateCondition(
@@ -48,9 +48,11 @@ public class ConditionalCodeGenerator {
     DynamicByteArray conditionOut = new DynamicByteArray();
     // TODO: support other boolean conditions
     ExpressionResult left =
-        ecg.evaluateExpression(conditionOut, variables, condition.getLeft(), false);
+        expressionCodeGenerator.evaluateExpression(
+            conditionOut, variables, condition.getLeft(), false);
     ExpressionResult right =
-        ecg.evaluateExpression(conditionOut, variables, condition.getRight(), false);
+        expressionCodeGenerator.evaluateExpression(
+            conditionOut, variables, condition.getRight(), false);
     boolean leftZero = isZero(left.getValue());
     boolean rightZero = isZero(right.getValue());
     if (leftZero ^ rightZero) {

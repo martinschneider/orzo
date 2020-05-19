@@ -9,5 +9,6 @@ public enum Keywords {
   RETURN,
   STATIC,
   CLASS,
-  PACKAGE;
+  PACKAGE,
+  BREAK;
 }

@@ -24,6 +24,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
 import io.github.martinschneider.kommpeiler.parser.productions.DoStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.parser.productions.FieldSelector;
+import io.github.martinschneider.kommpeiler.parser.productions.IfBlock;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
@@ -350,8 +351,8 @@ public class ParserTest {
     parser = new Parser(tokens);
     IfStatement ifStatement = parser.parseIfStatement();
     assertNotNull(ifStatement);
-    assertEquals(expectedCondition, ifStatement.getCondition());
-    assertEquals(expectedStatements, ifStatement.getBody());
+    assertEquals(expectedCondition, ifStatement.getIfBlocks().get(0).getCondition());
+    assertEquals(expectedStatements, ifStatement.getIfBlocks().get(0).getBody());
   }
 
   private static Stream<Arguments> testReturn() throws IOException {
@@ -377,7 +378,9 @@ public class ParserTest {
             type(VOID),
             id("test"),
             List.of(
-                assign("x=1"), assign("y=2"), ifStmt(cond("x==y"), List.of(assign("fehler=1"))))),
+                assign("x=1"),
+                assign("y=2"),
+                ifStmt(List.of(new IfBlock(cond("x==y"), List.of(assign("fehler=1")))), false))),
         Arguments.of(
             "void test(){x=100;while(x>0){x=x-1;}",
             scope(DEFAULT),
@@ -538,8 +541,8 @@ public class ParserTest {
     return new Parser(new Lexer().getTokens(input)).parseCondition();
   }
 
-  private static IfStatement ifStmt(Condition condition, List<Statement> body) throws IOException {
-    return new IfStatement(condition, body);
+  private static IfStatement ifStmt(List<IfBlock> ifBlocks, boolean hasElse) throws IOException {
+    return new IfStatement(ifBlocks, false);
   }
 
   private static WhileStatement whileStmt(Condition condition, List<Statement> body)

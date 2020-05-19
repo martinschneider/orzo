@@ -3,9 +3,11 @@ package io.github.martinschneider.kommpeiler.codegen;
 import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
-import io.github.martinschneider.kommpeiler.parser.productions.ConditionalStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
+import io.github.martinschneider.kommpeiler.parser.productions.IfBlock;
+import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
+import io.github.martinschneider.kommpeiler.parser.productions.LoopStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
 import io.github.martinschneider.kommpeiler.parser.productions.Return;
@@ -56,20 +58,26 @@ public class ConstantPoolProcessor {
       if (value != null) {
         constantPool = processExpression(constantPool, value);
       }
-    } else if (statement instanceof MethodCall) {
-      MethodCall methodCall = (MethodCall) statement;
-      for (Expression param : methodCall.getParameters()) {
-        constantPool = processExpression(constantPool, param);
-      }
     } else if (statement instanceof Return) {
       Return ret = (Return) statement;
       constantPool = processExpression(constantPool, ret.getRetValue());
-    } else if (statement instanceof ConditionalStatement) {
-      ConditionalStatement conditional = (ConditionalStatement) statement;
-      constantPool = processExpression(constantPool, conditional.getCondition().getLeft());
-      constantPool = processExpression(constantPool, conditional.getCondition().getRight());
-      for (Statement stmt : conditional.getBody()) {
+    } else if (statement instanceof LoopStatement) {
+      LoopStatement loopStatement = (LoopStatement) statement;
+      constantPool = processExpression(constantPool, loopStatement.getCondition().getLeft());
+      constantPool = processExpression(constantPool, loopStatement.getCondition().getRight());
+      for (Statement stmt : loopStatement.getBody()) {
         constantPool = processStatement(constantPool, stmt);
+      }
+    } else if (statement instanceof IfStatement) {
+      IfStatement ifStatement = (IfStatement) statement;
+      for (IfBlock ifBlock : ifStatement.getIfBlocks()) {
+        for (Statement subStatement : ifBlock.getBody()) {
+          constantPool = processStatement(constantPool, subStatement);
+        }
+        if (ifBlock.getCondition() != null) { // null for else blocks
+          constantPool = processExpression(constantPool, ifBlock.getCondition().getLeft());
+          constantPool = processExpression(constantPool, ifBlock.getCondition().getRight());
+        }
       }
     }
     return constantPool;

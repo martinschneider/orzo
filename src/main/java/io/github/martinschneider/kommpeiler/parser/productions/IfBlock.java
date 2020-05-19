@@ -3,21 +3,20 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DoStatement implements LoopStatement {
+public class IfBlock {
   private List<Statement> body;
   private Condition condition;
 
-  public DoStatement(final Condition condition, final List<Statement> body) {
+  public IfBlock(final Condition condition, final List<Statement> body) {
+    super();
     this.condition = condition;
     this.body = body;
   }
 
-  @Override
   public List<Statement> getBody() {
     return body;
   }
 
-  @Override
   public Condition getCondition() {
     return condition;
   }
@@ -50,7 +49,7 @@ public class DoStatement implements LoopStatement {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    DoStatement other = (DoStatement) obj;
+    IfBlock other = (IfBlock) obj;
     if (body == null) {
       if (other.body != null) {
         return false;
@@ -71,12 +70,15 @@ public class DoStatement implements LoopStatement {
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();
-    strBuilder.append("do ");
-    strBuilder.append(" {");
+    if (condition == null) {
+      strBuilder.append("else{");
+    } else {
+      strBuilder.append("if(");
+      strBuilder.append(condition);
+      strBuilder.append("){");
+    }
     strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     strBuilder.append("}");
-    strBuilder.append(" while ");
-    strBuilder.append(condition);
     return strBuilder.toString();
   }
 }

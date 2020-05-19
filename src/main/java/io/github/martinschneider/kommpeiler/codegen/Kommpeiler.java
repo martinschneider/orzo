@@ -58,7 +58,6 @@ public class Kommpeiler {
     }
     CodeGenerator codeGen = new CodeGenerator(clazz, output);
     codeGen.generate();
-    // System.out.println(Files.size(Path.of(output.toURI())) + " bytes");
     System.out.println("Ok bye!\n");
   }
 }

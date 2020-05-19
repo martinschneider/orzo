@@ -17,6 +17,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
 import io.github.martinschneider.kommpeiler.parser.productions.DoStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.parser.productions.ForStatement;
+import io.github.martinschneider.kommpeiler.parser.productions.IfBlock;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
@@ -26,6 +27,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.parser.productions.Type;
 import io.github.martinschneider.kommpeiler.parser.productions.WhileStatement;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +38,10 @@ public class CodeGenerator {
   private static final int INTEGER_DEFAULT_VALUE = 0;
   private Clazz clazz;
   private ConstantPool constantPool;
-  private StackCodeGenerator scg;
-  private ExpressionCodeGenerator ecg;
-  private ConditionalCodeGenerator ccg;
-  private ConstantPoolProcessor cpp;
+  private OpsCodeGenerator opsCodeGenerator;
+  private ExpressionCodeGenerator expressionCodeGenerator;
+  private ConditionalCodeGenerator conditionalCodeGenerator;
+  private ConstantPoolProcessor constantPoolProcessor;
   private MethodProcessor methodProcessor;
   private Map<String, Method> methodMap;
   private Output out;
@@ -47,16 +49,16 @@ public class CodeGenerator {
   public CodeGenerator(Clazz clazz, Output out) {
     this.clazz = clazz;
     this.out = out;
-    ccg = new ConditionalCodeGenerator();
-    cpp = new ConstantPoolProcessor();
-    ecg = new ExpressionCodeGenerator();
-    constantPool = cpp.processConstantPool(clazz);
-    scg = new StackCodeGenerator(constantPool);
-    ccg.setExpressionCodeGenerator(ecg);
+    conditionalCodeGenerator = new ConditionalCodeGenerator();
+    constantPoolProcessor = new ConstantPoolProcessor();
+    constantPool = constantPoolProcessor.processConstantPool(clazz);
+    opsCodeGenerator = new OpsCodeGenerator(constantPool);
     methodProcessor = new MethodProcessor();
     methodMap = methodProcessor.getMethodMap(clazz);
-    ecg.setStackCodeGenerator(clazz, constantPool, methodMap, scg);
-    scg.setExpressionCodeGenerator(ecg);
+    expressionCodeGenerator =
+        new ExpressionCodeGenerator(clazz, constantPool, methodMap, opsCodeGenerator);
+    opsCodeGenerator.setExpressionCodeGenerator(expressionCodeGenerator);
+    conditionalCodeGenerator.setExpressionCodeGenerator(expressionCodeGenerator);
   }
 
   private void accessModifiers() {
@@ -81,7 +83,7 @@ public class CodeGenerator {
   }
 
   public void generate() {
-    constantPool = cpp.processConstantPool(clazz);
+    constantPool = constantPoolProcessor.processConstantPool(clazz);
     methodMap = methodProcessor.getMethodMap(clazz);
     supportPrint();
     header();
@@ -105,19 +107,20 @@ public class CodeGenerator {
     if (statement instanceof Declaration) {
       Declaration decl = (Declaration) statement;
       if (decl.hasValue()) {
-        ecg.evaluateExpression(out, variables, decl.getValue());
+        expressionCodeGenerator.evaluateExpression(out, variables, decl.getValue());
       } else {
         if (decl.getType().eq(type(INT))) {
-          scg.pushInteger(out, constantPool, INTEGER_DEFAULT_VALUE);
+          opsCodeGenerator.pushInteger(out, constantPool, INTEGER_DEFAULT_VALUE);
         }
       }
-      scg.assignValue(out, variables, decl.getType(), decl.getName());
+      opsCodeGenerator.assignValue(out, variables, decl.getType(), decl.getName());
     } else if (statement instanceof Assignment) {
       Assignment assignment = (Assignment) statement;
       // TODO: store type in variable map
       // TODO: type conversion
-      ExpressionResult result = ecg.evaluateExpression(out, variables, assignment.getRight());
-      scg.assignValue(out, variables, result.getType(), assignment.getLeft());
+      ExpressionResult result =
+          expressionCodeGenerator.evaluateExpression(out, variables, assignment.getRight());
+      opsCodeGenerator.assignValue(out, variables, result.getType(), assignment.getLeft());
     } else if (statement instanceof ParallelAssignment) {
       ParallelAssignment assignment = (ParallelAssignment) statement;
       int tmpCount = 0;
@@ -125,32 +128,34 @@ public class CodeGenerator {
         Identifier left = assignment.getLeft().get(i);
         Expression right = assignment.getRight().get(i);
         byte leftIdx = variables.get(left).byteValue();
-        ecg.evaluateExpression(out, variables, right);
+        expressionCodeGenerator.evaluateExpression(out, variables, right);
         if (replaceIds(assignment.getRight(), left, tmpCount)) {
           replaceIds(assignment.getRight(), left, tmpCount);
           byte tmpIdx =
               variables.computeIfAbsent(id("tmp_" + tmpCount), x -> variables.size()).byteValue();
-          scg.loadInteger(out, leftIdx);
-          scg.storeInteger(out, tmpIdx);
+          opsCodeGenerator.loadInteger(out, leftIdx);
+          opsCodeGenerator.storeInteger(out, tmpIdx);
           tmpCount++;
         }
-        scg.storeInteger(out, leftIdx);
+        opsCodeGenerator.storeInteger(out, leftIdx);
       }
     } else if (statement instanceof MethodCall) {
       MethodCall methodCall = (MethodCall) statement;
       if ("System.out.println".equals(methodCall.getQualifiedName())) {
         for (Expression param : methodCall.getParameters()) {
-          scg.getStatic(out, constantPool, "java/lang/System", "out", "Ljava/io/PrintStream;");
-          ExpressionResult result = ecg.evaluateExpression(out, variables, param);
+          opsCodeGenerator.getStatic(
+              out, constantPool, "java/lang/System", "out", "Ljava/io/PrintStream;");
+          ExpressionResult result =
+              expressionCodeGenerator.evaluateExpression(out, variables, param);
           print(out, result.getType());
         }
       } else {
         String methodName =
             methodCall.getNames().get(methodCall.getNames().size() - 1).getValue().toString();
         for (Expression exp : methodCall.getParameters()) {
-          ecg.evaluateExpression(out, variables, exp);
+          expressionCodeGenerator.evaluateExpression(out, variables, exp);
         }
-        scg.invokeStatic(
+        opsCodeGenerator.invokeStatic(
             out,
             constantPool,
             clazz.getName().getValue().toString(),
@@ -159,16 +164,43 @@ public class CodeGenerator {
       }
     } else if (statement instanceof IfStatement) {
       IfStatement ifStatement = (IfStatement) statement;
-      DynamicByteArray bodyOut = new DynamicByteArray();
-      for (Statement stmt : ifStatement.getBody()) {
-        generateCode(variables, bodyOut, stmt, method, clazz);
+      List<DynamicByteArray> bodyOutputs = new ArrayList<>();
+      List<DynamicByteArray> conditionOutputs = new ArrayList<>();
+      for (int i = 0; i < ifStatement.getIfBlocks().size(); i++) {
+        IfBlock ifBlock = ifStatement.getIfBlocks().get(i);
+        DynamicByteArray bodyOut = new DynamicByteArray();
+        for (Statement stmt : ifBlock.getBody()) {
+          generateCode(variables, bodyOut, stmt, method, clazz);
+        }
+        DynamicByteArray conditionOut = new DynamicByteArray();
+        if (ifBlock.getCondition() != null) { // null for else blocks
+          short branchBytes = (short) (3 + bodyOut.getBytes().length);
+          if (i != ifStatement.getIfBlocks().size() - 1) {
+            branchBytes += 3;
+          }
+          conditionalCodeGenerator.generateCondition(
+              conditionOut, clazz, variables, constantPool, ifBlock.getCondition(), branchBytes);
+        }
+        bodyOutputs.add(bodyOut);
+        conditionOutputs.add(conditionOut);
       }
-      DynamicByteArray conditionOut = new DynamicByteArray();
-      short branchBytes = (short) (3 + bodyOut.getBytes().length);
-      ccg.generateCondition(
-          conditionOut, clazz, variables, constantPool, ifStatement.getCondition(), branchBytes);
-      out.write(conditionOut.getBytes());
-      out.write(bodyOut.getBytes());
+      int blocks = bodyOutputs.size();
+      short offset = (short) (3 + bodyOutputs.get(blocks - 1).size());
+      if (!ifStatement.isHasElseBlock()) {
+        offset += conditionOutputs.get(blocks - 1).size();
+      }
+      // if there's no else then the last else if can fall through (doesn't require a goto)
+      for (int i = blocks - 2; i >= 0; i--) {
+        bodyOutputs.get(i).write(GOTO);
+        bodyOutputs.get(i).write(shortToByteArray(offset));
+        offset += conditionOutputs.get(i).size() + bodyOutputs.get(i).size();
+      }
+      for (int i = 0; i < bodyOutputs.size(); i++) {
+        if (conditionOutputs.get(i) != null) {
+          out.write(conditionOutputs.get(i).getBytes());
+        }
+        out.write(bodyOutputs.get(i).getBytes());
+      }
     } else if (statement instanceof WhileStatement) {
       WhileStatement whileStatement = (WhileStatement) statement;
       DynamicByteArray bodyOut = new DynamicByteArray();
@@ -177,7 +209,7 @@ public class CodeGenerator {
       }
       DynamicByteArray conditionOut = new DynamicByteArray();
       short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
-      ccg.generateCondition(
+      conditionalCodeGenerator.generateCondition(
           conditionOut, clazz, variables, constantPool, whileStatement.getCondition(), branchBytes);
       out.write(conditionOut.getBytes());
       out.write(bodyOut.getBytes());
@@ -191,7 +223,7 @@ public class CodeGenerator {
       }
       DynamicByteArray conditionOut = new DynamicByteArray();
       short branchBytes = (short) -(bodyOut.getBytes().length + conditionOut.getBytes().length);
-      ccg.generateCondition(
+      conditionalCodeGenerator.generateCondition(
           conditionOut,
           clazz,
           variables,
@@ -211,7 +243,7 @@ public class CodeGenerator {
       generateCode(variables, bodyOut, forStatement.getLoopStatement(), method, clazz);
       DynamicByteArray conditionOut = new DynamicByteArray();
       short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
-      ccg.generateCondition(
+      conditionalCodeGenerator.generateCondition(
           conditionOut, clazz, variables, constantPool, forStatement.getCondition(), branchBytes);
       out.write(conditionOut.getBytes());
       out.write(bodyOut.getBytes());
@@ -219,7 +251,7 @@ public class CodeGenerator {
       out.write(shortToByteArray(-(bodyOut.getBytes().length + conditionOut.getBytes().length)));
     } else if (statement instanceof Return) {
       Return returnStatement = (Return) statement;
-      scg.ret(
+      opsCodeGenerator.ret(
           out,
           clazz,
           variables,
@@ -294,10 +326,10 @@ public class CodeGenerator {
    */
   private DynamicByteArray print(DynamicByteArray out, Type type) {
     if (type.getValue().equals("java.lang.String".toUpperCase())) {
-      scg.invokeVirtual(
+      opsCodeGenerator.invokeVirtual(
           out, constantPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
     } else if (type.getValue().equals("INT")) {
-      scg.invokeVirtual(out, constantPool, "java/io/PrintStream", "println", "(I)V");
+      opsCodeGenerator.invokeVirtual(out, constantPool, "java/io/PrintStream", "println", "(I)V");
     } else {
       // TODO: call toString() first
     }
@@ -313,7 +345,8 @@ public class CodeGenerator {
     constantPool.addClass("java/lang/System");
     constantPool.addClass("java/io/PrintStream");
     constantPool.addFieldRef("java/lang/System", "out", "Ljava/io/PrintStream;");
-    cpp.addMethodRef(constantPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
-    cpp.addMethodRef(constantPool, "java/io/PrintStream", "println", "(I)V");
+    constantPoolProcessor.addMethodRef(
+        constantPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
+    constantPoolProcessor.addMethodRef(constantPool, "java/io/PrintStream", "println", "(I)V");
   }
 }

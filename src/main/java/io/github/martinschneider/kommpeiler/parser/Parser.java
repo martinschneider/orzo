@@ -3,8 +3,10 @@ package io.github.martinschneider.kommpeiler.parser;
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.DOUBLE;
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.INT;
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.VOID;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.BREAK;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.CLASS;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.DO;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.ELSE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.FOR;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.IF;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.PACKAGE;
@@ -43,15 +45,17 @@ import io.github.martinschneider.kommpeiler.parser.productions.Argument;
 import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
 import io.github.martinschneider.kommpeiler.parser.productions.BasicType;
+import io.github.martinschneider.kommpeiler.parser.productions.Break;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Condition;
-import io.github.martinschneider.kommpeiler.parser.productions.ConditionalStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
 import io.github.martinschneider.kommpeiler.parser.productions.DoStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.parser.productions.FieldSelector;
 import io.github.martinschneider.kommpeiler.parser.productions.ForStatement;
+import io.github.martinschneider.kommpeiler.parser.productions.IfBlock;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
+import io.github.martinschneider.kommpeiler.parser.productions.LoopStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
 import io.github.martinschneider.kommpeiler.parser.productions.ParallelAssignment;
@@ -429,48 +433,105 @@ public class Parser {
   }
 
   public IfStatement parseIfStatement() {
+    IfStatement ifStatement;
+    List<IfBlock> ifBlocks = new ArrayList<>();
+    IfBlock ifBlock = parseIfBlock(keyword(IF));
+    if (ifBlock != null) {
+      ifBlocks.add(ifBlock);
+      IfBlock elseIfBlock;
+      int idx1 = savePointer();
+      int idx2 = idx1;
+      while ((elseIfBlock = parseIfBlock(keyword(ELSE), keyword(IF))) != null) {
+        ifBlocks.add(elseIfBlock);
+        idx2 = savePointer();
+      }
+      restorePointer(idx2);
+      IfBlock elseBlock = parseElseBlock();
+      if (elseBlock != null) {
+        ifBlocks.add(elseBlock);
+        ifStatement = new IfStatement(ifBlocks, true);
+      } else {
+        ifStatement = new IfStatement(ifBlocks, false);
+      }
+      previousToken();
+      insertToken(sym(SEMICOLON));
+      nextToken();
+      return ifStatement;
+    }
+    return null;
+  }
+
+  public IfBlock parseIfBlock(Token... expectedTokens) {
     Condition condition;
     List<Statement> body;
     if (token == null) {
       return null;
     }
-    if (token.eq(keyword(IF))) {
-      nextToken();
-      if (!token.eq(sym(LPAREN))) {
-        previousToken();
-        errors.addParserError("if must be followed by (");
+    for (Token expectedToken : expectedTokens) {
+      if (!token.eq(expectedToken)) {
+        return null;
       }
       nextToken();
-      condition = parseCondition();
-      if (condition == null) {
-        previousToken();
-        errors.addParserError("if( must be followed by a valid expression");
-      }
-      if (!token.eq(sym(RPAREN))) {
-        previousToken();
-        errors.addParserError("missing ) in if-clause");
-      }
-      nextToken();
-      if (!token.eq(sym(LBRACE))) {
-        previousToken();
-        errors.addParserError("missing { in if-clause");
-      }
-      nextToken();
-      body = parseStatementSequence();
-      if (body == null) {
-        errors.addParserError("invalid body of if-clause");
-      }
-      if (!token.eq(sym(RBRACE))) {
-        previousToken();
-        errors.addParserError("missing } in if-clause");
-      } else {
-        insertToken(sym(SEMICOLON));
-        nextToken();
-      }
-      return new IfStatement(condition, body);
+    }
+    if (!token.eq(sym(LPAREN))) {
+      previousToken();
+      errors.addParserError("if must be followed by (");
+    }
+    nextToken();
+    condition = parseCondition();
+    if (condition == null) {
+      previousToken();
+      errors.addParserError("if( must be followed by a valid expression");
+    }
+    if (!token.eq(sym(RPAREN))) {
+      previousToken();
+      errors.addParserError("missing ) in if-clause");
+    }
+    nextToken();
+    if (!token.eq(sym(LBRACE))) {
+      previousToken();
+      errors.addParserError("missing { in if-clause");
+    }
+    nextToken();
+    body = parseStatementSequence();
+    if (body == null) {
+      errors.addParserError("invalid body of if-clause");
+    }
+    if (!token.eq(sym(RBRACE))) {
+      previousToken();
+      errors.addParserError("missing } in if-clause");
     } else {
+      nextToken();
+    }
+    if (condition != null & body != null) {
+      return new IfBlock(condition, body);
+    }
+    return null;
+  }
+
+  public IfBlock parseElseBlock() {
+    List<Statement> body;
+    if (!token.eq(keyword(ELSE))) {
       return null;
     }
+    nextToken();
+    if (!token.eq(sym(LBRACE))) {
+      previousToken();
+      errors.addParserError("missing { in if-clause");
+    }
+    nextToken();
+    body = parseStatementSequence();
+    if (body == null) {
+      errors.addParserError("invalid body of if-clause");
+    }
+    if (!token.eq(sym(RBRACE))) {
+      previousToken();
+      errors.addParserError("missing } in if-clause");
+    }
+    if (body != null) {
+      return new IfBlock(null, body);
+    }
+    return null;
   }
 
   public Method parseMethod() {
@@ -620,31 +681,28 @@ public class Parser {
   }
 
   public Statement parseStatement() {
-    Assignment assignment;
-    ParallelAssignment parallelAssignment;
-    ConditionalStatement conditionalStatement;
-    Declaration declaration;
-    MethodCall methodCall;
-    Return returnValue;
+    Statement stmt;
     int idx = savePointer();
-    if ((assignment = parseAssignment()) != null) {
-      return assignment;
-    } else if (restorePointer(idx) && (conditionalStatement = parseIfStatement()) != null) {
-      return conditionalStatement;
-    } else if (restorePointer(idx) && (conditionalStatement = parseDoStatement()) != null) {
-      return conditionalStatement;
-    } else if (restorePointer(idx) && (conditionalStatement = parseWhileStatement()) != null) {
-      return conditionalStatement;
-    } else if (restorePointer(idx) && (conditionalStatement = parseForStatement()) != null) {
-      return conditionalStatement;
-    } else if (restorePointer(idx) && (declaration = parseDeclaration()) != null) {
-      return declaration;
-    } else if (restorePointer(idx) && (methodCall = parseMethodCall()) != null) {
-      return methodCall;
-    } else if (restorePointer(idx) && (returnValue = parseReturn()) != null) {
-      return returnValue;
-    } else if (restorePointer(idx) && (parallelAssignment = parseParallelAssignment()) != null) {
-      return parallelAssignment;
+    if ((stmt = parseAssignment()) != null) {
+      return stmt;
+    } else if (restorePointer(idx) && (stmt = parseIfStatement()) != null) {
+      return stmt;
+    } else if (restorePointer(idx) && (stmt = parseDoStatement()) != null) {
+      return stmt;
+    } else if (restorePointer(idx) && (stmt = parseWhileStatement()) != null) {
+      return stmt;
+    } else if (restorePointer(idx) && (stmt = parseForStatement()) != null) {
+      return stmt;
+    } else if (restorePointer(idx) && (stmt = parseDeclaration()) != null) {
+      return stmt;
+    } else if (restorePointer(idx) && (stmt = parseMethodCall()) != null) {
+      return stmt;
+    } else if (restorePointer(idx) && (stmt = parseReturn()) != null) {
+      return stmt;
+    } else if (restorePointer(idx) && (stmt = parseBreak()) != null) {
+      return stmt;
+    } else if (restorePointer(idx) && (stmt = parseParallelAssignment()) != null) {
+      return stmt;
     } else {
       return null;
     }
@@ -660,7 +718,15 @@ public class Parser {
     return null;
   }
 
-  private ConditionalStatement parseForStatement() {
+  public Break parseBreak() {
+    if (token.eq(keyword(BREAK))) {
+      nextToken();
+      return new Break();
+    }
+    return null;
+  }
+
+  private LoopStatement parseForStatement() {
     Statement initialization;
     Condition condition;
     Statement loopStatement;

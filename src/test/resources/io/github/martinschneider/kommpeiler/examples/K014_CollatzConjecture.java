@@ -1,6 +1,6 @@
 package io.github.martinschneider.kommpeiler.examples;
 
-public class K013_CollatzConjecture {
+public class K014_CollatzConjecture {
   public static void main(String[] args) {
     int n = 97;
     while (n > 1) {

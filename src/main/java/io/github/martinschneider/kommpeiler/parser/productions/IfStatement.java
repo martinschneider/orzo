@@ -3,42 +3,38 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class IfStatement extends ConditionalStatement {
-  private List<Statement> body;
-  private Condition condition;
+public class IfStatement implements Statement {
+  private List<IfBlock> ifBlocks;
+  private boolean hasElseBlock;
 
-  public IfStatement(final Condition condition, final List<Statement> body) {
+  public IfStatement(List<IfBlock> ifBlocks, boolean hasElseBlock) {
     super();
-    this.condition = condition;
-    this.body = body;
+    this.ifBlocks = ifBlocks;
+    this.hasElseBlock = hasElseBlock;
   }
 
-  @Override
-  public List<Statement> getBody() {
-    return body;
+  public List<IfBlock> getIfBlocks() {
+    return ifBlocks;
   }
 
-  @Override
-  public Condition getCondition() {
-    return condition;
+  public void setIfBlocks(List<IfBlock> ifBlocks) {
+    this.ifBlocks = ifBlocks;
   }
 
-  @Override
-  public void setBody(final List<Statement> body) {
-    this.body = body;
+  public boolean isHasElseBlock() {
+    return hasElseBlock;
   }
 
-  @Override
-  public void setCondition(final Condition condition) {
-    this.condition = condition;
+  public void setHasElseBlock(boolean hasElseBlock) {
+    this.hasElseBlock = hasElseBlock;
   }
 
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + ((body == null) ? 0 : body.hashCode());
-    result = prime * result + ((condition == null) ? 0 : condition.hashCode());
+    result = prime * result + (hasElseBlock ? 1231 : 1237);
+    result = prime * result + ((ifBlocks == null) ? 0 : ifBlocks.hashCode());
     return result;
   }
 
@@ -54,18 +50,14 @@ public class IfStatement extends ConditionalStatement {
       return false;
     }
     IfStatement other = (IfStatement) obj;
-    if (body == null) {
-      if (other.body != null) {
-        return false;
-      }
-    } else if (!body.equals(other.body)) {
+    if (hasElseBlock != other.hasElseBlock) {
       return false;
     }
-    if (condition == null) {
-      if (other.condition != null) {
+    if (ifBlocks == null) {
+      if (other.ifBlocks != null) {
         return false;
       }
-    } else if (!condition.equals(other.condition)) {
+    } else if (!ifBlocks.equals(other.ifBlocks)) {
       return false;
     }
     return true;
@@ -74,11 +66,9 @@ public class IfStatement extends ConditionalStatement {
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();
-    strBuilder.append("if ");
-    strBuilder.append(condition);
-    strBuilder.append(" then {");
-    strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append("}");
+    strBuilder.append("IF[");
+    strBuilder.append(ifBlocks.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
+    strBuilder.append("]");
     return strBuilder.toString();
   }
 }

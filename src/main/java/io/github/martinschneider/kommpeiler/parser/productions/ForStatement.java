@@ -3,7 +3,7 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ForStatement extends ConditionalStatement {
+public class ForStatement implements LoopStatement {
   private List<Statement> body;
   private Condition condition;
   private Statement initialization;
@@ -21,26 +21,20 @@ public class ForStatement extends ConditionalStatement {
     this.loopStatement = loopStatement;
   }
 
-  /** {@inheritDoc} * */
   @Override
   public List<Statement> getBody() {
     return body;
   }
 
-  /** {@inheritDoc} * */
   @Override
   public Condition getCondition() {
     return condition;
   }
 
-  /** {@inheritDoc} * */
-  @Override
   public void setBody(final List<Statement> body) {
     this.body = body;
   }
 
-  /** {@inheritDoc} * */
-  @Override
   public void setCondition(final Condition condition) {
     this.condition = condition;
   }

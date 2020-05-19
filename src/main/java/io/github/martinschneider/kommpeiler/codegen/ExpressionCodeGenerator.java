@@ -31,20 +31,20 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ExpressionCodeGenerator {
-  private StackCodeGenerator scg;
+  private OpsCodeGenerator opsCodeGenerator;
   private Clazz clazz;
   private ConstantPool constantPool;
   private Map<String, Method> methodMap;
 
-  public void setStackCodeGenerator(
+  public ExpressionCodeGenerator(
       Clazz clazz,
       ConstantPool constantPool,
       Map<String, Method> methodMap,
-      StackCodeGenerator scg) {
+      OpsCodeGenerator opsCodeGenerator) {
     this.clazz = clazz;
     this.constantPool = constantPool;
     this.methodMap = methodMap;
-    this.scg = scg;
+    this.opsCodeGenerator = opsCodeGenerator;
   }
 
   public ExpressionResult evaluateExpression(
@@ -76,18 +76,18 @@ public class ExpressionCodeGenerator {
         if (i + 1 == tokens.size()
             || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
                 && !tokens.get(i + 1).eq(op(POST_INCREMENT)))) {
-          scg.loadInteger(out, variables.get(id).byteValue());
+          opsCodeGenerator.loadInteger(out, variables.get(id).byteValue());
         }
         type = type(INT);
       } else if (token instanceof IntNum) {
         Integer intValue = ((IntNum) token).intValue();
         if (intValue != 0 || pushIfZero) {
-          scg.pushInteger(out, constantPool, intValue);
+          opsCodeGenerator.pushInteger(out, constantPool, intValue);
         }
         type = type(INT);
         value = intValue;
       } else if (token instanceof Str) {
-        scg.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
+        opsCodeGenerator.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
         type = type("java.lang.String");
       } else if (token instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) token;
@@ -97,7 +97,7 @@ public class ExpressionCodeGenerator {
         for (Expression exp : methodCall.getParameters()) {
           evaluateExpression(out, variables, exp);
         }
-        scg.invokeStatic(
+        opsCodeGenerator.invokeStatic(
             out,
             constantPool,
             clazz.getName().getValue().toString(),
@@ -123,10 +123,12 @@ public class ExpressionCodeGenerator {
             out.write(IREM);
             break;
           case POST_INCREMENT:
-            scg.incInteger(out, variables.get(tokens.get(i - 1)).byteValue(), (byte) 1);
+            opsCodeGenerator.incInteger(
+                out, variables.get(tokens.get(i - 1)).byteValue(), (byte) 1);
             break;
           case POST_DECREMENT:
-            scg.incInteger(out, variables.get(tokens.get(i - 1)).byteValue(), (byte) -1);
+            opsCodeGenerator.incInteger(
+                out, variables.get(tokens.get(i - 1)).byteValue(), (byte) -1);
           default:
         }
       }

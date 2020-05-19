@@ -39,16 +39,16 @@ import io.github.martinschneider.kommpeiler.parser.productions.Type;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.Map;
 
-public class StackCodeGenerator {
-  private ExpressionCodeGenerator ecg;
+public class OpsCodeGenerator {
+  private ExpressionCodeGenerator expressionCodeGenerator;
   private ConstantPool constantPool;
 
-  public StackCodeGenerator(ConstantPool constantPool) {
+  public OpsCodeGenerator(ConstantPool constantPool) {
     this.constantPool = constantPool;
   }
 
   public void setExpressionCodeGenerator(ExpressionCodeGenerator ecg) {
-    this.ecg = ecg;
+    this.expressionCodeGenerator = ecg;
   }
 
   public HasOutput pushInteger(DynamicByteArray out, ConstantPool constantPool, int number) {
@@ -133,7 +133,7 @@ public class StackCodeGenerator {
       ConstantPool constantPool,
       String type,
       Expression retValue) {
-    ecg.evaluateExpression(out, variables, retValue);
+    expressionCodeGenerator.evaluateExpression(out, variables, retValue);
     switch (type) {
       case "INT":
         out.write(IRETURN);

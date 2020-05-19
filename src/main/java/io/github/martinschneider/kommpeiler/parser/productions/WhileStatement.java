@@ -3,7 +3,7 @@ package io.github.martinschneider.kommpeiler.parser.productions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class WhileStatement extends ConditionalStatement {
+public class WhileStatement implements LoopStatement {
   private List<Statement> body;
   private Condition condition;
 
@@ -22,12 +22,10 @@ public class WhileStatement extends ConditionalStatement {
     return condition;
   }
 
-  @Override
   public void setBody(final List<Statement> body) {
     this.body = body;
   }
 
-  @Override
   public void setCondition(final Condition condition) {
     this.condition = condition;
   }
