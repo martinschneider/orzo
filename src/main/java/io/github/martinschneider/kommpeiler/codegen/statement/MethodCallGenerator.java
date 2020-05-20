@@ -1,10 +1,8 @@
 package io.github.martinschneider.kommpeiler.codegen.statement;
 
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
-import io.github.martinschneider.kommpeiler.codegen.ExpressionCodeGenerator;
 import io.github.martinschneider.kommpeiler.codegen.ExpressionResult;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.OpsCodeGenerator;
 import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
@@ -16,19 +14,19 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.Map;
 
 public class MethodCallGenerator implements StatementGenerator {
-  private ExpressionCodeGenerator expressionCodeGenerator;
-  private OpsCodeGenerator opsCodeGenerator;
-  private ConstantPool constantPool;
+  private ExpressionGenerator exprGenerator;
+  private OpsCodeGenerator opsGenerator;
+  private ConstantPool constPool;
   private Map<String, Method> methodMap;
 
   public MethodCallGenerator(
-      ExpressionCodeGenerator expressionCodeGenerator,
-      OpsCodeGenerator opsCodeGenerator,
-      ConstantPool constantPool,
+      ExpressionGenerator exprGenerator,
+      OpsCodeGenerator opsGenerator,
+      ConstantPool constPool,
       Map<String, Method> methodMap) {
-    this.expressionCodeGenerator = expressionCodeGenerator;
-    this.opsCodeGenerator = opsCodeGenerator;
-    this.constantPool = constantPool;
+    this.exprGenerator = exprGenerator;
+    this.opsGenerator = opsGenerator;
+    this.constPool = constPool;
     this.methodMap = methodMap;
   }
 
@@ -36,26 +34,25 @@ public class MethodCallGenerator implements StatementGenerator {
   public HasOutput generate(
       Map<Identifier, Integer> variables,
       DynamicByteArray out,
-      Statement statement,
+      Statement stmt,
       Method method,
       Clazz clazz) {
-    MethodCall methodCall = (MethodCall) statement;
+    MethodCall methodCall = (MethodCall) stmt;
     if ("System.out.println".equals(methodCall.getQualifiedName())) {
       for (Expression param : methodCall.getParameters()) {
-        opsCodeGenerator.getStatic(
-            out, constantPool, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        ExpressionResult result = expressionCodeGenerator.evaluateExpression(out, variables, param);
+        opsGenerator.getStatic(out, constPool, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        ExpressionResult result = exprGenerator.eval(out, variables, param);
         print(out, result.getType());
       }
     } else {
       String methodName =
           methodCall.getNames().get(methodCall.getNames().size() - 1).getValue().toString();
-      for (Expression exp : methodCall.getParameters()) {
-        expressionCodeGenerator.evaluateExpression(out, variables, exp);
+      for (Expression expr : methodCall.getParameters()) {
+        exprGenerator.eval(out, variables, expr);
       }
-      opsCodeGenerator.invokeStatic(
+      opsGenerator.invokeStatic(
           out,
-          constantPool,
+          constPool,
           clazz.getName().getValue().toString(),
           methodName,
           methodMap.get(methodName).getTypeDescr());
@@ -69,10 +66,10 @@ public class MethodCallGenerator implements StatementGenerator {
    */
   private DynamicByteArray print(DynamicByteArray out, Type type) {
     if (type.getValue().equals("java.lang.String".toUpperCase())) {
-      opsCodeGenerator.invokeVirtual(
-          out, constantPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
+      opsGenerator.invokeVirtual(
+          out, constPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
     } else if (type.getValue().equals("INT")) {
-      opsCodeGenerator.invokeVirtual(out, constantPool, "java/io/PrintStream", "println", "(I)V");
+      opsGenerator.invokeVirtual(out, constPool, "java/io/PrintStream", "println", "(I)V");
     } else {
       // TODO: call toString() first
     }

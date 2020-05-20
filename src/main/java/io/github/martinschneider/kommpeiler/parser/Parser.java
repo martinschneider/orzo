@@ -351,7 +351,7 @@ public class Parser {
       body = parseStatementSequence();
       if (body == null) {
         previousToken();
-        errors.addParserError("do{ must be followed by a valid statement sequence");
+        errors.addParserError("do{ must be followed by a valid stmt sequence");
       }
       if (!token.eq(sym(RBRACE))) {
         previousToken();
@@ -744,34 +744,34 @@ public class Parser {
       initialization = parseStatement();
       if (initialization == null) {
         previousToken();
-        errors.addParserError("for statement must contain an initialization statement");
+        errors.addParserError("for stmt must contain an initialization stmt");
       }
       nextToken();
       condition = parseCondition();
       if (condition == null) {
         previousToken();
-        errors.addParserError("for statement must contain a condition");
+        errors.addParserError("for stmt must contain a condition");
       }
       nextToken();
       loopStatement = parseStatement();
       if (loopStatement == null) {
         previousToken();
-        errors.addParserError("for statement must contain a loop statement");
+        errors.addParserError("for stmt must contain a loop stmt");
       }
       nextToken();
       if (!token.eq(sym(RPAREN))) {
         previousToken();
-        errors.addParserError("missing ) in for statement");
+        errors.addParserError("missing ) in for stmt");
       }
       nextToken();
       if (!token.eq(sym(LBRACE))) {
         previousToken();
-        errors.addParserError("missing { in for statement");
+        errors.addParserError("missing { in for stmt");
       }
       nextToken();
       body = parseStatementSequence();
       if (body == null) {
-        errors.addParserError("invalid body of for statement");
+        errors.addParserError("invalid body of for stmt");
       }
       if (!token.eq(sym(RBRACE))) {
         previousToken();
@@ -787,18 +787,18 @@ public class Parser {
   }
 
   public List<Statement> parseStatementSequence() {
-    List<Statement> statementSequence = new ArrayList<>();
-    Statement statement;
-    if ((statement = parseStatement()) != null) {
-      statementSequence.add(statement);
+    List<Statement> stmtSequence = new ArrayList<>();
+    Statement stmt;
+    if ((stmt = parseStatement()) != null) {
+      stmtSequence.add(stmt);
     }
     while (token.eq(sym(SEMICOLON))) {
       nextToken();
-      if ((statement = parseStatement()) != null) {
-        statementSequence.add(statement);
+      if ((stmt = parseStatement()) != null) {
+        stmtSequence.add(stmt);
       }
     }
-    return statementSequence;
+    return stmtSequence;
   }
 
   public WhileStatement parseWhileStatement() {

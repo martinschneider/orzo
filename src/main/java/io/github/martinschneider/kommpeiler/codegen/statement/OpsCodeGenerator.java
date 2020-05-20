@@ -1,4 +1,4 @@
-package io.github.martinschneider.kommpeiler.codegen;
+package io.github.martinschneider.kommpeiler.codegen.statement;
 
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.BIPUSH;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DRETURN;
@@ -32,6 +32,8 @@ import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTyp
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.INT;
 
+import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
+import io.github.martinschneider.kommpeiler.codegen.HasOutput;
 import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
@@ -40,18 +42,18 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.Map;
 
 public class OpsCodeGenerator {
-  private ExpressionCodeGenerator expressionCodeGenerator;
-  private ConstantPool constantPool;
+  private ExpressionGenerator exprGenerator;
+  private ConstantPool constPool;
 
-  public OpsCodeGenerator(ConstantPool constantPool) {
-    this.constantPool = constantPool;
+  public OpsCodeGenerator(ConstantPool constPool) {
+    this.constPool = constPool;
   }
 
-  public void setExpressionCodeGenerator(ExpressionCodeGenerator ecg) {
-    this.expressionCodeGenerator = ecg;
+  public void setExpressionCodeGenerator(ExpressionGenerator exprGenerator) {
+    this.exprGenerator = exprGenerator;
   }
 
-  public HasOutput pushInteger(DynamicByteArray out, ConstantPool constantPool, int number) {
+  public HasOutput pushInteger(DynamicByteArray out, ConstantPool constPool, int number) {
     if (number == -1) {
       out.write(ICONST_M1);
     } else if (number == 0) {
@@ -78,7 +80,7 @@ public class OpsCodeGenerator {
 
   public HasOutput ldc(DynamicByteArray out, byte type, Object key) {
     out.write(LDC);
-    out.write((byte) constantPool.indexOf(type, key));
+    out.write((byte) constPool.indexOf(type, key));
     return out;
   }
 
@@ -130,10 +132,10 @@ public class OpsCodeGenerator {
       DynamicByteArray out,
       Clazz clazz,
       Map<Identifier, Integer> variables,
-      ConstantPool constantPool,
+      ConstantPool constPool,
       String type,
       Expression retValue) {
-    expressionCodeGenerator.evaluateExpression(out, variables, retValue);
+    exprGenerator.eval(out, variables, retValue);
     switch (type) {
       case "INT":
         out.write(IRETURN);
@@ -172,23 +174,23 @@ public class OpsCodeGenerator {
   }
 
   public HasOutput getStatic(
-      DynamicByteArray out, ConstantPool constantPool, String clazz, String field, String type) {
+      DynamicByteArray out, ConstantPool constPool, String clazz, String field, String type) {
     out.write(GETSTATIC);
-    out.write(constantPool.indexOf(CONSTANT_FIELDREF, clazz, field, type));
+    out.write(constPool.indexOf(CONSTANT_FIELDREF, clazz, field, type));
     return out;
   }
 
   public HasOutput invokeVirtual(
-      DynamicByteArray out, ConstantPool constantPool, String clazz, String field, String type) {
+      DynamicByteArray out, ConstantPool constPool, String clazz, String field, String type) {
     out.write(INVOKEVIRTUAL);
-    out.write(constantPool.indexOf(CONSTANT_METHODREF, clazz, field, type));
+    out.write(constPool.indexOf(CONSTANT_METHODREF, clazz, field, type));
     return out;
   }
 
   public HasOutput invokeStatic(
-      DynamicByteArray out, ConstantPool constantPool, String clazz, String field, String type) {
+      DynamicByteArray out, ConstantPool constPool, String clazz, String field, String type) {
     out.write(INVOKESTATIC);
-    out.write(constantPool.indexOf(CONSTANT_METHODREF, clazz, field, type));
+    out.write(constPool.indexOf(CONSTANT_METHODREF, clazz, field, type));
     return out;
   }
 }

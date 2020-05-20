@@ -1,4 +1,4 @@
-package io.github.martinschneider.kommpeiler.codegen;
+package io.github.martinschneider.kommpeiler.codegen.statement;
 
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IADD;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IDIV;
@@ -13,6 +13,8 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 
+import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
+import io.github.martinschneider.kommpeiler.codegen.ExpressionResult;
 import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
 import io.github.martinschneider.kommpeiler.parser.ExpressionParser;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
@@ -30,32 +32,32 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ExpressionCodeGenerator {
-  private OpsCodeGenerator opsCodeGenerator;
+public class ExpressionGenerator {
+  private OpsCodeGenerator opsGenerator;
   private Clazz clazz;
-  private ConstantPool constantPool;
+  private ConstantPool constPool;
   private Map<String, Method> methodMap;
 
-  public ExpressionCodeGenerator(
+  public ExpressionGenerator(
       Clazz clazz,
-      ConstantPool constantPool,
+      ConstantPool constPool,
       Map<String, Method> methodMap,
-      OpsCodeGenerator opsCodeGenerator) {
+      OpsCodeGenerator opsGenerator) {
     this.clazz = clazz;
-    this.constantPool = constantPool;
+    this.constPool = constPool;
     this.methodMap = methodMap;
-    this.opsCodeGenerator = opsCodeGenerator;
+    this.opsGenerator = opsGenerator;
   }
 
-  public ExpressionResult evaluateExpression(
-      DynamicByteArray out, Map<Identifier, Integer> variables, Expression expression) {
-    return evaluateExpression(out, variables, expression, true);
+  public ExpressionResult eval(
+      DynamicByteArray out, Map<Identifier, Integer> variables, Expression expr) {
+    return eval(out, variables, expr, true);
   }
 
-  public ExpressionResult evaluateExpression(
+  public ExpressionResult eval(
       DynamicByteArray out,
       Map<Identifier, Integer> variables,
-      Expression expression,
+      Expression expr,
       boolean pushIfZero) {
     // TODO: support String concatenation
     // TODO: support different types
@@ -63,10 +65,10 @@ public class ExpressionCodeGenerator {
     // valid for doubles etc.
     Type type = type(VOID);
     Object value = null;
-    if (expression == null) {
+    if (expr == null) {
       return null;
     }
-    List<Token> tokens = new ExpressionParser(getMethodNames(clazz)).postfix(expression.getInfix());
+    List<Token> tokens = new ExpressionParser(getMethodNames(clazz)).postfix(expr.getInfix());
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
       if (token instanceof Identifier) {
@@ -76,18 +78,18 @@ public class ExpressionCodeGenerator {
         if (i + 1 == tokens.size()
             || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
                 && !tokens.get(i + 1).eq(op(POST_INCREMENT)))) {
-          opsCodeGenerator.loadInteger(out, variables.get(id).byteValue());
+          opsGenerator.loadInteger(out, variables.get(id).byteValue());
         }
         type = type(INT);
       } else if (token instanceof IntNum) {
         Integer intValue = ((IntNum) token).intValue();
         if (intValue != 0 || pushIfZero) {
-          opsCodeGenerator.pushInteger(out, constantPool, intValue);
+          opsGenerator.pushInteger(out, constPool, intValue);
         }
         type = type(INT);
         value = intValue;
       } else if (token instanceof Str) {
-        opsCodeGenerator.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
+        opsGenerator.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
         type = type("java.lang.String");
       } else if (token instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) token;
@@ -95,11 +97,11 @@ public class ExpressionCodeGenerator {
             methodCall.getNames().get(methodCall.getNames().size() - 1).getValue().toString();
         Method method = methodMap.get(methodName);
         for (Expression exp : methodCall.getParameters()) {
-          evaluateExpression(out, variables, exp);
+          eval(out, variables, exp);
         }
-        opsCodeGenerator.invokeStatic(
+        opsGenerator.invokeStatic(
             out,
-            constantPool,
+            constPool,
             clazz.getName().getValue().toString(),
             methodName,
             method.getTypeDescr());
@@ -123,12 +125,10 @@ public class ExpressionCodeGenerator {
             out.write(IREM);
             break;
           case POST_INCREMENT:
-            opsCodeGenerator.incInteger(
-                out, variables.get(tokens.get(i - 1)).byteValue(), (byte) 1);
+            opsGenerator.incInteger(out, variables.get(tokens.get(i - 1)).byteValue(), (byte) 1);
             break;
           case POST_DECREMENT:
-            opsCodeGenerator.incInteger(
-                out, variables.get(tokens.get(i - 1)).byteValue(), (byte) -1);
+            opsGenerator.incInteger(out, variables.get(tokens.get(i - 1)).byteValue(), (byte) -1);
           default:
         }
       }

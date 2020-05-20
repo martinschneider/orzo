@@ -12,7 +12,7 @@ public interface StatementGenerator {
   HasOutput generate(
       Map<Identifier, Integer> variables,
       DynamicByteArray out,
-      Statement statement,
+      Statement stmt,
       Method method,
       Clazz clazz);
 }

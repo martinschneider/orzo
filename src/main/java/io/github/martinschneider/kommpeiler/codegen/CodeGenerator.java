@@ -5,7 +5,10 @@ import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTyp
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 
 import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
-import io.github.martinschneider.kommpeiler.codegen.statement.StatementGeneratorDelegator;
+import io.github.martinschneider.kommpeiler.codegen.statement.ConditionalGenerator;
+import io.github.martinschneider.kommpeiler.codegen.statement.ExpressionGenerator;
+import io.github.martinschneider.kommpeiler.codegen.statement.OpsCodeGenerator;
+import io.github.martinschneider.kommpeiler.codegen.statement.StatementDelegator;
 import io.github.martinschneider.kommpeiler.parser.productions.Argument;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
@@ -21,12 +24,12 @@ public class CodeGenerator {
   private static final short JAVA_CLASS_MINOR_VERSION = 0;
   public static final int INTEGER_DEFAULT_VALUE = 0;
   private Clazz clazz;
-  private ConstantPool constantPool;
-  private StatementGeneratorDelegator delegator;
+  private ConstantPool constPool;
+  private StatementDelegator delegator;
   private OpsCodeGenerator opsCodeGenerator;
-  private ExpressionCodeGenerator expressionCodeGenerator;
-  private ConditionalCodeGenerator conditionalCodeGenerator;
-  private ConstantPoolProcessor constantPoolProcessor;
+  private ExpressionGenerator expressionCodeGenerator;
+  private ConditionalGenerator conditionalCodeGenerator;
+  private ConstantPoolProcessor constPoolProcessor;
   private MethodProcessor methodProcessor;
   private Map<String, Method> methodMap;
   private Output out;
@@ -34,22 +37,22 @@ public class CodeGenerator {
   public CodeGenerator(Clazz clazz, Output out) {
     this.clazz = clazz;
     this.out = out;
-    constantPoolProcessor = new ConstantPoolProcessor();
-    constantPool = constantPoolProcessor.processConstantPool(clazz);
-    conditionalCodeGenerator = new ConditionalCodeGenerator();
-    opsCodeGenerator = new OpsCodeGenerator(constantPool);
+    constPoolProcessor = new ConstantPoolProcessor();
+    constPool = constPoolProcessor.processConstantPool(clazz);
+    conditionalCodeGenerator = new ConditionalGenerator();
+    opsCodeGenerator = new OpsCodeGenerator(constPool);
     methodProcessor = new MethodProcessor();
     methodMap = methodProcessor.getMethodMap(clazz);
     expressionCodeGenerator =
-        new ExpressionCodeGenerator(clazz, constantPool, methodMap, opsCodeGenerator);
+        new ExpressionGenerator(clazz, constPool, methodMap, opsCodeGenerator);
     opsCodeGenerator.setExpressionCodeGenerator(expressionCodeGenerator);
     conditionalCodeGenerator.setExpressionCodeGenerator(expressionCodeGenerator);
     delegator =
-        new StatementGeneratorDelegator(
+        new StatementDelegator(
             expressionCodeGenerator,
             opsCodeGenerator,
             conditionalCodeGenerator,
-            constantPool,
+            constPool,
             methodMap);
   }
 
@@ -63,11 +66,11 @@ public class CodeGenerator {
   }
 
   private void classIndex() {
-    out.write(constantPool.indexOf(CONSTANT_CLASS, clazz.getName().getValue()));
+    out.write(constPool.indexOf(CONSTANT_CLASS, clazz.getName().getValue()));
   }
 
-  private void constantPool() {
-    out.write(constantPool.getBytes());
+  private void constPool() {
+    out.write(constPool.getBytes());
   }
 
   private void fields() {
@@ -77,7 +80,7 @@ public class CodeGenerator {
   public void generate() {
     supportPrint();
     header();
-    constantPool();
+    constPool();
     accessModifiers();
     classIndex();
     superClassIndex();
@@ -91,10 +94,10 @@ public class CodeGenerator {
   private void generateCode(
       Map<Identifier, Integer> variables,
       DynamicByteArray out,
-      Statement statement,
+      Statement stmt,
       Method method,
       Clazz clazz) {
-    delegator.generate(variables, out, statement, method, clazz);
+    delegator.generate(variables, out, stmt, method, clazz);
   }
 
   private void header() {
@@ -118,15 +121,15 @@ public class CodeGenerator {
         variables.put(arg.getName(), variables.size());
       }
       out.write((short) 9); // public static
-      out.write(constantPool.indexOf(CONSTANT_UTF8, method.getName().getValue()));
-      out.write(constantPool.indexOf(CONSTANT_UTF8, method.getTypeDescr()));
+      out.write(constPool.indexOf(CONSTANT_UTF8, method.getName().getValue()));
+      out.write(constPool.indexOf(CONSTANT_UTF8, method.getTypeDescr()));
       out.write((short) 1); // attribute size
-      out.write(constantPool.indexOf(CONSTANT_UTF8, "Code"));
+      out.write(constPool.indexOf(CONSTANT_UTF8, "Code"));
       DynamicByteArray methodCode = new DynamicByteArray();
       boolean returned = false;
-      for (Statement statement : method.getBody()) {
-        generateCode(variables, methodCode, statement, method, clazz);
-        if (statement instanceof ReturnStatement) {
+      for (Statement stmt : method.getBody()) {
+        generateCode(variables, methodCode, stmt, method, clazz);
+        if (stmt instanceof ReturnStatement) {
           returned = true;
         }
       }
@@ -145,16 +148,16 @@ public class CodeGenerator {
   }
 
   private void superClassIndex() {
-    out.write(constantPool.indexOf(CONSTANT_CLASS, "java/lang/Object"));
+    out.write(constPool.indexOf(CONSTANT_CLASS, "java/lang/Object"));
   }
 
   private void supportPrint() {
     // hard-coded support for print
-    constantPool.addClass("java/lang/System");
-    constantPool.addClass("java/io/PrintStream");
-    constantPool.addFieldRef("java/lang/System", "out", "Ljava/io/PrintStream;");
-    constantPoolProcessor.addMethodRef(
-        constantPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
-    constantPoolProcessor.addMethodRef(constantPool, "java/io/PrintStream", "println", "(I)V");
+    constPool.addClass("java/lang/System");
+    constPool.addClass("java/io/PrintStream");
+    constPool.addFieldRef("java/lang/System", "out", "Ljava/io/PrintStream;");
+    constPoolProcessor.addMethodRef(
+        constPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
+    constPoolProcessor.addMethodRef(constPool, "java/io/PrintStream", "println", "(I)V");
   }
 }

@@ -467,8 +467,8 @@ public class ParserTest {
   public void testStatement(String input, boolean valid) throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
-    Statement statement = parser.parseStatement();
-    assertTrue((statement != null) == valid);
+    Statement stmt = parser.parseStatement();
+    assertTrue((stmt != null) == valid);
   }
 
   private static Stream<Arguments> testStatementSequence() {
@@ -485,8 +485,8 @@ public class ParserTest {
   public void testStatementSequence(String input, int count) throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
-    List<Statement> statement = parser.parseStatementSequence();
-    assertEquals(count, statement.size());
+    List<Statement> stmt = parser.parseStatementSequence();
+    assertEquals(count, stmt.size());
   }
 
   private static Stream<Arguments> testDeclaration() {

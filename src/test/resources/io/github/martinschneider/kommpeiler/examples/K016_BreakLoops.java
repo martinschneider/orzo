@@ -15,6 +15,8 @@ public class K016_BreakLoops {
     int b = 1000;
     while (b > 0) {
       System.out.println(2);
+      b--;
+      break;
     }
   }
 }

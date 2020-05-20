@@ -1,4 +1,4 @@
-package io.github.martinschneider.kommpeiler.codegen;
+package io.github.martinschneider.kommpeiler.codegen.statement;
 
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IFEQ;
@@ -14,151 +14,150 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPLE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPLT;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPNE;
 
+import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
+import io.github.martinschneider.kommpeiler.codegen.ExpressionResult;
+import io.github.martinschneider.kommpeiler.codegen.HasOutput;
 import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Condition;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.Map;
 
-public class ConditionalCodeGenerator {
-  private ExpressionCodeGenerator expressionCodeGenerator;
+public class ConditionalGenerator {
+  private ExpressionGenerator exprGenerator;
 
-  public void setExpressionCodeGenerator(ExpressionCodeGenerator expressionCodeGenerator) {
-    this.expressionCodeGenerator = expressionCodeGenerator;
+  public void setExpressionCodeGenerator(ExpressionGenerator exprGenerator) {
+    this.exprGenerator = exprGenerator;
   }
 
   public HasOutput generateCondition(
       DynamicByteArray out,
       Clazz clazz,
       Map<Identifier, Integer> variables,
-      ConstantPool constantPool,
-      Condition condition,
+      ConstantPool constPool,
+      Condition cond,
       short branchBytes) {
-    return generateCondition(out, clazz, variables, constantPool, condition, branchBytes, false);
+    return generateCondition(out, clazz, variables, constPool, cond, branchBytes, false);
   }
 
   public HasOutput generateCondition(
       DynamicByteArray out,
       Clazz clazz,
       Map<Identifier, Integer> variables,
-      ConstantPool constantPool,
-      Condition condition,
+      ConstantPool constPool,
+      Condition cond,
       short branchBytes,
       boolean isDoLoop) {
-    DynamicByteArray conditionOut = new DynamicByteArray();
+    DynamicByteArray condOut = new DynamicByteArray();
     // TODO: support other boolean conditions
-    ExpressionResult left =
-        expressionCodeGenerator.evaluateExpression(
-            conditionOut, variables, condition.getLeft(), false);
-    ExpressionResult right =
-        expressionCodeGenerator.evaluateExpression(
-            conditionOut, variables, condition.getRight(), false);
+    ExpressionResult left = exprGenerator.eval(condOut, variables, cond.getLeft(), false);
+    ExpressionResult right = exprGenerator.eval(condOut, variables, cond.getRight(), false);
     boolean leftZero = isZero(left.getValue());
     boolean rightZero = isZero(right.getValue());
     if (leftZero ^ rightZero) {
-      boolean reverseOperator =
+      boolean reverseOp =
           (isDoLoop && leftZero && !rightZero) || (!isDoLoop && !leftZero && rightZero);
-      switch (condition.getOperator().cmpValue()) {
+      switch (cond.getOperator().cmpValue()) {
           // use the inverse comparison because jumping means we execute the "else" part of the
           // condition
         case EQUAL:
-          if (reverseOperator) {
-            conditionOut.write(IFNE);
+          if (reverseOp) {
+            condOut.write(IFNE);
           } else {
-            conditionOut.write(IFEQ);
+            condOut.write(IFEQ);
           }
           break;
         case NOTEQUAL:
-          if (reverseOperator) {
-            conditionOut.write(IFEQ);
+          if (reverseOp) {
+            condOut.write(IFEQ);
           } else {
-            conditionOut.write(IFNE);
+            condOut.write(IFNE);
           }
           break;
         case GREATER:
-          if (reverseOperator) {
-            conditionOut.write(IFLE);
+          if (reverseOp) {
+            condOut.write(IFLE);
           } else {
-            conditionOut.write(IFGT);
+            condOut.write(IFGT);
           }
           break;
         case GREATEREQ:
-          if (reverseOperator) {
-            conditionOut.write(IFLT);
+          if (reverseOp) {
+            condOut.write(IFLT);
           } else {
-            conditionOut.write(IFGE);
+            condOut.write(IFGE);
           }
           break;
         case SMALLER:
-          if (reverseOperator) {
-            conditionOut.write(IFGE);
+          if (reverseOp) {
+            condOut.write(IFGE);
           } else {
-            conditionOut.write(IFLT);
+            condOut.write(IFLT);
           }
           break;
         case SMALLEREQ:
-          if (reverseOperator) {
-            conditionOut.write(IFGT);
+          if (reverseOp) {
+            condOut.write(IFGT);
           } else {
-            conditionOut.write(IFLE);
+            condOut.write(IFLE);
           }
           break;
       }
-      return writeBranchOffset(out, branchBytes, isDoLoop, conditionOut);
+      return writeBranchOffset(out, branchBytes, isDoLoop, condOut);
     }
-    switch (condition.getOperator().cmpValue()) {
+    switch (cond.getOperator().cmpValue()) {
       case EQUAL:
         if (isDoLoop) {
-          conditionOut.write(IF_ICMPEQ);
+          condOut.write(IF_ICMPEQ);
         } else {
-          conditionOut.write(IF_ICMPNE);
+          condOut.write(IF_ICMPNE);
         }
         break;
       case NOTEQUAL:
         if (isDoLoop) {
-          conditionOut.write(IF_ICMPNE);
+          condOut.write(IF_ICMPNE);
         } else {
-          conditionOut.write(IF_ICMPEQ);
+          condOut.write(IF_ICMPEQ);
         }
         break;
       case GREATER:
         if (isDoLoop) {
-          conditionOut.write(IF_ICMPGT);
+          condOut.write(IF_ICMPGT);
         } else {
-          conditionOut.write(IF_ICMPLE);
+          condOut.write(IF_ICMPLE);
         }
         break;
       case GREATEREQ:
         if (isDoLoop) {
-          conditionOut.write(IF_ICMPGE);
+          condOut.write(IF_ICMPGE);
         } else {
-          conditionOut.write(IF_ICMPLT);
+          condOut.write(IF_ICMPLT);
         }
         break;
       case SMALLER:
         if (isDoLoop) {
-          conditionOut.write(IF_ICMPLT);
+          condOut.write(IF_ICMPLT);
         } else {
-          conditionOut.write(IF_ICMPGE);
+          condOut.write(IF_ICMPGE);
         }
         break;
       case SMALLEREQ:
         if (isDoLoop) {
-          conditionOut.write(IF_ICMPLE);
+          condOut.write(IF_ICMPLE);
         } else {
-          conditionOut.write(IF_ICMPGT);
+          condOut.write(IF_ICMPGT);
         }
         break;
     }
-    return writeBranchOffset(out, branchBytes, isDoLoop, conditionOut);
+    return writeBranchOffset(out, branchBytes, isDoLoop, condOut);
   }
 
   public HasOutput writeBranchOffset(
       DynamicByteArray out,
       short branchBytes,
-      boolean addConditionToBranchOffset,
+      boolean addCondToBranchOffset,
       DynamicByteArray conditionOut) {
-    if (addConditionToBranchOffset) {
+    if (addCondToBranchOffset) {
       branchBytes -= conditionOut.getBytes().length;
       branchBytes++;
     }

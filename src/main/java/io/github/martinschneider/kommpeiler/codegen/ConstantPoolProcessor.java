@@ -18,88 +18,88 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 
 public class ConstantPoolProcessor {
   public ConstantPool processConstantPool(Clazz clazz) {
-    ConstantPool constantPool = new ConstantPool();
-    constantPool.addClass(clazz.getName().getValue().toString());
-    constantPool.addClass("java/lang/Object");
+    ConstantPool constPool = new ConstantPool();
+    constPool.addClass(clazz.getName().getValue().toString());
+    constPool.addClass("java/lang/Object");
     for (Method method : clazz.getBody()) {
       // add method name to constant pool
-      constantPool.addUtf8(method.getName().getValue().toString());
+      constPool.addUtf8(method.getName().getValue().toString());
       // add type descriptor to constant pool
-      constantPool.addUtf8(method.getTypeDescr());
+      constPool.addUtf8(method.getTypeDescr());
       addMethodRef(
-          constantPool,
+          constPool,
           clazz.getName().getValue().toString(),
           method.getName().getValue().toString(),
           method.getTypeDescr());
       // add constants from method body to constant pool
-      for (Statement statement : method.getBody()) {
-        constantPool = processStatement(constantPool, statement);
+      for (Statement stmt : method.getBody()) {
+        constPool = processStatement(constPool, stmt);
       }
-      constantPool.addUtf8("Code");
+      constPool.addUtf8("Code");
     }
-    return constantPool;
+    return constPool;
   }
 
-  private ConstantPool processStatement(ConstantPool constantPool, Statement statement) {
-    if (statement instanceof MethodCall) {
-      MethodCall methodCall = (MethodCall) statement;
+  private ConstantPool processStatement(ConstantPool constPool, Statement stmt) {
+    if (stmt instanceof MethodCall) {
+      MethodCall methodCall = (MethodCall) stmt;
       for (Expression param : methodCall.getParameters()) {
-        constantPool = processExpression(constantPool, param);
+        constPool = processExpression(constPool, param);
       }
-    } else if (statement instanceof Declaration) {
-      Declaration decl = (Declaration) statement;
+    } else if (stmt instanceof Declaration) {
+      Declaration decl = (Declaration) stmt;
       Expression value = decl.getValue();
       if (value != null) {
-        constantPool = processExpression(constantPool, value);
+        constPool = processExpression(constPool, value);
       }
-    } else if (statement instanceof Assignment) {
-      Assignment assignment = (Assignment) statement;
+    } else if (stmt instanceof Assignment) {
+      Assignment assignment = (Assignment) stmt;
       Expression value = assignment.getRight();
       if (value != null) {
-        constantPool = processExpression(constantPool, value);
+        constPool = processExpression(constPool, value);
       }
-    } else if (statement instanceof ReturnStatement) {
-      ReturnStatement ret = (ReturnStatement) statement;
-      constantPool = processExpression(constantPool, ret.getRetValue());
-    } else if (statement instanceof LoopStatement) {
-      LoopStatement loopStatement = (LoopStatement) statement;
-      constantPool = processExpression(constantPool, loopStatement.getCondition().getLeft());
-      constantPool = processExpression(constantPool, loopStatement.getCondition().getRight());
-      for (Statement stmt : loopStatement.getBody()) {
-        constantPool = processStatement(constantPool, stmt);
+    } else if (stmt instanceof ReturnStatement) {
+      ReturnStatement ret = (ReturnStatement) stmt;
+      constPool = processExpression(constPool, ret.getRetValue());
+    } else if (stmt instanceof LoopStatement) {
+      LoopStatement loopStatement = (LoopStatement) stmt;
+      constPool = processExpression(constPool, loopStatement.getCondition().getLeft());
+      constPool = processExpression(constPool, loopStatement.getCondition().getRight());
+      for (Statement innerStmt : loopStatement.getBody()) {
+        constPool = processStatement(constPool, innerStmt);
       }
-    } else if (statement instanceof IfStatement) {
-      IfStatement ifStatement = (IfStatement) statement;
+    } else if (stmt instanceof IfStatement) {
+      IfStatement ifStatement = (IfStatement) stmt;
       for (IfBlock ifBlock : ifStatement.getIfBlocks()) {
         for (Statement subStatement : ifBlock.getBody()) {
-          constantPool = processStatement(constantPool, subStatement);
+          constPool = processStatement(constPool, subStatement);
         }
         if (ifBlock.getCondition() != null) { // null for else blocks
-          constantPool = processExpression(constantPool, ifBlock.getCondition().getLeft());
-          constantPool = processExpression(constantPool, ifBlock.getCondition().getRight());
+          constPool = processExpression(constPool, ifBlock.getCondition().getLeft());
+          constPool = processExpression(constPool, ifBlock.getCondition().getRight());
         }
       }
     }
-    return constantPool;
+    return constPool;
   }
 
-  private ConstantPool processExpression(ConstantPool constantPool, Expression param) {
+  private ConstantPool processExpression(ConstantPool constPool, Expression param) {
     for (Token token : param.getInfix()) {
       if (token instanceof Str) {
-        constantPool.addString(token.getValue().toString());
+        constPool.addString(token.getValue().toString());
       } else if (token instanceof IntNum) {
         int intValue = (Integer) (token.getValue());
         if (intValue < -32768 || intValue >= 32768) {
-          constantPool.addInteger(intValue);
+          constPool.addInteger(intValue);
         }
       }
     }
-    return constantPool;
+    return constPool;
   }
 
   public ConstantPool addMethodRef(
-      ConstantPool constantPool, String className, String methodName, String typeSignature) {
-    constantPool.addMethodRef(className, methodName, typeSignature);
-    return constantPool;
+      ConstantPool constPool, String className, String methodName, String typeSignature) {
+    constPool.addMethodRef(className, methodName, typeSignature);
+    return constPool;
   }
 }
