@@ -28,7 +28,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.IfBlock;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
-import io.github.martinschneider.kommpeiler.parser.productions.Return;
+import io.github.martinschneider.kommpeiler.parser.productions.ReturnStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Selector;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.parser.productions.Type;
@@ -357,15 +357,16 @@ public class ParserTest {
 
   private static Stream<Arguments> testReturn() throws IOException {
     return Stream.of(
-        Arguments.of("return a;", new Return(exp("a"))), Arguments.of("return;", new Return(null)));
+        Arguments.of("return a;", new ReturnStatement(exp("a"))),
+        Arguments.of("return;", new ReturnStatement(null)));
   }
 
   @ParameterizedTest
   @MethodSource
-  public void testReturn(String input, Return expectedReturn) throws IOException {
+  public void testReturn(String input, ReturnStatement expectedReturn) throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);
-    Return returnValue = parser.parseReturn();
+    ReturnStatement returnValue = parser.parseReturn();
     assertNotNull(returnValue);
     assertEquals(expectedReturn, returnValue);
   }

@@ -59,7 +59,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.LoopStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
 import io.github.martinschneider.kommpeiler.parser.productions.ParallelAssignment;
-import io.github.martinschneider.kommpeiler.parser.productions.Return;
+import io.github.martinschneider.kommpeiler.parser.productions.ReturnStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Selector;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.parser.productions.Type;
@@ -708,12 +708,12 @@ public class Parser {
     }
   }
 
-  public Return parseReturn() {
+  public ReturnStatement parseReturn() {
     if (token.eq(keyword(RETURN))) {
       nextToken();
       Expression expression = parseExpression();
       nextToken();
-      return new Return(expression);
+      return new ReturnStatement(expression);
     }
     return null;
   }

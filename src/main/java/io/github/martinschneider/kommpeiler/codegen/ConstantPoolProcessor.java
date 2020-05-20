@@ -10,7 +10,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.LoopStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
-import io.github.martinschneider.kommpeiler.parser.productions.Return;
+import io.github.martinschneider.kommpeiler.parser.productions.ReturnStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.scanner.tokens.IntNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Str;
@@ -58,8 +58,8 @@ public class ConstantPoolProcessor {
       if (value != null) {
         constantPool = processExpression(constantPool, value);
       }
-    } else if (statement instanceof Return) {
-      Return ret = (Return) statement;
+    } else if (statement instanceof ReturnStatement) {
+      ReturnStatement ret = (ReturnStatement) statement;
       constantPool = processExpression(constantPool, ret.getRetValue());
     } else if (statement instanceof LoopStatement) {
       LoopStatement loopStatement = (LoopStatement) statement;

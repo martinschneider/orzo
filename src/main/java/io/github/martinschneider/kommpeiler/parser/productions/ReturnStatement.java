@@ -1,6 +1,6 @@
 package io.github.martinschneider.kommpeiler.parser.productions;
 
-public class Return implements Statement {
+public class ReturnStatement implements Statement {
   private Expression retValue;
 
   public Expression getRetValue() {
@@ -11,7 +11,7 @@ public class Return implements Statement {
     this.retValue = retValue;
   }
 
-  public Return(Expression retValue) {
+  public ReturnStatement(Expression retValue) {
     super();
     this.retValue = retValue;
   }
@@ -35,7 +35,7 @@ public class Return implements Statement {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    Return other = (Return) obj;
+    ReturnStatement other = (ReturnStatement) obj;
     if (retValue == null) {
       if (other.retValue != null) {
         return false;
