@@ -3,11 +3,11 @@ package io.github.martinschneider.kommpeiler.codegen.statement;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GOTO;
 
+import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
+import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
 import io.github.martinschneider.kommpeiler.parser.productions.Break;
-import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.parser.productions.WhileStatement;
@@ -17,26 +17,18 @@ import java.util.List;
 import java.util.Map;
 
 public class WhileStatementGenerator implements StatementGenerator {
-  private StatementDelegator stmtDelegator;
-  private ConditionalGenerator conditionalGenerator;
-  private ConstantPool constPool;
+  private CGContext context;
 
-  public WhileStatementGenerator(
-      StatementDelegator stmtDelegator,
-      ConditionalGenerator conditionalGenerator,
-      ConstantPool constPool) {
-    this.stmtDelegator = stmtDelegator;
-    this.conditionalGenerator = conditionalGenerator;
-    this.constPool = constPool;
+  public WhileStatementGenerator(CGContext context) {
+    this.context = context;
   }
 
   @Override
   public HasOutput generate(
-      Map<Identifier, Integer> variables,
       DynamicByteArray out,
-      Statement stmt,
+      Map<Identifier, VariableInfo> variables,
       Method method,
-      Clazz clazz) {
+      Statement stmt) {
     WhileStatement whileStatement = (WhileStatement) stmt;
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements
@@ -47,13 +39,13 @@ public class WhileStatementGenerator implements StatementGenerator {
         bodyOut.write(GOTO);
         bodyOut.write((short) 0); // placeholder
       } else {
-        stmtDelegator.generate(variables, bodyOut, innerStmt, method, clazz);
+        context.delegator.generate(variables, bodyOut, method, innerStmt);
       }
     }
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
-    conditionalGenerator.generateCondition(
-        conditionOut, clazz, variables, constPool, whileStatement.getCondition(), branchBytes);
+    context.condGenerator.generateCondition(
+        conditionOut, variables, whileStatement.getCondition(), branchBytes);
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {

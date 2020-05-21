@@ -4,7 +4,6 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.RETURN;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 
-import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
 import io.github.martinschneider.kommpeiler.codegen.statement.ConditionalGenerator;
 import io.github.martinschneider.kommpeiler.codegen.statement.ExpressionGenerator;
 import io.github.martinschneider.kommpeiler.codegen.statement.OpsCodeGenerator;
@@ -16,6 +15,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.ReturnStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,37 +23,26 @@ public class CodeGenerator {
   private static final short JAVA_CLASS_MAJOR_VERSION = 49;
   private static final short JAVA_CLASS_MINOR_VERSION = 0;
   public static final int INTEGER_DEFAULT_VALUE = 0;
-  private Clazz clazz;
-  private ConstantPool constPool;
-  private StatementDelegator delegator;
-  private OpsCodeGenerator opsCodeGenerator;
-  private ExpressionGenerator expressionCodeGenerator;
-  private ConditionalGenerator conditionalCodeGenerator;
-  private ConstantPoolProcessor constPoolProcessor;
-  private MethodProcessor methodProcessor;
-  private Map<String, Method> methodMap;
+  private CGContext ctx;
   private Output out;
 
   public CodeGenerator(Clazz clazz, Output out) {
-    this.clazz = clazz;
     this.out = out;
-    constPoolProcessor = new ConstantPoolProcessor();
-    constPool = constPoolProcessor.processConstantPool(clazz);
-    conditionalCodeGenerator = new ConditionalGenerator();
-    opsCodeGenerator = new OpsCodeGenerator(constPool);
-    methodProcessor = new MethodProcessor();
-    methodMap = methodProcessor.getMethodMap(clazz);
-    expressionCodeGenerator =
-        new ExpressionGenerator(clazz, constPool, methodMap, opsCodeGenerator);
-    opsCodeGenerator.setExpressionCodeGenerator(expressionCodeGenerator);
-    conditionalCodeGenerator.setExpressionCodeGenerator(expressionCodeGenerator);
-    delegator =
-        new StatementDelegator(
-            expressionCodeGenerator,
-            opsCodeGenerator,
-            conditionalCodeGenerator,
-            constPool,
-            methodMap);
+    ctx = new CGContext();
+    ctx.clazz = clazz;
+    ctx.condGenerator = new ConditionalGenerator();
+    ctx.constPoolProcessor = new ConstantPoolProcessor();
+    ctx.constPool = ctx.constPoolProcessor.processConstantPool(clazz);
+    ctx.delegator = new StatementDelegator();
+    ctx.exprGenerator = new ExpressionGenerator();
+    ctx.methodMap = new MethodProcessor().getMethodMap(clazz);
+    ctx.opsGenerator = new OpsCodeGenerator();
+    ctx.stackTypes = new LinkedList<>();
+    ctx.condGenerator.context = ctx;
+    ctx.delegator.context = ctx;
+    ctx.exprGenerator.context = ctx;
+    ctx.opsGenerator.context = ctx;
+    ctx.delegator.init();
   }
 
   private void accessModifiers() {
@@ -66,11 +55,11 @@ public class CodeGenerator {
   }
 
   private void classIndex() {
-    out.write(constPool.indexOf(CONSTANT_CLASS, clazz.getName().getValue()));
+    out.write(ctx.constPool.indexOf(CONSTANT_CLASS, ctx.clazz.getName().getValue()));
   }
 
   private void constPool() {
-    out.write(constPool.getBytes());
+    out.write(ctx.constPool.getBytes());
   }
 
   private void fields() {
@@ -92,12 +81,11 @@ public class CodeGenerator {
   }
 
   private void generateCode(
-      Map<Identifier, Integer> variables,
       DynamicByteArray out,
-      Statement stmt,
+      Map<Identifier, VariableInfo> variables,
       Method method,
-      Clazz clazz) {
-    delegator.generate(variables, out, stmt, method, clazz);
+      Statement stmt) {
+    ctx.delegator.generate(variables, out, method, stmt);
   }
 
   private void header() {
@@ -111,53 +99,56 @@ public class CodeGenerator {
   }
 
   private void methods() {
-    List<Method> methods = clazz.getBody();
+    List<Method> methods = ctx.clazz.getBody();
     // number of methods
     out.write((short) methods.size());
     for (Method method : methods) {
       // todo: handle global variables
-      Map<Identifier, Integer> variables = new HashMap<>();
+      Map<Identifier, VariableInfo> variables = new HashMap<>();
       for (Argument arg : method.getArguments()) {
-        variables.put(arg.getName(), variables.size());
+        variables.put(
+            arg.getName(),
+            new VariableInfo(
+                arg.getName().getValue().toString(), arg.getType(), (byte) variables.size()));
       }
       out.write((short) 9); // public static
-      out.write(constPool.indexOf(CONSTANT_UTF8, method.getName().getValue()));
-      out.write(constPool.indexOf(CONSTANT_UTF8, method.getTypeDescr()));
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.getName().getValue()));
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.getTypeDescr()));
       out.write((short) 1); // attribute size
-      out.write(constPool.indexOf(CONSTANT_UTF8, "Code"));
-      DynamicByteArray methodCode = new DynamicByteArray();
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Code"));
+      DynamicByteArray methodOut = new DynamicByteArray();
       boolean returned = false;
       for (Statement stmt : method.getBody()) {
-        generateCode(variables, methodCode, stmt, method, clazz);
+        generateCode(methodOut, variables, method, stmt);
         if (stmt instanceof ReturnStatement) {
           returned = true;
         }
       }
       if (!returned) {
-        methodCode.write(RETURN);
+        methodOut.write(RETURN);
       }
-      out.write(methodCode.size() + 12); // stack size (2) + local var size (2) + code size (4) +
+      out.write(methodOut.size() + 12); // stack size (2) + local var size (2) + code size (4) +
       // exception table size (2) + attribute count size (2)
       out.write((short) 3); // max stack size
       out.write((short) (1 + variables.size())); // max local var size
-      out.write(methodCode.size());
-      out.write(methodCode.flush());
+      out.write(methodOut.size());
+      out.write(methodOut.flush());
       out.write((short) 0); // exception table of size 0
       out.write((short) 0); // attribute count for this attribute of 0
     }
   }
 
   private void superClassIndex() {
-    out.write(constPool.indexOf(CONSTANT_CLASS, "java/lang/Object"));
+    out.write(ctx.constPool.indexOf(CONSTANT_CLASS, "java/lang/Object"));
   }
 
   private void supportPrint() {
     // hard-coded support for print
-    constPool.addClass("java/lang/System");
-    constPool.addClass("java/io/PrintStream");
-    constPool.addFieldRef("java/lang/System", "out", "Ljava/io/PrintStream;");
-    constPoolProcessor.addMethodRef(
-        constPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
-    constPoolProcessor.addMethodRef(constPool, "java/io/PrintStream", "println", "(I)V");
+    ctx.constPool.addClass("java/lang/System");
+    ctx.constPool.addClass("java/io/PrintStream");
+    ctx.constPool.addFieldRef("java/lang/System", "out", "Ljava/io/PrintStream;");
+    ctx.constPoolProcessor.addMethodRef(
+        ctx.constPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
+    ctx.constPoolProcessor.addMethodRef(ctx.constPool, "java/io/PrintStream", "println", "(I)V");
   }
 }

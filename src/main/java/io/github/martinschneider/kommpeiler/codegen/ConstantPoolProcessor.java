@@ -15,6 +15,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.scanner.tokens.IntNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Str;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
+import java.math.BigInteger;
 
 public class ConstantPoolProcessor {
   public ConstantPool processConstantPool(Clazz clazz) {
@@ -88,9 +89,9 @@ public class ConstantPoolProcessor {
       if (token instanceof Str) {
         constPool.addString(token.getValue().toString());
       } else if (token instanceof IntNum) {
-        int intValue = (Integer) (token.getValue());
+        long intValue = ((BigInteger) (token.getValue())).longValue();
         if (intValue < -32768 || intValue >= 32768) {
-          constPool.addInteger(intValue);
+          constPool.addInteger((int) intValue);
         }
       }
     }

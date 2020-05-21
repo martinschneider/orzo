@@ -1,10 +1,10 @@
 package io.github.martinschneider.kommpeiler.codegen.statement;
 
+import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
+import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
-import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
 import io.github.martinschneider.kommpeiler.parser.productions.DoStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.ForStatement;
@@ -20,45 +20,26 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class StatementDelegator {
-  private Map<Class<? extends Statement>, StatementGenerator> stmtGeneratorRegistry;
+  private Map<Class<? extends Statement>, StatementGenerator> registry = new HashMap<>();
+  public CGContext context;
 
-  public StatementDelegator(
-      ExpressionGenerator expressionCodeGenerator,
-      OpsCodeGenerator opsCodeGenerator,
-      ConditionalGenerator conditionalCodeGenerator,
-      ConstantPool constPool,
-      Map<String, Method> methodMap) {
-    stmtGeneratorRegistry = new HashMap<>();
-    stmtGeneratorRegistry.put(
-        Declaration.class,
-        new DeclarationGenerator(expressionCodeGenerator, opsCodeGenerator, constPool));
-    stmtGeneratorRegistry.put(
-        Assignment.class, new AssignmentGenerator(expressionCodeGenerator, opsCodeGenerator));
-    stmtGeneratorRegistry.put(
-        ParallelAssignment.class,
-        new ParallelAssignmentGenerator(expressionCodeGenerator, opsCodeGenerator));
-    stmtGeneratorRegistry.put(
-        MethodCall.class,
-        new MethodCallGenerator(expressionCodeGenerator, opsCodeGenerator, constPool, methodMap));
-    stmtGeneratorRegistry.put(
-        IfStatement.class, new IfStatementGenerator(this, conditionalCodeGenerator, constPool));
-    stmtGeneratorRegistry.put(
-        WhileStatement.class,
-        new WhileStatementGenerator(this, conditionalCodeGenerator, constPool));
-    stmtGeneratorRegistry.put(
-        DoStatement.class, new DoStatementGenerator(this, conditionalCodeGenerator, constPool));
-    stmtGeneratorRegistry.put(
-        ForStatement.class, new ForStatementGenerator(this, conditionalCodeGenerator, constPool));
-    stmtGeneratorRegistry.put(
-        ReturnStatement.class, new ReturnStatementGenerator(opsCodeGenerator, constPool));
+  public void init() {
+    registry.put(Assignment.class, new AssignmentGenerator(context));
+    registry.put(Declaration.class, new DeclarationGenerator(context));
+    registry.put(DoStatement.class, new DoStatementGenerator(context));
+    registry.put(ForStatement.class, new ForStatementGenerator(context));
+    registry.put(IfStatement.class, new IfStatementGenerator(context));
+    registry.put(MethodCall.class, new MethodCallGenerator(context));
+    registry.put(ParallelAssignment.class, new ParallelAssignmentGenerator(context));
+    registry.put(ReturnStatement.class, new ReturnStatementGenerator(context));
+    registry.put(WhileStatement.class, new WhileStatementGenerator(context));
   }
 
   public HasOutput generate(
-      Map<Identifier, Integer> variables,
+      Map<Identifier, VariableInfo> variables,
       DynamicByteArray out,
-      Statement stmt,
       Method method,
-      Clazz clazz) {
-    return stmtGeneratorRegistry.get(stmt.getClass()).generate(variables, out, stmt, method, clazz);
+      Statement stmt) {
+    return registry.get(stmt.getClass()).generate(out, variables, method, stmt);
   }
 }

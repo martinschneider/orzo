@@ -14,44 +14,37 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPLE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPLT;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPNE;
 
+import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.ExpressionResult;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
-import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
+import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
 import io.github.martinschneider.kommpeiler.parser.productions.Condition;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
+import java.math.BigInteger;
 import java.util.Map;
 
 public class ConditionalGenerator {
-  private ExpressionGenerator exprGenerator;
-
-  public void setExpressionCodeGenerator(ExpressionGenerator exprGenerator) {
-    this.exprGenerator = exprGenerator;
-  }
+  public CGContext context;
 
   public HasOutput generateCondition(
       DynamicByteArray out,
-      Clazz clazz,
-      Map<Identifier, Integer> variables,
-      ConstantPool constPool,
+      Map<Identifier, VariableInfo> variables,
       Condition cond,
       short branchBytes) {
-    return generateCondition(out, clazz, variables, constPool, cond, branchBytes, false);
+    return generateCondition(out, variables, cond, branchBytes, false);
   }
 
   public HasOutput generateCondition(
       DynamicByteArray out,
-      Clazz clazz,
-      Map<Identifier, Integer> variables,
-      ConstantPool constPool,
+      Map<Identifier, VariableInfo> variables,
       Condition cond,
       short branchBytes,
       boolean isDoLoop) {
     DynamicByteArray condOut = new DynamicByteArray();
     // TODO: support other boolean conditions
-    ExpressionResult left = exprGenerator.eval(condOut, variables, cond.getLeft(), false);
-    ExpressionResult right = exprGenerator.eval(condOut, variables, cond.getRight(), false);
+    ExpressionResult left = context.exprGenerator.eval(condOut, variables, cond.getLeft(), false);
+    ExpressionResult right = context.exprGenerator.eval(condOut, variables, cond.getRight(), false);
     boolean leftZero = isZero(left.getValue());
     boolean rightZero = isZero(right.getValue());
     if (leftZero ^ rightZero) {
@@ -167,6 +160,6 @@ public class ConditionalGenerator {
   }
 
   public static boolean isZero(Object value) {
-    return (value instanceof Integer && ((Integer) value).intValue() == 0);
+    return (value instanceof BigInteger && value.equals(BigInteger.ZERO));
   }
 }

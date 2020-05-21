@@ -2,6 +2,7 @@ package io.github.martinschneider.kommpeiler.scanner.tokens;
 
 import io.github.martinschneider.kommpeiler.parser.productions.BasicType;
 import io.github.martinschneider.kommpeiler.parser.productions.Type;
+import java.math.BigInteger;
 
 public class Token {
   private Object value;
@@ -61,12 +62,20 @@ public class Token {
     return new Str(value);
   }
 
+  public static IntNum integer(Long value) {
+    return new IntNum(BigInteger.valueOf(value));
+  }
+
   public static IntNum integer(Integer value) {
+    return new IntNum(BigInteger.valueOf(value));
+  }
+
+  public static IntNum integer(BigInteger value) {
     return new IntNum(value);
   }
 
   public static IntNum integer(String value) {
-    return new IntNum(Integer.valueOf(value));
+    return new IntNum(new BigInteger(value));
   }
 
   public static DoubleNum fp(double value) {

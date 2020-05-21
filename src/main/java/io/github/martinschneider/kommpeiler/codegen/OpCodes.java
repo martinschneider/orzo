@@ -16,6 +16,12 @@ public class OpCodes {
   public static final byte ILOAD_1 = (byte) 27;
   public static final byte ILOAD_2 = (byte) 28;
   public static final byte ILOAD_3 = (byte) 29;
+  public static final byte LADD = (byte) 97;
+  public static final byte LLOAD = (byte) 22;
+  public static final byte LLOAD_0 = (byte) 30;
+  public static final byte LLOAD_1 = (byte) 31;
+  public static final byte LLOAD_2 = (byte) 32;
+  public static final byte LLOAD_3 = (byte) 33;
   public static final byte INVOKEVIRTUAL = (byte) 182;
   public static final byte INVOKESTATIC = (byte) 184;
   public static final byte ISTORE = (byte) 54;
@@ -23,11 +29,17 @@ public class OpCodes {
   public static final byte ISTORE_1 = (byte) 60;
   public static final byte ISTORE_2 = (byte) 61;
   public static final byte ISTORE_3 = (byte) 62;
+  public static final byte LSTORE = (byte) 55;
+  public static final byte LSTORE_0 = (byte) 63;
+  public static final byte LSTORE_1 = (byte) 64;
+  public static final byte LSTORE_2 = (byte) 65;
+  public static final byte LSTORE_3 = (byte) 66;
   public static final byte ISUB = (byte) 100;
   public static final byte IMUL = (byte) 104;
   public static final byte IDIV = (byte) 108;
   public static final byte IREM = (byte) 112;
   public static final byte LDC = (byte) 18;
+  public static final byte LDC_2W = (byte) 20;
   public static final byte IRETURN = (byte) 172;
   public static final byte DRETURN = (byte) 175;
   public static final byte RETURN = (byte) 177;
@@ -46,4 +58,7 @@ public class OpCodes {
   public static final byte IFLE = (byte) 158;
   public static final byte GOTO = (byte) 167;
   public static final byte IINC = (byte) 132;
+  public static final byte I2B = (byte) 145;
+  public static final byte I2S = (byte) 147;
+  public static final byte I2L = (byte) 133;
 }

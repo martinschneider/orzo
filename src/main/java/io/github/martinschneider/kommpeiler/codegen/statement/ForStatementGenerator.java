@@ -3,11 +3,11 @@ package io.github.martinschneider.kommpeiler.codegen.statement;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GOTO;
 
+import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
+import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
 import io.github.martinschneider.kommpeiler.parser.productions.Break;
-import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.ForStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
@@ -17,28 +17,20 @@ import java.util.List;
 import java.util.Map;
 
 public class ForStatementGenerator implements StatementGenerator {
-  private StatementDelegator stmtDelegator;
-  private ConditionalGenerator condGenerator;
-  private ConstantPool constPool;
+  private CGContext context;
 
-  public ForStatementGenerator(
-      StatementDelegator stmtDelegator,
-      ConditionalGenerator condGenerator,
-      ConstantPool constPool) {
-    this.stmtDelegator = stmtDelegator;
-    this.condGenerator = condGenerator;
-    this.constPool = constPool;
+  public ForStatementGenerator(CGContext context) {
+    this.context = context;
   }
 
   @Override
   public HasOutput generate(
-      Map<Identifier, Integer> variables,
       DynamicByteArray out,
-      Statement stmt,
+      Map<Identifier, VariableInfo> variables,
       Method method,
-      Clazz clazz) {
+      Statement stmt) {
     ForStatement forStatement = (ForStatement) stmt;
-    stmtDelegator.generate(variables, out, forStatement.getInitialization(), method, clazz);
+    context.delegator.generate(variables, out, method, forStatement.getInitialization());
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements
     List<Byte> breaks = new ArrayList<>();
@@ -48,14 +40,14 @@ public class ForStatementGenerator implements StatementGenerator {
         bodyOut.write(GOTO);
         bodyOut.write((short) 0); // placeholder
       } else {
-        stmtDelegator.generate(variables, bodyOut, innerStmt, method, clazz);
+        context.delegator.generate(variables, bodyOut, method, innerStmt);
       }
     }
-    stmtDelegator.generate(variables, bodyOut, forStatement.getLoopStatement(), method, clazz);
+    context.delegator.generate(variables, bodyOut, method, forStatement.getLoopStatement());
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
-    condGenerator.generateCondition(
-        conditionOut, clazz, variables, constPool, forStatement.getCondition(), branchBytes);
+    context.condGenerator.generateCondition(
+        conditionOut, variables, forStatement.getCondition(), branchBytes);
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {

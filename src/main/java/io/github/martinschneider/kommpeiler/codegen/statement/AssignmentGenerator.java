@@ -1,36 +1,34 @@
 package io.github.martinschneider.kommpeiler.codegen.statement;
 
+import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
-import io.github.martinschneider.kommpeiler.codegen.ExpressionResult;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
+import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
-import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.Map;
 
 public class AssignmentGenerator implements StatementGenerator {
-  private ExpressionGenerator exprGenerator;
-  private OpsCodeGenerator opsGenerator;
+  private CGContext context;
 
-  public AssignmentGenerator(ExpressionGenerator exprGenerator, OpsCodeGenerator opsGenerator) {
-    this.exprGenerator = exprGenerator;
-    this.opsGenerator = opsGenerator;
+  public AssignmentGenerator(CGContext context) {
+    this.context = context;
   }
 
   @Override
   public HasOutput generate(
-      Map<Identifier, Integer> variables,
       DynamicByteArray out,
-      Statement stmt,
+      Map<Identifier, VariableInfo> variables,
       Method method,
-      Clazz clazz) {
+      Statement stmt) {
     Assignment assignment = (Assignment) stmt;
     // TODO: store type in variable map
     // TODO: type conversion
-    ExpressionResult result = exprGenerator.eval(out, variables, assignment.getRight());
-    opsGenerator.assignValue(out, variables, result.getType(), assignment.getLeft());
+    context.exprGenerator.eval(out, variables, assignment.getRight());
+    String type = variables.get(assignment.getLeft()).getType();
+    context.opsGenerator.assignValue(out, variables, type, assignment.getLeft());
     return out;
   }
 }

@@ -1,13 +1,15 @@
 package io.github.martinschneider.kommpeiler.codegen.statement;
 
 import static io.github.martinschneider.kommpeiler.codegen.CodeGenerator.INTEGER_DEFAULT_VALUE;
+import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.BYTE;
 import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.INT;
+import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.SHORT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 
+import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
-import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
+import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
 import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
@@ -15,33 +17,32 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.Map;
 
 public class DeclarationGenerator implements StatementGenerator {
-  private ExpressionGenerator exprGenerator;
-  private OpsCodeGenerator opsGenerator;
-  private ConstantPool constPool;
-
-  public DeclarationGenerator(
-      ExpressionGenerator exprGenerator, OpsCodeGenerator opsGenerator, ConstantPool constPool) {
-    this.exprGenerator = exprGenerator;
-    this.opsGenerator = opsGenerator;
-    this.constPool = constPool;
+  public DeclarationGenerator(CGContext context) {
+    this.context = context;
   }
+
+  private CGContext context;
 
   @Override
   public HasOutput generate(
-      Map<Identifier, Integer> variables,
       DynamicByteArray out,
-      Statement stmt,
+      Map<Identifier, VariableInfo> variables,
       Method method,
-      Clazz clazz) {
+      Statement stmt) {
     Declaration decl = (Declaration) stmt;
     if (decl.hasValue()) {
-      exprGenerator.eval(out, variables, decl.getValue());
+      context.exprGenerator.eval(out, variables, decl.getValue());
     } else {
       if (decl.getType().eq(type(INT))) {
-        opsGenerator.pushInteger(out, constPool, INTEGER_DEFAULT_VALUE);
+        context.opsGenerator.pushInteger(out, INTEGER_DEFAULT_VALUE);
+      } else if (decl.getType().eq(type(SHORT))) {
+        context.opsGenerator.sipush(out, INTEGER_DEFAULT_VALUE);
+      } else if (decl.getType().eq(type(BYTE))) {
+        context.opsGenerator.bipush(out, INTEGER_DEFAULT_VALUE);
       }
     }
-    opsGenerator.assignValue(out, variables, decl.getType(), decl.getName());
+    context.opsGenerator.assignValue(
+        out, variables, decl.getType().getValue().toString(), decl.getName());
     return out;
   }
 }

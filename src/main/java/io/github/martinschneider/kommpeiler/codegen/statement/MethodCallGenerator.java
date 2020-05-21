@@ -1,10 +1,10 @@
 package io.github.martinschneider.kommpeiler.codegen.statement;
 
+import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.ExpressionResult;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
-import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
+import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
@@ -14,48 +14,36 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.Map;
 
 public class MethodCallGenerator implements StatementGenerator {
-  private ExpressionGenerator exprGenerator;
-  private OpsCodeGenerator opsGenerator;
-  private ConstantPool constPool;
-  private Map<String, Method> methodMap;
+  private CGContext context;
 
-  public MethodCallGenerator(
-      ExpressionGenerator exprGenerator,
-      OpsCodeGenerator opsGenerator,
-      ConstantPool constPool,
-      Map<String, Method> methodMap) {
-    this.exprGenerator = exprGenerator;
-    this.opsGenerator = opsGenerator;
-    this.constPool = constPool;
-    this.methodMap = methodMap;
+  public MethodCallGenerator(CGContext context) {
+    this.context = context;
   }
 
   @Override
   public HasOutput generate(
-      Map<Identifier, Integer> variables,
       DynamicByteArray out,
-      Statement stmt,
+      Map<Identifier, VariableInfo> variables,
       Method method,
-      Clazz clazz) {
+      Statement stmt) {
     MethodCall methodCall = (MethodCall) stmt;
     if ("System.out.println".equals(methodCall.getQualifiedName())) {
       for (Expression param : methodCall.getParameters()) {
-        opsGenerator.getStatic(out, constPool, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        ExpressionResult result = exprGenerator.eval(out, variables, param);
+        context.opsGenerator.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        ExpressionResult result = context.exprGenerator.eval(out, variables, param);
         print(out, result.getType());
       }
     } else {
       String methodName =
           methodCall.getNames().get(methodCall.getNames().size() - 1).getValue().toString();
       for (Expression expr : methodCall.getParameters()) {
-        exprGenerator.eval(out, variables, expr);
+        context.exprGenerator.eval(out, variables, expr);
       }
-      opsGenerator.invokeStatic(
+      context.opsGenerator.invokeStatic(
           out,
-          constPool,
-          clazz.getName().getValue().toString(),
+          context.clazz.getName().getValue().toString(),
           methodName,
-          methodMap.get(methodName).getTypeDescr());
+          context.methodMap.get(methodName).getTypeDescr());
     }
     return out;
   }
@@ -66,10 +54,10 @@ public class MethodCallGenerator implements StatementGenerator {
    */
   private DynamicByteArray print(DynamicByteArray out, Type type) {
     if (type.getValue().equals("java.lang.String".toUpperCase())) {
-      opsGenerator.invokeVirtual(
-          out, constPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
+      context.opsGenerator.invokeVirtual(
+          out, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
     } else if (type.getValue().equals("INT")) {
-      opsGenerator.invokeVirtual(out, constPool, "java/io/PrintStream", "println", "(I)V");
+      context.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(I)V");
     } else {
       // TODO: call toString() first
     }

@@ -3,10 +3,10 @@ package io.github.martinschneider.kommpeiler.codegen.statement;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GOTO;
 
+import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
-import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
+import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
 import io.github.martinschneider.kommpeiler.parser.productions.IfBlock;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
@@ -17,26 +17,18 @@ import java.util.List;
 import java.util.Map;
 
 public class IfStatementGenerator implements StatementGenerator {
-  private StatementDelegator stmtDelegator;
-  private ConditionalGenerator condGenerator;
-  private ConstantPool constPool;
+  private CGContext context;
 
-  public IfStatementGenerator(
-      StatementDelegator stmtDelegator,
-      ConditionalGenerator condGenerator,
-      ConstantPool constPool) {
-    this.stmtDelegator = stmtDelegator;
-    this.condGenerator = condGenerator;
-    this.constPool = constPool;
+  public IfStatementGenerator(CGContext context) {
+    this.context = context;
   }
 
   @Override
   public HasOutput generate(
-      Map<Identifier, Integer> variables,
       DynamicByteArray out,
-      Statement stmt,
+      Map<Identifier, VariableInfo> variables,
       Method method,
-      Clazz clazz) {
+      Statement stmt) {
     IfStatement ifStmt = (IfStatement) stmt;
     List<DynamicByteArray> bodyOutputs = new ArrayList<>();
     List<DynamicByteArray> condOutputs = new ArrayList<>();
@@ -44,7 +36,7 @@ public class IfStatementGenerator implements StatementGenerator {
       IfBlock ifBlock = ifStmt.getIfBlocks().get(i);
       DynamicByteArray bodyOut = new DynamicByteArray();
       for (Statement innerStmt : ifBlock.getBody()) {
-        stmtDelegator.generate(variables, bodyOut, innerStmt, method, clazz);
+        context.delegator.generate(variables, bodyOut, method, innerStmt);
       }
       DynamicByteArray conditionOut = new DynamicByteArray();
       if (ifBlock.getCondition() != null) { // null for else blocks
@@ -52,8 +44,8 @@ public class IfStatementGenerator implements StatementGenerator {
         if (i != ifStmt.getIfBlocks().size() - 1) {
           branchBytes += 3;
         }
-        condGenerator.generateCondition(
-            conditionOut, clazz, variables, constPool, ifBlock.getCondition(), branchBytes);
+        context.condGenerator.generateCondition(
+            conditionOut, variables, ifBlock.getCondition(), branchBytes);
       }
       bodyOutputs.add(bodyOut);
       condOutputs.add(conditionOut);

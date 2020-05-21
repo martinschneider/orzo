@@ -3,11 +3,11 @@ package io.github.martinschneider.kommpeiler.codegen.statement;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GOTO;
 
+import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
+import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
 import io.github.martinschneider.kommpeiler.parser.productions.Break;
-import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.DoStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
@@ -17,26 +17,18 @@ import java.util.List;
 import java.util.Map;
 
 public class DoStatementGenerator implements StatementGenerator {
-  private StatementDelegator stmtDelegator;
-  private ConditionalGenerator condGenerator;
-  private ConstantPool constPool;
-
-  public DoStatementGenerator(
-      StatementDelegator stmtDelegator,
-      ConditionalGenerator condGenerator,
-      ConstantPool constPool) {
-    this.stmtDelegator = stmtDelegator;
-    this.condGenerator = condGenerator;
-    this.constPool = constPool;
+  public DoStatementGenerator(CGContext context) {
+    this.context = context;
   }
+
+  private CGContext context;
 
   @Override
   public HasOutput generate(
-      Map<Identifier, Integer> variables,
       DynamicByteArray out,
-      Statement stmt,
+      Map<Identifier, VariableInfo> variables,
       Method method,
-      Clazz clazz) {
+      Statement stmt) {
     DoStatement doStatement = (DoStatement) stmt;
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements
@@ -47,13 +39,13 @@ public class DoStatementGenerator implements StatementGenerator {
         bodyOut.write(GOTO);
         bodyOut.write((short) 0); // placeholder
       } else {
-        stmtDelegator.generate(variables, bodyOut, innerStmt, method, clazz);
+        context.delegator.generate(variables, bodyOut, method, innerStmt);
       }
     }
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) -(bodyOut.getBytes().length + conditionOut.getBytes().length);
-    condGenerator.generateCondition(
-        conditionOut, clazz, variables, constPool, doStatement.getCondition(), branchBytes, true);
+    context.condGenerator.generateCondition(
+        conditionOut, variables, doStatement.getCondition(), branchBytes, true);
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {
       byte[] jmpOffset =
