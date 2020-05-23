@@ -18,33 +18,30 @@ import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.ExpressionResult;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
+import io.github.martinschneider.kommpeiler.codegen.VariableMap;
 import io.github.martinschneider.kommpeiler.parser.productions.Condition;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.math.BigInteger;
-import java.util.Map;
 
 public class ConditionalGenerator {
   public CGContext context;
 
   public HasOutput generateCondition(
-      DynamicByteArray out,
-      Map<Identifier, VariableInfo> variables,
-      Condition cond,
-      short branchBytes) {
+      DynamicByteArray out, VariableMap variables, Condition cond, short branchBytes) {
     return generateCondition(out, variables, cond, branchBytes, false);
   }
 
   public HasOutput generateCondition(
       DynamicByteArray out,
-      Map<Identifier, VariableInfo> variables,
+      VariableMap variables,
       Condition cond,
       short branchBytes,
       boolean isDoLoop) {
     DynamicByteArray condOut = new DynamicByteArray();
     // TODO: support other boolean conditions
-    ExpressionResult left = context.exprGenerator.eval(condOut, variables, cond.getLeft(), false);
-    ExpressionResult right = context.exprGenerator.eval(condOut, variables, cond.getRight(), false);
+    ExpressionResult left =
+        context.exprGenerator.eval(condOut, variables, null, cond.getLeft(), false);
+    ExpressionResult right =
+        context.exprGenerator.eval(condOut, variables, null, cond.getRight(), false);
     boolean leftZero = isZero(left.getValue());
     boolean rightZero = isZero(right.getValue());
     if (leftZero ^ rightZero) {

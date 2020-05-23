@@ -1,7 +1,5 @@
 package io.github.martinschneider.kommpeiler.scanner.tokens;
 
-import io.github.martinschneider.kommpeiler.parser.productions.BasicType;
-import io.github.martinschneider.kommpeiler.parser.productions.Type;
 import java.math.BigInteger;
 
 public class Token {
@@ -110,23 +108,23 @@ public class Token {
     return new Scope(value);
   }
 
-  public static Type type(String value) {
-    return new Type(value);
-  }
-
-  public static Type type(BasicType value) {
-    return new Type(value.name());
-  }
-
   public static Sym sym(Symbols value) {
     return new Sym(value);
+  }
+
+  public static Type type(String value) {
+    return new Type(value);
   }
 
   public static Token eof() {
     return new EOF();
   }
 
-  public <T extends Token> boolean eq(T right) {
-    return this.getValue().equals(right.getValue());
+  public <T extends Token> boolean eq(T value) {
+    return this.getValue().equals(value.getValue());
+  }
+
+  public <T extends Token> boolean eq(String value) {
+    return this.getValue().equals(value);
   }
 }

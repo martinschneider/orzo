@@ -5,11 +5,11 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 public class Declaration implements Statement {
   private boolean hasValue;
   private Identifier name;
-  private Type type;
+  private String type;
   private Expression value;
 
   public Declaration(
-      final Identifier name, final Type type, final Expression value, final boolean hasValue) {
+      final Identifier name, final String type, final Expression value, final boolean hasValue) {
     super();
     this.type = type;
     this.name = name;
@@ -21,7 +21,7 @@ public class Declaration implements Statement {
     return name;
   }
 
-  public Type getType() {
+  public String getType() {
     return type;
   }
 
@@ -41,7 +41,7 @@ public class Declaration implements Statement {
     this.name = name;
   }
 
-  public void setType(final Type type) {
+  public void setType(final String type) {
     this.type = type;
   }
 

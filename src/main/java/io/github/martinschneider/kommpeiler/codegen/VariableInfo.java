@@ -35,4 +35,9 @@ public class VariableInfo {
   public void setIdx(byte idx) {
     this.idx = idx;
   }
+
+  @Override
+  public String toString() {
+    return "VariableInfo [name=" + name + ", type=" + type + ", idx=" + idx + "]";
+  }
 }

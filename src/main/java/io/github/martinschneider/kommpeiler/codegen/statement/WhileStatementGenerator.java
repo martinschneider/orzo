@@ -6,15 +6,13 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GOTO;
 import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
+import io.github.martinschneider.kommpeiler.codegen.VariableMap;
 import io.github.martinschneider.kommpeiler.parser.productions.Break;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.parser.productions.WhileStatement;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class WhileStatementGenerator implements StatementGenerator {
   private CGContext context;
@@ -25,10 +23,7 @@ public class WhileStatementGenerator implements StatementGenerator {
 
   @Override
   public HasOutput generate(
-      DynamicByteArray out,
-      Map<Identifier, VariableInfo> variables,
-      Method method,
-      Statement stmt) {
+      DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     WhileStatement whileStatement = (WhileStatement) stmt;
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements

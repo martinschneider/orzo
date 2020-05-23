@@ -33,10 +33,10 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.scope;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.str;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.BASIC_TYPES;
 
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
 import io.github.martinschneider.kommpeiler.error.ErrorType;
-import io.github.martinschneider.kommpeiler.parser.productions.BasicType;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Keywords;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scopes;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
@@ -189,11 +189,9 @@ public class Lexer {
         }
       }
       // basic types
-      for (BasicType type : BasicType.values()) {
-        if (str.equalsIgnoreCase(type.name())) {
-          tokenList.add(type(str));
-          buffer.setLength(0);
-        }
+      if (BASIC_TYPES.contains(str)) {
+        tokenList.add(type(str));
+        buffer.setLength(0);
       }
       if (buffer.length() > 0) {
         tokenList.add(id(buffer.toString()));

@@ -1,8 +1,5 @@
 package io.github.martinschneider.kommpeiler.parser;
 
-import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.DOUBLE;
-import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.INT;
-import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.VOID;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.DEFAULT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.PRIVATE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.PROTECTED;
@@ -11,7 +8,6 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.cmp;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.id;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.integer;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.scope;
-import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,7 +27,6 @@ import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
 import io.github.martinschneider.kommpeiler.parser.productions.ReturnStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Selector;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
-import io.github.martinschneider.kommpeiler.parser.productions.Type;
 import io.github.martinschneider.kommpeiler.parser.productions.WhileStatement;
 import io.github.martinschneider.kommpeiler.scanner.Lexer;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Comparator;
@@ -376,7 +371,7 @@ public class ParserTest {
         Arguments.of(
             "public void test(){x=1;y=2;if(x==y){fehler=1;}",
             scope(PUBLIC),
-            type(VOID),
+            "void",
             id("test"),
             List.of(
                 assign("x=1"),
@@ -385,19 +380,19 @@ public class ParserTest {
         Arguments.of(
             "void test(){x=100;while(x>0){x=x-1;}",
             scope(DEFAULT),
-            type(VOID),
+            "void",
             id("test"),
             List.of(assign("x=100"), whileStmt(cond("x>0"), List.of(assign("x=x-1"))))),
         Arguments.of(
             "protected int huber(){do{}while(x>0)}",
             scope(PROTECTED),
-            type(INT),
+            "int",
             id("huber"),
             List.of(doStmt(cond("x>0"), Collections.emptyList()))),
         Arguments.of(
             "private double calculateMean(){}",
             scope(PRIVATE),
-            type(DOUBLE),
+            "double",
             id("calculateMean"),
             Collections.emptyList()));
   }
@@ -407,7 +402,7 @@ public class ParserTest {
   public void testMethod(
       String input,
       Scope expectedScope,
-      Type expectedType,
+      String expectedType,
       Identifier expectedName,
       List<Statement> expectedStatements)
       throws IOException {
@@ -491,15 +486,15 @@ public class ParserTest {
 
   private static Stream<Arguments> testDeclaration() {
     return Stream.of(
-        Arguments.of("int x=100;", type("INT"), "x", true),
-        Arguments.of("String martin", type("STRING"), "martin", false),
-        Arguments.of("double d=1.23", type("DOUBLE"), "d", true));
+        Arguments.of("int x=100;", "int", "x", true),
+        Arguments.of("String martin", "String", "martin", false),
+        Arguments.of("double d=1.23", "double", "d", true));
   }
 
   @MethodSource
   @ParameterizedTest
   public void testDeclaration(
-      String input, Type expectedType, String expectedName, boolean hasExpression)
+      String input, String expectedType, String expectedName, boolean hasExpression)
       throws IOException {
     tokens = scanner.getTokens(input);
     parser = new Parser(tokens);

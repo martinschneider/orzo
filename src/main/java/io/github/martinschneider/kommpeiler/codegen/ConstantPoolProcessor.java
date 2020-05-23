@@ -1,5 +1,7 @@
 package io.github.martinschneider.kommpeiler.codegen;
 
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.LONG;
+
 import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
@@ -51,7 +53,7 @@ public class ConstantPoolProcessor {
       Declaration decl = (Declaration) stmt;
       Expression value = decl.getValue();
       if (value != null) {
-        constPool = processExpression(constPool, value);
+        constPool = processExpression(constPool, decl.getType(), value);
       }
     } else if (stmt instanceof Assignment) {
       Assignment assignment = (Assignment) stmt;
@@ -76,8 +78,8 @@ public class ConstantPoolProcessor {
           constPool = processStatement(constPool, subStatement);
         }
         if (ifBlock.getCondition() != null) { // null for else blocks
-          constPool = processExpression(constPool, ifBlock.getCondition().getLeft());
-          constPool = processExpression(constPool, ifBlock.getCondition().getRight());
+          constPool = processExpression(constPool, null, ifBlock.getCondition().getLeft());
+          constPool = processExpression(constPool, null, ifBlock.getCondition().getRight());
         }
       }
     }
@@ -85,12 +87,20 @@ public class ConstantPoolProcessor {
   }
 
   private ConstantPool processExpression(ConstantPool constPool, Expression param) {
+    return processExpression(constPool, null, param);
+  }
+
+  private ConstantPool processExpression(ConstantPool constPool, String type, Expression param) {
     for (Token token : param.getInfix()) {
       if (token instanceof Str) {
         constPool.addString(token.getValue().toString());
       } else if (token instanceof IntNum) {
         long intValue = ((BigInteger) (token.getValue())).longValue();
-        if (intValue < -32768 || intValue >= 32768) {
+        if ((type != null && type.equals(LONG))
+            || intValue < Integer.MIN_VALUE
+            || intValue > Integer.MAX_VALUE) {
+          constPool.addLong(intValue);
+        } else if (intValue < -32768 || intValue >= 32768) {
           constPool.addInteger((int) intValue);
         }
       }

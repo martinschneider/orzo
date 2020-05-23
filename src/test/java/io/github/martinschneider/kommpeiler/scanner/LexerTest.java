@@ -1,8 +1,5 @@
 package io.github.martinschneider.kommpeiler.scanner;
 
-import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.DOUBLE;
-import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.INT;
-import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.VOID;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.EQUAL;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.GREATER;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.GREATEREQ;
@@ -102,7 +99,8 @@ public class LexerTest {
             "String x = \"Halleluja!\"",
             List.of(type("String"), id("x"), op(ASSIGN), str("Halleluja!"))),
         Arguments.of(
-            "void int double String", List.of(type(VOID), type(INT), type(DOUBLE), type("String"))),
+            "void int double String",
+            List.of(type("void"), type("int"), type("double"), type("String"))),
         Arguments.of(
             "if else do while for return static class package",
             List.of(

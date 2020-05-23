@@ -1,5 +1,16 @@
 package io.github.martinschneider.kommpeiler.parser.productions;
 
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.BOOLEAN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.BYTE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.CHAR;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.DOUBLE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.FLOAT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.INT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.LONG;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.SHORT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.STRING;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.VOID;
+
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scope;
 import java.util.List;
@@ -10,7 +21,7 @@ public class Method {
   private List<Statement> body;
   private Identifier name;
   private Scope scope;
-  private Type type;
+  private String type;
 
   /**
    * @param scope scope
@@ -20,7 +31,7 @@ public class Method {
    */
   public Method(
       final Scope scope,
-      final Type type,
+      final String type,
       final Identifier name,
       final List<Argument> arguments,
       final List<Statement> body) {
@@ -47,16 +58,45 @@ public class Method {
     return scope;
   }
 
-  public Type getType() {
+  public String getType() {
     return type;
   }
 
   public String getTypeDescr() {
+    String typeDescr = getDescr(type);
     StringBuilder strBuilder = new StringBuilder("(");
-    strBuilder.append(arguments.stream().map(x -> x.getType()).collect(Collectors.joining(", ")));
+    strBuilder.append(
+        arguments.stream().map(x -> getDescr(x.getType())).collect(Collectors.joining(", ")));
     strBuilder.append(')');
-    strBuilder.append(type.getLabel());
+    strBuilder.append(typeDescr);
     return strBuilder.toString();
+  }
+
+  public String getDescr(String type) {
+    // TODO: general handling of reference types and arrays
+    if (type.contains(STRING)) {
+      type = type.replaceAll(STRING, "Ljava/lang/String;");
+      return type;
+    } else if (type.contains(BYTE)) {
+      type = type.replaceAll(BYTE, "B");
+    } else if (type.contains(CHAR)) {
+      type = type.replaceAll(CHAR, "C");
+    } else if (type.contains(DOUBLE)) {
+      type = type.replaceAll(DOUBLE, "D");
+    } else if (type.contains(FLOAT)) {
+      type = type.replaceAll(FLOAT, "F");
+    } else if (type.contains(INT)) {
+      type = type.replaceAll(INT, "I");
+    } else if (type.contains(LONG)) {
+      type = type.replaceAll(LONG, "J");
+    } else if (type.contains(SHORT)) {
+      type = type.replaceAll(SHORT, "S");
+    } else if (type.contains(VOID)) {
+      type = type.replaceAll(VOID, "V");
+    } else if (type.contains(BOOLEAN)) {
+      type = type.replaceAll(BOOLEAN, "Z");
+    }
+    return type;
   }
 
   public void setArguments(List<Argument> arguments) {
@@ -75,7 +115,7 @@ public class Method {
     this.scope = scope;
   }
 
-  public void setType(final Type type) {
+  public void setType(final String type) {
     this.type = type;
   }
 

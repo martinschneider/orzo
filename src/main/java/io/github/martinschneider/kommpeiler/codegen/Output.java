@@ -8,6 +8,7 @@ import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.shortToByte
 import java.io.IOException;
 import java.io.PrintStream;
 
+// output of the compiler
 public class Output implements HasOutput {
   private DynamicByteArray array = new DynamicByteArray();
   private PrintStream[] outputs;

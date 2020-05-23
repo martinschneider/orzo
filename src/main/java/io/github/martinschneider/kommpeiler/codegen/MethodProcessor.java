@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MethodProcessor {
+  // TODO: does this justify its own class?
   public Map<String, Method> getMethodMap(Clazz clazz) {
     Map<String, Method> methodMap = new HashMap<>();
     for (Method method : clazz.getBody()) {

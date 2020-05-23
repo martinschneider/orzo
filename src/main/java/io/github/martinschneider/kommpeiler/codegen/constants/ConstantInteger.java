@@ -3,7 +3,6 @@ package io.github.martinschneider.kommpeiler.codegen.constants;
 import static io.github.martinschneider.kommpeiler.codegen.ByteUtils.intToByteArray;
 
 public class ConstantInteger implements Constant {
-
   private Integer value;
 
   public ConstantInteger(Integer value) {
@@ -12,7 +11,7 @@ public class ConstantInteger implements Constant {
 
   @Override
   public byte getTag() {
-    return (byte) 0x3;
+    return ConstantTypes.CONSTANT_INTEGER;
   }
 
   @Override

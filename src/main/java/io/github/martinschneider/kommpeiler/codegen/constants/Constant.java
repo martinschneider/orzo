@@ -1,7 +1,7 @@
 package io.github.martinschneider.kommpeiler.codegen.constants;
 
 public interface Constant {
-  public byte getTag();
+  byte getTag();
 
-  public byte[] getInfo();
+  byte[] getInfo();
 }

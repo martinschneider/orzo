@@ -7,14 +7,12 @@ import io.github.martinschneider.kommpeiler.codegen.statement.OpsCodeGenerator;
 import io.github.martinschneider.kommpeiler.codegen.statement.StatementDelegator;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
-import java.util.Deque;
 import java.util.Map;
 
 public class CGContext {
   public Clazz clazz;
   public ConstantPool constPool;
   public Map<String, Method> methodMap;
-  public Deque<String> stackTypes;
   public StatementDelegator delegator;
   public OpsCodeGenerator opsGenerator;
   public ExpressionGenerator exprGenerator;

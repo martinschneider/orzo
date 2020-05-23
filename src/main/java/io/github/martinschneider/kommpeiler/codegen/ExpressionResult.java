@@ -1,17 +1,15 @@
 package io.github.martinschneider.kommpeiler.codegen;
 
-import io.github.martinschneider.kommpeiler.parser.productions.Type;
-
 public class ExpressionResult {
-  private Type type;
+  private String type;
   private Object result;
 
-  public ExpressionResult(Type type, Object result) {
+  public ExpressionResult(String type, Object result) {
     this.type = type;
     this.result = result;
   }
 
-  public Type getType() {
+  public String getType() {
     return type;
   }
 

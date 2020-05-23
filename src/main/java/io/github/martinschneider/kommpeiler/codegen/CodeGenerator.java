@@ -13,11 +13,8 @@ import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.ReturnStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 public class CodeGenerator {
   private static final short JAVA_CLASS_MAJOR_VERSION = 49;
@@ -37,7 +34,6 @@ public class CodeGenerator {
     ctx.exprGenerator = new ExpressionGenerator();
     ctx.methodMap = new MethodProcessor().getMethodMap(clazz);
     ctx.opsGenerator = new OpsCodeGenerator();
-    ctx.stackTypes = new LinkedList<>();
     ctx.condGenerator.context = ctx;
     ctx.delegator.context = ctx;
     ctx.exprGenerator.context = ctx;
@@ -81,10 +77,7 @@ public class CodeGenerator {
   }
 
   private void generateCode(
-      DynamicByteArray out,
-      Map<Identifier, VariableInfo> variables,
-      Method method,
-      Statement stmt) {
+      DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     ctx.delegator.generate(variables, out, method, stmt);
   }
 
@@ -104,7 +97,7 @@ public class CodeGenerator {
     out.write((short) methods.size());
     for (Method method : methods) {
       // todo: handle global variables
-      Map<Identifier, VariableInfo> variables = new HashMap<>();
+      VariableMap variables = new VariableMap(new HashMap<>());
       for (Argument arg : method.getArguments()) {
         variables.put(
             arg.getName(),
@@ -129,8 +122,9 @@ public class CodeGenerator {
       }
       out.write(methodOut.size() + 12); // stack size (2) + local var size (2) + code size (4) +
       // exception table size (2) + attribute count size (2)
-      out.write((short) 3); // max stack size
-      out.write((short) (1 + variables.size())); // max local var size
+      // TODO: set this dynamically (for now, 4 allows 2 long/double values)
+      out.write((short) 4); // max stack size
+      out.write((short) (variables.size())); // max local var size
       out.write(methodOut.size());
       out.write(methodOut.flush());
       out.write((short) 0); // exception table of size 0
@@ -150,5 +144,6 @@ public class CodeGenerator {
     ctx.constPoolProcessor.addMethodRef(
         ctx.constPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
     ctx.constPoolProcessor.addMethodRef(ctx.constPool, "java/io/PrintStream", "println", "(I)V");
+    ctx.constPoolProcessor.addMethodRef(ctx.constPool, "java/io/PrintStream", "println", "(J)V");
   }
 }

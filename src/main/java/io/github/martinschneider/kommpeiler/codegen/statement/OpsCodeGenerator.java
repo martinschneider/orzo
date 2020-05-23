@@ -4,7 +4,6 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.BIPUSH;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DRETURN;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GETSTATIC;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.I2B;
-import static io.github.martinschneider.kommpeiler.codegen.OpCodes.I2L;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.I2S;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IADD;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_0;
@@ -29,8 +28,10 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISTORE_1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISTORE_2;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISTORE_3;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LADD;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LCONST_0;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LCONST_1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LDC;
-import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LDC_2W;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LDC2_W;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LLOAD;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LLOAD_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LLOAD_1;
@@ -41,28 +42,38 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSTORE_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSTORE_1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSTORE_2;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSTORE_3;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSUB;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.RETURN;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.SIPUSH;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_FIELDREF;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_INTEGER;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_LONG;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.DOUBLE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.INT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.LONG;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.VOID;
 
 import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
 import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
+import io.github.martinschneider.kommpeiler.codegen.VariableMap;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
-import java.util.Map;
 
 public class OpsCodeGenerator {
   public CGContext context;
 
   // push long
   public HasOutput pushLong(DynamicByteArray out, long number) {
-    ldc2_w(out, CONSTANT_LONG, number);
-    context.stackTypes.push("LONG");
+    if (number == 0) {
+      out.write(LCONST_0);
+    } else if (number == 1) {
+      out.write(LCONST_1);
+    } else {
+      ldc2_w(out, CONSTANT_LONG, number);
+    }
     return out;
   }
 
@@ -89,25 +100,26 @@ public class OpsCodeGenerator {
     } else {
       ldc(out, CONSTANT_INTEGER, number);
     }
-    context.stackTypes.push("INT");
     return out;
   }
 
   public HasOutput ldc2_w(DynamicByteArray out, byte type, Object key) {
-    out.write(LDC_2W);
-    out.write((byte) context.constPool.indexOf(type, key));
+    out.write(LDC2_W);
+    byte idx = (byte) context.constPool.indexOf(type, key);
+    out.write((short) (idx - 1));
     return out;
   }
 
   public HasOutput ldc(DynamicByteArray out, byte type, Object key) {
+    byte idx = (byte) context.constPool.indexOf(type, key);
     out.write(LDC);
-    out.write((byte) context.constPool.indexOf(type, key));
+    out.write(idx);
     return out;
   }
 
   public HasOutput loadValue(DynamicByteArray out, String type, byte idx) {
     switch (type) {
-      case "LONG":
+      case LONG:
         return loadLong(out, idx);
       default:
         return loadInteger(out, idx);
@@ -127,7 +139,6 @@ public class OpsCodeGenerator {
       out.write(ILOAD);
       out.write(idx);
     }
-    context.stackTypes.push("INT");
     return out;
   }
 
@@ -144,7 +155,6 @@ public class OpsCodeGenerator {
       out.write(LLOAD);
       out.write(idx);
     }
-    context.stackTypes.push("LONG");
     return out;
   }
 
@@ -193,19 +203,16 @@ public class OpsCodeGenerator {
   }
 
   public HasOutput ret(
-      DynamicByteArray out,
-      Map<Identifier, VariableInfo> variables,
-      String type,
-      Expression retValue) {
-    context.exprGenerator.eval(out, variables, retValue);
+      DynamicByteArray out, VariableMap variables, String type, Expression retValue) {
+    context.exprGenerator.eval(out, variables, type, retValue);
     switch (type) {
-      case "INT":
+      case INT:
         out.write(IRETURN);
         return out;
-      case "DOUBLE":
+      case DOUBLE:
         out.write(DRETURN);
         return out;
-      case "VOID":
+      case VOID:
         out.write(RETURN);
         return out;
     }
@@ -213,25 +220,21 @@ public class OpsCodeGenerator {
   }
 
   public HasOutput assignValue(
-      DynamicByteArray out, Map<Identifier, VariableInfo> variables, String type, Identifier name) {
-    // TODO: support other types
+      DynamicByteArray out, VariableMap variables, String type, Identifier name) {
+    // TODO: support floating point numbers and other types
     return assignInteger(variables, out, type, name);
   }
 
-  // assign int, short, byte or long
-  public HasOutput assignInteger(
-      Map<Identifier, VariableInfo> variables, HasOutput out, String type, Identifier var) {
-    String operandType = context.stackTypes.pop();
-    variables.computeIfAbsent(
-        var, x -> new VariableInfo(var.getValue().toString(), type, (byte) variables.size()));
-    byte index = variables.get(var).getIdx();
-    if (type.equals("LONG")) {
-      if (operandType.equals("INT")) {
-        out.write(I2L);
-      }
+  // assign long, int, short, byte or long
+  public HasOutput assignInteger(VariableMap variables, HasOutput out, String type, Identifier id) {
+    if (!variables.getVariables().containsKey(id)) {
+      variables.put(id, new VariableInfo(id.getValue().toString(), type, (byte) variables.size()));
+    }
+    byte index = variables.get(id).getIdx();
+    if (type.equals(LONG)) {
       return storeLong(out, index);
     } else {
-      // TODO: handle all cases
+      // store byte and short as int
       return storeInteger(out, index);
     }
   }
@@ -244,7 +247,7 @@ public class OpsCodeGenerator {
     return out;
   }
 
-  // byte type cannot be increased directly, load to the stack and convert
+  // byte cannot be increased directly, load to the stack and convert
   public HasOutput incByte(DynamicByteArray out, byte idx, byte value) {
     loadInteger(out, idx);
     pushInteger(out, value);
@@ -253,7 +256,7 @@ public class OpsCodeGenerator {
     return out;
   }
 
-  // short type cannot be increased directly, load to the stack and convert
+  // short cannot be increased directly, load to the stack and convert
   public HasOutput incShort(DynamicByteArray out, byte idx, byte value) {
     loadInteger(out, idx);
     pushInteger(out, value);
@@ -262,11 +265,20 @@ public class OpsCodeGenerator {
     return out;
   }
 
-  // long type cannot be increased directly, load to the stack and convert
-  public HasOutput incLong(DynamicByteArray out, byte idx, byte value) {
+  // long type cannot be increased directly, load to the stack and add
+  public HasOutput incLong(DynamicByteArray out, byte idx) {
     loadLong(out, idx);
-    pushLong(out, value);
+    pushLong(out, 1);
     out.write(LADD);
+    return out;
+  }
+
+  // there is not long constant for -1, therefore using +1 and LSUB
+  // to avoid explicitly storing -1 in the constant pool
+  public HasOutput decLong(DynamicByteArray out, byte idx) {
+    loadLong(out, idx);
+    pushLong(out, 1);
+    out.write(LSUB);
     return out;
   }
 

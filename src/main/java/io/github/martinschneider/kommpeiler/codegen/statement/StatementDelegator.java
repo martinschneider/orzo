@@ -3,7 +3,7 @@ package io.github.martinschneider.kommpeiler.codegen.statement;
 import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
+import io.github.martinschneider.kommpeiler.codegen.VariableMap;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
 import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
 import io.github.martinschneider.kommpeiler.parser.productions.DoStatement;
@@ -15,7 +15,6 @@ import io.github.martinschneider.kommpeiler.parser.productions.ParallelAssignmen
 import io.github.martinschneider.kommpeiler.parser.productions.ReturnStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.parser.productions.WhileStatement;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -36,10 +35,7 @@ public class StatementDelegator {
   }
 
   public HasOutput generate(
-      Map<Identifier, VariableInfo> variables,
-      DynamicByteArray out,
-      Method method,
-      Statement stmt) {
+      VariableMap variables, DynamicByteArray out, Method method, Statement stmt) {
     return registry.get(stmt.getClass()).generate(out, variables, method, stmt);
   }
 }

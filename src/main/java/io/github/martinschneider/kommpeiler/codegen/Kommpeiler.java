@@ -12,6 +12,7 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// main entry point
 public class Kommpeiler {
   private static Output fileOutput(File outputFile) {
     PrintStream fileOutput;

@@ -1,8 +1,5 @@
 package io.github.martinschneider.kommpeiler.parser;
 
-import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.DOUBLE;
-import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.INT;
-import static io.github.martinschneider.kommpeiler.parser.productions.BasicType.VOID;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.BREAK;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.CLASS;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.DO;
@@ -37,14 +34,12 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.keyword;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.scope;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
-import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
 import io.github.martinschneider.kommpeiler.error.ErrorType;
 import io.github.martinschneider.kommpeiler.parser.productions.Argument;
 import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
-import io.github.martinschneider.kommpeiler.parser.productions.BasicType;
 import io.github.martinschneider.kommpeiler.parser.productions.Break;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Condition;
@@ -62,7 +57,6 @@ import io.github.martinschneider.kommpeiler.parser.productions.ParallelAssignmen
 import io.github.martinschneider.kommpeiler.parser.productions.ReturnStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Selector;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
-import io.github.martinschneider.kommpeiler.parser.productions.Type;
 import io.github.martinschneider.kommpeiler.parser.productions.WhileStatement;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Comparator;
 import io.github.martinschneider.kommpeiler.scanner.tokens.EOF;
@@ -74,6 +68,7 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Scope;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scopes;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Str;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -130,11 +125,7 @@ public class Parser {
       if (!(token instanceof Type)) {
         break;
       }
-      if (token.eq(type("STRING"))) {
-        type = "Ljava/lang/String;";
-      } else {
-        type = BasicType.valueOf(token.getValue().toString()).getLabel();
-      }
+      type = ((Type) token).getName();
       nextToken();
       if (token.eq(sym(LBRAK))) {
         nextToken();
@@ -314,7 +305,7 @@ public class Parser {
     Type type;
     Identifier name;
     Expression value;
-    if (token instanceof Type && !token.eq(type(VOID))) {
+    if (token instanceof Type && !token.eq("VOID")) {
       type = (Type) token;
       nextToken();
       if (token instanceof Identifier) {
@@ -323,11 +314,11 @@ public class Parser {
         if (token.eq(op(ASSIGN))) {
           nextToken();
           if ((value = parseExpression()) != null) {
-            return new Declaration(name, type, value, true);
+            return new Declaration(name, type.getName(), value, true);
           }
           previousToken();
         }
-        return new Declaration(name, type, null, false);
+        return new Declaration(name, type.getName(), null, false);
       } else {
         previousToken();
       }
@@ -535,9 +526,8 @@ public class Parser {
   }
 
   public Method parseMethod() {
-    int saveIndex = index;
     Scope scope = scope(DEFAULT);
-    Type type;
+    String type = null;
     Identifier name;
     List<Argument> arguments = new ArrayList<>();
     List<Statement> body;
@@ -550,49 +540,44 @@ public class Parser {
       nextToken();
     }
     if (token instanceof Type) {
-      if (token.eq(type(INT)) || token.eq(type(DOUBLE)) || token.eq(type(VOID))) {
-        type = (Type) token;
-        nextToken();
-      } else {
-        index = saveIndex;
-        nextToken();
-        return null;
-      }
-      if (token instanceof Identifier) {
-        name = (Identifier) token;
-      } else {
-        name = null;
-        errors.addParserError("identifier expected");
-      }
+      type = ((Type) token).getName();
       nextToken();
-      if (!token.eq(sym(LPAREN))) {
-        previousToken();
-        errors.addParserError("missing ( in method-declaration");
-      }
-      nextToken();
-      arguments = parseArguments();
-      if (!token.eq(sym(RPAREN))) {
-        previousToken();
-        errors.addParserError("missing ) in method-declaration");
-      }
-      nextToken();
-      if (!token.eq(sym(LBRACE))) {
-        previousToken();
-        errors.addParserError("method-declaration must be followed by {");
-      }
-      nextToken();
-      body = parseStatementSequence();
-      if (body == null) {
-        errors.addParserError("invalid method body");
-      }
-      if (!token.eq(sym(RBRACE))) {
-        previousToken();
-        errors.addParserError("method must be closed by }");
-      }
-      return new Method(scope, type, name, arguments, body);
-    } else {
-      return null;
     }
+    if (token instanceof Identifier) {
+      name = (Identifier) token;
+    } else {
+      name = null;
+      errors.addParserError("identifier expected");
+    }
+    nextToken();
+    if (!token.eq(sym(LPAREN))) {
+      previousToken();
+      errors.addParserError("missing ( in method-declaration");
+    }
+    nextToken();
+    arguments = parseArguments();
+    if (!token.eq(sym(RPAREN))) {
+      previousToken();
+      errors.addParserError("missing ) in method-declaration");
+    }
+    nextToken();
+    if (!token.eq(sym(LBRACE))) {
+      previousToken();
+      errors.addParserError("method-declaration must be followed by {");
+    }
+    nextToken();
+    body = parseStatementSequence();
+    if (body == null) {
+      errors.addParserError("invalid method body");
+    }
+    if (!token.eq(sym(RBRACE))) {
+      previousToken();
+      errors.addParserError("method must be closed by }");
+    }
+    if (type != null && name != null && arguments != null & body != null) {
+      return new Method(scope, type, name, arguments, body);
+    }
+    return null;
   }
 
   public MethodCall parseMethodCall() {

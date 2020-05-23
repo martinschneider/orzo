@@ -6,15 +6,13 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GOTO;
 import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
 import io.github.martinschneider.kommpeiler.codegen.HasOutput;
-import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
+import io.github.martinschneider.kommpeiler.codegen.VariableMap;
 import io.github.martinschneider.kommpeiler.parser.productions.Break;
 import io.github.martinschneider.kommpeiler.parser.productions.ForStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class ForStatementGenerator implements StatementGenerator {
   private CGContext context;
@@ -25,10 +23,7 @@ public class ForStatementGenerator implements StatementGenerator {
 
   @Override
   public HasOutput generate(
-      DynamicByteArray out,
-      Map<Identifier, VariableInfo> variables,
-      Method method,
-      Statement stmt) {
+      DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     ForStatement forStatement = (ForStatement) stmt;
     context.delegator.generate(variables, out, method, forStatement.getInitialization());
     DynamicByteArray bodyOut = new DynamicByteArray();
@@ -38,7 +33,7 @@ public class ForStatementGenerator implements StatementGenerator {
       if (innerStmt instanceof Break) {
         breaks.add((byte) (bodyOut.getBytes().length + 1));
         bodyOut.write(GOTO);
-        bodyOut.write((short) 0); // placeholder
+        bodyOut.write((short) 0); // temporary placeholder
       } else {
         context.delegator.generate(variables, bodyOut, method, innerStmt);
       }
