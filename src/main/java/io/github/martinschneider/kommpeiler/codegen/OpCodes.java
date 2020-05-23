@@ -48,6 +48,7 @@ public class OpCodes {
   public static final byte I2L = (byte) 133;
   public static final byte I2B = (byte) 145;
   public static final byte I2S = (byte) 147;
+  public static final byte LCMP = (byte) 148;
   public static final byte IFEQ = (byte) 153;
   public static final byte IFNE = (byte) 154;
   public static final byte IFLT = (byte) 155;
@@ -62,6 +63,7 @@ public class OpCodes {
   public static final byte IF_ICMPLE = (byte) 164;
   public static final byte GOTO = (byte) 167;
   public static final byte IRETURN = (byte) 172;
+  public static final byte LRETURN = (byte) 173;
   public static final byte DRETURN = (byte) 175;
   public static final byte RETURN = (byte) 177;
   public static final byte GETSTATIC = (byte) 178;

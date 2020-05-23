@@ -8,7 +8,20 @@ public class K018_Longs {
     long b = -2147483648;
     b--;
     System.out.println(b);
-    long c = a + b;
+    long c = 10000000000;
     System.out.println(c);
+    for (long i = 0; i < 5; i++) {
+      System.out.println(i + 1);
+    }
+    long d = 6;
+    while (d <= 10) {
+      System.out.println(d);
+      d++;
+    }
+    d = 9;
+    do {
+      System.out.println(d);
+      d--;
+    } while (d >= 0);
   }
 }

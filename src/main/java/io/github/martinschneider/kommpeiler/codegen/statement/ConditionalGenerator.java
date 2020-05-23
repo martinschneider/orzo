@@ -13,6 +13,9 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPGT;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPLE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPLT;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IF_ICMPNE;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LCMP;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.INT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.LONG;
 
 import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.DynamicByteArray;
@@ -41,7 +44,79 @@ public class ConditionalGenerator {
     ExpressionResult left =
         context.exprGenerator.eval(condOut, variables, null, cond.getLeft(), false);
     ExpressionResult right =
-        context.exprGenerator.eval(condOut, variables, null, cond.getRight(), false);
+        context.exprGenerator.eval(condOut, variables, left.getType(), cond.getRight(), false);
+    if (left.getType().equals(INT)) {
+      return generateIntCondition(condOut, out, cond, left, right, branchBytes, isDoLoop);
+    } else if (left.getType().equals(LONG)) {
+      return generateLongCondition(condOut, out, cond, left, right, branchBytes, isDoLoop);
+    }
+    return null;
+  }
+
+  private HasOutput generateLongCondition(
+      DynamicByteArray condOut,
+      DynamicByteArray out,
+      Condition cond,
+      ExpressionResult left,
+      ExpressionResult right,
+      short branchBytes,
+      boolean isDoLoop) {
+    condOut.write(LCMP);
+    switch (cond.getOperator().cmpValue()) {
+      case EQUAL:
+        if (isDoLoop) {
+          condOut.write(IFEQ);
+        } else {
+          condOut.write(IFNE);
+        }
+        break;
+      case NOTEQUAL:
+        if (isDoLoop) {
+          condOut.write(IFNE);
+        } else {
+          condOut.write(IFEQ);
+        }
+        break;
+      case GREATER:
+        if (isDoLoop) {
+          condOut.write(IFGT);
+        } else {
+          condOut.write(IFLE);
+        }
+        break;
+      case GREATEREQ:
+        if (isDoLoop) {
+          condOut.write(IFGE);
+        } else {
+          condOut.write(IFLT);
+        }
+        break;
+      case SMALLER:
+        if (isDoLoop) {
+          condOut.write(IFLT);
+        } else {
+          condOut.write(IFGE);
+        }
+        break;
+      case SMALLEREQ:
+        if (isDoLoop) {
+          condOut.write(IFLE);
+        } else {
+          condOut.write(IFGT);
+        }
+        break;
+    }
+    return writeBranchOffset(out, branchBytes, isDoLoop, condOut);
+  }
+
+  private HasOutput generateIntCondition(
+      DynamicByteArray condOut,
+      DynamicByteArray out,
+      Condition cond,
+      ExpressionResult left,
+      ExpressionResult right,
+      short branchBytes,
+      boolean isDoLoop) {
     boolean leftZero = isZero(left.getValue());
     boolean rightZero = isZero(right.getValue());
     if (leftZero ^ rightZero) {

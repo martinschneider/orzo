@@ -37,6 +37,7 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LLOAD_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LLOAD_1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LLOAD_2;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LLOAD_3;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LRETURN;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSTORE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSTORE_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSTORE_1;
@@ -103,9 +104,13 @@ public class OpsCodeGenerator {
     return out;
   }
 
-  public HasOutput ldc2_w(DynamicByteArray out, byte type, Object key) {
+  public HasOutput ldc2_w(DynamicByteArray out, byte type, Long key) {
     out.write(LDC2_W);
     byte idx = (byte) context.constPool.indexOf(type, key);
+    if (idx == -1) {
+      context.constPool.addLong(key);
+      idx = (byte) context.constPool.indexOf(type, key);
+    }
     out.write((short) (idx - 1));
     return out;
   }
@@ -208,6 +213,9 @@ public class OpsCodeGenerator {
     switch (type) {
       case INT:
         out.write(IRETURN);
+        return out;
+      case LONG:
+        out.write(LRETURN);
         return out;
       case DOUBLE:
         out.write(DRETURN);

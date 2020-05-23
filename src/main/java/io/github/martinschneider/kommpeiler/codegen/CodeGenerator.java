@@ -54,8 +54,9 @@ public class CodeGenerator {
     out.write(ctx.constPool.indexOf(CONSTANT_CLASS, ctx.clazz.getName().getValue()));
   }
 
-  private void constPool() {
+  private HasOutput constPool(HasOutput out) {
     out.write(ctx.constPool.getBytes());
+    return out;
   }
 
   private void fields() {
@@ -65,13 +66,15 @@ public class CodeGenerator {
   public void generate() {
     supportPrint();
     header();
-    constPool();
+    HasOutput methods = methods(new DynamicByteArray());
+    HasOutput constPool = constPool(new DynamicByteArray());
+    out.write(constPool.getBytes());
     accessModifiers();
     classIndex();
     superClassIndex();
     interfaces();
     fields();
-    methods();
+    out.write(methods.getBytes());
     attributes();
     out.flush();
   }
@@ -91,7 +94,7 @@ public class CodeGenerator {
     out.write((short) 0);
   }
 
-  private void methods() {
+  private HasOutput methods(HasOutput out) {
     List<Method> methods = ctx.clazz.getBody();
     // number of methods
     out.write((short) methods.size());
@@ -122,14 +125,15 @@ public class CodeGenerator {
       }
       out.write(methodOut.size() + 12); // stack size (2) + local var size (2) + code size (4) +
       // exception table size (2) + attribute count size (2)
-      // TODO: set this dynamically (for now, 4 allows 2 long/double values)
-      out.write((short) 4); // max stack size
+      // TODO: set this dynamically (for now, 6 allows 3 long/double values)
+      out.write((short) 6); // max stack size
       out.write((short) (variables.size())); // max local var size
       out.write(methodOut.size());
       out.write(methodOut.flush());
       out.write((short) 0); // exception table of size 0
       out.write((short) 0); // attribute count for this attribute of 0
     }
+    return out;
   }
 
   private void superClassIndex() {

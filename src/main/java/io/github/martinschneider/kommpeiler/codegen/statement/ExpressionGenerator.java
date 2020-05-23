@@ -83,7 +83,7 @@ public class ExpressionGenerator {
       } else if (token instanceof IntNum) {
         BigInteger bigInt = (BigInteger) ((IntNum) token).getValue();
         Long intValue = bigInt.longValue();
-        if (intValue != 0 || pushIfZero) {
+        if (!type.equals(INT) || intValue != 0 || pushIfZero) {
           if (type.equals(LONG)) {
             context.opsGenerator.pushLong(out, intValue.longValue());
           } else if (type.equals(INT) || type.equals(BYTE) || (type.equals(SHORT))) {
@@ -221,6 +221,8 @@ public class ExpressionGenerator {
         }
       }
     }
+    // TODO: this is not working yet
+    // what to return if the value cannot be determined at compile time?
     return new ExpressionResult(type, value);
   }
 
