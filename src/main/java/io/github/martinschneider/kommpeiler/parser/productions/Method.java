@@ -66,7 +66,7 @@ public class Method {
     String typeDescr = getDescr(type);
     StringBuilder strBuilder = new StringBuilder("(");
     strBuilder.append(
-        arguments.stream().map(x -> getDescr(x.getType())).collect(Collectors.joining(", ")));
+        arguments.stream().map(x -> getDescr(x.getType())).collect(Collectors.joining("")));
     strBuilder.append(')');
     strBuilder.append(typeDescr);
     return strBuilder.toString();

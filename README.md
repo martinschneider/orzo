@@ -22,16 +22,15 @@
 - [X] parenthesis `(` ,`)`
 - [X] unary post-increment and decrement `++`, `--`
 - [ ] unary pre-increment and decrement `++`, `--`
-- [X] compound assignments `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=`, `>>>=`
+- [X] compound assignments `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=`, `>>>=`, `&=`, `^=`, `|=`
 - [X] relational `<`, `<=`, `>=`, `>`
 - [X] equality `==`, `!=`,
-- [ ] bitwise `&`, `^`, `|`
+- [X] bit `&`, `^`, `|`, `<<`, `>>`, `>>>`
 - [ ] logical `&&`, `||`
 - [ ] unary logical `!`
 - [ ] unary bitwise `~`
 - [ ] unary plus `+`
 - [X] unary minus `-`
-- [X] bit shifts `<<`, `>>`, `>>>`
 - [ ] `instanceof`
 - [ ] String concatenation `+`
 - [ ] ternary `?:`
@@ -55,6 +54,7 @@
 - [X] [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment), e.g. `a,b=b+1,a-1`
 - [ ] uint, ushort, ubyte, ulong types
 
+# Examples
 Working examples can be found [here](src/test/resources/io/github/martinschneider/kommpeiler/examples).
 
 # Usage

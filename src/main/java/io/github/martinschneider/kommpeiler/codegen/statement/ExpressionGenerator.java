@@ -11,21 +11,27 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FMUL;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FREM;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FSUB;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IADD;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IAND;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IDIV;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IMUL;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IOR;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IREM;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISHL;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISHR;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISUB;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IUSHR;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IXOR;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LADD;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LAND;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LDIV;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LMUL;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LOR;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LREM;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSHL;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSHR;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSUB;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LUSHR;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LXOR;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_DECREMENT;
@@ -284,6 +290,36 @@ public class ExpressionGenerator {
                 break;
               case LONG:
                 out.write(LUSHR);
+                break;
+            }
+            break;
+          case BITWISE_AND:
+            switch (type) {
+              case INT:
+                out.write(IAND);
+                break;
+              case LONG:
+                out.write(LAND);
+                break;
+            }
+            break;
+          case BITWISE_OR:
+            switch (type) {
+              case INT:
+                out.write(IOR);
+                break;
+              case LONG:
+                out.write(LOR);
+                break;
+            }
+            break;
+          case BITWISE_XOR:
+            switch (type) {
+              case INT:
+                out.write(IXOR);
+                break;
+              case LONG:
+                out.write(LXOR);
                 break;
             }
             break;

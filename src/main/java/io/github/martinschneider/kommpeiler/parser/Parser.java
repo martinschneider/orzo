@@ -11,6 +11,12 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.RETUR
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.STATIC;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.WHILE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_AND;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_AND_ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_OR;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_OR_ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_XOR;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_XOR_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.LSHIFT;
@@ -252,6 +258,21 @@ public class Parser {
         insertToken(left);
         insertToken(op(ASSIGN));
         nextToken();
+      } else if (token.eq(op(BITWISE_AND_ASSIGN))) {
+        insertToken(op(BITWISE_AND));
+        insertToken(left);
+        insertToken(op(ASSIGN));
+        nextToken();
+      } else if (token.eq(op(BITWISE_OR_ASSIGN))) {
+        insertToken(op(BITWISE_OR));
+        insertToken(left);
+        insertToken(op(ASSIGN));
+        nextToken();
+      } else if (token.eq(op(BITWISE_XOR_ASSIGN))) {
+        insertToken(op(BITWISE_XOR));
+        insertToken(left);
+        insertToken(op(ASSIGN));
+        nextToken();
       } else {
         previousToken();
         return null;
@@ -462,16 +483,23 @@ public class Parser {
         || token instanceof Operator
         || token.eq(sym(LPAREN))
         || token.eq(sym(RPAREN))) {
-      if (token.eq(sym(LPAREN))) {
-        parenthesis--;
-      } else if (token.eq(sym(RPAREN))) {
-        parenthesis++;
+      int idx = savePointer();
+      MethodCall methodCall = parseMethodCall();
+      if (methodCall != null) {
+        expression.addToken(methodCall);
+      } else {
+        restorePointer(idx);
+        if (token.eq(sym(LPAREN))) {
+          parenthesis--;
+        } else if (token.eq(sym(RPAREN))) {
+          parenthesis++;
+        }
+        if (parenthesis > 0) {
+          break;
+        }
+        expression.addToken(token);
+        nextToken();
       }
-      if (parenthesis > 0) {
-        break;
-      }
-      expression.addToken(token);
-      nextToken();
     }
     return (expression.size() > 0) ? expression : null;
   }
@@ -685,10 +713,10 @@ public class Parser {
         }
         // TODO: else
       }
-      nextToken();
       if (!token.eq(sym(RPAREN))) {
         errors.addError(") expected", ErrorType.PARSER);
       }
+      nextToken();
       return parameters;
     }
     // else

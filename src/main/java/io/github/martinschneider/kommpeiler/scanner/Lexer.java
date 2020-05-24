@@ -7,6 +7,12 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.NO
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.SMALLER;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.SMALLEREQ;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_AND;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_AND_ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_OR;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_OR_ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_XOR;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.BITWISE_XOR_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.LSHIFT;
@@ -338,6 +344,27 @@ public class Lexer {
       } else {
         inputReader.unread(character);
         errors.addError("! must be followed by =", ErrorType.SCANNER);
+      }
+    } else if (character == '&') {
+      if ((character = (char) inputReader.read()) == '=') {
+        tokenList.add(op(BITWISE_AND_ASSIGN));
+      } else {
+        inputReader.unread(character);
+        tokenList.add(op(BITWISE_AND));
+      }
+    } else if (character == '|') {
+      if ((character = (char) inputReader.read()) == '=') {
+        tokenList.add(op(BITWISE_OR_ASSIGN));
+      } else {
+        inputReader.unread(character);
+        tokenList.add(op(BITWISE_OR));
+      }
+    } else if (character == '^') {
+      if ((character = (char) inputReader.read()) == '=') {
+        tokenList.add(op(BITWISE_XOR_ASSIGN));
+      } else {
+        inputReader.unread(character);
+        tokenList.add(op(BITWISE_XOR));
       }
     }
   }

@@ -85,6 +85,12 @@ public class OpCodes {
   public static final byte LSHR = (byte) 123;
   public static final byte IUSHR = (byte) 124;
   public static final byte LUSHR = (byte) 125;
+  public static final byte IAND = (byte) 126;
+  public static final byte LAND = (byte) 127;
+  public static final byte IOR = (byte) 128;
+  public static final byte LOR = (byte) 129;
+  public static final byte IXOR = (byte) 130;
+  public static final byte LXOR = (byte) 131;
   public static final byte IINC = (byte) 132;
   public static final byte I2L = (byte) 133;
   public static final byte I2D = (byte) 135;
