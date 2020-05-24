@@ -61,7 +61,8 @@ public class KommpeilerTest {
         Arguments.of("K021_Floats"),
         Arguments.of("K022_PiLeibniz"),
         Arguments.of("K023_BitShifts"),
-        Arguments.of("K024_UnsignedRightShift"));
+        Arguments.of("K024_UnsignedRightShift"),
+        Arguments.of("K025_CompoundAssignments"));
   }
 
   @ParameterizedTest

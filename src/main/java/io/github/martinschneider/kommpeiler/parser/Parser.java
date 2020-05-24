@@ -11,10 +11,24 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.RETUR
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.STATIC;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Keywords.WHILE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV_ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.LSHIFT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.LSHIFT_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MINUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MINUS_ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MOD;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MOD_ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.PLUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.PLUS_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_INCREMENT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFTU;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFTU_ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFT_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.TIMES;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.TIMES_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.DEFAULT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.PRIVATE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.PROTECTED;
@@ -198,6 +212,46 @@ public class Parser {
         nextToken();
       } else if (token.eq(op(POST_INCREMENT)) || token.eq(op(POST_DECREMENT))) {
         previousToken();
+      } else if (token.eq(op(PLUS_ASSIGN))) {
+        insertToken(op(PLUS));
+        insertToken(left);
+        insertToken(op(ASSIGN));
+        nextToken();
+      } else if (token.eq(op(MINUS_ASSIGN))) {
+        insertToken(op(MINUS));
+        insertToken(left);
+        insertToken(op(ASSIGN));
+        nextToken();
+      } else if (token.eq(op(TIMES_ASSIGN))) {
+        insertToken(op(TIMES));
+        insertToken(left);
+        insertToken(op(ASSIGN));
+        nextToken();
+      } else if (token.eq(op(DIV_ASSIGN))) {
+        insertToken(op(DIV));
+        insertToken(left);
+        insertToken(op(ASSIGN));
+        nextToken();
+      } else if (token.eq(op(MOD_ASSIGN))) {
+        insertToken(op(MOD));
+        insertToken(left);
+        insertToken(op(ASSIGN));
+        nextToken();
+      } else if (token.eq(op(LSHIFT_ASSIGN))) {
+        insertToken(op(LSHIFT));
+        insertToken(left);
+        insertToken(op(ASSIGN));
+        nextToken();
+      } else if (token.eq(op(RSHIFT_ASSIGN))) {
+        insertToken(op(RSHIFT));
+        insertToken(left);
+        insertToken(op(ASSIGN));
+        nextToken();
+      } else if (token.eq(op(RSHIFTU_ASSIGN))) {
+        insertToken(op(RSHIFTU));
+        insertToken(left);
+        insertToken(op(ASSIGN));
+        nextToken();
       } else {
         previousToken();
         return null;

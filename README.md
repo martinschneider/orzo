@@ -22,7 +22,7 @@
 - [X] parenthesis `(` ,`)`
 - [X] unary post-increment and decrement `++`, `--`
 - [ ] unary pre-increment and decrement `++`, `--`
-- [ ] compound assignments `+=`, `-=`, `*=`, `/=`, `%=`
+- [X] compound assignments `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=`, `>>>=`
 - [X] relational `<`, `<=`, `>=`, `>`
 - [X] equality `==`, `!=`,
 - [ ] bitwise `&`, `^`, `|`

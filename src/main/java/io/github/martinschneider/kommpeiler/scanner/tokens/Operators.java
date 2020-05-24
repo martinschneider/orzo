@@ -2,6 +2,14 @@ package io.github.martinschneider.kommpeiler.scanner.tokens;
 
 public enum Operators {
   ASSIGN(1),
+  PLUS_ASSIGN(1),
+  MINUS_ASSIGN(1),
+  TIMES_ASSIGN(1),
+  DIV_ASSIGN(1),
+  MOD_ASSIGN(1),
+  LSHIFT_ASSIGN(1),
+  RSHIFT_ASSIGN(1),
+  RSHIFTU_ASSIGN(1),
   MINUS(11),
   PLUS(11),
   TIMES(12),

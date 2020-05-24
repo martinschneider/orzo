@@ -8,15 +8,23 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.SM
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.SMALLEREQ;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.LSHIFT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.LSHIFT_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MINUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MINUS_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MOD;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MOD_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.PLUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.PLUS_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_INCREMENT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFTU;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFTU_ASSIGN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFT_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.TIMES;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.TIMES_ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.COMMA;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.DOT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.LBRACE;
@@ -238,6 +246,8 @@ public class Lexer {
       if ((character = (char) inputReader.read()) == '-') {
         // TODO: distinction between pre and post increment operators
         tokenList.add(op(POST_DECREMENT));
+      } else if (character == '=') {
+        tokenList.add(op(MINUS_ASSIGN));
       } else {
         inputReader.unread(character);
         tokenList.add(op(MINUS));
@@ -249,19 +259,33 @@ public class Lexer {
         scanComment1();
       } else if (character == '/') {
         scanComment2();
+      } else if (character == '=') {
+        tokenList.add(op(DIV_ASSIGN));
       } else {
         inputReader.unread(character);
         tokenList.add(op(DIV));
       }
     } else if (character == '%') {
-      tokenList.add(op(MOD));
+      if ((character = (char) inputReader.read()) == '=') {
+        tokenList.add(op(MOD_ASSIGN));
+      } else {
+        inputReader.unread(character);
+        tokenList.add(op(MOD));
+      }
     } else if (character == '*') {
-      tokenList.add(op(TIMES));
+      if ((character = (char) inputReader.read()) == '=') {
+        tokenList.add(op(TIMES_ASSIGN));
+      } else {
+        inputReader.unread(character);
+        tokenList.add(op(TIMES));
+      }
     } else if (character == '+') {
       char character;
       if ((character = (char) inputReader.read()) == '+') {
         // TODO: distinction between pre and post increment operators
         tokenList.add(op(POST_INCREMENT));
+      } else if (character == '=') {
+        tokenList.add(op(PLUS_ASSIGN));
       } else {
         inputReader.unread(character);
         tokenList.add(op(PLUS));
@@ -271,7 +295,14 @@ public class Lexer {
         tokenList.add(cmp(GREATEREQ));
       } else if (character == '>') {
         if ((character = (char) inputReader.read()) == '>') {
-          tokenList.add(op(RSHIFTU));
+          if ((character = (char) inputReader.read()) == '=') {
+            tokenList.add(op(RSHIFTU_ASSIGN));
+          } else {
+            inputReader.unread(character);
+            tokenList.add(op(RSHIFTU));
+          }
+        } else if (character == '=') {
+          tokenList.add(op(RSHIFT_ASSIGN));
         } else {
           inputReader.unread(character);
           tokenList.add(op(RSHIFT));
@@ -284,7 +315,12 @@ public class Lexer {
       if ((character = (char) inputReader.read()) == '=') {
         tokenList.add(cmp(SMALLEREQ));
       } else if (character == '<') {
-        tokenList.add(op(LSHIFT));
+        if ((character = (char) inputReader.read()) == '=') {
+          tokenList.add(op(LSHIFT_ASSIGN));
+        } else {
+          inputReader.unread(character);
+          tokenList.add(op(LSHIFT));
+        }
       } else {
         tokenList.add(cmp(SMALLER));
         inputReader.unread(character);
