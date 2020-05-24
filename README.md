@@ -18,27 +18,41 @@
 
 ## Operators
 - [X] assignment `=`
-- [X] arithmetic `+`, `-`, `*`, `/`, `%`)
-- [X] arithmetic expressions, e.g. `a + (3 * b) / c % 5`
-- [X] post-increment and decrement `++`, `--`, e.g. `a++`
-- [ ] pre-increment and decrement `++`, `--`, e.g. `++a`
+- [X] arithmetic `+`, `-`, `*`, `/`, `%`
+- [X] parenthesis `(` ,`)`
+- [X] unary post-increment and decrement `++`, `--`
+- [ ] unary pre-increment and decrement `++`, `--`
 - [ ] compound assignments `+=`, `-=`, `*=`, `/=`, `%=`
-- [X] boolean `==`, `!=`, `<`, `<=`, `>=`, `>`
+- [X] relational `<`, `<=`, `>=`, `>`
+- [X] equality `==`, `!=`,
+- [ ] bitwise `&`, `^`, `|`
+- [ ] logical `&&`, `||`
+- [ ] unary logical `!`
+- [ ] unary bitwise `~`
+- [ ] unary plus `+`
+- [X] unary minus `-`
 - [X] bit shifts `<<`, `>>`, `>>>`
-- [ ] String concatenation
+- [ ] `instanceof`
+- [ ] String concatenation `+`
+- [ ] ternary `?:`
+- [ ] cast `()`
+- [ ] object creation `new`
 
 ## Statements
 - [X] System.out.println
-- [X] if/else, while, do and for statements
-- [X] break statement
-- [ ] switch statement
-- [ ] lambda operator
+- [X] if/else if/else
+- [X] while loops
+- [X] do loops
+- [X] for loops
+- [X] break
+- [ ] switch
+- [ ] lambdas
 - [X] static method calls within the same class
 - [ ] other method calls
 - [ ] constructor calls
 
 ## Non-standard Java features
-- [X] [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment), e.g. `a,b = b+1,a-1`
+- [X] [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment), e.g. `a,b=b+1,a-1`
 - [ ] uint, ushort, ubyte, ulong types
 
 Working examples can be found [here](src/test/resources/io/github/martinschneider/kommpeiler/examples).
