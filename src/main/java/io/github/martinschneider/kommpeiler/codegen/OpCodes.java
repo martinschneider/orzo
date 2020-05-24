@@ -79,6 +79,12 @@ public class OpCodes {
   public static final byte LREM = (byte) 113;
   public static final byte FREM = (byte) 114;
   public static final byte DREM = (byte) 115;
+  public static final byte ISHL = (byte) 120;
+  public static final byte LSHL = (byte) 121;
+  public static final byte ISHR = (byte) 122;
+  public static final byte LSHR = (byte) 123;
+  public static final byte IUSHR = (byte) 124;
+  public static final byte LUSHR = (byte) 125;
   public static final byte IINC = (byte) 132;
   public static final byte I2L = (byte) 133;
   public static final byte I2D = (byte) 135;

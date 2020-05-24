@@ -8,11 +8,14 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.SM
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.SMALLEREQ;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.DIV;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MINUS;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MOD;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.PLUS;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_INCREMENT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.TIMES;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.COMMA;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.DOT;
@@ -266,6 +269,13 @@ public class Lexer {
     } else if (character == '>') {
       if ((character = (char) inputReader.read()) == '=') {
         tokenList.add(cmp(GREATEREQ));
+      } else if (character == '>') {
+        if ((character = (char) inputReader.read()) == '>') {
+          tokenList.add(op(RSHIFTU));
+        } else {
+          inputReader.unread(character);
+          tokenList.add(op(RSHIFT));
+        }
       } else {
         tokenList.add(cmp(GREATER));
         inputReader.unread(character);
@@ -273,6 +283,8 @@ public class Lexer {
     } else if (character == '<') {
       if ((character = (char) inputReader.read()) == '=') {
         tokenList.add(cmp(SMALLEREQ));
+      } else if (character == '<') {
+        tokenList.add(op(LSHIFT));
       } else {
         tokenList.add(cmp(SMALLER));
         inputReader.unread(character);

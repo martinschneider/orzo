@@ -35,6 +35,7 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FSUB;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.GETSTATIC;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.I2B;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.I2D;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.I2L;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.I2S;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IADD;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_0;
@@ -475,6 +476,9 @@ public class OpCodeGenerator {
   public void convert(DynamicByteArray out, String from, String to) {
     if (from.equals(INT) && to.equals(DOUBLE)) {
       out.write(I2D);
+    } else if (from.equals(INT) && to.equals(LONG)) {
+      out.write(I2L);
     }
+    // TODO: others
   }
 }

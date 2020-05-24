@@ -14,15 +14,24 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IADD;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IDIV;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IMUL;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IREM;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISHL;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISHR;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISUB;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IUSHR;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LADD;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LDIV;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LMUL;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LREM;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSHL;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSHR;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSUB;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LUSHR;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_STRING;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_INCREMENT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFT;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.BYTE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.DOUBLE;
@@ -99,7 +108,13 @@ public class ExpressionGenerator {
       } else if (token instanceof IntNum) {
         BigInteger bigInt = (BigInteger) ((IntNum) token).getValue();
         Long intValue = bigInt.longValue();
-        if (!type.equals(INT) || intValue != 0 || pushIfZero) {
+        // look ahead for <<, >> or >>> operators which require the second argument to be an integer
+        if (i + 1 < tokens.size()
+            && ((tokens.get(i + 1).eq(op(LSHIFT))
+                || (tokens.get(i + 1).eq(op(RSHIFT)))
+                || (tokens.get(i + 1).eq(op(RSHIFTU)))))) {
+          context.opsGenerator.pushInteger(out, intValue.intValue());
+        } else if (!type.equals(INT) || intValue != 0 || pushIfZero) {
           if (type.equals(LONG)) {
             context.opsGenerator.pushLong(out, intValue.longValue());
           } else if (type.equals(DOUBLE)) {
@@ -240,6 +255,36 @@ public class ExpressionGenerator {
                 break;
               case LONG:
                 out.write(LREM);
+            }
+            break;
+          case LSHIFT:
+            switch (type) {
+              case INT:
+                out.write(ISHL);
+                break;
+              case LONG:
+                out.write(LSHL);
+                break;
+            }
+            break;
+          case RSHIFT:
+            switch (type) {
+              case INT:
+                out.write(ISHR);
+                break;
+              case LONG:
+                out.write(LSHR);
+                break;
+            }
+            break;
+          case RSHIFTU:
+            switch (type) {
+              case INT:
+                out.write(IUSHR);
+                break;
+              case LONG:
+                out.write(LUSHR);
+                break;
             }
             break;
           case POST_INCREMENT:
