@@ -8,8 +8,9 @@ public class K018_Longs {
     long b = -2147483648;
     b--;
     System.out.println(b);
-    long c = 10000000000;
+    long c = 10000000000L;
     System.out.println(c);
+    System.out.println(times2(c));
     for (long i = 0; i < 5; i++) {
       System.out.println(i + 1);
     }
@@ -23,5 +24,9 @@ public class K018_Longs {
       System.out.println(d);
       d--;
     } while (d >= 0);
+  }
+
+  public static long times2(long a) {
+    return 2 * a;
   }
 }

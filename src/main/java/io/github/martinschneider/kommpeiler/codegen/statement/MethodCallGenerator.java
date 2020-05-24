@@ -1,6 +1,8 @@
 package io.github.martinschneider.kommpeiler.codegen.statement;
 
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.BYTE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.DOUBLE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.FLOAT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.INT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.LONG;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.SHORT;
@@ -60,6 +62,10 @@ public class MethodCallGenerator implements StatementGenerator {
       context.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(I)V");
     } else if (type.equals(LONG)) {
       context.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(J)V");
+    } else if (type.equals(DOUBLE)) {
+      context.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(D)V");
+    } else if (type.equals(FLOAT)) {
+      context.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(F)V");
     } else {
       // TODO: call toString() first
     }

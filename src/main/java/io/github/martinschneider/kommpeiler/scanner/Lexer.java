@@ -50,6 +50,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Lexer {
+  private static final List<Character> NUMERIC_LITERALS =
+      List.of('i', 'I', 'l', 'L', 'd', 'D', 'F', 'f');
   private StringBuffer buffer;
   private char character;
   private CompilerErrors errors = new CompilerErrors();
@@ -160,7 +162,11 @@ public class Lexer {
     while (Character.isDigit(character = (char) inputReader.read())) {
       buffer.append(character);
     }
-    inputReader.unread(character);
+    if (NUMERIC_LITERALS.contains(character)) {
+      // ignore
+    } else {
+      inputReader.unread(character);
+    }
     tokenList.add(fp(buffer.toString()));
     buffer.setLength(0);
   }
@@ -213,11 +219,14 @@ public class Lexer {
       if (character == '.') {
         buffer.append(character);
         scanDouble();
+        return;
+      } else if (NUMERIC_LITERALS.contains(character)) {
+        // ignore
       } else {
         inputReader.unread(character);
-        tokenList.add(integer(buffer.toString()));
-        buffer.setLength(0);
       }
+      tokenList.add(integer(buffer.toString()));
+      buffer.setLength(0);
     }
   }
 

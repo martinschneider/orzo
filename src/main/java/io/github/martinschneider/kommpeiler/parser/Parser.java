@@ -364,8 +364,7 @@ public class Parser {
         previousToken();
         errors.addParserError("invalid condition in do-clause");
       }
-      nextToken();
-      if (!token.eq(sym(RBRACE))) {
+      if (!token.eq(sym(RPAREN))) {
         previousToken();
         errors.addParserError("missing } in do-clause");
       } else {
@@ -518,6 +517,8 @@ public class Parser {
     if (!token.eq(sym(RBRACE))) {
       previousToken();
       errors.addParserError("missing } in if-clause");
+    } else {
+      nextToken();
     }
     if (body != null) {
       return new IfBlock(null, body);
@@ -628,7 +629,7 @@ public class Parser {
         if ((factor = parseExpression()) != null) {
           parameters.add(factor);
         }
-        // FIXME: else
+        // TODO: else
       }
       nextToken();
       if (!token.eq(sym(RPAREN))) {

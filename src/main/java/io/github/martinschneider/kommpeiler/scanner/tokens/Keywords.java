@@ -10,5 +10,7 @@ public enum Keywords {
   STATIC,
   CLASS,
   PACKAGE,
+  TRUE,
+  FALSE,
   BREAK;
 }

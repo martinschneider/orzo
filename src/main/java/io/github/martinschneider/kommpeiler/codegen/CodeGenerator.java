@@ -6,7 +6,7 @@ import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTyp
 
 import io.github.martinschneider.kommpeiler.codegen.statement.ConditionalGenerator;
 import io.github.martinschneider.kommpeiler.codegen.statement.ExpressionGenerator;
-import io.github.martinschneider.kommpeiler.codegen.statement.OpsCodeGenerator;
+import io.github.martinschneider.kommpeiler.codegen.statement.OpCodeGenerator;
 import io.github.martinschneider.kommpeiler.codegen.statement.StatementDelegator;
 import io.github.martinschneider.kommpeiler.parser.productions.Argument;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
@@ -33,7 +33,7 @@ public class CodeGenerator {
     ctx.delegator = new StatementDelegator();
     ctx.exprGenerator = new ExpressionGenerator();
     ctx.methodMap = new MethodProcessor().getMethodMap(clazz);
-    ctx.opsGenerator = new OpsCodeGenerator();
+    ctx.opsGenerator = new OpCodeGenerator();
     ctx.condGenerator.context = ctx;
     ctx.delegator.context = ctx;
     ctx.exprGenerator.context = ctx;
@@ -125,8 +125,8 @@ public class CodeGenerator {
       }
       out.write(methodOut.size() + 12); // stack size (2) + local var size (2) + code size (4) +
       // exception table size (2) + attribute count size (2)
-      // TODO: set this dynamically (for now, 6 allows 3 long/double values)
-      out.write((short) 6); // max stack size
+      // TODO: set this dynamically
+      out.write((short) 100); // max stack size
       out.write((short) (variables.size())); // max local var size
       out.write(methodOut.size());
       out.write(methodOut.flush());
@@ -149,5 +149,7 @@ public class CodeGenerator {
         ctx.constPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
     ctx.constPoolProcessor.addMethodRef(ctx.constPool, "java/io/PrintStream", "println", "(I)V");
     ctx.constPoolProcessor.addMethodRef(ctx.constPool, "java/io/PrintStream", "println", "(J)V");
+    ctx.constPoolProcessor.addMethodRef(ctx.constPool, "java/io/PrintStream", "println", "(D)V");
+    ctx.constPoolProcessor.addMethodRef(ctx.constPool, "java/io/PrintStream", "println", "(F)V");
   }
 }

@@ -55,7 +55,11 @@ public class KommpeilerTest {
         Arguments.of("K015_ParallelAssignments"),
         Arguments.of("K016_BreakLoops"),
         Arguments.of("K017_ByteAndShorts"),
-        Arguments.of("K018_Longs"));
+        Arguments.of("K018_Longs"),
+        Arguments.of("K019_CollatzConjecture2"),
+        Arguments.of("K020_Doubles"),
+        Arguments.of("K021_Floats"),
+        Arguments.of("K022_PiLeibniz"));
   }
 
   @ParameterizedTest

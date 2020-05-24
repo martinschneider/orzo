@@ -1,7 +1,9 @@
 package io.github.martinschneider.kommpeiler.codegen.constants;
 
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_CLASS;
+import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_DOUBLE;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_FIELDREF;
+import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_FLOAT;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_INTEGER;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_LONG;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
@@ -18,6 +20,8 @@ public class ConstantPool {
   private List<Constant> entries;
   private Map<String, Integer> classMap;
   private Map<Integer, Integer> integerMap;
+  private Map<Double, Integer> doubleMap;
+  private Map<Float, Integer> floatMap;
   private Map<Long, Integer> longMap;
   private Map<String, Integer> stringMap;
   private Map<String, Integer> utf8Map;
@@ -30,7 +34,9 @@ public class ConstantPool {
     classMap = new HashMap<>();
     stringMap = new HashMap<>();
     integerMap = new HashMap<>();
+    doubleMap = new HashMap<>();
     longMap = new HashMap<>();
+    floatMap = new HashMap<>();
     utf8Map = new HashMap<>();
     methodRefMap = new HashMap<>();
     fieldRefMap = new HashMap<>();
@@ -127,6 +133,20 @@ public class ConstantPool {
             return id.shortValue();
           }
         }
+      case CONSTANT_DOUBLE:
+        {
+          Integer id = doubleMap.get(key);
+          if (id != null) {
+            return id.shortValue();
+          }
+        }
+      case CONSTANT_FLOAT:
+        {
+          Integer id = floatMap.get(key);
+          if (id != null) {
+            return id.shortValue();
+          }
+        }
       case CONSTANT_LONG:
         {
           Integer id = longMap.get(key);
@@ -184,5 +204,13 @@ public class ConstantPool {
 
   public void addLong(Long value) {
     longMap.put(value, add(new ConstantLong(value)));
+  }
+
+  public void addDouble(Double value) {
+    doubleMap.put(value, add(new ConstantDouble(value)));
+  }
+
+  public void addFloat(Float value) {
+    floatMap.put(value, add(new ConstantFloat(value)));
   }
 }

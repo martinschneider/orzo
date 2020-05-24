@@ -10,6 +10,11 @@ public class Expression {
     tokens = new ArrayList<>();
   }
 
+  public Expression(Token token) {
+    new Expression();
+    tokens.add(token);
+  }
+
   public Expression(List<Token> tokens) {
     this.tokens = tokens;
   }
@@ -18,6 +23,13 @@ public class Expression {
 
   public void addToken(Token token) {
     tokens.add(token);
+  }
+
+  public Token getLast() {
+    if (tokens.isEmpty()) {
+      return null;
+    }
+    return tokens.get(tokens.size() - 1);
   }
 
   public List<Token> getInfix() {

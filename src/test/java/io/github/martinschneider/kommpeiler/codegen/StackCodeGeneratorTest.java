@@ -13,7 +13,7 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_M1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.SIPUSH;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import io.github.martinschneider.kommpeiler.codegen.statement.OpsCodeGenerator;
+import io.github.martinschneider.kommpeiler.codegen.statement.OpCodeGenerator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -21,7 +21,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class StackCodeGeneratorTest {
-  private OpsCodeGenerator target = new OpsCodeGenerator();
+  private OpCodeGenerator target = new OpCodeGenerator();
 
   @BeforeAll
   public void setup() {

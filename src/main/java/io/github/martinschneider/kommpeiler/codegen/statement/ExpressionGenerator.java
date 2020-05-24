@@ -1,5 +1,15 @@
 package io.github.martinschneider.kommpeiler.codegen.statement;
 
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DADD;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DDIV;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DMUL;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DREM;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DSUB;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FADD;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FDIV;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FMUL;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FREM;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FSUB;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IADD;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IDIV;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IMUL;
@@ -15,6 +25,8 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.POST_INCREMENT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.BYTE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.DOUBLE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.FLOAT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.INT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.LONG;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.SHORT;
@@ -29,12 +41,14 @@ import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
+import io.github.martinschneider.kommpeiler.scanner.tokens.DoubleNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import io.github.martinschneider.kommpeiler.scanner.tokens.IntNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Operator;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Operators;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Str;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -79,18 +93,32 @@ public class ExpressionGenerator {
           byte varIdx = variables.get(id).getIdx();
           context.opsGenerator.loadValue(out, varType, varIdx);
         }
-        type = varType;
+        if (!type.equals(varType)) {
+          context.opsGenerator.convert(out, varType, type);
+        }
       } else if (token instanceof IntNum) {
         BigInteger bigInt = (BigInteger) ((IntNum) token).getValue();
         Long intValue = bigInt.longValue();
         if (!type.equals(INT) || intValue != 0 || pushIfZero) {
           if (type.equals(LONG)) {
             context.opsGenerator.pushLong(out, intValue.longValue());
+          } else if (type.equals(DOUBLE)) {
+            context.opsGenerator.pushDouble(out, intValue.doubleValue());
+          } else if (type.equals(FLOAT)) {
+            context.opsGenerator.pushFloat(out, intValue.floatValue());
           } else if (type.equals(INT) || type.equals(BYTE) || (type.equals(SHORT))) {
             context.opsGenerator.pushInteger(out, intValue.intValue());
           }
         }
         value = bigInt;
+      } else if (token instanceof DoubleNum) {
+        BigDecimal bigDec = (BigDecimal) ((DoubleNum) token).getValue();
+        if (type.equals(DOUBLE)) {
+          context.opsGenerator.pushDouble(out, bigDec.doubleValue());
+        } else if (type.equals(FLOAT)) {
+          context.opsGenerator.pushFloat(out, bigDec.floatValue());
+        }
+        value = bigDec;
       } else if (token instanceof Str) {
         context.opsGenerator.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
         type = STRING;
@@ -114,6 +142,12 @@ public class ExpressionGenerator {
               case INT:
                 out.write(IADD);
                 break;
+              case DOUBLE:
+                out.write(DADD);
+                break;
+              case FLOAT:
+                out.write(FADD);
+                break;
               case BYTE:
                 out.write(IADD);
                 break;
@@ -128,6 +162,12 @@ public class ExpressionGenerator {
             switch (type) {
               case INT:
                 out.write(ISUB);
+                break;
+              case DOUBLE:
+                out.write(DSUB);
+                break;
+              case FLOAT:
+                out.write(FSUB);
                 break;
               case BYTE:
                 out.write(ISUB);
@@ -144,6 +184,12 @@ public class ExpressionGenerator {
               case INT:
                 out.write(IMUL);
                 break;
+              case DOUBLE:
+                out.write(DMUL);
+                break;
+              case FLOAT:
+                out.write(FMUL);
+                break;
               case BYTE:
                 out.write(IMUL);
                 break;
@@ -159,6 +205,12 @@ public class ExpressionGenerator {
               case INT:
                 out.write(IDIV);
                 break;
+              case DOUBLE:
+                out.write(DDIV);
+                break;
+              case FLOAT:
+                out.write(FDIV);
+                break;
               case BYTE:
                 out.write(IDIV);
                 break;
@@ -173,6 +225,12 @@ public class ExpressionGenerator {
             switch (type) {
               case INT:
                 out.write(IREM);
+                break;
+              case DOUBLE:
+                out.write(DREM);
+                break;
+              case FLOAT:
+                out.write(FREM);
                 break;
               case BYTE:
                 out.write(IREM);
@@ -190,6 +248,12 @@ public class ExpressionGenerator {
                 context.opsGenerator.incInteger(
                     out, variables.get(tokens.get(i - 1)).getIdx(), (byte) 1);
                 break;
+              case DOUBLE:
+                context.opsGenerator.incDouble(out, variables.get(tokens.get(i - 1)).getIdx());
+                break;
+              case FLOAT:
+                context.opsGenerator.incFloat(out, variables.get(tokens.get(i - 1)).getIdx());
+                break;
               case LONG:
                 context.opsGenerator.incLong(out, variables.get(tokens.get(i - 1)).getIdx());
                 break;
@@ -206,6 +270,12 @@ public class ExpressionGenerator {
               case INT:
                 context.opsGenerator.incInteger(
                     out, variables.get(tokens.get(i - 1)).getIdx(), (byte) -1);
+                break;
+              case DOUBLE:
+                context.opsGenerator.decDouble(out, variables.get(tokens.get(i - 1)).getIdx());
+                break;
+              case FLOAT:
+                context.opsGenerator.decFloat(out, variables.get(tokens.get(i - 1)).getIdx());
                 break;
               case LONG:
                 context.opsGenerator.decLong(out, variables.get(tokens.get(i - 1)).getIdx());

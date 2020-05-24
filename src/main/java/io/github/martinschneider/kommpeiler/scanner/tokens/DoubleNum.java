@@ -1,8 +1,14 @@
 package io.github.martinschneider.kommpeiler.scanner.tokens;
 
+import java.math.BigDecimal;
+
 public class DoubleNum extends Token implements Num {
-  public DoubleNum(final Double value) {
+  public DoubleNum(final BigDecimal value) {
     super(value);
+  }
+
+  public DoubleNum(final Double value) {
+    super(BigDecimal.valueOf(value));
   }
 
   @Override

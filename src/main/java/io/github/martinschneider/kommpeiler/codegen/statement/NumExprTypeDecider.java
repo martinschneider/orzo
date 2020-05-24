@@ -1,6 +1,7 @@
 package io.github.martinschneider.kommpeiler.codegen.statement;
 
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.DOUBLE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.FLOAT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.INT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.LONG;
 
@@ -41,6 +42,8 @@ public class NumExprTypeDecider {
   private String getSmallestType(Set<String> types) {
     if (types.contains(DOUBLE)) {
       return DOUBLE;
+    } else if (types.contains(FLOAT)) {
+      return FLOAT;
     } else if (types.contains(LONG)) {
       return LONG;
     } else {

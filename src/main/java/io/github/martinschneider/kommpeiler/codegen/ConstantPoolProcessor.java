@@ -1,5 +1,7 @@
 package io.github.martinschneider.kommpeiler.codegen;
 
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.DOUBLE;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.FLOAT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.LONG;
 
 import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
@@ -14,9 +16,11 @@ import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
 import io.github.martinschneider.kommpeiler.parser.productions.ReturnStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
+import io.github.martinschneider.kommpeiler.scanner.tokens.DoubleNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.IntNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Str;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class ConstantPoolProcessor {
@@ -102,6 +106,13 @@ public class ConstantPoolProcessor {
           constPool.addLong(intValue);
         } else if (intValue < -32768 || intValue >= 32768) {
           constPool.addInteger((int) intValue);
+        }
+      } else if (token instanceof DoubleNum) {
+        BigDecimal doubleValue = ((BigDecimal) (token.getValue()));
+        if (type.equals(FLOAT)) {
+          constPool.addFloat(doubleValue.floatValue());
+        } else if (type.equals(DOUBLE)) {
+          constPool.addDouble(doubleValue.doubleValue());
         }
       }
     }
