@@ -1,8 +1,11 @@
 package io.github.martinschneider.kommpeiler.error;
 
 public class CompilerError {
-  public CompilerError(final String message, final ErrorType type) {
-    this.message = message;
+  private ErrorType type;
+  private String msg;
+
+  public CompilerError(final String msg, final ErrorType type) {
+    this.msg = msg;
     this.type = type;
   }
 
@@ -15,13 +18,44 @@ public class CompilerError {
   }
 
   public String getMessage() {
-    return message;
+    return msg;
   }
 
-  public void setMessage(final String message) {
-    this.message = message;
+  public void setMessage(final String msg) {
+    this.msg = msg;
   }
 
-  private ErrorType type;
-  private String message;
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((msg == null) ? 0 : msg.hashCode());
+    result = prime * result + ((type == null) ? 0 : type.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+    CompilerError other = (CompilerError) obj;
+    if (msg == null) {
+      if (other.msg != null) {
+        return false;
+      }
+    } else if (!msg.equals(other.msg)) {
+      return false;
+    }
+    if (type != other.type) {
+      return false;
+    }
+    return true;
+  }
 }

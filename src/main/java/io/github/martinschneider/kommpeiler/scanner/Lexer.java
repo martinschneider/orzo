@@ -80,14 +80,14 @@ public class Lexer {
     return errors;
   }
 
-  public List<Token> getTokens(final File file) throws IOException {
+  public TokenList getTokens(final File file) throws IOException {
     errors.clear();
     Reader reader = new FileReader(file);
     inputReader = new PushbackReader(reader);
     return getTokens(inputReader);
   }
 
-  public List<Token> getTokens(final PushbackReader fileReader) throws IOException {
+  public TokenList getTokens(final PushbackReader fileReader) throws IOException {
     errors.clear();
     tokenList = new ArrayList<>();
     buffer = new StringBuffer();
@@ -124,10 +124,10 @@ public class Lexer {
         scanComment();
       }
     }
-    return tokenList;
+    return new TokenList(tokenList);
   }
 
-  public List<Token> getTokens(final String string) throws IOException {
+  public TokenList getTokens(final String string) throws IOException {
     errors.clear();
     Reader reader = new StringReader(string);
     inputReader = new PushbackReader(reader);
@@ -206,7 +206,7 @@ public class Lexer {
       }
       // scopes
       for (Scopes scope : Scopes.values()) {
-        if (str.equalsIgnoreCase(scope.name())) {
+        if (str.equals(scope.name().toLowerCase())) {
           tokenList.add(scope(Scopes.valueOf(str.toUpperCase())));
           buffer.setLength(0);
         }

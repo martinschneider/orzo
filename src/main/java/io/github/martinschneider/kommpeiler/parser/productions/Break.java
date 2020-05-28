@@ -5,4 +5,9 @@ public class Break implements Statement {
   public String toString() {
     return "break";
   }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof Break;
+  }
 }

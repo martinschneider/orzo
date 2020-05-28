@@ -50,6 +50,10 @@ public class CompilerErrors {
     errors.add(new CompilerError(message, ErrorType.PARSER));
   }
 
+  public void addCodegenError(final String message) {
+    errors.add(new CompilerError(message, ErrorType.CODEGEN));
+  }
+
   public int count() {
     return errors.size();
   }
@@ -60,10 +64,12 @@ public class CompilerErrors {
 
   @Override
   public String toString() {
-    StringBuffer stringBuffer = new StringBuffer("Errors: ");
-    for (CompilerError error : errors) {
-      stringBuffer.append(" ");
-      stringBuffer.append(error.getMessage());
+    StringBuffer stringBuffer = new StringBuffer();
+    for (int i = 0; i < errors.size(); i++) {
+      stringBuffer.append(i + 1);
+      stringBuffer.append(". ");
+      stringBuffer.append(errors.get(i).getMessage());
+      stringBuffer.append("\n");
     }
     return stringBuffer.toString();
   }

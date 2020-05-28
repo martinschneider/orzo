@@ -12,9 +12,11 @@
 - [X] float
 - [X] double
 - [ ] boolean
-- [ ] arrays
+- [X] one-dimensional arrays
+- [ ] multi-dimensional arrays
 - [X] String
 - [ ] reference types
+- [ ] enums
 
 ## Operators
 - [X] assignment `=`
@@ -56,6 +58,9 @@
 
 # Examples
 Working examples can be found [here](src/test/resources/io/github/martinschneider/kommpeiler/examples).
+
+# Known issues
+- float literals in assignments are not working
 
 # Usage
 

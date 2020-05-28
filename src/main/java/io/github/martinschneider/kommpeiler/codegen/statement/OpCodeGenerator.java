@@ -1,7 +1,20 @@
 package io.github.martinschneider.kommpeiler.codegen.statement;
 
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.AASTORE;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ALOAD;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ALOAD_0;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ALOAD_1;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ALOAD_2;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ALOAD_3;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ASTORE;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ASTORE_0;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ASTORE_1;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ASTORE_2;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ASTORE_3;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.BASTORE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.BIPUSH;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DADD;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DASTORE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DCONST_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DCONST_1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DLOAD;
@@ -17,6 +30,7 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DSTORE_2;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DSTORE_3;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.DSUB;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FADD;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FASTORE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FCONST_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FCONST_1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.FCONST_2;
@@ -38,6 +52,7 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.I2D;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.I2L;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.I2S;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IADD;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.IASTORE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ICONST_2;
@@ -60,6 +75,7 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISTORE_1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISTORE_2;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.ISTORE_3;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LADD;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LASTORE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LCONST_0;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LCONST_1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LDC;
@@ -76,7 +92,9 @@ import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSTORE_1;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSTORE_2;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSTORE_3;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.LSUB;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.NEWARRAY;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.RETURN;
+import static io.github.martinschneider.kommpeiler.codegen.OpCodes.SASTORE;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.SIPUSH;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_DOUBLE;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_FIELDREF;
@@ -84,11 +102,13 @@ import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTyp
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_INTEGER;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_LONG;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
+import static io.github.martinschneider.kommpeiler.codegen.statement.TypeUtils.getLoadOpCode;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.BYTE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.DOUBLE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.FLOAT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.INT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.LONG;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.REF;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.SHORT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.VOID;
 
@@ -99,6 +119,7 @@ import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
 import io.github.martinschneider.kommpeiler.codegen.VariableMap;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
+import java.util.List;
 
 public class OpCodeGenerator {
   public CGContext context;
@@ -197,9 +218,25 @@ public class OpCodeGenerator {
         return loadDouble(out, idx);
       case FLOAT:
         return loadFloat(out, idx);
+      case REF:
+        return loadReference(out, idx);
       default:
         return loadInteger(out, idx);
     }
+  }
+
+  public HasOutput loadValueFromArray(
+      DynamicByteArray out,
+      VariableMap variables,
+      List<Expression> indices,
+      String type,
+      byte idx) {
+    loadReference(out, idx);
+    for (Expression arrIdx : indices) {
+      context.exprGenerator.eval(out, variables, INT, arrIdx);
+    }
+    out.write(getLoadOpCode(type.replaceAll("\\[", "")));
+    return out;
   }
 
   private HasOutput loadDouble(DynamicByteArray out, byte idx) {
@@ -261,6 +298,22 @@ public class OpCodeGenerator {
       out.write(LLOAD_3);
     } else {
       out.write(LLOAD);
+      out.write(idx);
+    }
+    return out;
+  }
+
+  public HasOutput loadReference(DynamicByteArray out, byte idx) {
+    if (idx == 0) {
+      out.write(ALOAD_0);
+    } else if (idx == 1) {
+      out.write(ALOAD_1);
+    } else if (idx == 2) {
+      out.write(ALOAD_2);
+    } else if (idx == 3) {
+      out.write(ALOAD_3);
+    } else {
+      out.write(ALOAD);
       out.write(idx);
     }
     return out;
@@ -365,9 +418,8 @@ public class OpCodeGenerator {
     return out;
   }
 
-  public HasOutput assignValue(
-      DynamicByteArray out, VariableMap variables, String type, Identifier id) {
-    if (!variables.getVariables().containsKey(id)) {
+  public HasOutput assign(DynamicByteArray out, VariableMap variables, String type, Identifier id) {
+    if (!variables.containsKey(id)) {
       variables.put(id, new VariableInfo(id.getValue().toString(), type, (byte) variables.size()));
     }
     byte idx = variables.get(id).getIdx();
@@ -384,6 +436,73 @@ public class OpCodeGenerator {
         return storeDouble(out, idx);
       case FLOAT:
         return storeFloat(out, idx);
+      case REF:
+        return storeReference(out, idx);
+    }
+    return out;
+  }
+
+  public HasOutput assignInArray(
+      DynamicByteArray out, VariableMap variables, Identifier id, Expression value) {
+    if (!variables.containsKey(id)) {
+      variables.put(id, new VariableInfo(id.getValue().toString(), REF, (byte) variables.size()));
+    }
+    VariableInfo varInfo = variables.get(id);
+    byte idx = varInfo.getIdx();
+    String type = varInfo.getArrayType();
+    loadReference(out, idx);
+    for (Expression arrIdx : id.getSelector().getExpression()) {
+      context.exprGenerator.eval(out, variables, INT, arrIdx);
+    }
+    context.exprGenerator.eval(out, variables, type, value);
+    switch (type) {
+      case BYTE:
+        out.write(BASTORE);
+        break;
+      case SHORT:
+        out.write(SASTORE);
+        break;
+      case LONG:
+        out.write(LASTORE);
+        break;
+      case INT:
+        out.write(IASTORE);
+        break;
+      case DOUBLE:
+        out.write(DASTORE);
+        break;
+      case FLOAT:
+        out.write(FASTORE);
+        break;
+      case REF:
+        out.write(AASTORE);
+        break;
+    }
+    return out;
+  }
+
+  public HasOutput assignArray(
+      DynamicByteArray out, VariableMap variables, String type, int arrDim, Identifier id) {
+    if (!variables.containsKey(id)) {
+      variables.put(
+          id, new VariableInfo(id.getValue().toString(), REF, type, (byte) variables.size()));
+    }
+    byte idx = variables.get(id).getIdx();
+    return storeReference(out, idx);
+  }
+
+  private HasOutput storeReference(DynamicByteArray out, byte idx) {
+    if (idx == 0) {
+      out.write(ASTORE_0);
+    } else if (idx == 1) {
+      out.write(ASTORE_1);
+    } else if (idx == 2) {
+      out.write(ASTORE_2);
+    } else if (idx == 3) {
+      out.write(ASTORE_3);
+    } else {
+      out.write(ASTORE);
+      out.write(idx);
     }
     return out;
   }
@@ -480,5 +599,11 @@ public class OpCodeGenerator {
       out.write(I2L);
     }
     // TODO: others
+  }
+
+  public void createArray(DynamicByteArray out, byte arrayType, int size) {
+    pushInteger(out, size);
+    out.write(NEWARRAY);
+    out.write(arrayType);
   }
 }

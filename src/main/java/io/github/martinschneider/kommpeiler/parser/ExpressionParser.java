@@ -1,96 +1,90 @@
 package io.github.martinschneider.kommpeiler.parser;
 
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.MINUS;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Operators.TIMES;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RPAREN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.integer;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 
+import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
+import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
+import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Num;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Operator;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.List;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Str;
 
-// second pass to parse expressions using the shunting yard algorithm
-public class ExpressionParser {
-  // needed to distinguish between one- and no-argument method calls and expressions
-  private List<Identifier> methodNames;
+public class ExpressionParser implements ProdParser<Expression> {
+  private ParserContext ctx;
 
-  public ExpressionParser() {
-    this.methodNames = new ArrayList<>();
+  public ExpressionParser(ParserContext ctx) {
+    this.ctx = ctx;
   }
 
-  public ExpressionParser(List<Identifier> methodNames) {
-    this.methodNames = methodNames;
-  }
-
-  private boolean isHigerPrec(Operator op, Token sub) {
-    return (sub instanceof Operator && ((Operator) sub).precedence() >= op.precedence());
-  }
-
-  public List<Token> postfix(List<Token> tokens) {
-    List<Token> output = new ArrayList<>();
-    Deque<Token> stack = new LinkedList<>();
-    for (int i = 0; i < tokens.size(); i++) {
-      Token token = tokens.get(i);
-      if (token instanceof Operator) {
-        while (!stack.isEmpty() && isHigerPrec((Operator) token, stack.peek())) {
-          output.add(stack.pop());
+  @Override
+  public Expression parse(TokenList tokens) {
+    Expression expression = new Expression();
+    boolean negative = false;
+    if (tokens.curr().eq(op(MINUS))) {
+      negative = true;
+      tokens.next();
+      if (tokens.curr() instanceof Num) {
+        Num number = (Num) tokens.curr();
+        if (negative) {
+          number.changeSign();
         }
-        stack.push(token);
-      } else if (token.eq(sym(LPAREN))) {
-        stack.push(token);
-      } else if (token.eq(sym(RPAREN))) {
-        while (!stack.peek().eq(sym(LPAREN))) {
-          output.add(stack.pop());
-        }
-        stack.pop();
+        expression.addToken(tokens.curr());
+        tokens.next();
+      } else if (tokens.curr() instanceof Identifier) {
+        expression.addToken(sym(LPAREN));
+        expression.addToken(integer(-1));
+        expression.addToken(sym(RPAREN));
+        expression.addToken(op(TIMES));
+        expression.addToken(tokens.curr());
       } else {
-        List<Token> sublist = new ArrayList<>(tokens).subList(i, tokens.size() - 1);
-        Pair<MethodCall, Integer> parseResult = parseMethodCall(sublist);
-        if (parseResult != null) {
-          MethodCall methodCall = parseResult.getLeft();
-          output.add(methodCall);
-          i += parseResult.getRight();
-        } else {
-          output.add(token);
-        }
+        ctx.errors.addParserError(
+            "Unexpected symbol " + tokens.curr() + " after starting - in expression");
+        return null;
       }
     }
-    while (!stack.isEmpty()) {
-      output.add(stack.pop());
+    int parenthesis = 0;
+    while (tokens.curr() instanceof Num
+        || tokens.curr() instanceof Str
+        || tokens.curr() instanceof Identifier
+        || tokens.curr() instanceof Operator
+        || tokens.curr().eq(sym(LPAREN))
+        || tokens.curr().eq(sym(RPAREN))) {
+      int idx = tokens.idx();
+      if (tokens.curr() instanceof Identifier) {
+        Identifier id = ((Identifier) tokens.curr());
+        tokens.next();
+        ArraySelector sel = ctx.arraySelectorParser.parse(tokens, true);
+        if (sel != null) {
+          id.setSelector(sel);
+        } else {
+          tokens.prev();
+        }
+      }
+      MethodCall methodCall = ctx.methodCallParser.parse(tokens, true);
+      if (methodCall != null) {
+        expression.addToken(methodCall);
+      } else {
+        tokens.setIdx(idx);
+        if (tokens.curr().eq(sym(LPAREN))) {
+          parenthesis--;
+        } else if (tokens.curr().eq(sym(RPAREN))) {
+          parenthesis++;
+        }
+        if (parenthesis > 0) {
+          break;
+        }
+        expression.addToken(tokens.curr());
+        tokens.next();
+      }
     }
-    return output;
-  }
-
-  private Pair<MethodCall, Integer> parseMethodCall(List<Token> tokens) {
-    Parser parser = new Parser(tokens);
-    int idx = parser.savePointer();
-    MethodCall methodCall = parser.parseMethodCall();
-    int diff = parser.savePointer() - idx;
-    if (methodCall != null && methodNames.contains(methodCall.getNames().get(0))) {
-      return new Pair<>(methodCall, diff);
-    }
-    return null;
-  }
-
-  private class Pair<S, T> {
-    S left;
-    T right;
-
-    public Pair(S left, T right) {
-      this.left = left;
-      this.right = right;
-    }
-
-    public S getLeft() {
-      return left;
-    }
-
-    public T getRight() {
-      return right;
-    }
+    return (expression.size() > 0) ? expression : null;
   }
 }

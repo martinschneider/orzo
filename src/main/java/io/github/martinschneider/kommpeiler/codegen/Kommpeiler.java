@@ -3,13 +3,12 @@ package io.github.martinschneider.kommpeiler.codegen;
 import io.github.martinschneider.kommpeiler.parser.Parser;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.scanner.Lexer;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
+import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.List;
 import java.util.stream.Collectors;
 
 // main entry point
@@ -45,20 +44,24 @@ public class Kommpeiler {
         "╦╔═╔═╗╔╦╗╔╦╗╔═╗╔═╗╦╦  ╔═╗╦═╗\n"
             + "╠╩╗║ ║║║║║║║╠═╝║╣ ║║  ║╣ ╠╦╝\n"
             + "╩ ╩╚═╝╩ ╩╩ ╩╩  ╚═╝╩╩═╝╚═╝╩╚═");
-    System.out.println("Reading from: " + input.getAbsolutePath());
+    System.out.println("\nReading from: " + input.getAbsolutePath());
     Lexer scanner = new Lexer();
-    List<Token> tokens = scanner.getTokens(input);
+    TokenList tokens = scanner.getTokens(input);
     System.out.println(
         "Scanner output: "
-            + tokens.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    Parser parser = new Parser(tokens);
-    Clazz clazz = parser.parseClass();
+            + tokens.list().stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
+    Parser parser = new Parser(scanner.getErrors());
+    Clazz clazz = parser.parse(tokens);
     System.out.println("Parser output: " + clazz);
     if (outputPath != null) {
       System.out.println("Writing to: " + outputPath);
     }
-    CodeGenerator codeGen = new CodeGenerator(clazz, output);
+    CodeGenerator codeGen = new CodeGenerator(clazz, output, parser.ctx);
     codeGen.generate();
+    if (!codeGen.getErrors().getErrors().isEmpty()) {
+      System.out.println("\nErrors\n------");
+      System.out.println(codeGen.getErrors());
+    }
     System.out.println("Ok bye!\n");
   }
 }

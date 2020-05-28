@@ -39,7 +39,6 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -54,7 +53,9 @@ public class LexerTest {
 
   private static Stream<Arguments> tokenTest() throws IOException {
     return Stream.of(
-        Arguments.of("das ist ein test", List.of(id("das"), id("ist"), id("ein"), id("test"))),
+        Arguments.of(
+            "das ist ein test",
+            new TokenList(List.of(id("das"), id("ist"), id("ein"), id("test")))),
         Arguments.of("f1 f_1", List.of(id("f1"), id("f_1"))),
         Arguments.of("12  13 15 17", List.of(integer(12), integer(13), integer(15), integer(17))),
         Arguments.of("0.9", List.of(fp(0.9))),
@@ -120,12 +121,15 @@ public class LexerTest {
         Arguments.of(
             "/* abc//123\"\"\\$@ */ /*und noch einer*/\n//x=y+1;\n", Collections.emptyList()),
         Arguments.of("// test", Collections.emptyList()),
-        Arguments.of("/* /* /* test */ */ */", Collections.emptyList()));
+        Arguments.of("/* /* /* test */ */ */", Collections.emptyList()),
+        Arguments.of(
+            "System.out.println",
+            List.of(id("System"), sym(DOT), id("out"), sym(DOT), id("println"))));
   }
 
   @MethodSource
   @ParameterizedTest
-  public void tokenTest(String input, List<Token> expectedIdentifier) throws IOException {
+  public void tokenTest(String input, TokenList expectedIdentifier) throws IOException {
     assertEquals(expectedIdentifier, scanner.getTokens(input));
   }
 

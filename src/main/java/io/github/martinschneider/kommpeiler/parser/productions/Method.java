@@ -38,7 +38,7 @@ public class Method {
     this.scope = scope;
     this.type = type;
     this.name = name;
-    this.setArguments(arguments);
+    this.arguments = arguments;
     this.body = body;
   }
 
@@ -117,6 +117,68 @@ public class Method {
 
   public void setType(final String type) {
     this.type = type;
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((arguments == null) ? 0 : arguments.hashCode());
+    result = prime * result + ((body == null) ? 0 : body.hashCode());
+    result = prime * result + ((name == null) ? 0 : name.hashCode());
+    result = prime * result + ((scope == null) ? 0 : scope.hashCode());
+    result = prime * result + ((type == null) ? 0 : type.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+    Method other = (Method) obj;
+    if (arguments == null) {
+      if (other.arguments != null) {
+        return false;
+      }
+    } else if (!arguments.equals(other.arguments)) {
+      return false;
+    }
+    if (body == null) {
+      if (other.body != null) {
+        return false;
+      }
+    } else if (!body.equals(other.body)) {
+      return false;
+    }
+    if (name == null) {
+      if (other.name != null) {
+        return false;
+      }
+    } else if (!name.equals(other.name)) {
+      return false;
+    }
+    if (scope == null) {
+      if (other.scope != null) {
+        return false;
+      }
+    } else if (!scope.equals(other.scope)) {
+      return false;
+    }
+    if (type == null) {
+      if (other.type != null) {
+        return false;
+      }
+    } else if (!type.equals(other.type)) {
+      return false;
+    }
+    return true;
   }
 
   @Override

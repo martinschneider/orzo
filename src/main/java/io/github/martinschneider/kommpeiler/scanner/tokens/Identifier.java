@@ -1,29 +1,33 @@
 package io.github.martinschneider.kommpeiler.scanner.tokens;
 
-import io.github.martinschneider.kommpeiler.parser.productions.Selector;
+import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
 
 public class Identifier extends Token {
-  private Selector selector;
+  private ArraySelector selector;
 
   public Identifier(final String value) {
     super(value);
+  }
+
+  public Identifier(final String value, ArraySelector selector) {
+    super(value);
+    this.selector = selector;
   }
 
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder(getValue().toString());
     if (selector != null) {
-      strBuilder.append('.');
       strBuilder.append(selector.toString());
     }
     return strBuilder.toString();
   }
 
-  public void setSelector(final Selector selector) {
+  public void setSelector(final ArraySelector selector) {
     this.selector = selector;
   }
 
-  public Selector getSelector() {
+  public ArraySelector getSelector() {
     return selector;
   }
 

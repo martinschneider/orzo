@@ -23,6 +23,7 @@ public class OpCodes {
   public static final byte LLOAD = (byte) 22;
   public static final byte FLOAD = (byte) 22;
   public static final byte DLOAD = (byte) 24;
+  public static final byte ALOAD = (byte) 25;
   public static final byte ILOAD_0 = (byte) 26;
   public static final byte ILOAD_1 = (byte) 27;
   public static final byte ILOAD_2 = (byte) 28;
@@ -39,10 +40,21 @@ public class OpCodes {
   public static final byte DLOAD_1 = (byte) 39;
   public static final byte DLOAD_2 = (byte) 40;
   public static final byte DLOAD_3 = (byte) 41;
+  public static final byte ALOAD_0 = (byte) 42;
+  public static final byte ALOAD_1 = (byte) 43;
+  public static final byte ALOAD_2 = (byte) 44;
+  public static final byte ALOAD_3 = (byte) 45;
+  public static final byte IALOAD = (byte) 46;
+  public static final byte LALOAD = (byte) 47;
+  public static final byte FALOAD = (byte) 48;
+  public static final byte DALOAD = (byte) 49;
+  public static final byte BALOAD = (byte) 51;
+  public static final byte SALOAD = (byte) 53;
   public static final byte ISTORE = (byte) 54;
   public static final byte LSTORE = (byte) 55;
   public static final byte FSTORE = (byte) 56;
   public static final byte DSTORE = (byte) 57;
+  public static final byte ASTORE = (byte) 58;
   public static final byte ISTORE_0 = (byte) 59;
   public static final byte ISTORE_1 = (byte) 60;
   public static final byte ISTORE_2 = (byte) 61;
@@ -59,6 +71,18 @@ public class OpCodes {
   public static final byte DSTORE_1 = (byte) 72;
   public static final byte DSTORE_2 = (byte) 73;
   public static final byte DSTORE_3 = (byte) 74;
+  public static final byte ASTORE_0 = (byte) 75;
+  public static final byte ASTORE_1 = (byte) 76;
+  public static final byte ASTORE_2 = (byte) 77;
+  public static final byte ASTORE_3 = (byte) 78;
+  public static final byte IASTORE = (byte) 79;
+  public static final byte LASTORE = (byte) 80;
+  public static final byte FASTORE = (byte) 81;
+  public static final byte DASTORE = (byte) 82;
+  public static final byte AASTORE = (byte) 83;
+  public static final byte BASTORE = (byte) 84;
+  public static final byte SASTORE = (byte) 86;
+  public static final byte DUP = (byte) 89;
   public static final byte IADD = (byte) 96;
   public static final byte LADD = (byte) 97;
   public static final byte FADD = (byte) 98;
@@ -118,4 +142,5 @@ public class OpCodes {
   public static final byte GETSTATIC = (byte) 178;
   public static final byte INVOKEVIRTUAL = (byte) 182;
   public static final byte INVOKESTATIC = (byte) 184;
+  public static final byte NEWARRAY = (byte) 188;
 }

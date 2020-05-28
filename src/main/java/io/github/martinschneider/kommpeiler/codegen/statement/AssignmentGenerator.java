@@ -7,6 +7,7 @@ import io.github.martinschneider.kommpeiler.codegen.VariableMap;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 
 public class AssignmentGenerator implements StatementGenerator {
   private CGContext context;
@@ -19,9 +20,14 @@ public class AssignmentGenerator implements StatementGenerator {
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     Assignment assignment = (Assignment) stmt;
-    String type = variables.get(assignment.getLeft()).getType();
-    context.exprGenerator.eval(out, variables, type, assignment.getRight());
-    context.opsGenerator.assignValue(out, variables, type, assignment.getLeft());
+    Identifier id = assignment.getLeft();
+    if (id.getSelector() != null) {
+      context.opsGenerator.assignInArray(out, variables, id, assignment.getRight());
+    } else {
+      String type = variables.get(id).getType();
+      context.exprGenerator.eval(out, variables, type, assignment.getRight());
+      context.opsGenerator.assign(out, variables, type, id);
+    }
     return out;
   }
 }

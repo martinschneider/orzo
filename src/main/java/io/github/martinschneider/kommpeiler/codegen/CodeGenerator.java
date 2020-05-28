@@ -3,11 +3,14 @@ package io.github.martinschneider.kommpeiler.codegen;
 import static io.github.martinschneider.kommpeiler.codegen.OpCodes.RETURN;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.kommpeiler.codegen.constants.ConstantTypes.CONSTANT_UTF8;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.REF;
 
 import io.github.martinschneider.kommpeiler.codegen.statement.ConditionalGenerator;
 import io.github.martinschneider.kommpeiler.codegen.statement.ExpressionGenerator;
 import io.github.martinschneider.kommpeiler.codegen.statement.OpCodeGenerator;
 import io.github.martinschneider.kommpeiler.codegen.statement.StatementDelegator;
+import io.github.martinschneider.kommpeiler.error.CompilerErrors;
+import io.github.martinschneider.kommpeiler.parser.ParserContext;
 import io.github.martinschneider.kommpeiler.parser.productions.Argument;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
@@ -19,14 +22,15 @@ import java.util.List;
 public class CodeGenerator {
   private static final short JAVA_CLASS_MAJOR_VERSION = 49;
   private static final short JAVA_CLASS_MINOR_VERSION = 0;
-  public static final int INTEGER_DEFAULT_VALUE = 0;
   private CGContext ctx;
   private Output out;
+  private CompilerErrors errors;
 
-  public CodeGenerator(Clazz clazz, Output out) {
+  public CodeGenerator(Clazz clazz, Output out, ParserContext parserCtx) {
     this.out = out;
     ctx = new CGContext();
     ctx.clazz = clazz;
+    ctx.errors = parserCtx.errors;
     ctx.condGenerator = new ConditionalGenerator();
     ctx.constPoolProcessor = new ConstantPoolProcessor();
     ctx.constPool = ctx.constPoolProcessor.processConstantPool(clazz);
@@ -34,11 +38,16 @@ public class CodeGenerator {
     ctx.exprGenerator = new ExpressionGenerator();
     ctx.methodMap = new MethodProcessor().getMethodMap(clazz);
     ctx.opsGenerator = new OpCodeGenerator();
+    ctx.parserCtx = parserCtx;
     ctx.condGenerator.context = ctx;
     ctx.delegator.context = ctx;
-    ctx.exprGenerator.context = ctx;
+    ctx.exprGenerator.ctx = ctx;
     ctx.opsGenerator.context = ctx;
     ctx.delegator.init();
+  }
+
+  public CompilerErrors getErrors() {
+    return ctx.errors;
   }
 
   private void accessModifiers() {
@@ -99,13 +108,20 @@ public class CodeGenerator {
     // number of methods
     out.write((short) methods.size());
     for (Method method : methods) {
-      // todo: handle global variables
+      // TODO: handle global variables
       VariableMap variables = new VariableMap(new HashMap<>());
       for (Argument arg : method.getArguments()) {
+        // TODO: this code is ugly
+        String type = arg.getType();
+        String arrayType = null;
+        if (arg.getType().startsWith("[")) {
+          type = REF;
+          arrayType = arg.getType().replaceAll("\\[", "");
+        }
         variables.put(
             arg.getName(),
             new VariableInfo(
-                arg.getName().getValue().toString(), arg.getType(), (byte) variables.size()));
+                arg.getName().getValue().toString(), type, arrayType, (byte) variables.size()));
       }
       out.write((short) 9); // public static
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.getName().getValue()));

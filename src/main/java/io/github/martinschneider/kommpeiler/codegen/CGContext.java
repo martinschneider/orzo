@@ -5,6 +5,8 @@ import io.github.martinschneider.kommpeiler.codegen.statement.ConditionalGenerat
 import io.github.martinschneider.kommpeiler.codegen.statement.ExpressionGenerator;
 import io.github.martinschneider.kommpeiler.codegen.statement.OpCodeGenerator;
 import io.github.martinschneider.kommpeiler.codegen.statement.StatementDelegator;
+import io.github.martinschneider.kommpeiler.error.CompilerErrors;
+import io.github.martinschneider.kommpeiler.parser.ParserContext;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import java.util.Map;
@@ -18,4 +20,6 @@ public class CGContext {
   public ExpressionGenerator exprGenerator;
   public ConditionalGenerator condGenerator;
   public ConstantPoolProcessor constPoolProcessor;
+  public CompilerErrors errors;
+  public ParserContext parserCtx;
 }

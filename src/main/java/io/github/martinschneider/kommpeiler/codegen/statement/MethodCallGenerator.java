@@ -29,15 +29,14 @@ public class MethodCallGenerator implements StatementGenerator {
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     MethodCall methodCall = (MethodCall) stmt;
-    if ("System.out.println".equals(methodCall.getQualifiedName())) {
+    if ("System.out.println".equals(methodCall.getName().toString())) {
       for (Expression param : methodCall.getParameters()) {
         context.opsGenerator.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
         ExpressionResult result = context.exprGenerator.eval(out, variables, null, param);
         print(out, result.getType());
       }
     } else {
-      String methodName =
-          methodCall.getNames().get(methodCall.getNames().size() - 1).getValue().toString();
+      String methodName = methodCall.getName().toString();
       for (Expression expr : methodCall.getParameters()) {
         context.exprGenerator.eval(out, variables, null, expr);
       }

@@ -1,10 +1,10 @@
 package io.github.martinschneider.kommpeiler.codegen;
 
-import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.DOUBLE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.FLOAT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.LONG;
 
 import io.github.martinschneider.kommpeiler.codegen.constants.ConstantPool;
+import io.github.martinschneider.kommpeiler.parser.productions.ArrayInitialiser;
 import io.github.martinschneider.kommpeiler.parser.productions.Assignment;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Declaration;
@@ -57,7 +57,13 @@ public class ConstantPoolProcessor {
       Declaration decl = (Declaration) stmt;
       Expression value = decl.getValue();
       if (value != null) {
-        constPool = processExpression(constPool, decl.getType(), value);
+        if (value instanceof ArrayInitialiser) {
+          for (Expression arrInit : ((ArrayInitialiser) value).getValues()) {
+            constPool = processExpression(constPool, decl.getType(), arrInit);
+          }
+        } else {
+          constPool = processExpression(constPool, decl.getType(), value);
+        }
       }
     } else if (stmt instanceof Assignment) {
       Assignment assignment = (Assignment) stmt;
@@ -109,9 +115,9 @@ public class ConstantPoolProcessor {
         }
       } else if (token instanceof DoubleNum) {
         BigDecimal doubleValue = ((BigDecimal) (token.getValue()));
-        if (type.equals(FLOAT)) {
+        if (type != null && type.equals(FLOAT)) {
           constPool.addFloat(doubleValue.floatValue());
-        } else if (type.equals(DOUBLE)) {
+        } else {
           constPool.addDouble(doubleValue.doubleValue());
         }
       }

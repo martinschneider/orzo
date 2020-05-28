@@ -3,7 +3,6 @@ package io.github.martinschneider.kommpeiler.scanner.tokens;
 import java.util.List;
 
 public class Type extends Token {
-  private String name;
   public static final String VOID = "void";
   public static final String INT = "int";
   public static final String LONG = "long";
@@ -13,13 +12,21 @@ public class Type extends Token {
   public static final String FLOAT = "float";
   public static final String CHAR = "char";
   public static final String BOOLEAN = "boolean";
+  public static final String REF = "reference";
   public static final String STRING = "String";
   public static final List<String> BASIC_TYPES =
       List.of(VOID, INT, LONG, BYTE, SHORT, DOUBLE, FLOAT, CHAR, BOOLEAN, STRING);
+  private String name;
+  private int array; // 0 = no array, 1 = [], 2= [][] etc.
 
   public Type(String name) {
+    this(name, 0);
+  }
+
+  public Type(String name, int array) {
     super(name);
     this.name = name;
+    this.setArray(array);
   }
 
   public String getName() {
@@ -28,6 +35,14 @@ public class Type extends Token {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public int getArray() {
+    return array;
+  }
+
+  public void setArray(int array) {
+    this.array = array;
   }
 
   @Override
@@ -62,6 +77,10 @@ public class Type extends Token {
 
   @Override
   public String toString() {
-    return name;
+    StringBuilder strBuilder = new StringBuilder(name);
+    for (int i = 0; i < array; i++) {
+      strBuilder.append("[]");
+    }
+    return strBuilder.toString();
   }
 }

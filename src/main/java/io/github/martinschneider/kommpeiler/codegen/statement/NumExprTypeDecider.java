@@ -9,6 +9,7 @@ import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.codegen.VariableInfo;
 import io.github.martinschneider.kommpeiler.codegen.VariableMap;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
+import io.github.martinschneider.kommpeiler.scanner.tokens.DoubleNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import io.github.martinschneider.kommpeiler.scanner.tokens.IntNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
@@ -29,10 +30,17 @@ public class NumExprTypeDecider {
         } else {
           types.add(INT);
         }
+      } else if (token instanceof DoubleNum) {
+        types.add(DOUBLE);
       } else if (token instanceof Identifier) {
+        Identifier id = (Identifier) token;
         VariableInfo var = variables.get(token);
         if (var != null) {
-          types.add(var.getType());
+          if (id.getSelector() != null) {
+            types.add(var.getArrayType());
+          } else {
+            types.add(var.getType());
+          }
         }
       }
     }
