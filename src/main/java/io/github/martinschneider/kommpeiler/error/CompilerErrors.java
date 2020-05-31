@@ -1,5 +1,7 @@
 package io.github.martinschneider.kommpeiler.error;
 
+import io.github.martinschneider.kommpeiler.scanner.TokenList;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,61 +16,32 @@ public class CompilerErrors {
     return errors;
   }
 
-  public List<CompilerError> getScannerErrors() {
-    List<CompilerError> returnList = new ArrayList<>();
-    for (CompilerError error : errors) {
-      if (error.getType().equals(ErrorType.SCANNER)) {
-        returnList.add(error);
-      }
-    }
-    return returnList;
+  public void addError(String loggerName, String message) {
+    errors.add(new CompilerError(String.format("%s: %s", loggerName, message)));
   }
 
-  public List<CompilerError> getParserErrors() {
-    List<CompilerError> returnList = new ArrayList<>();
-    for (CompilerError error : errors) {
-      if (error.getType().equals(ErrorType.PARSER)) {
-        returnList.add(error);
-      }
-    }
-    return returnList;
+  public void addError(String loggerName, String message, TokenList tokens) {
+    errors.add(new CompilerError(message));
   }
 
-  public void addError(final CompilerError error) {
-    errors.add(error);
-  }
-
-  public void addError(final String message, final ErrorType type) {
-    errors.add(new CompilerError(message, type));
-  }
-
-  public void addScannerError(final String message) {
-    errors.add(new CompilerError(message, ErrorType.SCANNER));
-  }
-
-  public void addParserError(final String message) {
-    errors.add(new CompilerError(message, ErrorType.PARSER));
-  }
-
-  public void addCodegenError(final String message) {
-    errors.add(new CompilerError(message, ErrorType.CODEGEN));
+  public void missingExpected(String loggerName, Token expected, TokenList tokens) {
+    errors.add(
+        new CompilerError(
+            String.format(
+                "%s: expected %s but found %s: %s",
+                loggerName, expected, tokens.curr(), tokens.slice(3))));
   }
 
   public int count() {
     return errors.size();
   }
 
-  public void clear() {
-    errors.clear();
-  }
-
   @Override
   public String toString() {
     StringBuffer stringBuffer = new StringBuffer();
-    for (int i = 0; i < errors.size(); i++) {
-      stringBuffer.append(i + 1);
-      stringBuffer.append(". ");
-      stringBuffer.append(errors.get(i).getMessage());
+    for (CompilerError error : errors) {
+      stringBuffer.append("- ");
+      stringBuffer.append(error.getMessage());
       stringBuffer.append("\n");
     }
     return stringBuffer.toString();

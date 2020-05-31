@@ -59,9 +59,6 @@
 # Examples
 Working examples can be found [here](src/test/resources/io/github/martinschneider/kommpeiler/examples).
 
-# Known issues
-- float literals in assignments are not working
-
 # Usage
 
 To compile `Example.java` run:

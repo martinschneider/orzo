@@ -61,27 +61,43 @@ public class Token {
   }
 
   public static IntNum integer(Long value) {
-    return new IntNum(BigInteger.valueOf(value));
+    return new IntNum(BigInteger.valueOf(value), true);
   }
 
   public static IntNum integer(Integer value) {
-    return new IntNum(BigInteger.valueOf(value));
+    return new IntNum(BigInteger.valueOf(value), false);
+  }
+
+  public static IntNum integer(BigInteger value, boolean isLong) {
+    return new IntNum(value, isLong);
   }
 
   public static IntNum integer(BigInteger value) {
-    return new IntNum(value);
+    return new IntNum(value, false);
   }
 
   public static IntNum integer(String value) {
-    return new IntNum(new BigInteger(value));
+    return new IntNum(new BigInteger(value), false);
+  }
+
+  public static IntNum integer(String value, boolean isLong) {
+    return new IntNum(new BigInteger(value), isLong);
+  }
+
+  public static DoubleNum fp(double value, boolean isFloat) {
+    return new DoubleNum(value, isFloat);
+  }
+
+  public static DoubleNum fp(String value, boolean isFloat) {
+    return new DoubleNum(Double.valueOf(value), isFloat);
   }
 
   public static DoubleNum fp(double value) {
-    return new DoubleNum(value);
+    return new DoubleNum(value, false);
   }
 
   public static DoubleNum fp(String value) {
-    return new DoubleNum(Double.valueOf(value));
+    return new DoubleNum(Double.valueOf(value), false);
   }
 
   public static Identifier id(String value) {

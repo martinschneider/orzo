@@ -20,6 +20,7 @@ import java.util.List;
 
 public class DoParser implements ProdParser<DoStatement> {
   private ParserContext ctx;
+  private static final String LOG_NAME = "parse do";
 
   public DoParser(ParserContext ctx) {
     this.ctx = ctx;
@@ -36,7 +37,7 @@ public class DoParser implements ProdParser<DoStatement> {
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
         tokens.prev();
-        ctx.errors.addParserError("do must be followed by {");
+        ctx.errors.missingExpected(LOG_NAME, sym(LBRACE), tokens);
       }
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
@@ -45,27 +46,27 @@ public class DoParser implements ProdParser<DoStatement> {
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
         tokens.prev();
-        ctx.errors.addParserError("missing } in do-clause");
+        ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
       }
       tokens.next();
       if (!tokens.curr().eq(keyword(WHILE))) {
         tokens.prev();
-        ctx.errors.addParserError("missing while in do-clause");
+        ctx.errors.missingExpected(LOG_NAME, keyword(WHILE), tokens);
       }
       tokens.next();
       if (!tokens.curr().eq(sym(LPAREN))) {
         tokens.prev();
-        ctx.errors.addParserError("missing ( in do-clause");
+        ctx.errors.missingExpected(LOG_NAME, sym(LPAREN), tokens);
       }
       tokens.next();
       condition = ctx.condParser.parse(tokens);
       if (condition == null) {
         tokens.prev();
-        ctx.errors.addParserError("invalid condition in do-clause");
+        ctx.errors.addError(LOG_NAME, "missing condition");
       }
       if (!tokens.curr().eq(sym(RPAREN))) {
         tokens.prev();
-        ctx.errors.addParserError("missing } in do-clause");
+        ctx.errors.missingExpected(LOG_NAME, sym(RPAREN), tokens);
       } else {
         tokens.next();
         if (tokens.curr().eq(sym(SEMICOLON))) {

@@ -25,7 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MethodParser implements ProdParser<Method> {
-  ParserContext ctx;
+  private ParserContext ctx;
+  private static final String LOG_NAME = "parse method";
 
   public MethodParser(ParserContext ctx) {
     this.ctx = ctx;
@@ -108,7 +109,7 @@ public class MethodParser implements ProdParser<Method> {
         if (tokens.next().eq(sym(RBRAK))) {
           type = "[" + type;
         } else {
-          ctx.errors.addParserError("missing ] in type declaration");
+          ctx.errors.missingExpected(LOG_NAME, sym(RBRAK), tokens);
           tokens.next();
           break;
         }

@@ -106,7 +106,8 @@ public class ConstantPoolProcessor {
         constPool.addString(token.getValue().toString());
       } else if (token instanceof IntNum) {
         long intValue = ((BigInteger) (token.getValue())).longValue();
-        if ((type != null && type.equals(LONG))
+        if (((IntNum) token).isLong()
+            || (type != null && type.equals(LONG))
             || intValue < Integer.MIN_VALUE
             || intValue > Integer.MAX_VALUE) {
           constPool.addLong(intValue);
@@ -115,7 +116,7 @@ public class ConstantPoolProcessor {
         }
       } else if (token instanceof DoubleNum) {
         BigDecimal doubleValue = ((BigDecimal) (token.getValue()));
-        if (type != null && type.equals(FLOAT)) {
+        if (((DoubleNum) token).isFloat() || (type != null && type.equals(FLOAT))) {
           constPool.addFloat(doubleValue.floatValue());
         } else {
           constPool.addDouble(doubleValue.doubleValue());

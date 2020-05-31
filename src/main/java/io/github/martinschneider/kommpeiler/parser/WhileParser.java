@@ -18,6 +18,7 @@ import java.util.List;
 
 public class WhileParser implements ProdParser<WhileStatement> {
   private ParserContext ctx;
+  private static final String LOG_NAME = "parse while";
 
   public WhileParser(ParserContext ctx) {
     this.ctx = ctx;
@@ -34,23 +35,23 @@ public class WhileParser implements ProdParser<WhileStatement> {
       tokens.next();
       if (!tokens.curr().eq(sym(LPAREN))) {
         tokens.prev();
-        ctx.errors.addParserError("while must be followed by (");
+        ctx.errors.missingExpected(LOG_NAME, sym(LPAREN), tokens);
       }
       tokens.next();
       condition = ctx.condParser.parse(tokens);
       if (condition == null) {
         tokens.bw(2);
-        ctx.errors.addParserError("while( must be followed by a valid expression");
+        ctx.errors.addError(LOG_NAME, "missing condition");
         return null;
       }
       if (!tokens.curr().eq(sym(RPAREN))) {
         tokens.prev();
-        ctx.errors.addParserError("missing ) in while-clause");
+        ctx.errors.missingExpected(LOG_NAME, sym(RPAREN), tokens);
       }
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
         tokens.prev();
-        ctx.errors.addParserError("missing { in while-clause");
+        ctx.errors.missingExpected(LOG_NAME, sym(LBRACE), tokens);
       }
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
@@ -59,7 +60,7 @@ public class WhileParser implements ProdParser<WhileStatement> {
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
         tokens.prev();
-        ctx.errors.addParserError("missing } in while-clause");
+        ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
       }
       tokens.next();
       if (tokens.curr().eq(sym(SEMICOLON))) {

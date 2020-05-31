@@ -2,14 +2,9 @@ package io.github.martinschneider.kommpeiler.examples;
 
 public class QuickSort {
   public static void main(String[] args) {
-    int[] a = new int[] {12, 423, 0, 76, 13, 23, 54, 48, 33, 10};
-    for (int i = 0; i < 10; i++) {
-      System.out.println(a[i]);
-    }
-    qsort(a, 0);
-    for (int i = 0; i < 10; i++) {
-      System.out.println(a[i]);
-    }
+    int[] array = new int[] {88, 34, 81, 78, 77, 55, 59, 14, -12, 54};
+    qsort(array, 0, 9);
+    printArray(array);
   }
 
   public static void qsort(int[] array, int start, int end) {
@@ -20,9 +15,15 @@ public class QuickSort {
     }
   }
 
+  public static void printArray(int[] array) {
+    for (int i = 0; i < 10; i++) {
+      System.out.println(array[i]);
+    }
+  }
+
   public static int partition(int[] array, int left, int right) {
     if (left != right) {
-      int pivot = selectPivot(array, left, right);
+      int pivot = array[left];
       while (left <= right) {
         while (array[left] < pivot) {
           left++;
@@ -31,16 +32,14 @@ public class QuickSort {
           right--;
         }
         if (left <= right) {
-          array[left], array[right] = array[right], array[left];
+          int tmp = array[left];
+          array[left] = array[right];
+          array[right] = tmp;
           left++;
           right--;
         }
       }
     }
     return left;
-  }
-
-  public static int selectPivot(int[] array, int left, int right) {
-    return array[left];
   }
 }

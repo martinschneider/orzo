@@ -3,21 +3,38 @@ package io.github.martinschneider.kommpeiler.scanner.tokens;
 import java.math.BigInteger;
 
 public class IntNum extends Token implements Num {
-  public IntNum(final BigInteger value) {
+  private boolean isLong;
+
+  public IntNum(final BigInteger value, boolean isLong) {
     super(value);
+    this.isLong = isLong;
   }
 
-  public IntNum(final Integer value) {
-    super(BigInteger.valueOf(value));
+  public IntNum(final Integer value, final boolean isLong) {
+    this(BigInteger.valueOf(value), isLong);
   }
 
   public long intValue() {
     return ((BigInteger) getValue()).longValue();
   }
 
+  public boolean isLong() {
+    return isLong;
+  }
+
+  public void setLong(boolean isLong) {
+    this.isLong = isLong;
+  }
+
   @Override
   public String toString() {
-    return "INT(" + getValue() + ")";
+    StringBuilder strBuilder = new StringBuilder("INT(");
+    strBuilder.append(getValue());
+    if (isLong) {
+      strBuilder.append("l");
+    }
+    strBuilder.append(')');
+    return strBuilder.toString();
   }
 
   @Override

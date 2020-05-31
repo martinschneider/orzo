@@ -19,6 +19,7 @@ import io.github.martinschneider.kommpeiler.scanner.tokens.Str;
 
 public class ExpressionParser implements ProdParser<Expression> {
   private ParserContext ctx;
+  private static final String LOG_NAME = "parse expression";
 
   public ExpressionParser(ParserContext ctx) {
     this.ctx = ctx;
@@ -45,8 +46,11 @@ public class ExpressionParser implements ProdParser<Expression> {
         expression.addToken(op(TIMES));
         expression.addToken(tokens.curr());
       } else {
-        ctx.errors.addParserError(
-            "Unexpected symbol " + tokens.curr() + " after starting - in expression");
+        ctx.errors.addError(
+            LOG_NAME,
+            "unexpected symbol "
+                + tokens.curr()
+                + " after starting \"-\" in expression (expected number literal or identifier)");
         return null;
       }
     }

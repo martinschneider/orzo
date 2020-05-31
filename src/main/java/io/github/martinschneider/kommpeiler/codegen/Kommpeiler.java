@@ -59,7 +59,7 @@ public class Kommpeiler {
     CodeGenerator codeGen = new CodeGenerator(clazz, output, parser.ctx);
     codeGen.generate();
     if (!codeGen.getErrors().getErrors().isEmpty()) {
-      System.out.println("\nErrors\n------");
+      System.out.println("\n" + codeGen.getErrors().getErrors().size() + " errors:");
       System.out.println(codeGen.getErrors());
     }
     System.out.println("Ok bye!\n");

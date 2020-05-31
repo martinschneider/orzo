@@ -15,6 +15,7 @@ import java.util.List;
 
 public class ParallelAssignmentParser implements ProdParser<ParallelAssignment> {
   private ParserContext ctx;
+  private static final String LOG_NAME = "parse parallel assignment";
 
   public ParallelAssignmentParser(ParserContext ctx) {
     this.ctx = ctx;
@@ -45,7 +46,8 @@ public class ParallelAssignmentParser implements ProdParser<ParallelAssignment> 
       }
     }
     if (left.size() != right.size()) {
-      ctx.errors.addParserError(
+      ctx.errors.addError(
+          LOG_NAME,
           "left and right side must have the same number of variables in parallel assignment");
       tokens.setIdx(idx);
       return null;

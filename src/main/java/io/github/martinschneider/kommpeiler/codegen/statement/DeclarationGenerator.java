@@ -22,6 +22,7 @@ import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 public class DeclarationGenerator implements StatementGenerator {
   private static final int INTEGER_DEFAULT_VALUE = 0;
   private static final float DOUBLE_DEFAULT_VALUE = 0.0f;
+  private static final String LOG_NAME = "generate declaration code";
 
   public DeclarationGenerator(CGContext context) {
     this.ctx = context;
@@ -60,7 +61,7 @@ public class DeclarationGenerator implements StatementGenerator {
   public HasOutput generateArray(
       DynamicByteArray out, VariableMap variables, Method method, Declaration decl) {
     if (decl.getValue() == null || !(decl.getValue() instanceof ArrayInitialiser)) {
-      ctx.errors.addCodegenError("invalid array initialiser" + decl.getValue());
+      ctx.errors.addError(LOG_NAME, "invalid array initialiser" + decl.getValue());
       return out;
     }
     String type = decl.getType();

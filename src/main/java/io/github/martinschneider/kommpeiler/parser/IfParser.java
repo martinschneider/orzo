@@ -20,6 +20,9 @@ import java.util.List;
 
 public class IfParser implements ProdParser<IfStatement> {
   private ParserContext ctx;
+  private static final String LOG_NAME = "parse if";
+  private static final String IF_BLOCK_LOG_NAME = "parse if block";
+  private static final String ELSE_BLOCK_LOG_NAME = "parse else block";
 
   public IfParser(ParserContext ctx) {
     this.ctx = ctx;
@@ -66,31 +69,31 @@ public class IfParser implements ProdParser<IfStatement> {
     }
     if (!tokens.curr().eq(sym(LPAREN))) {
       tokens.prev();
-      ctx.errors.addParserError("if must be followed by (");
+      ctx.errors.missingExpected(IF_BLOCK_LOG_NAME, sym(LPAREN), tokens);
     }
     tokens.next();
     condition = ctx.condParser.parse(tokens);
     if (condition == null) {
       tokens.prev();
-      ctx.errors.addParserError("if( must be followed by a valid expression");
+      ctx.errors.addError(IF_BLOCK_LOG_NAME, "missing condition");
     }
     if (!tokens.curr().eq(sym(RPAREN))) {
       tokens.prev();
-      ctx.errors.addParserError("missing ) in if-clause");
+      ctx.errors.missingExpected(LOG_NAME, sym(RPAREN), tokens);
     }
     tokens.next();
     if (!tokens.curr().eq(sym(LBRACE))) {
       tokens.prev();
-      ctx.errors.addParserError("missing { in if-clause");
+      ctx.errors.missingExpected(IF_BLOCK_LOG_NAME, sym(LBRACE), tokens);
     }
     tokens.next();
     body = ctx.stmtParser.parseStmtSeq(tokens);
     if (body == null) {
-      ctx.errors.addParserError("invalid body of if-clause");
+      ctx.errors.addError(IF_BLOCK_LOG_NAME, "missing body");
     }
     if (!tokens.curr().eq(sym(RBRACE))) {
       tokens.prev();
-      ctx.errors.addParserError("missing } in if-clause");
+      ctx.errors.missingExpected(IF_BLOCK_LOG_NAME, sym(RBRACE), tokens);
     } else {
       tokens.next();
     }
@@ -105,19 +108,20 @@ public class IfParser implements ProdParser<IfStatement> {
     if (!tokens.curr().eq(keyword(ELSE))) {
       return null;
     }
+    int startIdx = tokens.idx();
     tokens.next();
     if (!tokens.curr().eq(sym(LBRACE))) {
       tokens.prev();
-      ctx.errors.addParserError("missing { in if-clause");
+      ctx.errors.missingExpected(ELSE_BLOCK_LOG_NAME, sym(LBRACE), tokens);
     }
     tokens.next();
     body = ctx.stmtParser.parseStmtSeq(tokens);
     if (body == null) {
-      ctx.errors.addParserError("invalid body of if-clause");
+      ctx.errors.addError(LOG_NAME, "missing body");
     }
     if (!tokens.curr().eq(sym(RBRACE))) {
       tokens.prev();
-      ctx.errors.addParserError("missing } in if-clause");
+      ctx.errors.missingExpected(ELSE_BLOCK_LOG_NAME, sym(RBRACE), tokens);
     } else {
       tokens.next();
     }

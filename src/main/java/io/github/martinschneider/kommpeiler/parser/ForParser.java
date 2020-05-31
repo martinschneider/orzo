@@ -16,6 +16,7 @@ import java.util.List;
 
 public class ForParser implements ProdParser<ForStatement> {
   private ParserContext ctx;
+  private static final String LOG_NAME = "parse for";
 
   public ForParser(ParserContext ctx) {
     this.ctx = ctx;
@@ -33,45 +34,46 @@ public class ForParser implements ProdParser<ForStatement> {
     if (tokens.curr().eq(keyword(FOR))) {
       tokens.next();
       if (!tokens.curr().eq(sym(LPAREN))) {
-        tokens.prev();
-        ctx.errors.addParserError("for must be followed by (");
+        tokens.next(sym(RBRACE));
+        ctx.errors.missingExpected(LOG_NAME, sym(LPAREN), tokens);
       }
       tokens.next();
       initialization = ctx.stmtParser.parse(tokens);
       if (initialization == null) {
-        tokens.bw(2);
-        ctx.errors.addParserError("for stmt must contain an initialization stmt");
+        tokens.next(sym(RBRACE));
+        ctx.errors.addError(LOG_NAME, "missing initialisation");
         return null;
       }
       condition = ctx.condParser.parse(tokens);
       if (condition == null) {
-        tokens.prev();
-        ctx.errors.addParserError("for stmt must contain a condition");
+        tokens.next(sym(RBRACE));
+        ctx.errors.addError(LOG_NAME, "missing condition");
       }
       tokens.next();
       // TODO: support stmtSequence
       loopStatement = ctx.stmtParser.parse(tokens);
       if (loopStatement == null) {
-        tokens.prev();
-        ctx.errors.addParserError("for stmt must contain a loop stmt");
+        tokens.next(sym(RBRACE));
+        ctx.errors.addError(LOG_NAME, "missing loop statement");
       }
       if (!tokens.curr().eq(sym(RPAREN))) {
-        tokens.prev();
-        ctx.errors.addParserError("missing ) in for stmt");
+        tokens.next(sym(RBRACE));
+        ctx.errors.missingExpected(LOG_NAME, sym(RPAREN), tokens);
       }
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
-        tokens.prev();
-        ctx.errors.addParserError("missing { in for stmt");
+        tokens.next(sym(RBRACE));
+        ctx.errors.missingExpected(LOG_NAME, sym(LBRACE), tokens);
       }
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (body == null) {
-        ctx.errors.addParserError("invalid body of for stmt");
+        tokens.next(sym(RBRACE));
+        ctx.errors.addError(LOG_NAME, "missing boday");
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
-        tokens.prev();
-        ctx.errors.addParserError("missing } in for-clause");
+        tokens.next(sym(RBRACE));
+        ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
       } else {
         tokens.next();
       }

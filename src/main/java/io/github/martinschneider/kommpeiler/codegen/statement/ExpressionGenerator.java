@@ -71,6 +71,7 @@ import java.util.stream.Collectors;
 
 public class ExpressionGenerator {
   public CGContext ctx;
+  public static final String LOGGER_NAME = "expression code generator";
 
   public ExpressionResult eval(
       DynamicByteArray out, VariableMap variables, String type, Expression expr) {
@@ -155,6 +156,15 @@ public class ExpressionGenerator {
         MethodCall methodCall = (MethodCall) token;
         String methodName = methodCall.getName().toString();
         Method method = ctx.methodMap.get(methodName);
+        if (method == null) {
+          ctx.errors.addError(
+              LOGGER_NAME,
+              "missing method declaration \""
+                  + methodName
+                  + "\", known methods: "
+                  + ctx.methodMap.keySet());
+          return null;
+        }
         for (Expression exp : methodCall.getParameters()) {
           eval(out, variables, type, exp);
         }

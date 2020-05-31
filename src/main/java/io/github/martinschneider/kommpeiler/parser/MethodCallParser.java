@@ -3,13 +3,13 @@ package io.github.martinschneider.kommpeiler.parser;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.COMMA;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.DOT;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.LPAREN;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.eof;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.id;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 
-import io.github.martinschneider.kommpeiler.error.ErrorType;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
 import io.github.martinschneider.kommpeiler.scanner.TokenList;
@@ -19,6 +19,7 @@ import java.util.List;
 
 public class MethodCallParser implements ProdParser<MethodCall> {
   private ParserContext ctx;
+  private static final String LOG_NAME = "parse method call";
 
   public MethodCallParser(ParserContext ctx) {
     this.ctx = ctx;
@@ -45,7 +46,8 @@ public class MethodCallParser implements ProdParser<MethodCall> {
         // TODO: else
       }
       if (!tokens.curr().eq(sym(RPAREN))) {
-        ctx.errors.addError(") expected", ErrorType.PARSER);
+        tokens.next(sym(RBRACE));
+        ctx.errors.missingExpected(LOG_NAME, sym(RPAREN), tokens);
       }
       tokens.next();
       return parameters;

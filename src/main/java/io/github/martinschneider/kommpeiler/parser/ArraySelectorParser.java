@@ -12,6 +12,7 @@ import java.util.List;
 
 public class ArraySelectorParser implements ProdParser<ArraySelector> {
   private ParserContext ctx;
+  private static final String LOG_NAME = "parse array selector";
 
   public ArraySelectorParser(ParserContext ctx) {
     this.ctx = ctx;
@@ -25,13 +26,13 @@ public class ArraySelectorParser implements ProdParser<ArraySelector> {
   public ArraySelector parse(TokenList tokens, boolean removeTokens) {
     List<Expression> expressions = new ArrayList<>();
     Expression expr;
-    int idx = tokens.idx();
+    int startIdx = tokens.idx();
     while (tokens.curr().eq(sym(LBRAK))) {
       tokens.next();
       if ((expr = ctx.exprParser.parse(tokens)) != null) {
         expressions.add(expr);
         if (!tokens.curr().eq(sym(RBRAK))) {
-          ctx.errors.addParserError("missing ] in array selector");
+          ctx.errors.missingExpected(LOG_NAME, sym(RBRAK), tokens);
         }
         tokens.next();
       } else {
@@ -44,7 +45,7 @@ public class ArraySelectorParser implements ProdParser<ArraySelector> {
     }
     // this is used when called from the context of an expression
     if (removeTokens) {
-      tokens.list().subList(idx, tokens.idx()).clear();
+      tokens.list().subList(startIdx, tokens.idx()).clear();
     }
     return new ArraySelector(expressions);
   }

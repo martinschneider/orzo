@@ -25,6 +25,7 @@ import java.util.List;
 
 public class ClassParser implements ProdParser<Clazz> {
   private ParserContext ctx;
+  private static final String LOG_NAME = "parse class";
 
   public ClassParser(ParserContext ctx) {
     this.ctx = ctx;
@@ -44,21 +45,19 @@ public class ClassParser implements ProdParser<Clazz> {
           name = (Identifier) tokens.curr();
         } else {
           name = null;
-          ctx.errors.addParserError("identifier expected");
+          ctx.errors.addError(LOG_NAME, "missing identifier");
         }
         tokens.next();
         if (!tokens.curr().eq(sym(LBRACE))) {
-          tokens.prev();
-          ctx.errors.addParserError("class-declaration must be followed by {");
+          ctx.errors.missingExpected(LOG_NAME, sym(LBRACE), tokens);
         }
         tokens.next();
         body = parseClassBody(tokens);
         if (body == null) {
-          ctx.errors.addParserError("invalid class body");
+          ctx.errors.addError(LOG_NAME, "missing class body");
         }
         if (!tokens.curr().eq(sym(RBRACE))) {
-          tokens.prev();
-          ctx.errors.addParserError("method must be closed by }");
+          ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
         }
         tokens.next();
         return new Clazz(packageDeclaration, imports, scope, name, body);
@@ -104,7 +103,7 @@ public class ClassParser implements ProdParser<Clazz> {
         } else if (tokens.curr() instanceof Identifier) {
           identifier.append(tokens.curr().getValue());
         } else {
-          ctx.errors.addParserError("Invalid token " + tokens.curr() + " in package declaration.");
+          ctx.errors.addError(LOG_NAME, "invalid token " + tokens.curr() + " in import");
           return new Import(identifier.toString(), isStatic);
         }
         tokens.next();
@@ -125,7 +124,8 @@ public class ClassParser implements ProdParser<Clazz> {
         } else if (tokens.curr() instanceof Identifier) {
           packageName.append(tokens.curr().getValue());
         } else {
-          ctx.errors.addParserError("Invalid token " + tokens.curr() + " in package declaration.");
+          ctx.errors.addError(
+              LOG_NAME, "invalid token " + tokens.curr() + " in package declaration");
           return packageName.toString();
         }
         tokens.next();

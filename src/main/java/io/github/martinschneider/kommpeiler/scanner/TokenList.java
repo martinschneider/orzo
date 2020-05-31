@@ -3,6 +3,7 @@ package io.github.martinschneider.kommpeiler.scanner;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.eof;
 
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
+import java.util.ArrayList;
 import java.util.List;
 
 public class TokenList {
@@ -30,6 +31,13 @@ public class TokenList {
     return curr();
   }
 
+  public Token next(Token token) {
+    do {
+      idx++;
+    } while (idx < tokens.size() && tokens.get(idx) != token);
+    return curr();
+  }
+
   public Token prev() {
     idx--;
     return curr();
@@ -47,6 +55,13 @@ public class TokenList {
 
   public void insert(Token token) {
     tokens.add(idx + 1, token);
+  }
+
+  public Token get(int idx) {
+    if (idx < 0 || idx >= tokens.size()) {
+      return eof();
+    }
+    return tokens.get(idx);
   }
 
   public int idx() {
@@ -97,5 +112,19 @@ public class TokenList {
       return false;
     }
     return true;
+  }
+
+  public List<Token> slice(int diff) {
+    List<Token> slice = new ArrayList<>();
+    for (int i = idx - diff; i <= idx + diff; i++) {
+      if (i > 0) {
+        if (i < tokens.size() - 1) {
+          slice.add(tokens.get(i));
+        } else {
+          tokens.add(eof());
+        }
+      }
+    }
+    return slice;
   }
 }

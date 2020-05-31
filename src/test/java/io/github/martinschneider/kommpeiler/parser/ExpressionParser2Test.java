@@ -1,10 +1,10 @@
 package io.github.martinschneider.kommpeiler.parser;
 
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.integer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
-import io.github.martinschneider.kommpeiler.scanner.tokens.IntNum;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Operator;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Operators;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
@@ -22,15 +22,15 @@ public class ExpressionParser2Test {
     return Stream.of(
         Arguments.of(
             List.of(
-                new IntNum(5),
+                integer(5),
                 new Operator(Operators.PLUS),
-                new IntNum(7),
+                integer(7),
                 new Operator(Operators.DIV),
-                new IntNum(2)),
+                integer(2)),
             List.of(
-                new IntNum(5),
-                new IntNum(7),
-                new IntNum(2),
+                integer(5),
+                integer(7),
+                integer(2),
                 new Operator(Operators.DIV),
                 new Operator(Operators.PLUS))));
   }

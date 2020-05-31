@@ -20,6 +20,7 @@ import java.util.List;
 
 public class ArrayInitParser implements ProdParser<Expression> {
   private ParserContext ctx;
+  private static final String LOG_NAME = "parse array initialiser";
 
   public ArrayInitParser(ParserContext ctx) {
     this.ctx = ctx;
@@ -36,17 +37,17 @@ public class ArrayInitParser implements ProdParser<Expression> {
         type = ((Type) tokens.curr()).getName();
         tokens.next();
       } else {
-        ctx.errors.addParserError("missing type in array initialiser");
+        ctx.errors.addError(LOG_NAME, "missing type in array initialiser");
       }
       if (!tokens.curr().eq(sym(LBRAK))) {
-        ctx.errors.addParserError("missing [ in array declaration");
+        ctx.errors.missingExpected(LOG_NAME, sym(LBRAK), tokens);
         return null;
       }
       tokens.next();
       if (tokens.curr() instanceof IntNum) {
         long size = ((IntNum) tokens.curr()).intValue();
         if (size > Integer.MAX_VALUE || size < 0) {
-          ctx.errors.addParserError("invalid array size: " + size);
+          ctx.errors.addError(LOG_NAME, "invalid array size: " + size, tokens);
           tokens.next();
         } else {
           dim = (int) size;
@@ -54,7 +55,7 @@ public class ArrayInitParser implements ProdParser<Expression> {
         }
       }
       if (!tokens.curr().eq(sym(RBRAK))) {
-        ctx.errors.addParserError("missing ] in array declaration");
+        ctx.errors.missingExpected(LOG_NAME, sym(RBRAK), tokens);
         return null;
       }
       tokens.next();
@@ -68,7 +69,7 @@ public class ArrayInitParser implements ProdParser<Expression> {
           }
         }
         if (!tokens.curr().eq(sym(RBRACE))) {
-          ctx.errors.addParserError("missing } in array initialization");
+          ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
         }
         tokens.next();
       }
@@ -80,8 +81,8 @@ public class ArrayInitParser implements ProdParser<Expression> {
         // we allow it (even though it's redundant) but fail if the size and the number of values
         // doen't match
         if (dim != values.size()) {
-          ctx.errors.addParserError(
-              "array initializer size mismatch " + dim + "!=" + values.size());
+          ctx.errors.addError(
+              LOG_NAME, "array initializer size mismatch " + dim + "!=" + values.size());
         }
       }
       if (tokens.curr().eq(sym(SEMICOLON))) {

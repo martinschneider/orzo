@@ -53,7 +53,6 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Type.BASIC_TYPES;
 
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
-import io.github.martinschneider.kommpeiler.error.ErrorType;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Keywords;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scopes;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
@@ -67,8 +66,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Lexer {
-  private static final List<Character> NUMERIC_LITERALS =
-      List.of('i', 'I', 'l', 'L', 'd', 'D', 'F', 'f');
   private StringBuffer buffer;
   private char character;
   private CompilerErrors errors = new CompilerErrors();
@@ -81,14 +78,12 @@ public class Lexer {
   }
 
   public TokenList getTokens(final File file) throws IOException {
-    errors.clear();
     Reader reader = new FileReader(file);
     inputReader = new PushbackReader(reader);
     return getTokens(inputReader);
   }
 
   public TokenList getTokens(final PushbackReader fileReader) throws IOException {
-    errors.clear();
     tokenList = new ArrayList<>();
     buffer = new StringBuffer();
     int tokenCount;
@@ -128,7 +123,6 @@ public class Lexer {
   }
 
   public TokenList getTokens(final String string) throws IOException {
-    errors.clear();
     Reader reader = new StringReader(string);
     inputReader = new PushbackReader(reader);
     return getTokens(inputReader);
@@ -162,7 +156,7 @@ public class Lexer {
       }
     }
     if (c == -1) {
-      errors.addError("No closing */ for comment found.", ErrorType.SCANNER);
+      errors.addError("scan comment", "missing */");
     }
   }
 
@@ -179,12 +173,15 @@ public class Lexer {
     while (Character.isDigit(character = (char) inputReader.read())) {
       buffer.append(character);
     }
-    if (NUMERIC_LITERALS.contains(character)) {
-      // ignore
+    boolean isFloat = false;
+    if (character == 'd' || character == 'D') {
+      // do nothing
+    } else if (character == 'f' || character == 'F') {
+      isFloat = true;
     } else {
       inputReader.unread(character);
     }
-    tokenList.add(fp(buffer.toString()));
+    tokenList.add(fp(buffer.toString(), isFloat));
     buffer.setLength(0);
   }
 
@@ -233,16 +230,17 @@ public class Lexer {
       while (Character.isDigit(character = (char) inputReader.read())) {
         buffer.append(character);
       }
+      boolean isLong = false;
       if (character == '.') {
         buffer.append(character);
         scanDouble();
         return;
-      } else if (NUMERIC_LITERALS.contains(character)) {
-        // ignore
+      } else if (character == 'l' || character == 'L') {
+        isLong = true;
       } else {
         inputReader.unread(character);
       }
-      tokenList.add(integer(buffer.toString()));
+      tokenList.add(integer(buffer.toString(), isLong));
       buffer.setLength(0);
     }
   }
@@ -342,8 +340,8 @@ public class Lexer {
       if ((character = (char) inputReader.read()) == '=') {
         tokenList.add(cmp(NOTEQUAL));
       } else {
+        errors.addError("scan operator", "missing !, found " + character);
         inputReader.unread(character);
-        errors.addError("! must be followed by =", ErrorType.SCANNER);
       }
     } else if (character == '&') {
       if ((character = (char) inputReader.read()) == '=') {
@@ -395,7 +393,7 @@ public class Lexer {
         buffer.append(character);
       }
       if (c == -1) {
-        errors.addError("No closing \" for input string found.", ErrorType.SCANNER);
+        errors.addError("scan string", "missing \" in string");
       } else {
         tokenList.add(str(buffer.toString()));
       }

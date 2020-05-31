@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.kommpeiler.error.CompilerError;
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
-import io.github.martinschneider.kommpeiler.error.ErrorType;
 import io.github.martinschneider.kommpeiler.parser.productions.Argument;
 import io.github.martinschneider.kommpeiler.parser.productions.ArrayInitialiser;
 import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
@@ -104,8 +103,8 @@ public class TestHelper {
     return new ForStatement(initialization, condition, loopStatement, body);
   }
 
-  public static CompilerError err(String msg, ErrorType type) {
-    return new CompilerError(msg, type);
+  public static CompilerError err(String msg) {
+    return new CompilerError(msg);
   }
 
   public static Identifier id(String value, ArraySelector selector) {

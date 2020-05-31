@@ -19,10 +19,11 @@ import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 
 public class MethodCallGenerator implements StatementGenerator {
-  private CGContext context;
+  private static final String LOGGER_NAME = "method call code generator";
+  private CGContext ctx;
 
   public MethodCallGenerator(CGContext context) {
-    this.context = context;
+    this.ctx = context;
   }
 
   @Override
@@ -31,20 +32,27 @@ public class MethodCallGenerator implements StatementGenerator {
     MethodCall methodCall = (MethodCall) stmt;
     if ("System.out.println".equals(methodCall.getName().toString())) {
       for (Expression param : methodCall.getParameters()) {
-        context.opsGenerator.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        ExpressionResult result = context.exprGenerator.eval(out, variables, null, param);
+        ctx.opsGenerator.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        ExpressionResult result = ctx.exprGenerator.eval(out, variables, null, param);
         print(out, result.getType());
       }
     } else {
       String methodName = methodCall.getName().toString();
-      for (Expression expr : methodCall.getParameters()) {
-        context.exprGenerator.eval(out, variables, null, expr);
+      Method methodToCall = ctx.methodMap.get(methodName);
+      if (methodToCall == null) {
+        ctx.errors.addError(
+            LOGGER_NAME,
+            "missing method declaration \""
+                + methodName
+                + "\", known methods: "
+                + ctx.methodMap.keySet());
+        return null;
       }
-      context.opsGenerator.invokeStatic(
-          out,
-          context.clazz.getName().getValue().toString(),
-          methodName,
-          context.methodMap.get(methodName).getTypeDescr());
+      for (Expression expr : methodCall.getParameters()) {
+        ctx.exprGenerator.eval(out, variables, null, expr);
+      }
+      ctx.opsGenerator.invokeStatic(
+          out, ctx.clazz.getName().getValue().toString(), methodName, methodToCall.getTypeDescr());
     }
     return out;
   }
@@ -55,16 +63,16 @@ public class MethodCallGenerator implements StatementGenerator {
    */
   private DynamicByteArray print(DynamicByteArray out, String type) {
     if (type.equals(STRING)) {
-      context.opsGenerator.invokeVirtual(
+      ctx.opsGenerator.invokeVirtual(
           out, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
     } else if (type.equals(INT) || type.equals(BYTE) || type.equals(SHORT)) {
-      context.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(I)V");
+      ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(I)V");
     } else if (type.equals(LONG)) {
-      context.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(J)V");
+      ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(J)V");
     } else if (type.equals(DOUBLE)) {
-      context.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(D)V");
+      ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(D)V");
     } else if (type.equals(FLOAT)) {
-      context.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(F)V");
+      ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(F)V");
     } else {
       // TODO: call toString() first
     }
