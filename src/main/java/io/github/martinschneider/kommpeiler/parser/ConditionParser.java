@@ -1,8 +1,8 @@
 package io.github.martinschneider.kommpeiler.parser;
 
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.Condition;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Comparator;
 
 public class ConditionParser implements ProdParser<Condition> {

@@ -1,6 +1,6 @@
 package io.github.martinschneider.kommpeiler.error;
 
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,8 +28,8 @@ public class CompilerErrors {
     errors.add(
         new CompilerError(
             String.format(
-                "%s: expected %s but found %s: %s",
-                loggerName, expected, tokens.curr(), tokens.slice(3))));
+                "%s %s: expected %s but found %s",
+                tokens.curr().getLoc(), loggerName, expected, tokens.curr())));
   }
 
   public int count() {

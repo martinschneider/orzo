@@ -8,10 +8,10 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.integer;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Num;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Operator;

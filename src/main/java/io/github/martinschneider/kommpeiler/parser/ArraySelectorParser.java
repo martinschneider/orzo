@@ -4,9 +4,9 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.LBRAK;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import java.util.ArrayList;
 import java.util.List;
 

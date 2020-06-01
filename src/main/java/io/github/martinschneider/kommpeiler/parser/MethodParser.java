@@ -14,10 +14,10 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.keyword;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.scope;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.Argument;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scope;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Type;

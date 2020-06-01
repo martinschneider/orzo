@@ -9,11 +9,11 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RPAREN
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.keyword;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.Condition;
 import io.github.martinschneider.kommpeiler.parser.productions.IfBlock;
 import io.github.martinschneider.kommpeiler.parser.productions.IfStatement;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.util.ArrayList;
 import java.util.List;

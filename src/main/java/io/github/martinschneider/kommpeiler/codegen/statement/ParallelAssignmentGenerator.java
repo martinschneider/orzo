@@ -50,7 +50,7 @@ public class ParallelAssignmentGenerator implements StatementGenerator {
   }
 
   private boolean replaceIds(List<Expression> expressions, Identifier id, int idx) {
-    Identifier tmpId = new Identifier("tmp_" + idx);
+    Identifier tmpId = new Identifier("tmp_" + idx, null);
     boolean retValue = false;
     for (Expression expression : expressions) {
       expression.getInfix().replaceAll(x -> (x.eq(id)) ? tmpId : x);

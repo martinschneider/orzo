@@ -1,11 +1,11 @@
 package io.github.martinschneider.kommpeiler.parser;
 
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.integer;
+import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.op;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.kommpeiler.codegen.CGContext;
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
-import io.github.martinschneider.kommpeiler.scanner.tokens.Operator;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Operators;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.io.IOException;
@@ -21,18 +21,8 @@ public class ExpressionParser2Test {
   private static Stream<Arguments> test() throws IOException {
     return Stream.of(
         Arguments.of(
-            List.of(
-                integer(5),
-                new Operator(Operators.PLUS),
-                integer(7),
-                new Operator(Operators.DIV),
-                integer(2)),
-            List.of(
-                integer(5),
-                integer(7),
-                integer(2),
-                new Operator(Operators.DIV),
-                new Operator(Operators.PLUS))));
+            List.of(integer(5), op(Operators.PLUS), integer(7), op(Operators.DIV), integer(2)),
+            List.of(integer(5), integer(7), integer(2), op(Operators.DIV), op(Operators.PLUS))));
   }
 
   @ParameterizedTest

@@ -5,13 +5,18 @@ import java.math.BigDecimal;
 public class DoubleNum extends Token implements Num {
   private boolean isFloat;
 
-  public DoubleNum(final BigDecimal value, final boolean isFloat) {
+  public DoubleNum(BigDecimal value, boolean isFloat) {
     super(value);
     this.isFloat = isFloat;
   }
 
-  public DoubleNum(final Double value, final boolean isFloat) {
+  public DoubleNum(Double value, boolean isFloat) {
     this(BigDecimal.valueOf(value), isFloat);
+  }
+
+  public DoubleNum wLoc(Location loc) {
+    this.loc = loc;
+    return this;
   }
 
   @Override

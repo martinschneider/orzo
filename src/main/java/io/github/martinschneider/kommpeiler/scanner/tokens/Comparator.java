@@ -5,6 +5,11 @@ public class Comparator extends Sym {
     super(value);
   }
 
+  public Comparator wLoc(Location loc) {
+    this.loc = loc;
+    return this;
+  }
+
   public Comparators cmpValue() {
     return (Comparators) getValue();
   }

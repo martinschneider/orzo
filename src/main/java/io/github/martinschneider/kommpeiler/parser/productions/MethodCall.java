@@ -1,6 +1,7 @@
 package io.github.martinschneider.kommpeiler.parser.productions;
 
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
+import io.github.martinschneider.kommpeiler.scanner.tokens.Location;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,6 +16,11 @@ public class MethodCall extends Token implements Statement {
     super(name);
     this.name = name;
     this.parameters = parameters;
+  }
+
+  public MethodCall wLoc(Location loc) {
+    this.loc = loc;
+    return this;
   }
 
   public Identifier getName() {

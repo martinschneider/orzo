@@ -1,4 +1,4 @@
-package io.github.martinschneider.kommpeiler.scanner;
+package io.github.martinschneider.kommpeiler.lexer;
 
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.EQUAL;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Comparators.GREATER;
@@ -70,7 +70,7 @@ public class Lexer {
   private char character;
   private CompilerErrors errors = new CompilerErrors();
   // a PushbackReader is used to be able to jump forward and backward in the input stream
-  private PushbackReader inputReader;
+  private LineAwareReader inputReader;
   private List<Token> tokenList;
 
   public CompilerErrors getErrors() {
@@ -79,7 +79,13 @@ public class Lexer {
 
   public TokenList getTokens(final File file) throws IOException {
     Reader reader = new FileReader(file);
-    inputReader = new PushbackReader(reader);
+    inputReader = new LineAwareReader(reader, 100);
+    return getTokens(inputReader);
+  }
+
+  public TokenList getTokens(final String string) throws IOException {
+    Reader reader = new StringReader(string);
+    inputReader = new LineAwareReader(reader, 100);
     return getTokens(inputReader);
   }
 
@@ -120,12 +126,6 @@ public class Lexer {
       }
     }
     return new TokenList(tokenList);
-  }
-
-  public TokenList getTokens(final String string) throws IOException {
-    Reader reader = new StringReader(string);
-    inputReader = new PushbackReader(reader);
-    return getTokens(inputReader);
   }
 
   private void scanComment() throws IOException {
@@ -181,7 +181,7 @@ public class Lexer {
     } else {
       inputReader.unread(character);
     }
-    tokenList.add(fp(buffer.toString(), isFloat));
+    tokenList.add(fp(buffer.toString(), isFloat).wLoc(inputReader.getLoc()));
     buffer.setLength(0);
   }
 
@@ -197,14 +197,14 @@ public class Lexer {
       // keywords
       for (Keywords keyword : Keywords.values()) {
         if (str.equalsIgnoreCase(keyword.name())) {
-          tokenList.add(keyword(str));
+          tokenList.add(keyword(str).wLoc(inputReader.getLoc()));
           buffer.setLength(0);
         }
       }
       // scopes
       for (Scopes scope : Scopes.values()) {
         if (str.equals(scope.name().toLowerCase())) {
-          tokenList.add(scope(Scopes.valueOf(str.toUpperCase())));
+          tokenList.add(scope(Scopes.valueOf(str.toUpperCase())).wLoc(inputReader.getLoc()));
           buffer.setLength(0);
         }
       }
@@ -214,7 +214,7 @@ public class Lexer {
         buffer.setLength(0);
       }
       if (buffer.length() > 0) {
-        tokenList.add(id(buffer.toString()));
+        tokenList.add(id(buffer.toString()).wLoc(inputReader.getLoc()));
       }
       buffer.setLength(0);
     }
@@ -240,7 +240,7 @@ public class Lexer {
       } else {
         inputReader.unread(character);
       }
-      tokenList.add(integer(buffer.toString(), isLong));
+      tokenList.add(integer(buffer.toString(), isLong).wLoc(inputReader.getLoc()));
       buffer.setLength(0);
     }
   }
@@ -249,12 +249,12 @@ public class Lexer {
     if (character == '-') {
       if ((character = (char) inputReader.read()) == '-') {
         // TODO: distinction between pre and post increment operators
-        tokenList.add(op(POST_DECREMENT));
+        tokenList.add(op(POST_DECREMENT).wLoc(inputReader.getLoc()));
       } else if (character == '=') {
-        tokenList.add(op(MINUS_ASSIGN));
+        tokenList.add(op(MINUS_ASSIGN).wLoc(inputReader.getLoc()));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(MINUS));
+        tokenList.add(op(MINUS).wLoc(inputReader.getLoc()));
       }
     } else if (character == '/') {
       // look-ahead to check for comment
@@ -264,122 +264,122 @@ public class Lexer {
       } else if (character == '/') {
         scanComment2();
       } else if (character == '=') {
-        tokenList.add(op(DIV_ASSIGN));
+        tokenList.add(op(DIV_ASSIGN).wLoc(inputReader.getLoc()));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(DIV));
+        tokenList.add(op(DIV).wLoc(inputReader.getLoc()));
       }
     } else if (character == '%') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(MOD_ASSIGN));
+        tokenList.add(op(MOD_ASSIGN).wLoc(inputReader.getLoc()));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(MOD));
+        tokenList.add(op(MOD).wLoc(inputReader.getLoc()));
       }
     } else if (character == '*') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(TIMES_ASSIGN));
+        tokenList.add(op(TIMES_ASSIGN).wLoc(inputReader.getLoc()));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(TIMES));
+        tokenList.add(op(TIMES).wLoc(inputReader.getLoc()));
       }
     } else if (character == '+') {
       char character;
       if ((character = (char) inputReader.read()) == '+') {
         // TODO: distinction between pre and post increment operators
-        tokenList.add(op(POST_INCREMENT));
+        tokenList.add(op(POST_INCREMENT).wLoc(inputReader.getLoc()));
       } else if (character == '=') {
-        tokenList.add(op(PLUS_ASSIGN));
+        tokenList.add(op(PLUS_ASSIGN).wLoc(inputReader.getLoc()));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(PLUS));
+        tokenList.add(op(PLUS).wLoc(inputReader.getLoc()));
       }
     } else if (character == '>') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(cmp(GREATEREQ));
+        tokenList.add(cmp(GREATEREQ).wLoc(inputReader.getLoc()));
       } else if (character == '>') {
         if ((character = (char) inputReader.read()) == '>') {
           if ((character = (char) inputReader.read()) == '=') {
-            tokenList.add(op(RSHIFTU_ASSIGN));
+            tokenList.add(op(RSHIFTU_ASSIGN).wLoc(inputReader.getLoc()));
           } else {
             inputReader.unread(character);
-            tokenList.add(op(RSHIFTU));
+            tokenList.add(op(RSHIFTU).wLoc(inputReader.getLoc()));
           }
         } else if (character == '=') {
-          tokenList.add(op(RSHIFT_ASSIGN));
+          tokenList.add(op(RSHIFT_ASSIGN).wLoc(inputReader.getLoc()));
         } else {
           inputReader.unread(character);
-          tokenList.add(op(RSHIFT));
+          tokenList.add(op(RSHIFT).wLoc(inputReader.getLoc()));
         }
       } else {
-        tokenList.add(cmp(GREATER));
+        tokenList.add(cmp(GREATER).wLoc(inputReader.getLoc()));
         inputReader.unread(character);
       }
     } else if (character == '<') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(cmp(SMALLEREQ));
+        tokenList.add(cmp(SMALLEREQ).wLoc(inputReader.getLoc()));
       } else if (character == '<') {
         if ((character = (char) inputReader.read()) == '=') {
-          tokenList.add(op(LSHIFT_ASSIGN));
+          tokenList.add(op(LSHIFT_ASSIGN).wLoc(inputReader.getLoc()));
         } else {
           inputReader.unread(character);
-          tokenList.add(op(LSHIFT));
+          tokenList.add(op(LSHIFT).wLoc(inputReader.getLoc()));
         }
       } else {
-        tokenList.add(cmp(SMALLER));
+        tokenList.add(cmp(SMALLER).wLoc(inputReader.getLoc()));
         inputReader.unread(character);
       }
     } else if (character == '=') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(cmp(EQUAL));
+        tokenList.add(cmp(EQUAL).wLoc(inputReader.getLoc()));
       } else {
-        tokenList.add(op(ASSIGN));
+        tokenList.add(op(ASSIGN).wLoc(inputReader.getLoc()));
         inputReader.unread(character);
       }
     } else if (character == '!') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(cmp(NOTEQUAL));
+        tokenList.add(cmp(NOTEQUAL).wLoc(inputReader.getLoc()));
       } else {
         errors.addError("scan operator", "missing !, found " + character);
         inputReader.unread(character);
       }
     } else if (character == '&') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(BITWISE_AND_ASSIGN));
+        tokenList.add(op(BITWISE_AND_ASSIGN).wLoc(inputReader.getLoc()));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(BITWISE_AND));
+        tokenList.add(op(BITWISE_AND).wLoc(inputReader.getLoc()));
       }
     } else if (character == '|') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(BITWISE_OR_ASSIGN));
+        tokenList.add(op(BITWISE_OR_ASSIGN).wLoc(inputReader.getLoc()));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(BITWISE_OR));
+        tokenList.add(op(BITWISE_OR).wLoc(inputReader.getLoc()));
       }
     } else if (character == '^') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(BITWISE_XOR_ASSIGN));
+        tokenList.add(op(BITWISE_XOR_ASSIGN).wLoc(inputReader.getLoc()));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(BITWISE_XOR));
+        tokenList.add(op(BITWISE_XOR).wLoc(inputReader.getLoc()));
       }
     }
   }
 
   private void scanParen() {
     if (character == '(') {
-      tokenList.add(sym(LPAREN));
+      tokenList.add(sym(LPAREN).wLoc(inputReader.getLoc()));
     } else if (character == ')') {
-      tokenList.add(sym(RPAREN));
+      tokenList.add(sym(RPAREN).wLoc(inputReader.getLoc()));
     } else if (character == '{') {
-      tokenList.add(sym(LBRACE));
+      tokenList.add(sym(LBRACE).wLoc(inputReader.getLoc()));
     } else if (character == '}') {
-      tokenList.add(sym(RBRACE));
+      tokenList.add(sym(RBRACE).wLoc(inputReader.getLoc()));
     } else if (character == '[') {
-      tokenList.add(sym(LBRAK));
+      tokenList.add(sym(LBRAK).wLoc(inputReader.getLoc()));
     } else if (character == ']') {
-      tokenList.add(sym(RBRAK));
+      tokenList.add(sym(RBRAK).wLoc(inputReader.getLoc()));
     }
   }
 
@@ -395,7 +395,7 @@ public class Lexer {
       if (c == -1) {
         errors.addError("scan string", "missing \" in string");
       } else {
-        tokenList.add(str(buffer.toString()));
+        tokenList.add(str(buffer.toString()).wLoc(inputReader.getLoc()));
       }
     }
     buffer.setLength(0);
@@ -403,9 +403,9 @@ public class Lexer {
 
   private void scanSym() throws IOException {
     if (character == ',') {
-      tokenList.add(sym(COMMA));
+      tokenList.add(sym(COMMA).wLoc(inputReader.getLoc()));
     } else if (character == ';') {
-      tokenList.add(sym(SEMICOLON));
+      tokenList.add(sym(SEMICOLON).wLoc(inputReader.getLoc()));
     } else if (character == '.') {
       if (Character.isDigit(character = (char) inputReader.read())) {
         buffer.append('.');
@@ -413,7 +413,7 @@ public class Lexer {
         scanDouble();
       } else {
         inputReader.unread(character);
-        tokenList.add(sym(DOT));
+        tokenList.add(sym(DOT).wLoc(inputReader.getLoc()));
       }
     }
   }

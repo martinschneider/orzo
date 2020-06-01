@@ -6,9 +6,9 @@ import static io.github.martinschneider.kommpeiler.parser.TestHelper.exp;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
+import io.github.martinschneider.kommpeiler.lexer.Lexer;
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
-import io.github.martinschneider.kommpeiler.scanner.Lexer;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;

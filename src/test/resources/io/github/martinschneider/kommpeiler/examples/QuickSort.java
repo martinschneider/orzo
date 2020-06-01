@@ -1,6 +1,7 @@
 package io.github.martinschneider.kommpeiler.examples;
 
-public class QuickSort {
+public class QuickSort {{
+
   public static void main(String[] args) {
     int[] array = new int[] {88, 34, 81, 78, 77, 55, 59, 14, -12, 54};
     qsort(array, 0, 9);

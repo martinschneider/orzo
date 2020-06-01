@@ -4,6 +4,7 @@ import java.math.BigInteger;
 
 public class Token {
   private Object value;
+  protected Location loc;
 
   public Token(final Object value) {
     this.value = value;
@@ -142,5 +143,9 @@ public class Token {
 
   public <T extends Token> boolean eq(String value) {
     return this.getValue().equals(value);
+  }
+
+  public Location getLoc() {
+    return loc;
   }
 }

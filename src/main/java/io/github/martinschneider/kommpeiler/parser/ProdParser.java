@@ -1,6 +1,6 @@
 package io.github.martinschneider.kommpeiler.parser;
 
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 
 public interface ProdParser<T> {
   /**

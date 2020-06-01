@@ -39,6 +39,8 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.type;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.github.martinschneider.kommpeiler.lexer.Lexer;
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;

@@ -1,9 +1,8 @@
-package io.github.martinschneider.kommpeiler.scanner;
+package io.github.martinschneider.kommpeiler.lexer;
 
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.eof;
 
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
-import java.util.ArrayList;
 import java.util.List;
 
 public class TokenList {
@@ -112,19 +111,5 @@ public class TokenList {
       return false;
     }
     return true;
-  }
-
-  public List<Token> slice(int diff) {
-    List<Token> slice = new ArrayList<>();
-    for (int i = idx - diff; i <= idx + diff; i++) {
-      if (i > 0) {
-        if (i < tokens.size() - 1) {
-          slice.add(tokens.get(i));
-        } else {
-          tokens.add(eof());
-        }
-      }
-    }
-    return slice;
   }
 }

@@ -1,8 +1,8 @@
 package io.github.martinschneider.kommpeiler.parser;
 
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 
 public class Parser {
   public ParserContext ctx;

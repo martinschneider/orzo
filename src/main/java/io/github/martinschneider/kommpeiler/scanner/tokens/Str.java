@@ -5,6 +5,11 @@ public class Str extends Token {
     super(value);
   }
 
+  public Str wLoc(Location loc) {
+    this.loc = loc;
+    return this;
+  }
+
   @Override
   public String toString() {
     return "STR(" + getValue() + ")";

@@ -6,7 +6,7 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.PROTECT
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.PUBLIC;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.scope;
 
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scope;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scopes;
 

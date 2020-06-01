@@ -1,7 +1,12 @@
 package io.github.martinschneider.kommpeiler.scanner.tokens;
 
 public class Keyword extends Token {
-  public Keyword(final Keywords value) {
+  public Keyword(Keywords value) {
     super(value);
+  }
+
+  public Keyword wLoc(Location loc) {
+    this.loc = loc;
+    return this;
   }
 }

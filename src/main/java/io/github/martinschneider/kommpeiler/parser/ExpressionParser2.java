@@ -5,11 +5,12 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.RPAREN
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 
 import io.github.martinschneider.kommpeiler.codegen.CGContext;
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Operator;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Token;
+import io.github.martinschneider.kommpeiler.util.Pair;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -79,23 +80,5 @@ public class ExpressionParser2 {
       return new Pair<>(methodCall, diff);
     }
     return null;
-  }
-
-  private class Pair<S, T> {
-    S left;
-    T right;
-
-    public Pair(S left, T right) {
-      this.left = left;
-      this.right = right;
-    }
-
-    public S getLeft() {
-      return left;
-    }
-
-    public T getRight() {
-      return right;
-    }
   }
 }

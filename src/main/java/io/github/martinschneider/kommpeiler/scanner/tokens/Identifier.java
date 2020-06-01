@@ -5,13 +5,18 @@ import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
 public class Identifier extends Token {
   private ArraySelector selector;
 
-  public Identifier(final String value) {
+  public Identifier(String value) {
     super(value);
   }
 
-  public Identifier(final String value, ArraySelector selector) {
+  public Identifier(String value, ArraySelector selector) {
     super(value);
     this.selector = selector;
+  }
+
+  public Identifier wLoc(Location loc) {
+    this.loc = loc;
+    return this;
   }
 
   @Override

@@ -10,9 +10,9 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.eof;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.id;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.Expression;
 import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +63,7 @@ public class MethodCallParser implements ProdParser<MethodCall> {
     List<Expression> parameters;
     StringBuilder name = new StringBuilder();
     if (tokens.curr() instanceof Identifier) {
+      Identifier idToken = (Identifier) tokens.curr();
       int idx = tokens.idx();
       do {
         name.append(tokens.curr());
@@ -78,7 +79,7 @@ public class MethodCallParser implements ProdParser<MethodCall> {
         tokens.setIdx(idx);
         return null;
       }
-      return new MethodCall(id(name.toString()), parameters);
+      return new MethodCall(id(name.toString()), parameters).wLoc(idToken.getLoc());
     }
     return null;
   }

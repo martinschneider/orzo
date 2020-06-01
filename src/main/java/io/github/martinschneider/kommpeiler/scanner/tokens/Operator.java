@@ -5,6 +5,11 @@ public class Operator extends Sym {
     super(value);
   }
 
+  public Operator wLoc(Location loc) {
+    this.loc = loc;
+    return this;
+  }
+
   public Operators opValue() {
     return ((Operators) getValue());
   }

@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.kommpeiler.error.CompilerError;
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
+import io.github.martinschneider.kommpeiler.lexer.Lexer;
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.Argument;
 import io.github.martinschneider.kommpeiler.parser.productions.ArrayInitialiser;
 import io.github.martinschneider.kommpeiler.parser.productions.ArraySelector;
@@ -23,8 +25,6 @@ import io.github.martinschneider.kommpeiler.parser.productions.MethodCall;
 import io.github.martinschneider.kommpeiler.parser.productions.ParallelAssignment;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
 import io.github.martinschneider.kommpeiler.parser.productions.WhileStatement;
-import io.github.martinschneider.kommpeiler.scanner.Lexer;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Comparator;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scope;

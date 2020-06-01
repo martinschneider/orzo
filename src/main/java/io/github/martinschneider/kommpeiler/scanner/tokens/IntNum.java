@@ -5,13 +5,18 @@ import java.math.BigInteger;
 public class IntNum extends Token implements Num {
   private boolean isLong;
 
-  public IntNum(final BigInteger value, boolean isLong) {
+  public IntNum(BigInteger value, boolean isLong) {
     super(value);
     this.isLong = isLong;
   }
 
-  public IntNum(final Integer value, final boolean isLong) {
+  public IntNum(Integer value, boolean isLong) {
     this(BigInteger.valueOf(value), isLong);
+  }
+
+  public IntNum wLoc(Location loc) {
+    this.loc = loc;
+    return this;
   }
 
   public long intValue() {

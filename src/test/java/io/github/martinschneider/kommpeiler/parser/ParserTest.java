@@ -1,7 +1,7 @@
 package io.github.martinschneider.kommpeiler.parser;
 
 import io.github.martinschneider.kommpeiler.error.CompilerErrors;
-import io.github.martinschneider.kommpeiler.scanner.Lexer;
+import io.github.martinschneider.kommpeiler.lexer.Lexer;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;

@@ -1,9 +1,9 @@
 package io.github.martinschneider.kommpeiler.codegen;
 
+import io.github.martinschneider.kommpeiler.lexer.Lexer;
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.Parser;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
-import io.github.martinschneider.kommpeiler.scanner.Lexer;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -59,8 +59,16 @@ public class Kommpeiler {
     CodeGenerator codeGen = new CodeGenerator(clazz, output, parser.ctx);
     codeGen.generate();
     if (!codeGen.getErrors().getErrors().isEmpty()) {
-      System.out.println("\n" + codeGen.getErrors().getErrors().size() + " errors:");
-      System.out.println(codeGen.getErrors());
+      StringBuilder errors = new StringBuilder("\n");
+      int errCount = codeGen.getErrors().getErrors().size();
+      errors.append(errCount);
+      errors.append(" error");
+      if (errCount > 1) {
+        errors.append("s");
+      }
+      errors.append("\n");
+      errors.append(codeGen.getErrors());
+      System.out.println(errors.toString());
     }
     System.out.println("Ok bye!\n");
   }

@@ -7,8 +7,8 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Scopes.PUBLIC;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.scope;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.github.martinschneider.kommpeiler.scanner.Lexer;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
+import io.github.martinschneider.kommpeiler.lexer.Lexer;
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Scope;
 import java.io.IOException;
 import java.util.stream.Stream;

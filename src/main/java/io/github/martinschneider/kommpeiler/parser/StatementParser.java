@@ -1,7 +1,7 @@
 package io.github.martinschneider.kommpeiler.parser;
 
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.Statement;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import java.util.ArrayList;
 import java.util.List;
 

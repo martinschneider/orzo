@@ -11,10 +11,10 @@ import static io.github.martinschneider.kommpeiler.scanner.tokens.Symbols.SEMICO
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.keyword;
 import static io.github.martinschneider.kommpeiler.scanner.tokens.Token.sym;
 
+import io.github.martinschneider.kommpeiler.lexer.TokenList;
 import io.github.martinschneider.kommpeiler.parser.productions.Clazz;
 import io.github.martinschneider.kommpeiler.parser.productions.Import;
 import io.github.martinschneider.kommpeiler.parser.productions.Method;
-import io.github.martinschneider.kommpeiler.scanner.TokenList;
 import io.github.martinschneider.kommpeiler.scanner.tokens.EOF;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Identifier;
 import io.github.martinschneider.kommpeiler.scanner.tokens.Keyword;
