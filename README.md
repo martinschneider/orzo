@@ -1,6 +1,6 @@
-# Kommpeiler
+![Orzo](logo.png)
 
-(Not yet) self-compiling Java compiler with some added syntactical sugar.
+A (not yet) self-compiling Java compiler with some added syntactical sugar.
 
 # Features
 
@@ -16,6 +16,8 @@
 - [ ] multi-dimensional arrays
 - [X] String
 - [ ] reference types
+- [ ] class inheritance
+- [ ] interfaces
 - [ ] enums
 
 ## Operators
