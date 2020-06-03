@@ -12,7 +12,7 @@ import java.io.PrintStream;
 import java.util.stream.Collectors;
 
 // main entry point
-public class Kommpeiler {
+public class Orzo {
   private static Output fileOutput(File outputFile) {
     PrintStream fileOutput;
     Output out = null;
@@ -26,14 +26,14 @@ public class Kommpeiler {
   }
 
   public static void main(String args[]) throws IOException {
-    new Kommpeiler(new File(args[0]), fileOutput(new File(args[1])), args[1]).compile();
+    new Orzo(new File(args[0]), fileOutput(new File(args[1])), args[1]).compile();
   }
 
   private File input;
   private Output output;
   private String outputPath;
 
-  public Kommpeiler(File input, Output output, String outputPath) {
+  public Orzo(File input, Output output, String outputPath) {
     this.input = input;
     this.output = output;
     this.outputPath = outputPath;

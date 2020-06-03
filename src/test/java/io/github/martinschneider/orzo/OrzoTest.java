@@ -2,7 +2,7 @@ package io.github.martinschneider.orzo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import io.github.martinschneider.orzo.codegen.Kommpeiler;
+import io.github.martinschneider.orzo.codegen.Orzo;
 import io.github.martinschneider.orzo.codegen.Output;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -17,7 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class KommpeilerTest {
+public class OrzoTest {
   private class ByteClassLoader extends ClassLoader {
     private HashMap<String, byte[]> byteDataMap = new HashMap<>();
 
@@ -84,7 +84,7 @@ public class KommpeilerTest {
     // compile using Kommpeiler
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     PrintStream ps = new PrintStream(baos);
-    new Kommpeiler(new File(inputPath), new Output(ps), null).compile();
+    new Orzo(new File(inputPath), new Output(ps), null).compile();
     ps.flush();
     ByteClassLoader classLoader = new ByteClassLoader(ClassLoader.getSystemClassLoader());
     classLoader.put(programName, baos.toByteArray());

@@ -138,6 +138,14 @@ public class TestHelper {
   }
 
   /** @see io.github.martinschneider.orzo.parser.ProdParser * */
+  public static void assertTokenIdx(TokenList tokens, CompilerErrors errors, boolean resetIdx) {
+    if (!errors.getErrors().isEmpty()) {
+      // TODO: define and test error scenarios
+      return;
+    }
+    assertTokenIdx(tokens, resetIdx);
+  }
+
   public static void assertTokenIdx(TokenList tokens, boolean resetIdx) {
     if (resetIdx) {
       assertEquals(0, tokens.idx());

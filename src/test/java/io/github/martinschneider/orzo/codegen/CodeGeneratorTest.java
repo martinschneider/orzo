@@ -16,10 +16,13 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import io.github.martinschneider.orzo.codegen.statement.OpCodeGenerator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@TestInstance(Lifecycle.PER_CLASS)
 public class CodeGeneratorTest {
   private OpCodeGenerator target = new OpCodeGenerator();
 

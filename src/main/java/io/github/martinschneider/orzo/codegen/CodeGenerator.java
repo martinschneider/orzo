@@ -24,7 +24,6 @@ public class CodeGenerator {
   private static final short JAVA_CLASS_MINOR_VERSION = 0;
   private CGContext ctx;
   private Output out;
-  private CompilerErrors errors;
 
   public CodeGenerator(Clazz clazz, Output out, ParserContext parserCtx) {
     this.out = out;

@@ -41,6 +41,6 @@ public class ForParserTest {
   public void test(String input, ForStatement expected) throws IOException {
     TokenList tokens = new Lexer().getTokens(input);
     assertEquals(expected, target.parse(tokens));
-    assertTokenIdx(tokens, (expected == null));
+    assertTokenIdx(tokens, target.ctx.errors, (expected == null));
   }
 }

@@ -6,9 +6,9 @@ import java.io.PushbackReader;
 import java.io.Reader;
 
 public class LineAwareReader extends PushbackReader {
-  public LineAwareReader(Reader in, int lines) {
+  public LineAwareReader(Reader in) {
     super(in);
-    lineLengths = new int[lines];
+    lineLengths = new int[128];
   }
 
   private int line = 1;
@@ -19,6 +19,9 @@ public class LineAwareReader extends PushbackReader {
   public int read() throws IOException {
     int c = super.read();
     if (c == 10) {
+      if (line >= lineLengths.length) {
+        resize();
+      }
       lineLengths[line] = column;
       line++;
       column = 0;
@@ -26,6 +29,14 @@ public class LineAwareReader extends PushbackReader {
       column++;
     }
     return c;
+  }
+
+  private void resize() {
+    int[] tmp = new int[lineLengths.length * 2];
+    for (int i = 1; i < lineLengths.length; i++) {
+      tmp[i] = lineLengths[i];
+    }
+    lineLengths = tmp;
   }
 
   public void unread(char c) throws IOException {

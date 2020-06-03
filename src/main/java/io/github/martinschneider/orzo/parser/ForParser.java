@@ -15,7 +15,7 @@ import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.List;
 
 public class ForParser implements ProdParser<ForStatement> {
-  private ParserContext ctx;
+  ParserContext ctx;
   private static final String LOG_NAME = "parse for";
 
   public ForParser(ParserContext ctx) {

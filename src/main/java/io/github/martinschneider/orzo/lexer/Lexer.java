@@ -60,7 +60,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PushbackReader;
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -78,14 +77,12 @@ public class Lexer {
   }
 
   public TokenList getTokens(final File file) throws IOException {
-    Reader reader = new FileReader(file);
-    inputReader = new LineAwareReader(reader, 100);
+    inputReader = new LineAwareReader(new FileReader(file));
     return getTokens(inputReader);
   }
 
   public TokenList getTokens(final String string) throws IOException {
-    Reader reader = new StringReader(string);
-    inputReader = new LineAwareReader(reader, 100);
+    inputReader = new LineAwareReader(new StringReader(string));
     return getTokens(inputReader);
   }
 
