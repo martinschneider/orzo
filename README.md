@@ -58,8 +58,11 @@ A (not yet) self-compiling Java compiler with some added syntactical sugar.
 - [X] [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment), e.g. `a,b=b+1,a-1`
 - [ ] uint, ushort, ubyte, ulong types
 
+## Notes
+- Array defintions must be of the form `int[] a`, `int a[]` is not supported (because it's confusing and ugly) 
+
 # Examples
-Working examples can be found [here](src/test/resources/io/github/martinschneider/kommpeiler/examples).
+Working examples can be found [here](src/test/resources/io/github/martinschneider/orzo/examples).
 
 # Usage
 

@@ -38,56 +38,56 @@ public class OrzoTest {
 
   private static Stream<Arguments> testKommpeiler() {
     return Stream.of(
-        Arguments.of("HelloWorld"),
-        Arguments.of("IntegerConstants"),
-        Arguments.of("VariableAssignments"),
-        Arguments.of("IntegerExpressions"),
-        Arguments.of("IfConditions"),
-        Arguments.of("IfElseConditions"),
-        Arguments.of("WhileLoops"),
-        Arguments.of("ForLoops"),
-        Arguments.of("DoLoops"),
-        Arguments.of("Fibonacci"),
-        Arguments.of("NestedLoops"),
-        Arguments.of("MethodCalls"),
-        Arguments.of("Factorial"),
-        Arguments.of("CollatzConjecture"),
-        Arguments.of("ParallelAssignmentsInteger"),
-        Arguments.of("ParallelAssignmentsLong"),
-        Arguments.of("ParallelAssignmentsShort"),
-        Arguments.of("ParallelAssignmentsByte"),
-        Arguments.of("ParallelAssignmentsFloat"),
-        Arguments.of("ParallelAssignmentsDouble"),
-        Arguments.of("ParallelAssignmentsArray"),
-        Arguments.of("ParallelAssignmentsMultiple"),
-        Arguments.of("BreakLoops"),
-        Arguments.of("ByteAndShorts"),
-        Arguments.of("Longs"),
-        Arguments.of("CollatzConjecture2"),
-        Arguments.of("Doubles"),
-        Arguments.of("Floats"),
-        Arguments.of("PiLeibniz"),
-        Arguments.of("BitShifts"),
-        Arguments.of("UnsignedRightShift"),
-        Arguments.of("CompoundAssignments"),
-        Arguments.of("BitOperators"),
-        Arguments.of("RussianPeasant"),
-        Arguments.of("IntArrays"),
-        Arguments.of("DoubleArrays"),
-        Arguments.of("ByteArrays"),
-        Arguments.of("ShortArrays"),
-        Arguments.of("LongArrays"),
-        Arguments.of("FloatArrays"),
-        Arguments.of("QuickSort"));
+        Arguments.of("examples", "HelloWorld"),
+        Arguments.of("tests", "IntegerConstants"),
+        Arguments.of("tests", "VariableAssignments"),
+        Arguments.of("tests", "IntegerExpressions"),
+        Arguments.of("tests", "IfConditions"),
+        Arguments.of("tests", "IfElseConditions"),
+        Arguments.of("tests", "WhileLoops"),
+        Arguments.of("tests", "ForLoops"),
+        Arguments.of("tests", "DoLoops"),
+        Arguments.of("examples", "Fibonacci"),
+        Arguments.of("tests", "NestedLoops"),
+        Arguments.of("tests", "MethodCalls"),
+        Arguments.of("examples", "Factorial"),
+        Arguments.of("examples", "CollatzConjecture"),
+        Arguments.of("tests", "ParallelAssignmentsInteger"),
+        Arguments.of("tests", "ParallelAssignmentsLong"),
+        Arguments.of("tests", "ParallelAssignmentsShort"),
+        Arguments.of("tests", "ParallelAssignmentsByte"),
+        Arguments.of("tests", "ParallelAssignmentsFloat"),
+        Arguments.of("tests", "ParallelAssignmentsDouble"),
+        Arguments.of("tests", "ParallelAssignmentsArray"),
+        Arguments.of("tests", "ParallelAssignmentsMultiple"),
+        Arguments.of("tests", "BreakLoops"),
+        Arguments.of("tests", "ByteAndShorts"),
+        Arguments.of("tests", "Longs"),
+        Arguments.of("examples", "CollatzConjecture2"),
+        Arguments.of("tests", "Doubles"),
+        Arguments.of("tests", "Floats"),
+        Arguments.of("examples", "PiLeibniz"),
+        Arguments.of("tests", "BitShifts"),
+        Arguments.of("tests", "UnsignedRightShift"),
+        Arguments.of("tests", "CompoundAssignments"),
+        Arguments.of("tests", "BitOperators"),
+        Arguments.of("examples", "RussianPeasant"),
+        Arguments.of("tests", "IntArrays"),
+        Arguments.of("tests", "DoubleArrays"),
+        Arguments.of("tests", "ByteArrays"),
+        Arguments.of("tests", "ShortArrays"),
+        Arguments.of("tests", "LongArrays"),
+        Arguments.of("tests", "FloatArrays"),
+        Arguments.of("examples", "QuickSort"));
   }
 
   @ParameterizedTest
   @MethodSource
-  public void testKommpeiler(String programName)
+  public void testKommpeiler(String folder, String programName)
       throws IOException, ClassNotFoundException, IllegalAccessException, IllegalArgumentException,
           InvocationTargetException, NoSuchMethodException, SecurityException {
     String inputPath =
-        this.getClass().getResource("examples" + File.separator + programName + ".java").getPath();
+        this.getClass().getResource(folder + File.separator + programName + ".java").getPath();
     // compile using Kommpeiler
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     PrintStream ps = new PrintStream(baos);
@@ -109,7 +109,7 @@ public class OrzoTest {
             Path.of(
                 this.getClass()
                     .getResource(
-                        "examples"
+                        folder
                             + File.separator
                             + "output"
                             + File.separator
