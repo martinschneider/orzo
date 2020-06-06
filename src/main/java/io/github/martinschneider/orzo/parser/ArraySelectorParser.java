@@ -45,7 +45,9 @@ public class ArraySelectorParser implements ProdParser<ArraySelector> {
     }
     // this is used when called from the context of an expression
     if (removeTokens) {
+      int size = tokens.list().subList(startIdx, tokens.idx()).size();
       tokens.list().subList(startIdx, tokens.idx()).clear();
+      tokens.bw(size);
     }
     return new ArraySelector(expressions);
   }

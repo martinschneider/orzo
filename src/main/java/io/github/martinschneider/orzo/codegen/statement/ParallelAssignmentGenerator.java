@@ -32,18 +32,31 @@ public class ParallelAssignmentGenerator implements StatementGenerator {
       VariableInfo varInfo = variables.get(left);
       String type = varInfo.type;
       byte leftIdx = varInfo.idx;
-      ctx.exprGenerator.eval(out, variables, type, right);
-      if (replaceIds(assignment.right, left, variables.tmpCount)) {
-        Identifier id = id("tmp_" + variables.tmpCount);
-        if (!variables.getVariables().containsKey(id.val.toString())) {
-          variables.put(id, new VariableInfo(id.val.toString(), type, (byte) variables.size));
+      // if the current left side variable appears anywhere on the right side
+      // we store its value in a tmp variable
+      if (i < assignment.left.size() - 1
+          && replaceIds(assignment.right, left, variables.tmpCount)) {
+        if (left.arrSel != null) {
+          type = varInfo.arrType;
         }
+        Identifier id = id("tmp_" + variables.tmpCount);
+        variables.put(id, new VariableInfo(id.val.toString(), type, (byte) variables.size));
         byte tmpIdx = variables.get(id).idx;
-        ctx.opsGenerator.loadValue(out, type, leftIdx);
+        if (left.arrSel == null) {
+          ctx.opsGenerator.loadValue(out, type, leftIdx);
+        } else {
+          ctx.opsGenerator.loadValueFromArray(
+              out, variables, left.arrSel.exprs, varInfo.arrType, leftIdx);
+        }
         ctx.opsGenerator.storeValue(out, type, tmpIdx);
         variables.tmpCount++;
       }
-      ctx.opsGenerator.storeValue(out, type, leftIdx);
+      if (left.arrSel == null) {
+        ctx.exprGenerator.eval(out, variables, type, right);
+        ctx.opsGenerator.storeValue(out, type, leftIdx);
+      } else {
+        ctx.opsGenerator.assignInArray(out, variables, left, right);
+      }
     }
     return out;
   }

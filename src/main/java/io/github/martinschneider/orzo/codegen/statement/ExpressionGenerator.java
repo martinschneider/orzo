@@ -112,6 +112,7 @@ public class ExpressionGenerator {
             // array
             ctx.opsGenerator.loadValueFromArray(
                 out, variables, id.arrSel.exprs, varInfo.arrType, varIdx);
+            type = varInfo.arrType;
           } else {
             ctx.opsGenerator.loadValue(out, varType, varIdx);
           }
