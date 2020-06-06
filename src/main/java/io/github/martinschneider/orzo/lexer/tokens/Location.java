@@ -8,15 +8,7 @@ public class Location {
     this.coord = coord;
   }
 
-  private Pair<Integer, Integer> coord;
-
-  public Pair<Integer, Integer> getCoord() {
-    return coord;
-  }
-
-  public void setCoord(Pair<Integer, Integer> coord) {
-    this.coord = coord;
-  }
+  public Pair<Integer, Integer> coord;
 
   public static Location of(int left, int right) {
     return new Location(new Pair<>(left, right));

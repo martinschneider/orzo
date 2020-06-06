@@ -1,13 +1,9 @@
 package io.github.martinschneider.orzo.error;
 
 public class CompilerError {
-  private String msg;
+  public String msg;
 
-  public CompilerError(final String msg) {
+  public CompilerError(String msg) {
     this.msg = msg;
-  }
-
-  public String getMessage() {
-    return msg;
   }
 }

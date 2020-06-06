@@ -76,17 +76,17 @@ public class Lexer {
     return errors;
   }
 
-  public TokenList getTokens(final File file) throws IOException {
+  public TokenList getTokens(File file) throws IOException {
     inputReader = new LineAwareReader(new FileReader(file));
     return getTokens(inputReader);
   }
 
-  public TokenList getTokens(final String string) throws IOException {
+  public TokenList getTokens(String string) throws IOException {
     inputReader = new LineAwareReader(new StringReader(string));
     return getTokens(inputReader);
   }
 
-  public TokenList getTokens(final PushbackReader fileReader) throws IOException {
+  public TokenList getTokens(PushbackReader fileReader) throws IOException {
     tokenList = new ArrayList<>();
     buffer = new StringBuffer();
     int tokenCount;

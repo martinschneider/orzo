@@ -10,12 +10,12 @@ public class ConstantClass implements Constant {
   }
 
   @Override
-  public byte[] getInfo() {
+  public byte[] info() {
     return shortToByteArray(id);
   }
 
   @Override
-  public byte getTag() {
+  public byte tag() {
     return ConstantTypes.CONSTANT_CLASS;
   }
 }

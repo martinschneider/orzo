@@ -3,19 +3,19 @@ package io.github.martinschneider.orzo.codegen.constants;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.intToByteArray;
 
 public class ConstantFloat implements Constant {
-  private float value;
+  private float val;
 
-  public ConstantFloat(float value) {
-    this.value = value;
+  public ConstantFloat(float val) {
+    this.val = val;
   }
 
   @Override
-  public byte[] getInfo() {
-    return intToByteArray(Float.floatToIntBits(value));
+  public byte[] info() {
+    return intToByteArray(Float.floatToIntBits(val));
   }
 
   @Override
-  public byte getTag() {
+  public byte tag() {
     return ConstantTypes.CONSTANT_FLOAT;
   }
 }

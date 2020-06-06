@@ -6,68 +6,24 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Clazz {
-  private List<Method> body;
-  private List<Import> imports;
-  private Identifier name;
-  private String packageName;
-  private Scope scope;
+  public List<Method> body;
+  public List<Import> imports;
+  public Identifier name;
+  public String packageName;
+  public Scope scope;
 
   public Clazz(
-      final String packageName,
-      final List<Import> imports,
-      final Scope scope,
-      final Identifier name,
-      final List<Method> body) {
+      String packageName, List<Import> imports, Scope scope, Identifier name, List<Method> body) {
     this.packageName = packageName;
     this.imports = imports;
     this.scope = scope;
     this.name = name;
     this.body = body;
-  }
-
-  public List<Method> getBody() {
-    return body;
-  }
-
-  public Identifier getName() {
-    return name;
-  }
-
-  public String getPackageName() {
-    return packageName;
-  }
-
-  public List<Import> getImports() {
-    return imports;
-  }
-
-  public void setImports(List<Import> imports) {
-    this.imports = imports;
-  }
-
-  public Scope getScope() {
-    return scope;
-  }
-
-  public void setBody(final List<Method> body) {
-    this.body = body;
-  }
-
-  public void setName(final Identifier name) {
-    this.name = name;
-  }
-
-  public void setPackageName(String packageName) {
-    this.packageName = packageName;
-  }
-
-  public void setScope(final Scope scope) {
-    this.scope = scope;
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
     result = prime * result + ((body == null) ? 0 : body.hashCode());
     result = prime * result + ((imports == null) ? 0 : imports.hashCode());

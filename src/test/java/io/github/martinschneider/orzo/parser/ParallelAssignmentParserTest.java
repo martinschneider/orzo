@@ -1,8 +1,10 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
+import static io.github.martinschneider.orzo.parser.TestHelper.arrSel;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.exp;
+import static io.github.martinschneider.orzo.parser.TestHelper.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.pAssign;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -25,6 +27,19 @@ public class ParallelAssignmentParserTest {
     return Stream.of(
         Arguments.of("", null),
         Arguments.of("a=b", pAssign(List.of(id("a")), List.of(exp("b")))),
+        Arguments.of(
+            "a[1],b=b,c",
+            pAssign(
+                List.of(id("a", arrSel(List.of(exp("1")))), id("b")), List.of(exp("b"), exp("c")))),
+        Arguments.of(
+            "a,c=b[1],d", pAssign(List.of(id("a"), id("c")), List.of(exp("b[1]"), exp("d")))),
+        Arguments.of(
+            "array[left],array[right]=array[right],array[left]",
+            pAssign(
+                List.of(
+                    id("array", arrSel(List.of(exp("left")))),
+                    id("array", arrSel(List.of(exp("right"))))),
+                List.of(exp("array[right]"), exp("array[left]")))),
         Arguments.of(
             "a,b=b+1,a+1", pAssign(List.of(id("a"), id("b")), List.of(exp("b+1"), exp("a+1")))),
         Arguments.of(

@@ -3,34 +3,17 @@ package io.github.martinschneider.orzo.parser.productions;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 
 public class Argument {
-  private Identifier name;
-  private String type;
+  public Identifier name;
+  public String type;
 
   public Argument(String type, Identifier name) {
-    super();
     this.name = name;
-    this.type = type;
-  }
-
-  public Identifier getName() {
-    return name;
-  }
-
-  public void setName(Identifier name) {
-    this.name = name;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public void setType(String type) {
     this.type = type;
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
     result = prime * result + ((name == null) ? 0 : name.hashCode());
     result = prime * result + ((type == null) ? 0 : type.hashCode());

@@ -49,7 +49,7 @@ public class MethodParser implements ProdParser<Method> {
       tokens.next();
     }
     if (tokens.curr() instanceof Type) {
-      type = ((Type) tokens.curr()).getName();
+      type = ((Type) tokens.curr()).name;
       tokens.next();
     }
     if (tokens.curr() instanceof Identifier) {
@@ -104,7 +104,7 @@ public class MethodParser implements ProdParser<Method> {
       if (!(tokens.curr() instanceof Type)) {
         break;
       }
-      type = ((Type) tokens.curr()).getName();
+      type = ((Type) tokens.curr()).name;
       if (tokens.next().eq(sym(LBRAK))) {
         if (tokens.next().eq(sym(RBRAK))) {
           type = "[" + type;

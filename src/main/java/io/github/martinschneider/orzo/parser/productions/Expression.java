@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Expression {
+  public List<Token> tokens = new ArrayList<>();
+
   public Expression() {
     tokens = new ArrayList<>();
   }
@@ -19,8 +21,6 @@ public class Expression {
     this.tokens = tokens;
   }
 
-  private List<Token> tokens = new ArrayList<>();
-
   public void addToken(Token token) {
     tokens.add(token);
   }
@@ -32,17 +32,13 @@ public class Expression {
     return tokens.get(tokens.size() - 1);
   }
 
-  public List<Token> getInfix() {
-    return tokens;
-  }
-
   public int size() {
     return tokens.size();
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
     result = prime * result + ((tokens == null) ? 0 : tokens.hashCode());
     return result;

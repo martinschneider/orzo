@@ -24,32 +24,32 @@ public class DeclarationParser implements ProdParser<Declaration> {
   public Declaration parse(TokenList tokens) {
     Type type;
     Identifier name;
-    Expression value;
+    Expression val;
     // TODO: this will not work for non-basic types :-(
     if (tokens.curr() instanceof Type && !tokens.curr().eq("VOID")) {
       type = (Type) tokens.curr();
       tokens.next();
-      type.setArray(parseArrayDef(tokens));
+      type.arr = parseArrayDef(tokens);
       if (tokens.curr() instanceof Identifier) {
         name = (Identifier) tokens.curr();
         tokens.next();
         if (tokens.curr().eq(op(ASSIGN))) {
           tokens.next();
-          if (type.getArray() > 0 && (value = ctx.arrayInitParser.parse(tokens)) != null) {
-            return new Declaration(type.getName(), type.getArray(), name, value, true);
+          if (type.arr > 0 && (val = ctx.arrayInitParser.parse(tokens)) != null) {
+            return new Declaration(type.name, type.arr, name, val, true);
           }
-          if ((value = ctx.exprParser.parse(tokens)) != null) {
+          if ((val = ctx.exprParser.parse(tokens)) != null) {
             if (tokens.curr().eq(sym(SEMICOLON))) {
               tokens.next();
             }
-            return new Declaration(type.getName(), type.getArray(), name, value, true);
+            return new Declaration(type.name, type.arr, name, val, true);
           }
           tokens.prev();
         }
         if (tokens.curr().eq(sym(SEMICOLON))) {
           tokens.next();
         }
-        return new Declaration(type.getName(), name, null, false);
+        return new Declaration(type.name, name, null, false);
       } else {
         tokens.prev();
       }

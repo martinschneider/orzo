@@ -12,12 +12,12 @@ public class ConstantFieldref implements Constant {
   }
 
   @Override
-  public byte[] getInfo() {
+  public byte[] info() {
     return intToByteArray((classId << 16) | (nameAndTypeId & 0xFFFF));
   }
 
   @Override
-  public byte getTag() {
+  public byte tag() {
     return ConstantTypes.CONSTANT_FIELDREF;
   }
 }

@@ -46,10 +46,11 @@ public class AssignmentParser implements ProdParser<Assignment> {
   public Assignment parse(TokenList tokens) {
     Identifier left;
     Expression right;
+    int idx = tokens.idx();
     if (tokens.curr() instanceof Identifier) {
       left = (Identifier) tokens.curr();
       tokens.next();
-      left.setSelector(ctx.arraySelectorParser.parse(tokens));
+      left.arrSel = ctx.arraySelectorParser.parse(tokens);
     } else {
       return null;
     }
@@ -127,7 +128,7 @@ public class AssignmentParser implements ProdParser<Assignment> {
         return assignment;
       }
     } else {
-      tokens.prev();
+      tokens.setIdx(idx);
       return null;
     }
     return null;

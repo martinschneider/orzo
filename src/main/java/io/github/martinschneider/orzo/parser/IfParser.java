@@ -20,7 +20,7 @@ import java.util.List;
 
 public class IfParser implements ProdParser<IfStatement> {
   private ParserContext ctx;
-  private static final String LOG_NAME = "parse if";
+  private static final String LOG_NAME = "parse if stmt";
   private static final String IF_BLOCK_LOG_NAME = "parse if block";
   private static final String ELSE_BLOCK_LOG_NAME = "parse else block";
 
@@ -108,7 +108,6 @@ public class IfParser implements ProdParser<IfStatement> {
     if (!tokens.curr().eq(keyword(ELSE))) {
       return null;
     }
-    int startIdx = tokens.idx();
     tokens.next();
     if (!tokens.curr().eq(sym(LBRACE))) {
       tokens.prev();

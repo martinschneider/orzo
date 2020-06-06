@@ -67,7 +67,7 @@ public class ExpressionParser implements ProdParser<Expression> {
         tokens.next();
         ArraySelector sel = ctx.arraySelectorParser.parse(tokens, true);
         if (sel != null) {
-          id.setSelector(sel);
+          id.arrSel = sel;
         } else {
           tokens.prev();
         }

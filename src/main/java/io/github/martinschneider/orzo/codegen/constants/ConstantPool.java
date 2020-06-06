@@ -45,21 +45,13 @@ public class ConstantPool {
 
   private int size;
 
-  public void setEntries(final List<Constant> entries) {
-    this.entries = entries;
-  }
-
-  public List<Constant> getEntries() {
-    return entries;
-  }
-
   public byte[] getBytes() {
     DynamicByteArray array = new DynamicByteArray();
     array.write((byte) ((size + 1 >> 8) & 0xFF));
     array.write((byte) (size + 1 & 0xFF));
     for (Constant constant : entries) {
-      array.write(constant.getTag());
-      array.write(constant.getInfo());
+      array.write(constant.tag());
+      array.write(constant.info());
     }
     return array.getBytes();
   }
@@ -198,19 +190,19 @@ public class ConstantPool {
     addUtf8(type);
   }
 
-  public void addInteger(Integer value) {
-    integerMap.put(value, add(new ConstantInteger(value)));
+  public void addInteger(Integer val) {
+    integerMap.put(val, add(new ConstantInteger(val)));
   }
 
-  public void addLong(Long value) {
-    longMap.put(value, add(new ConstantLong(value)));
+  public void addLong(Long val) {
+    longMap.put(val, add(new ConstantLong(val)));
   }
 
-  public void addDouble(Double value) {
-    doubleMap.put(value, add(new ConstantDouble(value)));
+  public void addDouble(Double val) {
+    doubleMap.put(val, add(new ConstantDouble(val)));
   }
 
-  public void addFloat(Float value) {
-    floatMap.put(value, add(new ConstantFloat(value)));
+  public void addFloat(Float val) {
+    floatMap.put(val, add(new ConstantFloat(val)));
   }
 }

@@ -9,8 +9,8 @@ public class MethodProcessor {
   // TODO: does this justify its own class?
   public Map<String, Method> getMethodMap(Clazz clazz) {
     Map<String, Method> methodMap = new HashMap<>();
-    for (Method method : clazz.getBody()) {
-      methodMap.put(method.getName().getValue().toString(), method);
+    for (Method method : clazz.body) {
+      methodMap.put(method.name.val.toString(), method);
     }
     return methodMap;
   }

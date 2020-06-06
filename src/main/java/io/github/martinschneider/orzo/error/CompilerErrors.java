@@ -8,10 +8,6 @@ import java.util.List;
 public class CompilerErrors {
   private List<CompilerError> errors = new ArrayList<>();
 
-  public void setErrors(final List<CompilerError> errors) {
-    this.errors = errors;
-  }
-
   public List<CompilerError> getErrors() {
     return errors;
   }
@@ -29,7 +25,7 @@ public class CompilerErrors {
         new CompilerError(
             String.format(
                 "%s %s: expected %s but found %s",
-                tokens.curr().getLoc(), loggerName, expected, tokens.curr())));
+                tokens.curr().loc, loggerName, expected, tokens.curr())));
   }
 
   public int count() {
@@ -41,7 +37,7 @@ public class CompilerErrors {
     StringBuffer stringBuffer = new StringBuffer();
     for (CompilerError error : errors) {
       stringBuffer.append("- ");
-      stringBuffer.append(error.getMessage());
+      stringBuffer.append(error.msg);
       stringBuffer.append("\n");
     }
     return stringBuffer.toString();

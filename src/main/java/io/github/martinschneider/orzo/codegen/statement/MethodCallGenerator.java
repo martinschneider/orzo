@@ -22,22 +22,22 @@ public class MethodCallGenerator implements StatementGenerator {
   private static final String LOGGER_NAME = "method call code generator";
   private CGContext ctx;
 
-  public MethodCallGenerator(CGContext context) {
-    this.ctx = context;
+  public MethodCallGenerator(CGContext ctx) {
+    this.ctx = ctx;
   }
 
   @Override
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     MethodCall methodCall = (MethodCall) stmt;
-    if ("System.out.println".equals(methodCall.getName().toString())) {
-      for (Expression param : methodCall.getParameters()) {
+    if ("System.out.println".equals(methodCall.name.toString())) {
+      for (Expression param : methodCall.params) {
         ctx.opsGenerator.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
         ExpressionResult result = ctx.exprGenerator.eval(out, variables, null, param);
-        print(out, result.getType());
+        print(out, result.type);
       }
     } else {
-      String methodName = methodCall.getName().toString();
+      String methodName = methodCall.name.toString();
       Method methodToCall = ctx.methodMap.get(methodName);
       if (methodToCall == null) {
         ctx.errors.addError(
@@ -48,11 +48,11 @@ public class MethodCallGenerator implements StatementGenerator {
                 + ctx.methodMap.keySet());
         return null;
       }
-      for (Expression expr : methodCall.getParameters()) {
+      for (Expression expr : methodCall.params) {
         ctx.exprGenerator.eval(out, variables, null, expr);
       }
       ctx.opsGenerator.invokeStatic(
-          out, ctx.clazz.getName().getValue().toString(), methodName, methodToCall.getTypeDescr());
+          out, ctx.clazz.name.val.toString(), methodName, methodToCall.getTypeDescr());
     }
     return out;
   }

@@ -3,15 +3,15 @@ package io.github.martinschneider.orzo.lexer.tokens;
 import io.github.martinschneider.orzo.parser.productions.ArraySelector;
 
 public class Identifier extends Token {
-  private ArraySelector selector;
+  public ArraySelector arrSel;
 
-  public Identifier(String value) {
-    super(value);
+  public Identifier(String val) {
+    super(val);
   }
 
-  public Identifier(String value, ArraySelector selector) {
-    super(value);
-    this.selector = selector;
+  public Identifier(String val, ArraySelector arrSel) {
+    super(val);
+    this.arrSel = arrSel;
   }
 
   public Identifier wLoc(Location loc) {
@@ -21,30 +21,22 @@ public class Identifier extends Token {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder(getValue().toString());
-    if (selector != null) {
-      strBuilder.append(selector.toString());
+    StringBuilder strBuilder = new StringBuilder(val.toString());
+    if (arrSel != null) {
+      strBuilder.append(arrSel.toString());
     }
     return strBuilder.toString();
   }
 
-  public void setSelector(final ArraySelector selector) {
-    this.selector = selector;
-  }
-
-  public ArraySelector getSelector() {
-    return selector;
-  }
-
   public String id() {
-    return getValue().toString();
+    return val.toString();
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = super.hashCode();
-    result = prime * result + ((selector == null) ? 0 : selector.hashCode());
+    result = prime * result + ((arrSel == null) ? 0 : arrSel.hashCode());
     return result;
   }
 
@@ -60,11 +52,11 @@ public class Identifier extends Token {
       return false;
     }
     Identifier other = (Identifier) obj;
-    if (selector == null) {
-      if (other.selector != null) {
+    if (arrSel == null) {
+      if (other.arrSel != null) {
         return false;
       }
-    } else if (!selector.equals(other.selector)) {
+    } else if (!arrSel.equals(other.arrSel)) {
       return false;
     }
     return true;

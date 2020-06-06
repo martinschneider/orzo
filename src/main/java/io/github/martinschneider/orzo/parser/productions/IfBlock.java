@@ -4,37 +4,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class IfBlock {
-  private List<Statement> body;
-  private Condition condition;
+  public List<Statement> body;
+  public Condition cond;
 
-  public IfBlock(final Condition condition, final List<Statement> body) {
-    super();
-    this.condition = condition;
+  public IfBlock(Condition cond, List<Statement> body) {
+    this.cond = cond;
     this.body = body;
-  }
-
-  public List<Statement> getBody() {
-    return body;
-  }
-
-  public Condition getCondition() {
-    return condition;
-  }
-
-  public void setBody(final List<Statement> body) {
-    this.body = body;
-  }
-
-  public void setCondition(final Condition condition) {
-    this.condition = condition;
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
     result = prime * result + ((body == null) ? 0 : body.hashCode());
-    result = prime * result + ((condition == null) ? 0 : condition.hashCode());
+    result = prime * result + ((cond == null) ? 0 : cond.hashCode());
     return result;
   }
 
@@ -57,11 +40,11 @@ public class IfBlock {
     } else if (!body.equals(other.body)) {
       return false;
     }
-    if (condition == null) {
-      if (other.condition != null) {
+    if (cond == null) {
+      if (other.cond != null) {
         return false;
       }
-    } else if (!condition.equals(other.condition)) {
+    } else if (!cond.equals(other.cond)) {
       return false;
     }
     return true;
@@ -70,11 +53,11 @@ public class IfBlock {
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();
-    if (condition == null) {
+    if (cond == null) {
       strBuilder.append("else{");
     } else {
       strBuilder.append("if(");
-      strBuilder.append(condition);
+      strBuilder.append(cond);
       strBuilder.append("){");
     }
     strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));

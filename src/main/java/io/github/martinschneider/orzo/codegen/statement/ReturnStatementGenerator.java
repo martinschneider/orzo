@@ -9,17 +9,17 @@ import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 
 public class ReturnStatementGenerator implements StatementGenerator {
-  private CGContext context;
+  private CGContext ctx;
 
-  public ReturnStatementGenerator(CGContext context) {
-    this.context = context;
+  public ReturnStatementGenerator(CGContext ctx) {
+    this.ctx = ctx;
   }
 
   @Override
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     ReturnStatement returnStatement = (ReturnStatement) stmt;
-    context.opsGenerator.ret(out, variables, method.getType(), returnStatement.getRetValue());
+    ctx.opsGenerator.ret(out, variables, method.type, returnStatement.retValue);
     return out;
   }
 }

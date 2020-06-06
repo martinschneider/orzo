@@ -9,13 +9,13 @@ import java.util.stream.Collectors;
 // extending Token is not the most elegant solution but it helps with parsing method calls as part
 // of expressions
 public class MethodCall extends Token implements Statement {
-  private Identifier name;
-  private List<Expression> parameters;
+  public Identifier name;
+  public List<Expression> params;
 
-  public MethodCall(final Identifier name, final List<Expression> parameters) {
+  public MethodCall(Identifier name, List<Expression> params) {
     super(name);
     this.name = name;
-    this.parameters = parameters;
+    this.params = params;
   }
 
   public MethodCall wLoc(Location loc) {
@@ -23,28 +23,12 @@ public class MethodCall extends Token implements Statement {
     return this;
   }
 
-  public Identifier getName() {
-    return name;
-  }
-
-  public List<Expression> getParameters() {
-    return parameters;
-  }
-
-  public void setName(final Identifier name) {
-    this.name = name;
-  }
-
-  public void setParameters(final List<Expression> parameters) {
-    this.parameters = parameters;
-  }
-
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = super.hashCode();
     result = prime * result + ((name == null) ? 0 : name.hashCode());
-    result = prime * result + ((parameters == null) ? 0 : parameters.hashCode());
+    result = prime * result + ((params == null) ? 0 : params.hashCode());
     return result;
   }
 
@@ -67,11 +51,11 @@ public class MethodCall extends Token implements Statement {
     } else if (!name.equals(other.name)) {
       return false;
     }
-    if (parameters == null) {
-      if (other.parameters != null) {
+    if (params == null) {
+      if (other.params != null) {
         return false;
       }
-    } else if (!parameters.equals(other.parameters)) {
+    } else if (!params.equals(other.params)) {
       return false;
     }
     return true;
@@ -82,7 +66,7 @@ public class MethodCall extends Token implements Statement {
     StringBuilder strBuilder = new StringBuilder();
     strBuilder.append(name);
     strBuilder.append('(');
-    strBuilder.append(parameters.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
+    strBuilder.append(params.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     strBuilder.append(')');
     return strBuilder.toString();
   }

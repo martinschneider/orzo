@@ -13,12 +13,12 @@ public class ConstantNameAndType implements Constant {
   }
 
   @Override
-  public byte getTag() {
+  public byte tag() {
     return ConstantTypes.CONSTANT_NAMEANDTYPE;
   }
 
   @Override
-  public byte[] getInfo() {
+  public byte[] info() {
     return intToByteArray((nameId << 16) | (typeId & 0xFFFF));
   }
 }

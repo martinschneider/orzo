@@ -26,6 +26,7 @@ public class AssignmentParserTest {
     return Stream.of(
         Arguments.of("", null),
         Arguments.of("x>5", null),
+        Arguments.of("x,y=u,v", null),
         Arguments.of("x=5", assign(id("x"), exp("5"))),
         Arguments.of("i++", assign(id("i"), exp("i++"))),
         Arguments.of("x=5*12-3/6+12%4", assign(id("x"), exp("5*12-3/6+12%4"))),

@@ -1,8 +1,8 @@
 package io.github.martinschneider.orzo.lexer.tokens;
 
 public class Sym extends Token {
-  public Sym(final Object value) {
-    super(value);
+  public Sym(Object val) {
+    super(val);
   }
 
   public Sym wLoc(Location loc) {

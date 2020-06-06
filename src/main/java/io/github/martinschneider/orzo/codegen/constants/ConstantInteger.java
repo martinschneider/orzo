@@ -3,19 +3,19 @@ package io.github.martinschneider.orzo.codegen.constants;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.intToByteArray;
 
 public class ConstantInteger implements Constant {
-  private Integer value;
+  private Integer val;
 
-  public ConstantInteger(Integer value) {
-    this.value = value;
+  public ConstantInteger(Integer val) {
+    this.val = val;
   }
 
   @Override
-  public byte getTag() {
+  public byte tag() {
     return ConstantTypes.CONSTANT_INTEGER;
   }
 
   @Override
-  public byte[] getInfo() {
-    return intToByteArray(value);
+  public byte[] info() {
+    return intToByteArray(val);
   }
 }

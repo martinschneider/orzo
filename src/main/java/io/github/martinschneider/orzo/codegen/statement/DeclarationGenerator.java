@@ -24,8 +24,8 @@ public class DeclarationGenerator implements StatementGenerator {
   private static final float DOUBLE_DEFAULT_VALUE = 0.0f;
   private static final String LOG_NAME = "generate declaration code";
 
-  public DeclarationGenerator(CGContext context) {
-    this.ctx = context;
+  public DeclarationGenerator(CGContext ctx) {
+    this.ctx = ctx;
   }
 
   private CGContext ctx;
@@ -34,48 +34,48 @@ public class DeclarationGenerator implements StatementGenerator {
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     Declaration decl = (Declaration) stmt;
-    if (decl.getArray() > 0) {
+    if (decl.arrDim > 0) {
       return generateArray(out, variables, method, decl);
     }
-    if (decl.getValue() != null) {
-      ctx.exprGenerator.eval(out, variables, decl.getType(), decl.getValue());
+    if (decl.val != null) {
+      ctx.exprGenerator.eval(out, variables, decl.type, decl.val);
     } else {
-      if (decl.getType().equals(INT)) {
+      if (decl.type.equals(INT)) {
         ctx.opsGenerator.pushInteger(out, INTEGER_DEFAULT_VALUE);
-      } else if (decl.getType().equals(SHORT)) {
+      } else if (decl.type.equals(SHORT)) {
         ctx.opsGenerator.sipush(out, INTEGER_DEFAULT_VALUE);
-      } else if (decl.getType().equals(BYTE)) {
+      } else if (decl.type.equals(BYTE)) {
         ctx.opsGenerator.bipush(out, INTEGER_DEFAULT_VALUE);
-      } else if (decl.getType().equals(LONG)) {
+      } else if (decl.type.equals(LONG)) {
         ctx.opsGenerator.pushLong(out, INTEGER_DEFAULT_VALUE);
-      } else if (decl.getType().equals(FLOAT)) {
+      } else if (decl.type.equals(FLOAT)) {
         ctx.opsGenerator.pushDouble(out, DOUBLE_DEFAULT_VALUE);
-      } else if (decl.getType().equals(DOUBLE)) {
+      } else if (decl.type.equals(DOUBLE)) {
         ctx.opsGenerator.pushFloat(out, DOUBLE_DEFAULT_VALUE);
       }
     }
-    ctx.opsGenerator.assign(out, variables, decl.getType(), decl.getName());
+    ctx.opsGenerator.assign(out, variables, decl.type, decl.name);
     return out;
   }
 
   public HasOutput generateArray(
       DynamicByteArray out, VariableMap variables, Method method, Declaration decl) {
-    if (decl.getValue() == null || !(decl.getValue() instanceof ArrayInitialiser)) {
-      ctx.errors.addError(LOG_NAME, "invalid array initialiser" + decl.getValue());
+    if (decl.val == null || !(decl.val instanceof ArrayInitialiser)) {
+      ctx.errors.addError(LOG_NAME, "invalid array initialiser" + decl.val);
       return out;
     }
-    String type = decl.getType();
+    String type = decl.type;
     byte arrayType = getArrayType(type);
     byte storeOpCode = getStoreOpCode(type);
-    ArrayInitialiser arrInit = (ArrayInitialiser) decl.getValue();
-    ctx.opsGenerator.createArray(out, arrayType, arrInit.getSize());
-    for (int i = 0; i < arrInit.getValues().size(); i++) {
+    ArrayInitialiser arrInit = (ArrayInitialiser) decl.val;
+    ctx.opsGenerator.createArray(out, arrayType, arrInit.size);
+    for (int i = 0; i < arrInit.vals.size(); i++) {
       out.write(DUP);
       ctx.opsGenerator.pushInteger(out, i);
-      ctx.exprGenerator.eval(out, variables, type, arrInit.getValues().get(i));
+      ctx.exprGenerator.eval(out, variables, type, arrInit.vals.get(i));
       out.write(storeOpCode);
     }
-    ctx.opsGenerator.assignArray(out, variables, type, decl.getArray(), decl.getName());
+    ctx.opsGenerator.assignArray(out, variables, type, decl.arrDim, decl.name);
     return out;
   }
 }

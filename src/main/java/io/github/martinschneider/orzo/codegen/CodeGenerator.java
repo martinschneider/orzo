@@ -38,10 +38,10 @@ public class CodeGenerator {
     ctx.methodMap = new MethodProcessor().getMethodMap(clazz);
     ctx.opsGenerator = new OpCodeGenerator();
     ctx.parserCtx = parserCtx;
-    ctx.condGenerator.context = ctx;
-    ctx.delegator.context = ctx;
+    ctx.condGenerator.ctx = ctx;
+    ctx.delegator.ctx = ctx;
     ctx.exprGenerator.ctx = ctx;
-    ctx.opsGenerator.context = ctx;
+    ctx.opsGenerator.ctx = ctx;
     ctx.delegator.init();
   }
 
@@ -59,7 +59,7 @@ public class CodeGenerator {
   }
 
   private void classIndex() {
-    out.write(ctx.constPool.indexOf(CONSTANT_CLASS, ctx.clazz.getName().getValue()));
+    out.write(ctx.constPool.indexOf(CONSTANT_CLASS, ctx.clazz.name.val));
   }
 
   private HasOutput constPool(HasOutput out) {
@@ -103,33 +103,32 @@ public class CodeGenerator {
   }
 
   private HasOutput methods(HasOutput out) {
-    List<Method> methods = ctx.clazz.getBody();
+    List<Method> methods = ctx.clazz.body;
     // number of methods
     out.write((short) methods.size());
     for (Method method : methods) {
       // TODO: handle global variables
       VariableMap variables = new VariableMap(new HashMap<>());
-      for (Argument arg : method.getArguments()) {
+      for (Argument arg : method.args) {
         // TODO: this code is ugly
-        String type = arg.getType();
+        String type = arg.type;
         String arrayType = null;
-        if (arg.getType().startsWith("[")) {
+        if (arg.type.startsWith("[")) {
           type = REF;
-          arrayType = arg.getType().replaceAll("\\[", "");
+          arrayType = arg.type.replaceAll("\\[", "");
         }
         variables.put(
-            arg.getName(),
-            new VariableInfo(
-                arg.getName().getValue().toString(), type, arrayType, (byte) variables.size()));
+            arg.name,
+            new VariableInfo(arg.name.val.toString(), type, arrayType, (byte) variables.size));
       }
       out.write((short) 9); // public static
-      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.getName().getValue()));
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.name.val));
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.getTypeDescr()));
       out.write((short) 1); // attribute size
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Code"));
       DynamicByteArray methodOut = new DynamicByteArray();
       boolean returned = false;
-      for (Statement stmt : method.getBody()) {
+      for (Statement stmt : method.body) {
         generateCode(methodOut, variables, method, stmt);
         if (stmt instanceof ReturnStatement) {
           returned = true;
@@ -142,7 +141,7 @@ public class CodeGenerator {
       // exception table size (2) + attribute count size (2)
       // TODO: set this dynamically
       out.write((short) 100); // max stack size
-      out.write((short) (variables.size())); // max local var size
+      out.write((short) (variables.size)); // max local var size
       out.write(methodOut.size());
       out.write(methodOut.flush());
       out.write((short) 0); // exception table of size 0

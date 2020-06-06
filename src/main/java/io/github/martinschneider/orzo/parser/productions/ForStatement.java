@@ -3,64 +3,23 @@ package io.github.martinschneider.orzo.parser.productions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ForStatement implements LoopStatement {
-  private List<Statement> body;
-  private Condition condition;
-  private Statement initialization;
-  private Statement loopStatement;
+public class ForStatement extends LoopStatement {
+  public Statement init;
+  public Statement loopStmt;
 
-  public ForStatement(
-      Statement initialization,
-      Condition condition,
-      Statement loopStatement,
-      List<Statement> body) {
-    super();
-    this.body = body;
-    this.condition = condition;
-    this.initialization = initialization;
-    this.loopStatement = loopStatement;
-  }
-
-  @Override
-  public List<Statement> getBody() {
-    return body;
-  }
-
-  @Override
-  public Condition getCondition() {
-    return condition;
-  }
-
-  public void setBody(final List<Statement> body) {
-    this.body = body;
-  }
-
-  public void setCondition(final Condition condition) {
-    this.condition = condition;
-  }
-
-  public Statement getInitialization() {
-    return initialization;
-  }
-
-  public void setInitialization(Statement initialization) {
-    this.initialization = initialization;
-  }
-
-  public Statement getLoopStatement() {
-    return loopStatement;
-  }
-
-  public void setLoopStatement(Statement loopStep) {
-    this.loopStatement = loopStep;
+  public ForStatement(Statement init, Condition cond, Statement loopStmt, List<Statement> body) {
+    super.body = body;
+    super.cond = cond;
+    this.init = init;
+    this.loopStmt = loopStmt;
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
     result = prime * result + ((body == null) ? 0 : body.hashCode());
-    result = prime * result + ((condition == null) ? 0 : condition.hashCode());
+    result = prime * result + ((cond == null) ? 0 : cond.hashCode());
     return result;
   }
 
@@ -83,11 +42,11 @@ public class ForStatement implements LoopStatement {
     } else if (!body.equals(other.body)) {
       return false;
     }
-    if (condition == null) {
-      if (other.condition != null) {
+    if (cond == null) {
+      if (other.cond != null) {
         return false;
       }
-    } else if (!condition.equals(other.condition)) {
+    } else if (!cond.equals(other.cond)) {
       return false;
     }
     return true;
@@ -97,11 +56,11 @@ public class ForStatement implements LoopStatement {
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();
     strBuilder.append("for ");
-    strBuilder.append(initialization);
+    strBuilder.append(init);
     strBuilder.append("; ");
-    strBuilder.append(condition);
+    strBuilder.append(cond);
     strBuilder.append("; ");
-    strBuilder.append(loopStatement);
+    strBuilder.append(loopStmt);
     strBuilder.append(" {");
     strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     strBuilder.append("}");

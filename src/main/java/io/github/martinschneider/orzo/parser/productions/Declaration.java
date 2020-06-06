@@ -3,82 +3,44 @@ package io.github.martinschneider.orzo.parser.productions;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 
 public class Declaration implements Statement {
-  private Identifier name;
-  private int array; // array dimension
-  private String type;
-  private Expression value;
+  public Identifier name;
+  public int arrDim;
+  public String type;
+  public Expression val;
 
-  public Declaration(
-      final String type,
-      final int array,
-      final Identifier name,
-      final Expression value,
-      final boolean hasValue) {
-    super();
+  public Declaration(String type, int arrDim, Identifier name, Expression val, boolean hasValue) {
     this.type = type;
-    this.array = array;
+    this.arrDim = arrDim;
     this.name = name;
-    this.value = value;
+    this.val = val;
   }
 
   public Declaration(
-      final String type, final Identifier name, final Expression value, final boolean hasValue) {
-    this(type, 0, name, value, hasValue);
-  }
-
-  public Identifier getName() {
-    return name;
-  }
-
-  public String getType() {
-    return type;
-  }
-
-  public Expression getValue() {
-    return value;
-  }
-
-  public void setName(final Identifier name) {
-    this.name = name;
-  }
-
-  public void setType(final String type) {
-    this.type = type;
-  }
-
-  public void setValue(final Expression value) {
-    this.value = value;
-  }
-
-  public int getArray() {
-    return array;
-  }
-
-  public void setArray(int array) {
-    this.array = array;
+      final String type, final Identifier name, final Expression val, final boolean hasValue) {
+    this(type, 0, name, val, hasValue);
   }
 
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder(type.toString());
-    for (int i = 0; i < array; i++) {
+    for (int i = 0; i < arrDim; i++) {
       strBuilder.append("[]");
     }
     strBuilder.append(' ');
     strBuilder.append(name);
     strBuilder.append('=');
-    strBuilder.append(value);
+    strBuilder.append(val);
     return strBuilder.toString();
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
-    result = prime * result + array;
+    result = prime * result + arrDim;
     result = prime * result + ((name == null) ? 0 : name.hashCode());
     result = prime * result + ((type == null) ? 0 : type.hashCode());
-    result = prime * result + ((value == null) ? 0 : value.hashCode());
+    result = prime * result + ((val == null) ? 0 : val.hashCode());
     return result;
   }
 
@@ -94,7 +56,7 @@ public class Declaration implements Statement {
       return false;
     }
     Declaration other = (Declaration) obj;
-    if (array != other.array) {
+    if (arrDim != other.arrDim) {
       return false;
     }
     if (name == null) {
@@ -111,11 +73,11 @@ public class Declaration implements Statement {
     } else if (!type.equals(other.type)) {
       return false;
     }
-    if (value == null) {
-      if (other.value != null) {
+    if (val == null) {
+      if (other.val != null) {
         return false;
       }
-    } else if (!value.equals(other.value)) {
+    } else if (!val.equals(other.val)) {
       return false;
     }
     return true;

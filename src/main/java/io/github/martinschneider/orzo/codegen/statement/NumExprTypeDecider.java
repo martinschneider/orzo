@@ -5,7 +5,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 
-import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.lexer.tokens.DoubleNum;
@@ -18,13 +17,11 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class NumExprTypeDecider {
-  public CGContext context;
-
   public String getType(VariableMap variables, Expression expr) {
     Set<String> types = new HashSet<>();
-    for (Token token : expr.getInfix()) {
+    for (Token token : expr.tokens) {
       if (token instanceof IntNum) {
-        long intValue = ((BigInteger) token.getValue()).longValue();
+        long intValue = ((BigInteger) token.val).longValue();
         if (intValue > Integer.MAX_VALUE) {
           types.add(LONG);
         } else {
@@ -36,10 +33,10 @@ public class NumExprTypeDecider {
         Identifier id = (Identifier) token;
         VariableInfo var = variables.get(token);
         if (var != null) {
-          if (id.getSelector() != null) {
-            types.add(var.getArrayType());
+          if (id.arrSel != null) {
+            types.add(var.arrType);
           } else {
-            types.add(var.getType());
+            types.add(var.type);
           }
         }
       }

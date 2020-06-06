@@ -15,36 +15,35 @@ import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.List;
 
 public class ParallelAssignmentGenerator implements StatementGenerator {
-  private CGContext context;
+  private CGContext ctx;
 
-  public ParallelAssignmentGenerator(CGContext context) {
-    this.context = context;
+  public ParallelAssignmentGenerator(CGContext ctx) {
+    this.ctx = ctx;
   }
 
+  // TODO: support array types
   @Override
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     ParallelAssignment assignment = (ParallelAssignment) stmt;
-    int tmpCount = 0;
-    for (int i = 0; i < assignment.getLeft().size(); i++) {
-      Identifier left = assignment.getLeft().get(i);
-      Expression right = assignment.getRight().get(i);
-      String type = variables.get(left).getType();
-      byte leftIdx = variables.get(left).getIdx();
-      context.exprGenerator.eval(out, variables, type, right);
-      if (replaceIds(assignment.getRight(), left, tmpCount)) {
-        replaceIds(assignment.getRight(), left, tmpCount);
-        Identifier id = id("tmp_" + tmpCount);
-        if (!variables.getVariables().containsKey(id)) {
-          variables.put(
-              id, new VariableInfo(id.getValue().toString(), type, (byte) variables.size()));
+    for (int i = 0; i < assignment.left.size(); i++) {
+      Identifier left = assignment.left.get(i);
+      Expression right = assignment.right.get(i);
+      VariableInfo varInfo = variables.get(left);
+      String type = varInfo.type;
+      byte leftIdx = varInfo.idx;
+      ctx.exprGenerator.eval(out, variables, type, right);
+      if (replaceIds(assignment.right, left, variables.tmpCount)) {
+        Identifier id = id("tmp_" + variables.tmpCount);
+        if (!variables.getVariables().containsKey(id.val.toString())) {
+          variables.put(id, new VariableInfo(id.val.toString(), type, (byte) variables.size));
         }
-        byte tmpIdx = variables.get(id).getIdx();
-        context.opsGenerator.loadInteger(out, leftIdx);
-        context.opsGenerator.storeInteger(out, tmpIdx);
-        tmpCount++;
+        byte tmpIdx = variables.get(id).idx;
+        ctx.opsGenerator.loadValue(out, type, leftIdx);
+        ctx.opsGenerator.storeValue(out, type, tmpIdx);
+        variables.tmpCount++;
       }
-      context.opsGenerator.storeInteger(out, leftIdx);
+      ctx.opsGenerator.storeValue(out, type, leftIdx);
     }
     return out;
   }
@@ -53,8 +52,8 @@ public class ParallelAssignmentGenerator implements StatementGenerator {
     Identifier tmpId = new Identifier("tmp_" + idx, null);
     boolean retValue = false;
     for (Expression expression : expressions) {
-      expression.getInfix().replaceAll(x -> (x.eq(id)) ? tmpId : x);
-      if (expression.getInfix().contains(tmpId)) {
+      expression.tokens.replaceAll(x -> (x.eq(id)) ? tmpId : x);
+      if (expression.tokens.contains(tmpId)) {
         retValue = true;
       }
     }

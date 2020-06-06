@@ -6,7 +6,7 @@ import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
 
 // dynamically resizing byte array
 public class DynamicByteArray implements HasOutput {
-  private int size = 2;
+  private int size = 128;
   private byte[] array = new byte[size];
   private int pointer = 0;
 
@@ -62,8 +62,8 @@ public class DynamicByteArray implements HasOutput {
   }
 
   @Override
-  public void write(short value) {
-    write(shortToByteArray(value));
+  public void write(short val) {
+    write(shortToByteArray(val));
   }
 
   @Override
@@ -72,7 +72,7 @@ public class DynamicByteArray implements HasOutput {
   }
 
   @Override
-  public void write(int value) {
-    write(intToByteArray(value));
+  public void write(int val) {
+    write(intToByteArray(val));
   }
 }

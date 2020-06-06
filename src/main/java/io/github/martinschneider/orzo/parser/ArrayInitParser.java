@@ -31,10 +31,10 @@ public class ArrayInitParser implements ProdParser<Expression> {
     if (tokens.curr().eq(keyword(NEW))) {
       int dim = -1;
       String type = null;
-      List<Expression> values = new ArrayList<>();
+      List<Expression> vals = new ArrayList<>();
       tokens.next();
       if (tokens.curr() instanceof Type) {
-        type = ((Type) tokens.curr()).getName();
+        type = ((Type) tokens.curr()).name;
         tokens.next();
       } else {
         ctx.errors.addError(LOG_NAME, "missing type in array initialiser");
@@ -63,7 +63,7 @@ public class ArrayInitParser implements ProdParser<Expression> {
         tokens.next();
         Expression expr;
         while ((expr = ctx.exprParser.parse(tokens)) != null) {
-          values.add(expr);
+          vals.add(expr);
           if (tokens.curr().eq(sym(COMMA))) {
             tokens.next();
           }
@@ -74,21 +74,21 @@ public class ArrayInitParser implements ProdParser<Expression> {
         tokens.next();
       }
       if (dim == -1) {
-        dim = values.size();
+        dim = vals.size();
       } else {
         // this is different from the Java spec which doesn't allow specifying array dimension and
         // an initializer
-        // we allow it (even though it's redundant) but fail if the size and the number of values
+        // we allow it (even though it's redundant) but fail if the size and the number of vals
         // doen't match
-        if (dim != values.size()) {
+        if (dim != vals.size()) {
           ctx.errors.addError(
-              LOG_NAME, "array initializer size mismatch " + dim + "!=" + values.size());
+              LOG_NAME, "array initializer size mismatch " + dim + "!=" + vals.size());
         }
       }
       if (tokens.curr().eq(sym(SEMICOLON))) {
         tokens.next();
       }
-      return new ArrayInitialiser(type, dim, values);
+      return new ArrayInitialiser(type, dim, vals);
     }
     return null;
   }

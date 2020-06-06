@@ -16,8 +16,8 @@ public class Type extends Token {
   public static final String STRING = "String";
   public static final List<String> BASIC_TYPES =
       List.of(VOID, INT, LONG, BYTE, SHORT, DOUBLE, FLOAT, CHAR, BOOLEAN, STRING);
-  private String name;
-  private int array; // 0 = no array, 1 = [], 2= [][] etc.
+  public String name;
+  public int arr; // 0 = no array, 1 = [], 2= [][] etc.
 
   public Type(String name) {
     this(name, 0);
@@ -26,28 +26,12 @@ public class Type extends Token {
   public Type(String name, int array) {
     super(name);
     this.name = name;
-    this.setArray(array);
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public int getArray() {
-    return array;
-  }
-
-  public void setArray(int array) {
-    this.array = array;
+    this.arr = array;
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
     result = prime * result + ((name == null) ? 0 : name.hashCode());
     return result;
@@ -78,7 +62,7 @@ public class Type extends Token {
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder(name);
-    for (int i = 0; i < array; i++) {
+    for (int i = 0; i < arr; i++) {
       strBuilder.append("[]");
     }
     return strBuilder.toString();

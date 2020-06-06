@@ -10,23 +10,23 @@ import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 
 public class AssignmentGenerator implements StatementGenerator {
-  private CGContext context;
+  private CGContext ctx;
 
-  public AssignmentGenerator(CGContext context) {
-    this.context = context;
+  public AssignmentGenerator(CGContext ctx) {
+    this.ctx = ctx;
   }
 
   @Override
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     Assignment assignment = (Assignment) stmt;
-    Identifier id = assignment.getLeft();
-    if (id.getSelector() != null) {
-      context.opsGenerator.assignInArray(out, variables, id, assignment.getRight());
+    Identifier id = assignment.left;
+    if (id.arrSel != null) {
+      ctx.opsGenerator.assignInArray(out, variables, id, assignment.right);
     } else {
-      String type = variables.get(id).getType();
-      context.exprGenerator.eval(out, variables, type, assignment.getRight());
-      context.opsGenerator.assign(out, variables, type, id);
+      String type = variables.get(id).type;
+      ctx.exprGenerator.eval(out, variables, type, assignment.right);
+      ctx.opsGenerator.assign(out, variables, type, id);
     }
     return out;
   }

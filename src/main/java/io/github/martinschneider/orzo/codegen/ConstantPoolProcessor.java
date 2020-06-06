@@ -26,20 +26,17 @@ import java.math.BigInteger;
 public class ConstantPoolProcessor {
   public ConstantPool processConstantPool(Clazz clazz) {
     ConstantPool constPool = new ConstantPool();
-    constPool.addClass(clazz.getName().getValue().toString());
+    constPool.addClass(clazz.name.val.toString());
     constPool.addClass("java/lang/Object");
-    for (Method method : clazz.getBody()) {
+    for (Method method : clazz.body) {
       // add method name to constant pool
-      constPool.addUtf8(method.getName().getValue().toString());
+      constPool.addUtf8(method.name.val.toString());
       // add type descriptor to constant pool
       constPool.addUtf8(method.getTypeDescr());
       addMethodRef(
-          constPool,
-          clazz.getName().getValue().toString(),
-          method.getName().getValue().toString(),
-          method.getTypeDescr());
+          constPool, clazz.name.val.toString(), method.name.val.toString(), method.getTypeDescr());
       // add constants from method body to constant pool
-      for (Statement stmt : method.getBody()) {
+      for (Statement stmt : method.body) {
         constPool = processStatement(constPool, stmt);
       }
       constPool.addUtf8("Code");
@@ -50,46 +47,46 @@ public class ConstantPoolProcessor {
   private ConstantPool processStatement(ConstantPool constPool, Statement stmt) {
     if (stmt instanceof MethodCall) {
       MethodCall methodCall = (MethodCall) stmt;
-      for (Expression param : methodCall.getParameters()) {
+      for (Expression param : methodCall.params) {
         constPool = processExpression(constPool, param);
       }
     } else if (stmt instanceof Declaration) {
       Declaration decl = (Declaration) stmt;
-      Expression value = decl.getValue();
-      if (value != null) {
-        if (value instanceof ArrayInitialiser) {
-          for (Expression arrInit : ((ArrayInitialiser) value).getValues()) {
-            constPool = processExpression(constPool, decl.getType(), arrInit);
+      Expression val = decl.val;
+      if (val != null) {
+        if (val instanceof ArrayInitialiser) {
+          for (Expression arrInit : ((ArrayInitialiser) val).vals) {
+            constPool = processExpression(constPool, decl.type, arrInit);
           }
         } else {
-          constPool = processExpression(constPool, decl.getType(), value);
+          constPool = processExpression(constPool, decl.type, val);
         }
       }
     } else if (stmt instanceof Assignment) {
       Assignment assignment = (Assignment) stmt;
-      Expression value = assignment.getRight();
-      if (value != null) {
-        constPool = processExpression(constPool, value);
+      Expression val = assignment.right;
+      if (val != null) {
+        constPool = processExpression(constPool, val);
       }
     } else if (stmt instanceof ReturnStatement) {
       ReturnStatement ret = (ReturnStatement) stmt;
-      constPool = processExpression(constPool, ret.getRetValue());
+      constPool = processExpression(constPool, ret.retValue);
     } else if (stmt instanceof LoopStatement) {
       LoopStatement loopStatement = (LoopStatement) stmt;
-      constPool = processExpression(constPool, loopStatement.getCondition().getLeft());
-      constPool = processExpression(constPool, loopStatement.getCondition().getRight());
-      for (Statement innerStmt : loopStatement.getBody()) {
+      constPool = processExpression(constPool, loopStatement.cond.left);
+      constPool = processExpression(constPool, loopStatement.cond.right);
+      for (Statement innerStmt : loopStatement.body) {
         constPool = processStatement(constPool, innerStmt);
       }
     } else if (stmt instanceof IfStatement) {
       IfStatement ifStatement = (IfStatement) stmt;
-      for (IfBlock ifBlock : ifStatement.getIfBlocks()) {
-        for (Statement subStatement : ifBlock.getBody()) {
+      for (IfBlock ifBlock : ifStatement.ifBlks) {
+        for (Statement subStatement : ifBlock.body) {
           constPool = processStatement(constPool, subStatement);
         }
-        if (ifBlock.getCondition() != null) { // null for else blocks
-          constPool = processExpression(constPool, null, ifBlock.getCondition().getLeft());
-          constPool = processExpression(constPool, null, ifBlock.getCondition().getRight());
+        if (ifBlock.cond != null) { // null for else blocks
+          constPool = processExpression(constPool, null, ifBlock.cond.left);
+          constPool = processExpression(constPool, null, ifBlock.cond.right);
         }
       }
     }
@@ -101,12 +98,12 @@ public class ConstantPoolProcessor {
   }
 
   private ConstantPool processExpression(ConstantPool constPool, String type, Expression param) {
-    for (Token token : param.getInfix()) {
+    for (Token token : param.tokens) {
       if (token instanceof Str) {
-        constPool.addString(token.getValue().toString());
+        constPool.addString(token.val.toString());
       } else if (token instanceof IntNum) {
-        long intValue = ((BigInteger) (token.getValue())).longValue();
-        if (((IntNum) token).isLong()
+        long intValue = ((BigInteger) (token.val)).longValue();
+        if (((IntNum) token).isLong
             || (type != null && type.equals(LONG))
             || intValue < Integer.MIN_VALUE
             || intValue > Integer.MAX_VALUE) {
@@ -115,8 +112,8 @@ public class ConstantPoolProcessor {
           constPool.addInteger((int) intValue);
         }
       } else if (token instanceof DoubleNum) {
-        BigDecimal doubleValue = ((BigDecimal) (token.getValue()));
-        if (((DoubleNum) token).isFloat() || (type != null && type.equals(FLOAT))) {
+        BigDecimal doubleValue = ((BigDecimal) (token.val));
+        if (((DoubleNum) token).isFloat || (type != null && type.equals(FLOAT))) {
           constPool.addFloat(doubleValue.floatValue());
         } else {
           constPool.addDouble(doubleValue.doubleValue());

@@ -32,9 +32,7 @@ public class QuickSort {
           right--;
         }
         if (left <= right) {
-          int tmp = array[left];
-          array[left] = array[right];
-          array[right] = tmp;
+          array[left], array[right] = array[right], array[left];
           left++;
           right--;
         }

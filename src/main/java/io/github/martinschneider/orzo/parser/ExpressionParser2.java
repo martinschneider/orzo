@@ -76,7 +76,7 @@ public class ExpressionParser2 {
     int idx = tokenList.idx();
     MethodCall methodCall = ctx.parserCtx.methodCallParser.parse(tokenList);
     int diff = tokenList.idx() - idx;
-    if (methodCall != null && methodNames.contains(methodCall.getName())) {
+    if (methodCall != null && methodNames.contains(methodCall.name)) {
       return new Pair<>(methodCall, diff);
     }
     return null;

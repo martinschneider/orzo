@@ -122,7 +122,7 @@ import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.util.List;
 
 public class OpCodeGenerator {
-  public CGContext context;
+  public CGContext ctx;
 
   // push long
   public HasOutput pushLong(DynamicByteArray out, long number) {
@@ -190,21 +190,21 @@ public class OpCodeGenerator {
 
   public HasOutput ldc2_w(DynamicByteArray out, byte type, Object key) {
     out.write(LDC2_W);
-    byte idx = (byte) context.constPool.indexOf(type, key);
+    byte idx = (byte) ctx.constPool.indexOf(type, key);
     if (idx == -1) {
       if (type == CONSTANT_LONG) {
-        context.constPool.addLong((Long) key);
+        ctx.constPool.addLong((Long) key);
       } else if (type == CONSTANT_DOUBLE) {
-        context.constPool.addDouble((Double) key);
+        ctx.constPool.addDouble((Double) key);
       }
-      idx = (byte) context.constPool.indexOf(type, key);
+      idx = (byte) ctx.constPool.indexOf(type, key);
     }
     out.write((short) (idx - 1));
     return out;
   }
 
   public HasOutput ldc(DynamicByteArray out, byte type, Object key) {
-    byte idx = (byte) context.constPool.indexOf(type, key);
+    byte idx = (byte) ctx.constPool.indexOf(type, key);
     out.write(LDC);
     out.write(idx);
     return out;
@@ -233,7 +233,7 @@ public class OpCodeGenerator {
       byte idx) {
     loadReference(out, idx);
     for (Expression arrIdx : indices) {
-      context.exprGenerator.eval(out, variables, INT, arrIdx);
+      ctx.exprGenerator.eval(out, variables, INT, arrIdx);
     }
     out.write(getLoadOpCode(type.replaceAll("\\[", "")));
     return out;
@@ -397,7 +397,7 @@ public class OpCodeGenerator {
 
   public HasOutput ret(
       DynamicByteArray out, VariableMap variables, String type, Expression retValue) {
-    context.exprGenerator.eval(out, variables, type, retValue);
+    ctx.exprGenerator.eval(out, variables, type, retValue);
     switch (type) {
       case INT:
         out.write(IRETURN);
@@ -420,9 +420,12 @@ public class OpCodeGenerator {
 
   public HasOutput assign(DynamicByteArray out, VariableMap variables, String type, Identifier id) {
     if (!variables.containsKey(id)) {
-      variables.put(id, new VariableInfo(id.getValue().toString(), type, (byte) variables.size()));
+      variables.put(id, new VariableInfo(id.val.toString(), type, (byte) variables.size));
     }
-    byte idx = variables.get(id).getIdx();
+    return storeValue(out, type, variables.get(id).idx);
+  }
+
+  public HasOutput storeValue(DynamicByteArray out, String type, byte idx) {
     switch (type) {
       case BYTE:
         return storeInteger(out, idx);
@@ -443,18 +446,18 @@ public class OpCodeGenerator {
   }
 
   public HasOutput assignInArray(
-      DynamicByteArray out, VariableMap variables, Identifier id, Expression value) {
+      DynamicByteArray out, VariableMap variables, Identifier id, Expression val) {
     if (!variables.containsKey(id)) {
-      variables.put(id, new VariableInfo(id.getValue().toString(), REF, (byte) variables.size()));
+      variables.put(id, new VariableInfo(id.val.toString(), REF, (byte) variables.size));
     }
     VariableInfo varInfo = variables.get(id);
-    byte idx = varInfo.getIdx();
-    String type = varInfo.getArrayType();
+    byte idx = varInfo.idx;
+    String type = varInfo.arrType;
     loadReference(out, idx);
-    for (Expression arrIdx : id.getSelector().getExpression()) {
-      context.exprGenerator.eval(out, variables, INT, arrIdx);
+    for (Expression arrIdx : id.arrSel.exprs) {
+      ctx.exprGenerator.eval(out, variables, INT, arrIdx);
     }
-    context.exprGenerator.eval(out, variables, type, value);
+    ctx.exprGenerator.eval(out, variables, type, val);
     switch (type) {
       case BYTE:
         out.write(BASTORE);
@@ -484,10 +487,9 @@ public class OpCodeGenerator {
   public HasOutput assignArray(
       DynamicByteArray out, VariableMap variables, String type, int arrDim, Identifier id) {
     if (!variables.containsKey(id)) {
-      variables.put(
-          id, new VariableInfo(id.getValue().toString(), REF, type, (byte) variables.size()));
+      variables.put(id, new VariableInfo(id.val.toString(), REF, type, (byte) variables.size));
     }
-    byte idx = variables.get(id).getIdx();
+    byte idx = variables.get(id).idx;
     return storeReference(out, idx);
   }
 
@@ -507,27 +509,27 @@ public class OpCodeGenerator {
     return out;
   }
 
-  public HasOutput incInteger(DynamicByteArray out, byte idx, byte value) {
+  public HasOutput incInteger(DynamicByteArray out, byte idx, byte val) {
     out.write(IINC);
     out.write(idx);
-    out.write(value);
+    out.write(val);
     loadInteger(out, idx);
     return out;
   }
 
   // byte cannot be increased directly, load to the stack and convert
-  public HasOutput incByte(DynamicByteArray out, byte idx, byte value) {
+  public HasOutput incByte(DynamicByteArray out, byte idx, byte val) {
     loadInteger(out, idx);
-    pushInteger(out, value);
+    pushInteger(out, val);
     out.write(IADD);
     out.write(I2B);
     return out;
   }
 
   // short cannot be increased directly, load to the stack and convert
-  public HasOutput incShort(DynamicByteArray out, byte idx, byte value) {
+  public HasOutput incShort(DynamicByteArray out, byte idx, byte val) {
     loadInteger(out, idx);
-    pushInteger(out, value);
+    pushInteger(out, val);
     out.write(IADD);
     out.write(I2S);
     return out;
@@ -576,19 +578,19 @@ public class OpCodeGenerator {
 
   public HasOutput getStatic(DynamicByteArray out, String clazz, String field, String type) {
     out.write(GETSTATIC);
-    out.write(context.constPool.indexOf(CONSTANT_FIELDREF, clazz, field, type));
+    out.write(ctx.constPool.indexOf(CONSTANT_FIELDREF, clazz, field, type));
     return out;
   }
 
   public HasOutput invokeVirtual(DynamicByteArray out, String clazz, String field, String type) {
     out.write(INVOKEVIRTUAL);
-    out.write(context.constPool.indexOf(CONSTANT_METHODREF, clazz, field, type));
+    out.write(ctx.constPool.indexOf(CONSTANT_METHODREF, clazz, field, type));
     return out;
   }
 
   public HasOutput invokeStatic(DynamicByteArray out, String clazz, String field, String type) {
     out.write(INVOKESTATIC);
-    out.write(context.constPool.indexOf(CONSTANT_METHODREF, clazz, field, type));
+    out.write(ctx.constPool.indexOf(CONSTANT_METHODREF, clazz, field, type));
     return out;
   }
 

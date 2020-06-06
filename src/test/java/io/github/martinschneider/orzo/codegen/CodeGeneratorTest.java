@@ -28,7 +28,7 @@ public class CodeGeneratorTest {
 
   @BeforeAll
   public void setup() {
-    target.context = new CGContext();
+    target.ctx = new CGContext();
   }
 
   private static Stream<Arguments> testIntegerConstants() {
@@ -53,7 +53,7 @@ public class CodeGeneratorTest {
   @ParameterizedTest
   @MethodSource
   /** verify that ICONST_*, BIPUSH and SIPUSH are used where applicable */
-  public void testIntegerConstants(int value, byte[] expected) {
-    assertArrayEquals(target.pushInteger(new DynamicByteArray(), value).getBytes(), expected);
+  public void testIntegerConstants(int val, byte[] expected) {
+    assertArrayEquals(target.pushInteger(new DynamicByteArray(), val).getBytes(), expected);
   }
 }

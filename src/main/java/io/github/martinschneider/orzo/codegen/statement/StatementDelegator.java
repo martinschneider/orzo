@@ -19,23 +19,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class StatementDelegator {
-  private Map<Class<? extends Statement>, StatementGenerator> registry = new HashMap<>();
-  public CGContext context;
+  private Map<Class<? extends Statement>, StatementGenerator> reg = new HashMap<>();
+  public CGContext ctx;
 
   public void init() {
-    registry.put(Assignment.class, new AssignmentGenerator(context));
-    registry.put(Declaration.class, new DeclarationGenerator(context));
-    registry.put(DoStatement.class, new DoStatementGenerator(context));
-    registry.put(ForStatement.class, new ForStatementGenerator(context));
-    registry.put(IfStatement.class, new IfStatementGenerator(context));
-    registry.put(MethodCall.class, new MethodCallGenerator(context));
-    registry.put(ParallelAssignment.class, new ParallelAssignmentGenerator(context));
-    registry.put(ReturnStatement.class, new ReturnStatementGenerator(context));
-    registry.put(WhileStatement.class, new WhileStatementGenerator(context));
+    reg.put(Assignment.class, new AssignmentGenerator(ctx));
+    reg.put(Declaration.class, new DeclarationGenerator(ctx));
+    reg.put(DoStatement.class, new DoStatementGenerator(ctx));
+    reg.put(ForStatement.class, new ForStatementGenerator(ctx));
+    reg.put(IfStatement.class, new IfStatementGenerator(ctx));
+    reg.put(MethodCall.class, new MethodCallGenerator(ctx));
+    reg.put(ParallelAssignment.class, new ParallelAssignmentGenerator(ctx));
+    reg.put(ReturnStatement.class, new ReturnStatementGenerator(ctx));
+    reg.put(WhileStatement.class, new WhileStatementGenerator(ctx));
   }
 
   public HasOutput generate(
       VariableMap variables, DynamicByteArray out, Method method, Statement stmt) {
-    return registry.get(stmt.getClass()).generate(out, variables, method, stmt);
+    return reg.get(stmt.getClass()).generate(out, variables, method, stmt);
   }
 }

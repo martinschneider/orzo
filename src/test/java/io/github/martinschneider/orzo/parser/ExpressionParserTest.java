@@ -66,7 +66,7 @@ public class ExpressionParserTest {
     CGContext cgContext = new CGContext();
     cgContext.parserCtx = ParserContext.build(new CompilerErrors());
     target2 = new ExpressionParser2(cgContext);
-    List<Token> actual = (expression != null) ? target2.postfix(expression.getInfix()) : null;
+    List<Token> actual = (expression != null) ? target2.postfix(expression.tokens) : null;
     assertEquals(expected, actual);
     assertTokenIdx(tokens, (expected == null));
   }

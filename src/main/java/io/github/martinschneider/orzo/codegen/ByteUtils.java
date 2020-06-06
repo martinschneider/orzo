@@ -1,33 +1,33 @@
 package io.github.martinschneider.orzo.codegen;
 
 public class ByteUtils {
-  public static byte[] shortToByteArray(short value) {
-    return new byte[] {(byte) ((value >> 8) & 0xff), (byte) (value & 0xff)};
+  public static byte[] shortToByteArray(short val) {
+    return new byte[] {(byte) ((val >> 8) & 0xff), (byte) (val & 0xff)};
   }
 
-  public static byte[] shortToByteArray(int value) {
-    return new byte[] {(byte) (((short) value >> 8) & 0xff), (byte) (value & 0xff)};
+  public static byte[] shortToByteArray(int val) {
+    return new byte[] {(byte) (((short) val >> 8) & 0xff), (byte) (val & 0xff)};
   }
 
-  public static byte[] intToByteArray(int value) {
+  public static byte[] intToByteArray(int val) {
     return new byte[] {
-      (byte) ((value >> 24) & 0xff),
-      (byte) ((value >> 16) & 0xff),
-      (byte) ((value >> 8) & 0xff),
-      (byte) (value & 0xff)
+      (byte) ((val >> 24) & 0xff),
+      (byte) ((val >> 16) & 0xff),
+      (byte) ((val >> 8) & 0xff),
+      (byte) (val & 0xff)
     };
   }
 
-  public static byte[] longToByteArray(long value) {
+  public static byte[] longToByteArray(long val) {
     return new byte[] {
-      (byte) ((value >> 56) & 0xff),
-      (byte) ((value >> 48) & 0xff),
-      (byte) ((value >> 40) & 0xff),
-      (byte) ((value >> 32) & 0xff),
-      (byte) ((value >> 24) & 0xff),
-      (byte) ((value >> 16) & 0xff),
-      (byte) ((value >> 8) & 0xff),
-      (byte) (value & 0xff)
+      (byte) ((val >> 56) & 0xff),
+      (byte) ((val >> 48) & 0xff),
+      (byte) ((val >> 40) & 0xff),
+      (byte) ((val >> 32) & 0xff),
+      (byte) ((val >> 24) & 0xff),
+      (byte) ((val >> 16) & 0xff),
+      (byte) ((val >> 8) & 0xff),
+      (byte) (val & 0xff)
     };
   }
 

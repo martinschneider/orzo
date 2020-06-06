@@ -14,7 +14,7 @@ public class ScopeParser implements ProdParser<Scope> {
   @Override
   public Scope parse(TokenList tokens) {
     if (tokens.curr() instanceof Scope) {
-      switch ((Scopes) tokens.curr().getValue()) {
+      switch ((Scopes) tokens.curr().val) {
         case PUBLIC:
           tokens.next();
           return scope(PUBLIC);

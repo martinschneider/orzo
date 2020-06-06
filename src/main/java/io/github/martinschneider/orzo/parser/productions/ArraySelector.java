@@ -3,26 +3,17 @@ package io.github.martinschneider.orzo.parser.productions;
 import java.util.List;
 
 public class ArraySelector extends Selector {
+  public List<Expression> exprs;
+
   public ArraySelector(List<Expression> expressions) {
-    super();
-    this.expressions = expressions;
-  }
-
-  private List<Expression> expressions;
-
-  public List<Expression> getExpression() {
-    return expressions;
-  }
-
-  public void setExpression(List<Expression> expression) {
-    this.expressions = expression;
+    this.exprs = expressions;
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
-    result = prime * result + ((expressions == null) ? 0 : expressions.hashCode());
+    result = prime * result + ((exprs == null) ? 0 : exprs.hashCode());
     return result;
   }
 
@@ -38,11 +29,11 @@ public class ArraySelector extends Selector {
       return false;
     }
     ArraySelector other = (ArraySelector) obj;
-    if (expressions == null) {
-      if (other.expressions != null) {
+    if (exprs == null) {
+      if (other.exprs != null) {
         return false;
       }
-    } else if (!expressions.equals(other.expressions)) {
+    } else if (!exprs.equals(other.exprs)) {
       return false;
     }
     return true;
@@ -51,7 +42,7 @@ public class ArraySelector extends Selector {
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();
-    for (Expression expr : expressions) {
+    for (Expression expr : exprs) {
       strBuilder.append('[');
       strBuilder.append(expr);
       strBuilder.append(']');

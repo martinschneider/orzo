@@ -1,8 +1,8 @@
 package io.github.martinschneider.orzo.lexer.tokens;
 
 public class Str extends Token {
-  public Str(final String value) {
-    super(value);
+  public Str(String val) {
+    super(val);
   }
 
   public Str wLoc(Location loc) {
@@ -12,10 +12,10 @@ public class Str extends Token {
 
   @Override
   public String toString() {
-    return "STR(" + getValue() + ")";
+    return "STR(" + val + ")";
   }
 
   public Object strValue() {
-    return getValue().toString();
+    return val.toString();
   }
 }

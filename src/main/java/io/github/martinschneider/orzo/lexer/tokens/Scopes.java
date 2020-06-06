@@ -4,5 +4,5 @@ public enum Scopes {
   PUBLIC,
   PRIVATE,
   PROTECTED,
-  DEFAULT
+  DEFAULT // package private, local
 }

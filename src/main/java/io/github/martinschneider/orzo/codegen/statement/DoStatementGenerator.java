@@ -15,11 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DoStatementGenerator implements StatementGenerator {
-  public DoStatementGenerator(CGContext context) {
-    this.context = context;
-  }
+  private CGContext ctx;
 
-  private CGContext context;
+  public DoStatementGenerator(CGContext ctx) {
+    this.ctx = ctx;
+  }
 
   @Override
   public HasOutput generate(
@@ -28,19 +28,19 @@ public class DoStatementGenerator implements StatementGenerator {
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements
     List<Byte> breaks = new ArrayList<>();
-    for (Statement innerStmt : doStatement.getBody()) {
+    for (Statement innerStmt : doStatement.body) {
       if (innerStmt instanceof Break) {
         breaks.add((byte) (bodyOut.getBytes().length + 1));
         bodyOut.write(GOTO);
         bodyOut.write((short) 0); // placeholder
       } else {
-        context.delegator.generate(variables, bodyOut, method, innerStmt);
+        ctx.delegator.generate(variables, bodyOut, method, innerStmt);
       }
     }
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) -(bodyOut.getBytes().length + conditionOut.getBytes().length);
-    context.condGenerator.generateCondition(
-        conditionOut, variables, doStatement.getCondition(), branchBytes, true);
+    ctx.condGenerator.generateCondition(
+        conditionOut, variables, doStatement.cond, branchBytes, true);
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {
       byte[] jmpOffset =

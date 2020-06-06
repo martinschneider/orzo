@@ -3,35 +3,17 @@ package io.github.martinschneider.orzo.parser.productions;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 
 public class Assignment implements Statement {
-  private Identifier left;
-  private Expression right;
+  public Identifier left;
+  public Expression right;
 
-  public Assignment() {}
-
-  public Assignment(final Identifier left, final Expression right) {
+  public Assignment(Identifier left, Expression right) {
     this.left = left;
-    this.right = right;
-  }
-
-  public Identifier getLeft() {
-    return left;
-  }
-
-  public Expression getRight() {
-    return right;
-  }
-
-  public void setLeft(final Identifier left) {
-    this.left = left;
-  }
-
-  public void setRight(final Expression right) {
     this.right = right;
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
     result = prime * result + ((left == null) ? 0 : left.hashCode());
     result = prime * result + ((right == null) ? 0 : right.hashCode());

@@ -15,10 +15,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class IfStatementGenerator implements StatementGenerator {
-  private CGContext context;
+  private CGContext ctx;
 
-  public IfStatementGenerator(CGContext context) {
-    this.context = context;
+  public IfStatementGenerator(CGContext ctx) {
+    this.ctx = ctx;
   }
 
   @Override
@@ -27,27 +27,26 @@ public class IfStatementGenerator implements StatementGenerator {
     IfStatement ifStmt = (IfStatement) stmt;
     List<DynamicByteArray> bodyOutputs = new ArrayList<>();
     List<DynamicByteArray> condOutputs = new ArrayList<>();
-    for (int i = 0; i < ifStmt.getIfBlocks().size(); i++) {
-      IfBlock ifBlock = ifStmt.getIfBlocks().get(i);
+    for (int i = 0; i < ifStmt.ifBlks.size(); i++) {
+      IfBlock ifBlock = ifStmt.ifBlks.get(i);
       DynamicByteArray bodyOut = new DynamicByteArray();
-      for (Statement innerStmt : ifBlock.getBody()) {
-        context.delegator.generate(variables, bodyOut, method, innerStmt);
+      for (Statement innerStmt : ifBlock.body) {
+        ctx.delegator.generate(variables, bodyOut, method, innerStmt);
       }
       DynamicByteArray conditionOut = new DynamicByteArray();
-      if (ifBlock.getCondition() != null) { // null for else blocks
+      if (ifBlock.cond != null) { // null for else blocks
         short branchBytes = (short) (3 + bodyOut.getBytes().length);
-        if (i != ifStmt.getIfBlocks().size() - 1) {
+        if (i != ifStmt.ifBlks.size() - 1) {
           branchBytes += 3;
         }
-        context.condGenerator.generateCondition(
-            conditionOut, variables, ifBlock.getCondition(), branchBytes);
+        ctx.condGenerator.generateCondition(conditionOut, variables, ifBlock.cond, branchBytes);
       }
       bodyOutputs.add(bodyOut);
       condOutputs.add(conditionOut);
     }
     int blocks = bodyOutputs.size();
     short offset = (short) (3 + bodyOutputs.get(blocks - 1).size());
-    if (!ifStmt.isHasElseBlock()) {
+    if (!ifStmt.hasElse) {
       offset += condOutputs.get(blocks - 1).size();
     }
     // if there's no "else" then the last "else if" can fall through (doesn't require a goto)

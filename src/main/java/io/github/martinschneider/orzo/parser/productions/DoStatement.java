@@ -3,39 +3,18 @@ package io.github.martinschneider.orzo.parser.productions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DoStatement implements LoopStatement {
-  private List<Statement> body;
-  private Condition condition;
-
-  public DoStatement(final Condition condition, final List<Statement> body) {
-    this.condition = condition;
-    this.body = body;
-  }
-
-  @Override
-  public List<Statement> getBody() {
-    return body;
-  }
-
-  @Override
-  public Condition getCondition() {
-    return condition;
-  }
-
-  public void setBody(final List<Statement> body) {
-    this.body = body;
-  }
-
-  public void setCondition(final Condition condition) {
-    this.condition = condition;
+public class DoStatement extends LoopStatement {
+  public DoStatement(Condition condition, List<Statement> body) {
+    super.cond = condition;
+    super.body = body;
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
     result = prime * result + ((body == null) ? 0 : body.hashCode());
-    result = prime * result + ((condition == null) ? 0 : condition.hashCode());
+    result = prime * result + ((cond == null) ? 0 : cond.hashCode());
     return result;
   }
 
@@ -58,11 +37,11 @@ public class DoStatement implements LoopStatement {
     } else if (!body.equals(other.body)) {
       return false;
     }
-    if (condition == null) {
-      if (other.condition != null) {
+    if (cond == null) {
+      if (other.cond != null) {
         return false;
       }
-    } else if (!condition.equals(other.condition)) {
+    } else if (!cond.equals(other.cond)) {
       return false;
     }
     return true;
@@ -76,7 +55,7 @@ public class DoStatement implements LoopStatement {
     strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     strBuilder.append("}");
     strBuilder.append(" while ");
-    strBuilder.append(condition);
+    strBuilder.append(cond);
     return strBuilder.toString();
   }
 }

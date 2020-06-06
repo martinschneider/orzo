@@ -3,11 +3,11 @@ package io.github.martinschneider.orzo.lexer.tokens;
 import java.math.BigInteger;
 
 public class Token {
-  private Object value;
-  protected Location loc;
+  public Object val;
+  public Location loc;
 
-  public Token(final Object value) {
-    this.value = value;
+  public Token(Object val) {
+    this.val = val;
   }
 
   @Override
@@ -22,130 +22,118 @@ public class Token {
       return false;
     }
     Token other = (Token) obj;
-    if (value == null) {
-      if (other.value != null) {
+    if (val == null) {
+      if (other.val != null) {
         return false;
       }
-    } else if (!value.equals(other.value)) {
+    } else if (!val.equals(other.val)) {
       return false;
     }
     return true;
   }
 
-  public Object getValue() {
-    return value;
-  }
-
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
-    result = prime * result + ((value == null) ? 0 : value.hashCode());
+    result = prime * result + ((val == null) ? 0 : val.hashCode());
     return result;
-  }
-
-  public void setValue(final Object value) {
-    this.value = value;
   }
 
   @Override
   public String toString() {
-    return value.toString();
+    return val.toString();
   }
 
-  public static Token of(Object value) {
-    return new Token(value);
+  public static Token of(Object val) {
+    return new Token(val);
   }
 
-  public static Str str(String value) {
-    return new Str(value);
+  public static Str str(String val) {
+    return new Str(val);
   }
 
-  public static IntNum integer(Long value) {
-    return new IntNum(BigInteger.valueOf(value), true);
+  public static IntNum integer(Long val) {
+    return new IntNum(BigInteger.valueOf(val), true);
   }
 
-  public static IntNum integer(Integer value) {
-    return new IntNum(BigInteger.valueOf(value), false);
+  public static IntNum integer(Integer val) {
+    return new IntNum(BigInteger.valueOf(val), false);
   }
 
-  public static IntNum integer(BigInteger value, boolean isLong) {
-    return new IntNum(value, isLong);
+  public static IntNum integer(BigInteger val, boolean isLong) {
+    return new IntNum(val, isLong);
   }
 
-  public static IntNum integer(BigInteger value) {
-    return new IntNum(value, false);
+  public static IntNum integer(BigInteger val) {
+    return new IntNum(val, false);
   }
 
-  public static IntNum integer(String value) {
-    return new IntNum(new BigInteger(value), false);
+  public static IntNum integer(String val) {
+    return new IntNum(new BigInteger(val), false);
   }
 
-  public static IntNum integer(String value, boolean isLong) {
-    return new IntNum(new BigInteger(value), isLong);
+  public static IntNum integer(String val, boolean isLong) {
+    return new IntNum(new BigInteger(val), isLong);
   }
 
-  public static DoubleNum fp(double value, boolean isFloat) {
-    return new DoubleNum(value, isFloat);
+  public static DoubleNum fp(double val, boolean isFloat) {
+    return new DoubleNum(val, isFloat);
   }
 
-  public static DoubleNum fp(String value, boolean isFloat) {
-    return new DoubleNum(Double.valueOf(value), isFloat);
+  public static DoubleNum fp(String val, boolean isFloat) {
+    return new DoubleNum(Double.valueOf(val), isFloat);
   }
 
-  public static DoubleNum fp(double value) {
-    return new DoubleNum(value, false);
+  public static DoubleNum fp(double val) {
+    return new DoubleNum(val, false);
   }
 
-  public static DoubleNum fp(String value) {
-    return new DoubleNum(Double.valueOf(value), false);
+  public static DoubleNum fp(String val) {
+    return new DoubleNum(Double.valueOf(val), false);
   }
 
-  public static Identifier id(String value) {
-    return new Identifier(value);
+  public static Identifier id(String val) {
+    return new Identifier(val);
   }
 
-  public static Operator op(Operators value) {
-    return new Operator(value);
+  public static Operator op(Operators val) {
+    return new Operator(val);
   }
 
-  public static Comparator cmp(Comparators value) {
-    return new Comparator(value);
+  public static Comparator cmp(Comparators val) {
+    return new Comparator(val);
   }
 
-  public static Keyword keyword(Keywords value) {
-    return new Keyword(value);
+  public static Keyword keyword(Keywords val) {
+    return new Keyword(val);
   }
 
-  public static Keyword keyword(String value) {
-    return new Keyword(Keywords.valueOf(value.toUpperCase()));
+  public static Keyword keyword(String val) {
+    return new Keyword(Keywords.valueOf(val.toUpperCase()));
   }
 
-  public static Scope scope(Scopes value) {
-    return new Scope(value);
+  public static Scope scope(Scopes val) {
+    return new Scope(val);
   }
 
-  public static Sym sym(Symbols value) {
-    return new Sym(value);
+  public static Sym sym(Symbols val) {
+    return new Sym(val);
   }
 
-  public static Type type(String value) {
-    return new Type(value);
+  public static Type type(String val) {
+    return new Type(val);
   }
 
   public static Token eof() {
     return new EOF();
   }
 
-  public <T extends Token> boolean eq(T value) {
-    return this.getValue().equals(value.getValue());
+  public <T extends Token> boolean eq(T val) {
+    return equals(val);
   }
 
-  public <T extends Token> boolean eq(String value) {
-    return this.getValue().equals(value);
-  }
-
-  public Location getLoc() {
-    return loc;
+  public <T extends Token> boolean eq(String val) {
+    return this.val.equals(val);
   }
 }

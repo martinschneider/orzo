@@ -28,7 +28,8 @@ public enum Operators {
   PRE_DECREMENT(14),
   POST_INCREMENT(15),
   POST_DECREMENT(15);
-  final int precedence;
+
+  int precedence;
 
   private Operators(int precedence) {
     this.precedence = precedence;

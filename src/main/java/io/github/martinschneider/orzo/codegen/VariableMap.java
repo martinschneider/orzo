@@ -9,10 +9,10 @@ import java.util.Map;
 
 public class VariableMap {
   private Map<String, VariableInfo> variables;
-  private int size;
+  public int size;
+  public int tmpCount;
 
   public VariableMap(Map<String, VariableInfo> variables) {
-    super();
     this.variables = variables;
   }
 
@@ -21,23 +21,19 @@ public class VariableMap {
   }
 
   public void put(Identifier id, VariableInfo var) {
-    variables.put(id.getValue().toString(), var);
+    variables.put(id.val.toString(), var);
     size++;
     // long and double take up two entries
-    if (var.getType().equals(DOUBLE) || var.getType().equals(LONG)) {
+    if (var.type.equals(DOUBLE) || var.type.equals(LONG)) {
       size++;
     }
   }
 
   public VariableInfo get(Token id) {
-    return variables.get(id.getValue().toString());
-  }
-
-  public int size() {
-    return size;
+    return variables.get(id.val.toString());
   }
 
   public boolean containsKey(Identifier id) {
-    return variables.containsKey(id.getValue().toString());
+    return variables.containsKey(id.val.toString());
   }
 }

@@ -3,15 +3,15 @@ package io.github.martinschneider.orzo.lexer.tokens;
 import java.math.BigInteger;
 
 public class IntNum extends Token implements Num {
-  private boolean isLong;
+  public boolean isLong;
 
-  public IntNum(BigInteger value, boolean isLong) {
-    super(value);
+  public IntNum(BigInteger val, boolean isLong) {
+    super(val);
     this.isLong = isLong;
   }
 
-  public IntNum(Integer value, boolean isLong) {
-    this(BigInteger.valueOf(value), isLong);
+  public IntNum(Integer val, boolean isLong) {
+    this(BigInteger.valueOf(val), isLong);
   }
 
   public IntNum wLoc(Location loc) {
@@ -20,21 +20,13 @@ public class IntNum extends Token implements Num {
   }
 
   public long intValue() {
-    return ((BigInteger) getValue()).longValue();
-  }
-
-  public boolean isLong() {
-    return isLong;
-  }
-
-  public void setLong(boolean isLong) {
-    this.isLong = isLong;
+    return ((BigInteger) val).longValue();
   }
 
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder("INT(");
-    strBuilder.append(getValue());
+    strBuilder.append(val);
     if (isLong) {
       strBuilder.append("l");
     }
@@ -44,6 +36,6 @@ public class IntNum extends Token implements Num {
 
   @Override
   public void changeSign() {
-    setValue(((BigInteger) getValue()).multiply(BigInteger.valueOf(-1)));
+    val = ((BigInteger) val).multiply(BigInteger.valueOf(-1));
   }
 }

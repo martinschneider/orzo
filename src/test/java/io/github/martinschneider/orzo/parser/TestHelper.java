@@ -50,8 +50,8 @@ public class TestHelper {
     return new ArraySelector(selectors);
   }
 
-  public static ArrayInitialiser arrInit(String type, int dim, List<Expression> values) {
-    return new ArrayInitialiser(type, dim, values);
+  public static ArrayInitialiser arrInit(String type, int dim, List<Expression> vals) {
+    return new ArrayInitialiser(type, dim, vals);
   }
 
   public static Assignment assign(Identifier left, Expression right) {
@@ -77,13 +77,13 @@ public class TestHelper {
     return new Condition(left, comp, right);
   }
 
-  public static Declaration decl(Identifier name, String type, Expression value, boolean hasValue) {
-    return new Declaration(type, name, value, hasValue);
+  public static Declaration decl(Identifier name, String type, Expression val, boolean hasValue) {
+    return new Declaration(type, name, val, hasValue);
   }
 
   public static Declaration decl(
-      Identifier name, String type, int array, Expression value, boolean hasValue) {
-    return new Declaration(type, array, name, value, hasValue);
+      Identifier name, String type, int array, Expression val, boolean hasValue) {
+    return new Declaration(type, array, name, val, hasValue);
   }
 
   public static Declaration decl(String input) throws IOException {
@@ -107,8 +107,8 @@ public class TestHelper {
     return new CompilerError(msg);
   }
 
-  public static Identifier id(String value, ArraySelector selector) {
-    return new Identifier(value, selector);
+  public static Identifier id(String val, ArraySelector selector) {
+    return new Identifier(val, selector);
   }
 
   public static IfStatement ifStmt(List<IfBlock> ifBlocks, boolean hasElse) {

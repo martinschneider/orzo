@@ -66,8 +66,8 @@ import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ExpressionGenerator {
   public CGContext ctx;
@@ -91,28 +91,27 @@ public class ExpressionGenerator {
     if (type == null) {
       type = new NumExprTypeDecider().getType(variables, expr);
     }
-    Object value = null;
+    Object val = null;
     if (expr == null) {
       return null;
     }
-    List<Token> tokens =
-        new ExpressionParser2(ctx, getMethodNames(ctx.clazz)).postfix(expr.getInfix());
+    List<Token> tokens = new ExpressionParser2(ctx, getMethodNames(ctx.clazz)).postfix(expr.tokens);
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
       if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
-        String varType = variables.get(id).getType();
-        // look ahead for ++ or -- operators because in that case we do not push the value to the
+        String varType = variables.get(id).type;
+        // look ahead for ++ or -- operators because in that case we do not push the val to the
         // stack
         if (i + 1 == tokens.size()
             || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
                 && !tokens.get(i + 1).eq(op(POST_INCREMENT)))) {
           VariableInfo varInfo = variables.get(id);
-          byte varIdx = varInfo.getIdx();
-          if (id.getSelector() != null) {
+          byte varIdx = varInfo.idx;
+          if (id.arrSel != null) {
             // array
             ctx.opsGenerator.loadValueFromArray(
-                out, variables, id.getSelector().getExpression(), varInfo.getArrayType(), varIdx);
+                out, variables, id.arrSel.exprs, varInfo.arrType, varIdx);
           } else {
             ctx.opsGenerator.loadValue(out, varType, varIdx);
           }
@@ -121,7 +120,7 @@ public class ExpressionGenerator {
           ctx.opsGenerator.convert(out, varType, type);
         }
       } else if (token instanceof IntNum) {
-        BigInteger bigInt = (BigInteger) ((IntNum) token).getValue();
+        BigInteger bigInt = (BigInteger) ((IntNum) token).val;
         Long intValue = bigInt.longValue();
         // look ahead for <<, >> or >>> operators which require the second argument to be an integer
         if (i + 1 < tokens.size()
@@ -140,21 +139,21 @@ public class ExpressionGenerator {
             ctx.opsGenerator.pushInteger(out, intValue.intValue());
           }
         }
-        value = bigInt;
+        val = bigInt;
       } else if (token instanceof DoubleNum) {
-        BigDecimal bigDec = (BigDecimal) ((DoubleNum) token).getValue();
+        BigDecimal bigDec = (BigDecimal) ((DoubleNum) token).val;
         if (type.equals(DOUBLE)) {
           ctx.opsGenerator.pushDouble(out, bigDec.doubleValue());
         } else if (type.equals(FLOAT)) {
           ctx.opsGenerator.pushFloat(out, bigDec.floatValue());
         }
-        value = bigDec;
+        val = bigDec;
       } else if (token instanceof Str) {
         ctx.opsGenerator.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
         type = STRING;
       } else if (token instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) token;
-        String methodName = methodCall.getName().toString();
+        String methodName = methodCall.name.toString();
         Method method = ctx.methodMap.get(methodName);
         if (method == null) {
           ctx.errors.addError(
@@ -165,12 +164,12 @@ public class ExpressionGenerator {
                   + ctx.methodMap.keySet());
           return null;
         }
-        for (Expression exp : methodCall.getParameters()) {
+        for (Expression exp : methodCall.params) {
           eval(out, variables, type, exp);
         }
         ctx.opsGenerator.invokeStatic(
-            out, ctx.clazz.getName().getValue().toString(), methodName, method.getTypeDescr());
-        type = method.getType();
+            out, ctx.clazz.name.val.toString(), methodName, method.getTypeDescr());
+        type = method.type;
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
         // TODO: map types and op codes more elegantly
@@ -343,55 +342,56 @@ public class ExpressionGenerator {
           case POST_INCREMENT:
             switch (type) {
               case INT:
-                ctx.opsGenerator.incInteger(
-                    out, variables.get(tokens.get(i - 1)).getIdx(), (byte) 1);
+                ctx.opsGenerator.incInteger(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
                 break;
               case DOUBLE:
-                ctx.opsGenerator.incDouble(out, variables.get(tokens.get(i - 1)).getIdx());
+                ctx.opsGenerator.incDouble(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case FLOAT:
-                ctx.opsGenerator.incFloat(out, variables.get(tokens.get(i - 1)).getIdx());
+                ctx.opsGenerator.incFloat(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case LONG:
-                ctx.opsGenerator.incLong(out, variables.get(tokens.get(i - 1)).getIdx());
+                ctx.opsGenerator.incLong(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case BYTE:
-                ctx.opsGenerator.incByte(out, variables.get(tokens.get(i - 1)).getIdx(), (byte) 1);
+                ctx.opsGenerator.incByte(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
               case SHORT:
-                ctx.opsGenerator.incShort(out, variables.get(tokens.get(i - 1)).getIdx(), (byte) 1);
+                ctx.opsGenerator.incShort(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
             }
             break;
           case POST_DECREMENT:
             switch (type) {
               case INT:
-                ctx.opsGenerator.incInteger(
-                    out, variables.get(tokens.get(i - 1)).getIdx(), (byte) -1);
+                ctx.opsGenerator.incInteger(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
                 break;
               case DOUBLE:
-                ctx.opsGenerator.decDouble(out, variables.get(tokens.get(i - 1)).getIdx());
+                ctx.opsGenerator.decDouble(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case FLOAT:
-                ctx.opsGenerator.decFloat(out, variables.get(tokens.get(i - 1)).getIdx());
+                ctx.opsGenerator.decFloat(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case LONG:
-                ctx.opsGenerator.decLong(out, variables.get(tokens.get(i - 1)).getIdx());
+                ctx.opsGenerator.decLong(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case BYTE:
-                ctx.opsGenerator.incByte(out, variables.get(tokens.get(i - 1)).getIdx(), (byte) -1);
+                ctx.opsGenerator.incByte(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
               case SHORT:
-                ctx.opsGenerator.incShort(
-                    out, variables.get(tokens.get(i - 1)).getIdx(), (byte) -1);
+                ctx.opsGenerator.incShort(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
             }
           default:
         }
       }
     }
     // TODO: this is not working yet
-    // what to return if the value cannot be determined at compile time?
-    return new ExpressionResult(type, value);
+    // what to return if the val cannot be determined at compile time?
+    return new ExpressionResult(type, val);
   }
 
   private List<Identifier> getMethodNames(Clazz clazz) {
-    return clazz.getBody().stream().map(Method::getName).collect(Collectors.toList());
+    List<Identifier> ids = new ArrayList<>();
+    for (Method method : clazz.body) {
+      ids.add(method.name);
+    }
+    return ids;
   }
 }

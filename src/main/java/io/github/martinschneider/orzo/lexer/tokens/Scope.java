@@ -1,8 +1,8 @@
 package io.github.martinschneider.orzo.lexer.tokens;
 
 public class Scope extends Token {
-  public Scope(final Scopes value) {
-    super(value);
+  public Scope(Scopes val) {
+    super(val);
   }
 
   public Scope wLoc(Location loc) {

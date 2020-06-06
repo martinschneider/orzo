@@ -15,10 +15,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class WhileStatementGenerator implements StatementGenerator {
-  private CGContext context;
+  private CGContext ctx;
 
-  public WhileStatementGenerator(CGContext context) {
-    this.context = context;
+  public WhileStatementGenerator(CGContext ctx) {
+    this.ctx = ctx;
   }
 
   @Override
@@ -28,19 +28,18 @@ public class WhileStatementGenerator implements StatementGenerator {
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements
     List<Byte> breaks = new ArrayList<>();
-    for (Statement innerStmt : whileStatement.getBody()) {
+    for (Statement innerStmt : whileStatement.body) {
       if (innerStmt instanceof Break) {
         breaks.add((byte) (bodyOut.getBytes().length + 1));
         bodyOut.write(GOTO);
         bodyOut.write((short) 0); // placeholder
       } else {
-        context.delegator.generate(variables, bodyOut, method, innerStmt);
+        ctx.delegator.generate(variables, bodyOut, method, innerStmt);
       }
     }
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
-    context.condGenerator.generateCondition(
-        conditionOut, variables, whileStatement.getCondition(), branchBytes);
+    ctx.condGenerator.generateCondition(conditionOut, variables, whileStatement.cond, branchBytes);
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {

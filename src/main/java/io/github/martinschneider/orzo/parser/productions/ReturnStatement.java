@@ -1,24 +1,15 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 public class ReturnStatement implements Statement {
-  private Expression retValue;
-
-  public Expression getRetValue() {
-    return retValue;
-  }
-
-  public void setRetValue(Expression retValue) {
-    this.retValue = retValue;
-  }
+  public Expression retValue;
 
   public ReturnStatement(Expression retValue) {
-    super();
     this.retValue = retValue;
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
     result = prime * result + ((retValue == null) ? 0 : retValue.hashCode());
     return result;

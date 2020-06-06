@@ -3,15 +3,15 @@ package io.github.martinschneider.orzo.lexer.tokens;
 import java.math.BigDecimal;
 
 public class DoubleNum extends Token implements Num {
-  private boolean isFloat;
+  public boolean isFloat;
 
-  public DoubleNum(BigDecimal value, boolean isFloat) {
-    super(value);
+  public DoubleNum(BigDecimal val, boolean isFloat) {
+    super(val);
     this.isFloat = isFloat;
   }
 
-  public DoubleNum(Double value, boolean isFloat) {
-    this(BigDecimal.valueOf(value), isFloat);
+  public DoubleNum(Double val, boolean isFloat) {
+    this(BigDecimal.valueOf(val), isFloat);
   }
 
   public DoubleNum wLoc(Location loc) {
@@ -22,7 +22,7 @@ public class DoubleNum extends Token implements Num {
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder("FP(");
-    strBuilder.append(getValue());
+    strBuilder.append(val);
     if (isFloat) {
       strBuilder.append("f");
     }
@@ -32,14 +32,6 @@ public class DoubleNum extends Token implements Num {
 
   @Override
   public void changeSign() {
-    setValue((Double) getValue() * -1);
-  }
-
-  public boolean isFloat() {
-    return isFloat;
-  }
-
-  public void setFloat(boolean isFloat) {
-    this.isFloat = isFloat;
+    val = (Double) val * -1;
   }
 }

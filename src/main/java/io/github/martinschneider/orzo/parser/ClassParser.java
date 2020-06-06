@@ -101,7 +101,7 @@ public class ClassParser implements ProdParser<Clazz> {
         if (tokens.curr().eq(sym(DOT))) {
           identifier.append('.');
         } else if (tokens.curr() instanceof Identifier) {
-          identifier.append(tokens.curr().getValue());
+          identifier.append(tokens.curr().val);
         } else {
           ctx.errors.addError(LOG_NAME, "invalid token " + tokens.curr() + " in import");
           return new Import(identifier.toString(), isStatic);
@@ -122,7 +122,7 @@ public class ClassParser implements ProdParser<Clazz> {
         if (tokens.curr().eq(sym(DOT))) {
           packageName.append('.');
         } else if (tokens.curr() instanceof Identifier) {
-          packageName.append(tokens.curr().getValue());
+          packageName.append(tokens.curr().val);
         } else {
           ctx.errors.addError(
               LOG_NAME, "invalid token " + tokens.curr() + " in package declaration");

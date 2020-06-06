@@ -15,34 +15,33 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ForStatementGenerator implements StatementGenerator {
-  private CGContext context;
+  private CGContext ctx;
 
-  public ForStatementGenerator(CGContext context) {
-    this.context = context;
+  public ForStatementGenerator(CGContext ctx) {
+    this.ctx = ctx;
   }
 
   @Override
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     ForStatement forStatement = (ForStatement) stmt;
-    context.delegator.generate(variables, out, method, forStatement.getInitialization());
+    ctx.delegator.generate(variables, out, method, forStatement.init);
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements
     List<Byte> breaks = new ArrayList<>();
-    for (Statement innerStmt : forStatement.getBody()) {
+    for (Statement innerStmt : forStatement.body) {
       if (innerStmt instanceof Break) {
         breaks.add((byte) (bodyOut.getBytes().length + 1));
         bodyOut.write(GOTO);
         bodyOut.write((short) 0); // temporary placeholder
       } else {
-        context.delegator.generate(variables, bodyOut, method, innerStmt);
+        ctx.delegator.generate(variables, bodyOut, method, innerStmt);
       }
     }
-    context.delegator.generate(variables, bodyOut, method, forStatement.getLoopStatement());
+    ctx.delegator.generate(variables, bodyOut, method, forStatement.loopStmt);
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
-    context.condGenerator.generateCondition(
-        conditionOut, variables, forStatement.getCondition(), branchBytes);
+    ctx.condGenerator.generateCondition(conditionOut, variables, forStatement.cond, branchBytes);
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {

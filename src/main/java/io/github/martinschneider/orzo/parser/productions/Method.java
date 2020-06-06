@@ -17,56 +17,25 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Method {
-  private List<Argument> arguments;
-  private List<Statement> body;
-  private Identifier name;
-  private Scope scope;
-  private String type;
+  public List<Argument> args;
+  public List<Statement> body;
+  public Identifier name;
+  public Scope scope;
+  public String type;
 
-  /**
-   * @param scope scope
-   * @param type return-type
-   * @param name name
-   * @param body method-body
-   */
   public Method(
-      final Scope scope,
-      final String type,
-      final Identifier name,
-      final List<Argument> arguments,
-      final List<Statement> body) {
+      Scope scope, String type, Identifier name, List<Argument> arguments, List<Statement> body) {
     this.scope = scope;
     this.type = type;
     this.name = name;
-    this.arguments = arguments;
+    this.args = arguments;
     this.body = body;
-  }
-
-  public List<Argument> getArguments() {
-    return arguments;
-  }
-
-  public List<Statement> getBody() {
-    return body;
-  }
-
-  public Identifier getName() {
-    return name;
-  }
-
-  public Scope getScope() {
-    return scope;
-  }
-
-  public String getType() {
-    return type;
   }
 
   public String getTypeDescr() {
     String typeDescr = getDescr(type);
     StringBuilder strBuilder = new StringBuilder("(");
-    strBuilder.append(
-        arguments.stream().map(x -> getDescr(x.getType())).collect(Collectors.joining("")));
+    strBuilder.append(args.stream().map(x -> getDescr(x.type)).collect(Collectors.joining("")));
     strBuilder.append(')');
     strBuilder.append(typeDescr);
     return strBuilder.toString();
@@ -99,31 +68,11 @@ public class Method {
     return type;
   }
 
-  public void setArguments(List<Argument> arguments) {
-    this.arguments = arguments;
-  }
-
-  public void setBody(final List<Statement> body) {
-    this.body = body;
-  }
-
-  public void setName(final Identifier name) {
-    this.name = name;
-  }
-
-  public void setScope(final Scope scope) {
-    this.scope = scope;
-  }
-
-  public void setType(final String type) {
-    this.type = type;
-  }
-
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
-    result = prime * result + ((arguments == null) ? 0 : arguments.hashCode());
+    result = prime * result + ((args == null) ? 0 : args.hashCode());
     result = prime * result + ((body == null) ? 0 : body.hashCode());
     result = prime * result + ((name == null) ? 0 : name.hashCode());
     result = prime * result + ((scope == null) ? 0 : scope.hashCode());
@@ -143,11 +92,11 @@ public class Method {
       return false;
     }
     Method other = (Method) obj;
-    if (arguments == null) {
-      if (other.arguments != null) {
+    if (args == null) {
+      if (other.args != null) {
         return false;
       }
-    } else if (!arguments.equals(other.arguments)) {
+    } else if (!args.equals(other.args)) {
       return false;
     }
     if (body == null) {
@@ -191,9 +140,7 @@ public class Method {
     strBuilder.append(name);
     strBuilder.append(", args{");
     strBuilder.append(
-        arguments.stream()
-            .map(x -> x.getName().getValue().toString())
-            .collect(Collectors.joining(", ")));
+        args.stream().map(x -> x.name.val.toString()).collect(Collectors.joining(", ")));
     strBuilder.append("}");
     strBuilder.append(", code{");
     strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));

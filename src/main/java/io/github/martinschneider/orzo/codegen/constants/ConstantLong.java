@@ -3,19 +3,19 @@ package io.github.martinschneider.orzo.codegen.constants;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.longToByteArray;
 
 public class ConstantLong implements Constant {
-  private Long value;
+  private Long val;
 
-  public ConstantLong(Long value) {
-    this.value = value;
+  public ConstantLong(Long val) {
+    this.val = val;
   }
 
   @Override
-  public byte getTag() {
+  public byte tag() {
     return ConstantTypes.CONSTANT_LONG;
   }
 
   @Override
-  public byte[] getInfo() {
-    return longToByteArray(value);
+  public byte[] info() {
+    return longToByteArray(val);
   }
 }

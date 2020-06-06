@@ -1,28 +1,11 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 public class Import {
-  public Import(String identifier, boolean isStatic) {
-    super();
-    this.identifier = identifier;
-    this.isStatic = isStatic;
-  }
+  public String id;
+  public boolean isStatic;
 
-  private String identifier;
-  private boolean isStatic;
-
-  public String getIdentifier() {
-    return identifier;
-  }
-
-  public void setIdentifier(String identifier) {
-    this.identifier = identifier;
-  }
-
-  public boolean isStatic() {
-    return isStatic;
-  }
-
-  public void setStatic(boolean isStatic) {
+  public Import(String id, boolean isStatic) {
+    this.id = id;
     this.isStatic = isStatic;
   }
 
@@ -33,7 +16,7 @@ public class Import {
     if (isStatic) {
       strBuilder.append("static ");
     }
-    strBuilder.append(identifier);
+    strBuilder.append(id);
     return strBuilder.toString();
   }
 }

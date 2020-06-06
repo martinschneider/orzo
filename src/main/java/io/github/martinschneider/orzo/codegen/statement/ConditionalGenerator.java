@@ -26,7 +26,7 @@ import io.github.martinschneider.orzo.parser.productions.Condition;
 import java.math.BigInteger;
 
 public class ConditionalGenerator {
-  public CGContext context;
+  public CGContext ctx;
 
   public HasOutput generateCondition(
       DynamicByteArray out, VariableMap variables, Condition cond, short branchBytes) {
@@ -41,13 +41,12 @@ public class ConditionalGenerator {
       boolean isDoLoop) {
     DynamicByteArray condOut = new DynamicByteArray();
     // TODO: support other boolean conditions
-    ExpressionResult left =
-        context.exprGenerator.eval(condOut, variables, null, cond.getLeft(), false);
+    ExpressionResult left = ctx.exprGenerator.eval(condOut, variables, null, cond.left, false);
     ExpressionResult right =
-        context.exprGenerator.eval(condOut, variables, left.getType(), cond.getRight(), false);
-    if (left.getType().equals(INT)) {
+        ctx.exprGenerator.eval(condOut, variables, left.type, cond.right, false);
+    if (left.type.equals(INT)) {
       return generateIntCondition(condOut, out, cond, left, right, branchBytes, isDoLoop);
-    } else if (left.getType().equals(LONG)) {
+    } else if (left.type.equals(LONG)) {
       return generateLongCondition(condOut, out, cond, left, right, branchBytes, isDoLoop);
     }
     return null;
@@ -62,7 +61,7 @@ public class ConditionalGenerator {
       short branchBytes,
       boolean isDoLoop) {
     condOut.write(LCMP);
-    switch (cond.getOperator().cmpValue()) {
+    switch (cond.op.cmpValue()) {
       case EQUAL:
         if (isDoLoop) {
           condOut.write(IFEQ);
@@ -117,12 +116,12 @@ public class ConditionalGenerator {
       ExpressionResult right,
       short branchBytes,
       boolean isDoLoop) {
-    boolean leftZero = isZero(left.getValue());
-    boolean rightZero = isZero(right.getValue());
+    boolean leftZero = isZero(left.result);
+    boolean rightZero = isZero(right.result);
     if (leftZero ^ rightZero) {
       boolean reverseOp =
           (isDoLoop && leftZero && !rightZero) || (!isDoLoop && !leftZero && rightZero);
-      switch (cond.getOperator().cmpValue()) {
+      switch (cond.op.cmpValue()) {
           // use the inverse comparison because jumping means we execute the "else" part of the
           // condition
         case EQUAL:
@@ -170,7 +169,7 @@ public class ConditionalGenerator {
       }
       return writeBranchOffset(out, branchBytes, isDoLoop, condOut);
     }
-    switch (cond.getOperator().cmpValue()) {
+    switch (cond.op.cmpValue()) {
       case EQUAL:
         if (isDoLoop) {
           condOut.write(IF_ICMPEQ);
@@ -231,7 +230,7 @@ public class ConditionalGenerator {
     return out;
   }
 
-  public static boolean isZero(Object value) {
-    return (value instanceof BigInteger && value.equals(BigInteger.ZERO));
+  public static boolean isZero(Object val) {
+    return (val instanceof BigInteger && val.equals(BigInteger.ZERO));
   }
 }

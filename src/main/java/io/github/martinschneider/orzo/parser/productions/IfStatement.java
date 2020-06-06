@@ -4,37 +4,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class IfStatement implements Statement {
-  private List<IfBlock> ifBlocks;
-  private boolean hasElseBlock;
+  public List<IfBlock> ifBlks;
+  public boolean hasElse;
 
-  public IfStatement(List<IfBlock> ifBlocks, boolean hasElseBlock) {
-    super();
-    this.ifBlocks = ifBlocks;
-    this.hasElseBlock = hasElseBlock;
-  }
-
-  public List<IfBlock> getIfBlocks() {
-    return ifBlocks;
-  }
-
-  public void setIfBlocks(List<IfBlock> ifBlocks) {
-    this.ifBlocks = ifBlocks;
-  }
-
-  public boolean isHasElseBlock() {
-    return hasElseBlock;
-  }
-
-  public void setHasElseBlock(boolean hasElseBlock) {
-    this.hasElseBlock = hasElseBlock;
+  public IfStatement(List<IfBlock> ifBlks, boolean hasElse) {
+    this.ifBlks = ifBlks;
+    this.hasElse = hasElse;
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
+    int prime = 31;
     int result = 1;
-    result = prime * result + (hasElseBlock ? 1231 : 1237);
-    result = prime * result + ((ifBlocks == null) ? 0 : ifBlocks.hashCode());
+    result = prime * result + (hasElse ? 1231 : 1237);
+    result = prime * result + ((ifBlks == null) ? 0 : ifBlks.hashCode());
     return result;
   }
 
@@ -50,14 +33,14 @@ public class IfStatement implements Statement {
       return false;
     }
     IfStatement other = (IfStatement) obj;
-    if (hasElseBlock != other.hasElseBlock) {
+    if (hasElse != other.hasElse) {
       return false;
     }
-    if (ifBlocks == null) {
-      if (other.ifBlocks != null) {
+    if (ifBlks == null) {
+      if (other.ifBlks != null) {
         return false;
       }
-    } else if (!ifBlocks.equals(other.ifBlocks)) {
+    } else if (!ifBlks.equals(other.ifBlks)) {
       return false;
     }
     return true;
@@ -67,7 +50,7 @@ public class IfStatement implements Statement {
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();
     strBuilder.append("IF[");
-    strBuilder.append(ifBlocks.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
+    strBuilder.append(ifBlks.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     strBuilder.append("]");
     return strBuilder.toString();
   }

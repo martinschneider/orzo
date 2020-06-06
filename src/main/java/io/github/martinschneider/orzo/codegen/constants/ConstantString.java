@@ -11,12 +11,12 @@ public class ConstantString implements Constant {
   }
 
   @Override
-  public byte getTag() {
+  public byte tag() {
     return ConstantTypes.CONSTANT_STRING;
   }
 
   @Override
-  public byte[] getInfo() {
+  public byte[] info() {
     return shortToByteArray(id);
   }
 }

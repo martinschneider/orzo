@@ -28,9 +28,13 @@ public class ParallelAssignmentParser implements ProdParser<ParallelAssignment> 
     List<Expression> right = new ArrayList<>();
     while (tokens.curr() instanceof Identifier || tokens.curr().eq(sym(COMMA))) {
       if (tokens.curr() instanceof Identifier) {
-        left.add((Identifier) tokens.curr());
+        Identifier id = (Identifier) tokens.curr();
+        tokens.next();
+        id.arrSel = ctx.arraySelectorParser.parse(tokens);
+        left.add(id);
+      } else {
+        tokens.next();
       }
-      tokens.next();
     }
     if (!tokens.curr().eq(op(ASSIGN))) {
       tokens.setIdx(idx);
