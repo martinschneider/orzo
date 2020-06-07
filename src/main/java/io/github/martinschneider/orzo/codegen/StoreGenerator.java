@@ -1,4 +1,4 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.AASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE;
@@ -39,9 +39,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
-
-import io.github.martinschneider.orzo.codegen.DynamicByteArray;
-import io.github.martinschneider.orzo.codegen.HasOutput;
 
 public class StoreGenerator {
   public static HasOutput storeValue(DynamicByteArray out, String type, byte idx) {

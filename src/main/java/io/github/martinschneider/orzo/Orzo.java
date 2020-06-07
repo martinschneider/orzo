@@ -1,5 +1,7 @@
-package io.github.martinschneider.orzo.codegen;
+package io.github.martinschneider.orzo;
 
+import io.github.martinschneider.orzo.codegen.CodeGenerator;
+import io.github.martinschneider.orzo.codegen.Output;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.parser.Parser;
@@ -43,9 +45,8 @@ public class Orzo {
     System.out.println("Reading from: " + input.getAbsolutePath());
     Lexer scanner = new Lexer();
     TokenList tokens = scanner.getTokens(input);
-    System.out.println(
-        "Scanner output: "
-            + tokens.list().stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
+    System.out.println("Scanner output: "
+        + tokens.list().stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     Parser parser = new Parser(scanner.getErrors());
     Clazz clazz = parser.parse(tokens);
     System.out.println("Parser output: " + clazz);

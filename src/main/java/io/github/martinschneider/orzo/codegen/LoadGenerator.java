@@ -1,4 +1,4 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.ALOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ALOAD_0;
@@ -29,9 +29,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
-
-import io.github.martinschneider.orzo.codegen.DynamicByteArray;
-import io.github.martinschneider.orzo.codegen.HasOutput;
 
 public class LoadGenerator {
   public static HasOutput loadDouble(DynamicByteArray out, byte idx) {

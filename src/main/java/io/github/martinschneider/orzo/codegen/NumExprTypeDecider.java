@@ -1,12 +1,9 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
-
-import io.github.martinschneider.orzo.codegen.VariableInfo;
-import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.lexer.tokens.DoubleNum;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntNum;

@@ -1,7 +1,6 @@
 package io.github.martinschneider.orzo.codegen;
 
 import io.github.martinschneider.orzo.codegen.constants.ConstantPool;
-import io.github.martinschneider.orzo.codegen.statement.BasicCodeGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ConditionalGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ExpressionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.StatementDelegator;

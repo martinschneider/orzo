@@ -4,8 +4,6 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.RETURN;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
-
-import io.github.martinschneider.orzo.codegen.statement.BasicCodeGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ConditionalGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ExpressionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.StatementDelegator;

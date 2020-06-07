@@ -12,8 +12,6 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_5;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_M1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SIPUSH;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-
-import io.github.martinschneider.orzo.codegen.statement.BasicCodeGenerator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;

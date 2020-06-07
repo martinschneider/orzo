@@ -1,5 +1,9 @@
 package io.github.martinschneider.orzo.codegen.statement;
 
+import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadDouble;
+import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadInteger;
+import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadLong;
+import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadValue;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DADD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DDIV;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DMUL;
@@ -36,10 +40,6 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LSUB;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LUSHR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LXOR;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
-import static io.github.martinschneider.orzo.codegen.statement.LoadGenerator.loadDouble;
-import static io.github.martinschneider.orzo.codegen.statement.LoadGenerator.loadInteger;
-import static io.github.martinschneider.orzo.codegen.statement.LoadGenerator.loadLong;
-import static io.github.martinschneider.orzo.codegen.statement.LoadGenerator.loadValue;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
@@ -58,6 +58,7 @@ import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.lexer.tokens.DoubleNum;

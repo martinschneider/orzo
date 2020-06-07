@@ -1,7 +1,7 @@
 package io.github.martinschneider.orzo.codegen.statement;
 
-import static io.github.martinschneider.orzo.codegen.statement.LoadGenerator.loadValue;
-import static io.github.martinschneider.orzo.codegen.statement.StoreGenerator.storeValue;
+import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadValue;
+import static io.github.martinschneider.orzo.codegen.StoreGenerator.storeValue;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 
 import io.github.martinschneider.orzo.codegen.CGContext;

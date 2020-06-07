@@ -1,4 +1,4 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.BYTE_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.DOUBLE_ARRAY;

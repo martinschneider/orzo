@@ -2,10 +2,10 @@ package io.github.martinschneider.orzo.codegen.statement;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
-import static io.github.martinschneider.orzo.codegen.statement.PushGenerator.bipush;
-import static io.github.martinschneider.orzo.codegen.statement.PushGenerator.sipush;
-import static io.github.martinschneider.orzo.codegen.statement.TypeUtils.getArrayType;
-import static io.github.martinschneider.orzo.codegen.statement.TypeUtils.getStoreOpCode;
+import static io.github.martinschneider.orzo.codegen.PushGenerator.bipush;
+import static io.github.martinschneider.orzo.codegen.PushGenerator.sipush;
+import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
+import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
