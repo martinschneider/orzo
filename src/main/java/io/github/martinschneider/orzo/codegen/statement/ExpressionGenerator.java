@@ -10,9 +10,12 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.FDIV;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FMUL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FREM;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FSUB;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2B;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2S;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IADD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IAND;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IDIV;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IINC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IMUL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IOR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IREM;
@@ -33,6 +36,10 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LSUB;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LUSHR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LXOR;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
+import static io.github.martinschneider.orzo.codegen.statement.LoadGenerator.loadDouble;
+import static io.github.martinschneider.orzo.codegen.statement.LoadGenerator.loadInteger;
+import static io.github.martinschneider.orzo.codegen.statement.LoadGenerator.loadLong;
+import static io.github.martinschneider.orzo.codegen.statement.LoadGenerator.loadValue;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
@@ -50,6 +57,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
+import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.lexer.tokens.DoubleNum;
@@ -114,7 +122,7 @@ public class ExpressionGenerator {
                 out, variables, id.arrSel.exprs, varInfo.arrType, varIdx);
             type = varInfo.arrType;
           } else {
-            ctx.opsGenerator.loadValue(out, varType, varIdx);
+            loadValue(out, varType, varIdx);
           }
         }
         if (!type.equals(varType)) {
@@ -343,41 +351,41 @@ public class ExpressionGenerator {
           case POST_INCREMENT:
             switch (type) {
               case INT:
-                ctx.opsGenerator.incInteger(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
+                incInteger(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
                 break;
               case DOUBLE:
-                ctx.opsGenerator.incDouble(out, variables.get(tokens.get(i - 1)).idx);
+                incDouble(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case FLOAT:
-                ctx.opsGenerator.incFloat(out, variables.get(tokens.get(i - 1)).idx);
+                incFloat(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case LONG:
-                ctx.opsGenerator.incLong(out, variables.get(tokens.get(i - 1)).idx);
+                incLong(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case BYTE:
-                ctx.opsGenerator.incByte(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
+                incByte(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
               case SHORT:
-                ctx.opsGenerator.incShort(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
+                incShort(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
             }
             break;
           case POST_DECREMENT:
             switch (type) {
               case INT:
-                ctx.opsGenerator.incInteger(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
+                incInteger(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
                 break;
               case DOUBLE:
-                ctx.opsGenerator.decDouble(out, variables.get(tokens.get(i - 1)).idx);
+                decDouble(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case FLOAT:
-                ctx.opsGenerator.decFloat(out, variables.get(tokens.get(i - 1)).idx);
+                decFloat(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case LONG:
-                ctx.opsGenerator.decLong(out, variables.get(tokens.get(i - 1)).idx);
+                decLong(out, variables.get(tokens.get(i - 1)).idx);
                 break;
               case BYTE:
-                ctx.opsGenerator.incByte(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
+                incByte(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
               case SHORT:
-                ctx.opsGenerator.incShort(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
+                incShort(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
             }
           default:
         }
@@ -394,5 +402,72 @@ public class ExpressionGenerator {
       ids.add(method.name);
     }
     return ids;
+  }
+
+  private HasOutput incInteger(DynamicByteArray out, byte idx, byte val) {
+    out.write(IINC);
+    out.write(idx);
+    out.write(val);
+    loadInteger(out, idx);
+    return out;
+  }
+
+  // byte cannot be increased directly, load to the stack and convert
+  private HasOutput incByte(DynamicByteArray out, byte idx, byte val) {
+    loadInteger(out, idx);
+    ctx.opsGenerator.pushInteger(out, val);
+    out.write(IADD);
+    out.write(I2B);
+    return out;
+  }
+
+  // short cannot be increased directly, load to the stack and convert
+  private HasOutput incShort(DynamicByteArray out, byte idx, byte val) {
+    loadInteger(out, idx);
+    ctx.opsGenerator.pushInteger(out, val);
+    out.write(IADD);
+    out.write(I2S);
+    return out;
+  }
+
+  // long type cannot be increased directly, load to the stack and add
+  private HasOutput incLong(DynamicByteArray out, byte idx) {
+    loadLong(out, idx);
+    ctx.opsGenerator.pushLong(out, 1);
+    out.write(LADD);
+    return out;
+  }
+
+  // there is not long constant for -1, therefore using +1 and LSUB
+  // to avoid explicitly storing -1 in the constant pool
+  private HasOutput decLong(DynamicByteArray out, byte idx) {
+    loadLong(out, idx);
+    ctx.opsGenerator.pushLong(out, 1);
+    out.write(LSUB);
+    return out;
+  }
+
+  private void incDouble(DynamicByteArray out, byte idx) {
+    loadDouble(out, idx);
+    ctx.opsGenerator.pushDouble(out, 1);
+    out.write(DADD);
+  }
+
+  private void incFloat(DynamicByteArray out, byte idx) {
+    loadDouble(out, idx);
+    ctx.opsGenerator.pushDouble(out, 1);
+    out.write(FADD);
+  }
+
+  private void decDouble(DynamicByteArray out, byte idx) {
+    loadDouble(out, idx);
+    ctx.opsGenerator.pushDouble(out, 1);
+    out.write(DSUB);
+  }
+
+  private void decFloat(DynamicByteArray out, byte idx) {
+    loadDouble(out, idx);
+    ctx.opsGenerator.pushDouble(out, 1);
+    out.write(FSUB);
   }
 }

@@ -5,9 +5,9 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 
+import io.github.martinschneider.orzo.codegen.statement.BasicCodeGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ConditionalGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ExpressionGenerator;
-import io.github.martinschneider.orzo.codegen.statement.OpCodeGenerator;
 import io.github.martinschneider.orzo.codegen.statement.StatementDelegator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.ParserContext;
@@ -36,7 +36,7 @@ public class CodeGenerator {
     ctx.delegator = new StatementDelegator();
     ctx.exprGenerator = new ExpressionGenerator();
     ctx.methodMap = new MethodProcessor().getMethodMap(clazz);
-    ctx.opsGenerator = new OpCodeGenerator();
+    ctx.opsGenerator = new BasicCodeGenerator();
     ctx.parserCtx = parserCtx;
     ctx.condGenerator.ctx = ctx;
     ctx.delegator.ctx = ctx;

@@ -1,5 +1,7 @@
 package io.github.martinschneider.orzo.codegen.statement;
 
+import static io.github.martinschneider.orzo.codegen.statement.LoadGenerator.loadValue;
+import static io.github.martinschneider.orzo.codegen.statement.StoreGenerator.storeValue;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
@@ -43,17 +45,17 @@ public class ParallelAssignmentGenerator implements StatementGenerator {
         variables.put(id, new VariableInfo(id.val.toString(), type, (byte) variables.size));
         byte tmpIdx = variables.get(id).idx;
         if (left.arrSel == null) {
-          ctx.opsGenerator.loadValue(out, type, leftIdx);
+          loadValue(out, type, leftIdx);
         } else {
           ctx.opsGenerator.loadValueFromArray(
               out, variables, left.arrSel.exprs, varInfo.arrType, leftIdx);
         }
-        ctx.opsGenerator.storeValue(out, type, tmpIdx);
+        storeValue(out, type, tmpIdx);
         variables.tmpCount++;
       }
       if (left.arrSel == null) {
         ctx.exprGenerator.eval(out, variables, type, right);
-        ctx.opsGenerator.storeValue(out, type, leftIdx);
+        storeValue(out, type, leftIdx);
       } else {
         ctx.opsGenerator.assignInArray(out, variables, left, right);
       }

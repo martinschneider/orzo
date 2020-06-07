@@ -13,7 +13,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_M1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SIPUSH;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
-import io.github.martinschneider.orzo.codegen.statement.OpCodeGenerator;
+import io.github.martinschneider.orzo.codegen.statement.BasicCodeGenerator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
@@ -24,7 +24,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class CodeGeneratorTest {
-  private OpCodeGenerator target = new OpCodeGenerator();
+  private BasicCodeGenerator target = new BasicCodeGenerator();
 
   @BeforeAll
   public void setup() {

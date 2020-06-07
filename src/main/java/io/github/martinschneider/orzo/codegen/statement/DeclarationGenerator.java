@@ -1,6 +1,9 @@
 package io.github.martinschneider.orzo.codegen.statement;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
+import static io.github.martinschneider.orzo.codegen.statement.PushGenerator.bipush;
+import static io.github.martinschneider.orzo.codegen.statement.PushGenerator.sipush;
 import static io.github.martinschneider.orzo.codegen.statement.TypeUtils.getArrayType;
 import static io.github.martinschneider.orzo.codegen.statement.TypeUtils.getStoreOpCode;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
@@ -43,9 +46,9 @@ public class DeclarationGenerator implements StatementGenerator {
       if (decl.type.equals(INT)) {
         ctx.opsGenerator.pushInteger(out, INTEGER_DEFAULT_VALUE);
       } else if (decl.type.equals(SHORT)) {
-        ctx.opsGenerator.sipush(out, INTEGER_DEFAULT_VALUE);
+        sipush(out, INTEGER_DEFAULT_VALUE);
       } else if (decl.type.equals(BYTE)) {
-        ctx.opsGenerator.bipush(out, INTEGER_DEFAULT_VALUE);
+        bipush(out, INTEGER_DEFAULT_VALUE);
       } else if (decl.type.equals(LONG)) {
         ctx.opsGenerator.pushLong(out, INTEGER_DEFAULT_VALUE);
       } else if (decl.type.equals(FLOAT)) {
@@ -68,7 +71,7 @@ public class DeclarationGenerator implements StatementGenerator {
     byte arrayType = getArrayType(type);
     byte storeOpCode = getStoreOpCode(type);
     ArrayInitialiser arrInit = (ArrayInitialiser) decl.val;
-    ctx.opsGenerator.createArray(out, arrayType, arrInit.dims.get(0));
+    createArray(out, arrayType, arrInit.dims.get(0));
     for (int i = 0; i < arrInit.vals.get(0).size(); i++) {
       out.write(DUP);
       ctx.opsGenerator.pushInteger(out, i);
@@ -77,5 +80,11 @@ public class DeclarationGenerator implements StatementGenerator {
     }
     ctx.opsGenerator.assignArray(out, variables, type, decl.arrDim, decl.name);
     return out;
+  }
+
+  private void createArray(DynamicByteArray out, byte arrayType, int size) {
+    ctx.opsGenerator.pushInteger(out, size);
+    out.write(NEWARRAY);
+    out.write(arrayType);
   }
 }
