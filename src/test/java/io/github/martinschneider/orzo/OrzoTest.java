@@ -78,7 +78,9 @@ public class OrzoTest {
         Arguments.of("tests", "ShortArrays"),
         Arguments.of("tests", "LongArrays"),
         Arguments.of("tests", "FloatArrays"),
-        Arguments.of("examples", "QuickSort"));
+        Arguments.of("examples", "QuickSort")
+        /** ,Arguments.of("tests", "MultidimensionalArrays") */
+        );
   }
 
   @ParameterizedTest

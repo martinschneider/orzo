@@ -80,7 +80,7 @@ public class ArrayInitParser implements ProdParser<Expression> {
         // an initializer
         // we allow it (even though it's redundant) but fail if the size and the number of vals
         // doen't match
-        if (dim != vals.size()) {
+        if (dim != vals.size() && vals.size() != 0) {
           ctx.errors.addError(
               LOG_NAME, "array initializer size mismatch " + dim + "!=" + vals.size());
         }
@@ -88,7 +88,7 @@ public class ArrayInitParser implements ProdParser<Expression> {
       if (tokens.curr().eq(sym(SEMICOLON))) {
         tokens.next();
       }
-      return new ArrayInitialiser(type, dim, vals);
+      return new ArrayInitialiser(type, List.of(dim), List.of(vals));
     }
     return null;
   }

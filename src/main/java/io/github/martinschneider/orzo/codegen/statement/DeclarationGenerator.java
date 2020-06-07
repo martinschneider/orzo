@@ -68,11 +68,11 @@ public class DeclarationGenerator implements StatementGenerator {
     byte arrayType = getArrayType(type);
     byte storeOpCode = getStoreOpCode(type);
     ArrayInitialiser arrInit = (ArrayInitialiser) decl.val;
-    ctx.opsGenerator.createArray(out, arrayType, arrInit.size);
-    for (int i = 0; i < arrInit.vals.size(); i++) {
+    ctx.opsGenerator.createArray(out, arrayType, arrInit.dims.get(0));
+    for (int i = 0; i < arrInit.vals.get(0).size(); i++) {
       out.write(DUP);
       ctx.opsGenerator.pushInteger(out, i);
-      ctx.exprGenerator.eval(out, variables, type, arrInit.vals.get(i));
+      ctx.exprGenerator.eval(out, variables, type, arrInit.vals.get(0).get(i));
       out.write(storeOpCode);
     }
     ctx.opsGenerator.assignArray(out, variables, type, decl.arrDim, decl.name);

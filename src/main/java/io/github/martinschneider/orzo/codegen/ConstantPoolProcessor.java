@@ -22,6 +22,7 @@ import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.List;
 
 public class ConstantPoolProcessor {
   public ConstantPool processConstantPool(Clazz clazz) {
@@ -55,8 +56,10 @@ public class ConstantPoolProcessor {
       Expression val = decl.val;
       if (val != null) {
         if (val instanceof ArrayInitialiser) {
-          for (Expression arrInit : ((ArrayInitialiser) val).vals) {
-            constPool = processExpression(constPool, decl.type, arrInit);
+          for (List<Expression> exprs : ((ArrayInitialiser) val).vals) {
+            for (Expression arrInit : exprs) {
+              constPool = processExpression(constPool, decl.type, arrInit);
+            }
           }
         } else {
           constPool = processExpression(constPool, decl.type, val);

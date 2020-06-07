@@ -51,7 +51,7 @@ public class TestHelper {
   }
 
   public static ArrayInitialiser arrInit(String type, int dim, List<Expression> vals) {
-    return new ArrayInitialiser(type, dim, vals);
+    return new ArrayInitialiser(type, List.of(dim), List.of(vals));
   }
 
   public static Assignment assign(Identifier left, Expression right) {
