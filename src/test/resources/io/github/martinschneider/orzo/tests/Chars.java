@@ -1,8 +1,9 @@
 package io.github.martinschneider.orzo.tests;
 
-public class MultidimensionalArrays {
+public class Chars {
   public static void main(String[] args) {
-    int[][] a = new int[2][2];
-    a[0][0] = 1;
+    for (char a = 32; a < 127; a++) {
+      System.out.println(a);
+    }
   }
 }

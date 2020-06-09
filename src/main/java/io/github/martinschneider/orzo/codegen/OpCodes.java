@@ -119,6 +119,7 @@ public class OpCodes {
   public static final byte I2L = (byte) 133;
   public static final byte I2D = (byte) 135;
   public static final byte I2B = (byte) 145;
+  public static final byte I2C = (byte) 146;
   public static final byte I2S = (byte) 147;
   public static final byte LCMP = (byte) 148;
   public static final byte IFEQ = (byte) 153;

@@ -3,7 +3,10 @@ package io.github.martinschneider.orzo.tests;
 public class IntArrays {
   public static void main(String[] args) {
     int[] a = new int[] {1, 2, 3};
-    int[] b = new int[] {4, 5, 6};
+    int[] b = new int[3];
+    b[0] = 4;
+    b[1] = 5;
+    b[2] = 6;
     printArray(a);
     printArray(b);
     a[0] = 7;

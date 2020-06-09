@@ -15,6 +15,9 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2B;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2C;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2S;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD_1;
@@ -25,10 +28,13 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_3;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 
 public class LoadGenerator {
   public static HasOutput loadDouble(DynamicByteArray out, byte idx) {
@@ -121,6 +127,18 @@ public class LoadGenerator {
         return loadFloat(out, idx);
       case REF:
         return loadReference(out, idx);
+      case SHORT:
+        loadInteger(out, idx);
+        out.write(I2S);
+        return out;
+      case BYTE:
+        loadInteger(out, idx);
+        out.write(I2B);
+        return out;
+      case CHAR:
+        loadInteger(out, idx);
+        out.write(I2C);
+        return out;
       default:
         return loadInteger(out, idx);
     }

@@ -35,7 +35,7 @@ public class DeclarationParserTest {
                 id("a"), "int", 1, arrInit("int", 3, List.of(exp("1"), exp("2"), exp("3"))), true)),
         Arguments.of(
             "int[] a = new int[5];",
-            decl(id("a"), "int", 1, arrInit("int", 5, emptyList()), false)));
+            decl(id("a"), "int", 1, arrInit("int", List.of(5), emptyList()), false)));
   }
 
   @MethodSource

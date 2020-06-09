@@ -45,8 +45,9 @@ public class Orzo {
     System.out.println("Reading from: " + input.getAbsolutePath());
     Lexer scanner = new Lexer();
     TokenList tokens = scanner.getTokens(input);
-    System.out.println("Scanner output: "
-        + tokens.list().stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
+    System.out.println(
+        "Scanner output: "
+            + tokens.list().stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     Parser parser = new Parser(scanner.getErrors());
     Clazz clazz = parser.parse(tokens);
     System.out.println("Parser output: " + clazz);

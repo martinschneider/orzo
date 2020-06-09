@@ -73,7 +73,7 @@ To compile `Example.java` run:
 `java -jar kommpeiler.java Example.java Example.class`
 
 # Design considerations
-The compiler is roughly split into three parts: [Lexer](src/main/java/io/github/martinschneider/orzo/lexer/Lexer.java), [Parser](src/main/java/io/github/martinschneider/orzo/parser/Parser.java) and [Code Generator](src/main/java/io/github/martinschneider/orzo/codegen/CodeGenerator.java).
+The compiler is split into three parts: [Lexer](src/main/java/io/github/martinschneider/orzo/lexer/Lexer.java), [Parser](src/main/java/io/github/martinschneider/orzo/parser/Parser.java) and [Code Generator](src/main/java/io/github/martinschneider/orzo/codegen/CodeGenerator.java).
 
 It only uses Java core libraries and has no external dependencies (except for unit testing which requires JUnit).
 

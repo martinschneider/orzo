@@ -1,8 +1,8 @@
 package io.github.martinschneider.orzo.tests;
 
-public class MultidimensionalArrays {
+public class Booleans {
   public static void main(String[] args) {
-    int[][] a = new int[2][2];
-    a[0][0] = 1;
+    boolean a;
+    boolean b;
   }
 }

@@ -10,6 +10,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
+import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 
@@ -35,8 +36,9 @@ public class DeclarationParser implements ProdParser<Declaration> {
         tokens.next();
         if (tokens.curr().eq(op(ASSIGN))) {
           tokens.next();
-          if (type.arr > 0 && (val = ctx.arrayInitParser.parse(tokens)) != null) {
-            return new Declaration(type.name, type.arr, name, val, true);
+          ArrayInit arrInit = null;
+          if (type.arr > 0 && (arrInit = ctx.arrayInitParser.parse(tokens)) != null) {
+            return new Declaration(type.name, type.arr, name, arrInit, !arrInit.vals.isEmpty());
           }
           if ((val = ctx.exprParser.parse(tokens)) != null) {
             if (tokens.curr().eq(sym(SEMICOLON))) {

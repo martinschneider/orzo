@@ -33,6 +33,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_3;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SASTORE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
@@ -44,6 +45,8 @@ public class StoreGenerator {
   public static HasOutput storeValue(DynamicByteArray out, String type, byte idx) {
     switch (type) {
       case BYTE:
+        return storeInteger(out, idx);
+      case CHAR:
         return storeInteger(out, idx);
       case SHORT:
         return storeInteger(out, idx);

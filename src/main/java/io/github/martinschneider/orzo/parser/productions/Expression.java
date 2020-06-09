@@ -12,17 +12,8 @@ public class Expression {
     tokens = new ArrayList<>();
   }
 
-  public Expression(Token token) {
-    new Expression();
-    tokens.add(token);
-  }
-
   public Expression(List<Token> tokens) {
     this.tokens = tokens;
-  }
-
-  public void addToken(Token token) {
-    tokens.add(token);
   }
 
   public Token getLast() {

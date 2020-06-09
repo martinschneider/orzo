@@ -4,7 +4,8 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.RETURN;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
-import io.github.martinschneider.orzo.codegen.statement.ConditionalGenerator;
+
+import io.github.martinschneider.orzo.codegen.statement.ConditionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ExpressionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.StatementDelegator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -28,7 +29,7 @@ public class CodeGenerator {
     ctx = new CGContext();
     ctx.clazz = clazz;
     ctx.errors = parserCtx.errors;
-    ctx.condGenerator = new ConditionalGenerator();
+    ctx.condGenerator = new ConditionGenerator();
     ctx.constPoolProcessor = new ConstantPoolProcessor();
     ctx.constPool = ctx.constPoolProcessor.processConstantPool(clazz);
     ctx.delegator = new StatementDelegator();

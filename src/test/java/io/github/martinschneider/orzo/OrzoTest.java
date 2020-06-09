@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import io.github.martinschneider.orzo.codegen.Output;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -35,13 +36,20 @@ public class OrzoTest {
   }
 
   private static Stream<Arguments> testKommpeiler() {
-    return Stream.of(Arguments.of("examples", "HelloWorld"),
-        Arguments.of("tests", "IntegerConstants"), Arguments.of("tests", "VariableAssignments"),
-        Arguments.of("tests", "IntegerExpressions"), Arguments.of("tests", "IfConditions"),
-        Arguments.of("tests", "IfElseConditions"), Arguments.of("tests", "WhileLoops"),
-        Arguments.of("tests", "ForLoops"), Arguments.of("tests", "DoLoops"),
-        Arguments.of("examples", "Fibonacci"), Arguments.of("tests", "NestedLoops"),
-        Arguments.of("tests", "MethodCalls"), Arguments.of("examples", "Factorial"),
+    return Stream.of(
+        Arguments.of("examples", "HelloWorld"),
+        Arguments.of("tests", "IntegerConstants"),
+        Arguments.of("tests", "VariableAssignments"),
+        Arguments.of("tests", "IntegerExpressions"),
+        Arguments.of("tests", "IfConditions"),
+        Arguments.of("tests", "IfElseConditions"),
+        Arguments.of("tests", "WhileLoops"),
+        Arguments.of("tests", "ForLoops"),
+        Arguments.of("tests", "DoLoops"),
+        Arguments.of("examples", "Fibonacci"),
+        Arguments.of("tests", "NestedLoops"),
+        Arguments.of("tests", "MethodCalls"),
+        Arguments.of("examples", "Factorial"),
         Arguments.of("examples", "CollatzConjecture"),
         Arguments.of("tests", "ParallelAssignmentsInteger"),
         Arguments.of("tests", "ParallelAssignmentsLong"),
@@ -50,25 +58,35 @@ public class OrzoTest {
         Arguments.of("tests", "ParallelAssignmentsFloat"),
         Arguments.of("tests", "ParallelAssignmentsDouble"),
         Arguments.of("tests", "ParallelAssignmentsArray"),
-        Arguments.of("tests", "ParallelAssignmentsMultiple"), Arguments.of("tests", "BreakLoops"),
-        Arguments.of("tests", "ByteAndShorts"), Arguments.of("tests", "Longs"),
-        Arguments.of("examples", "CollatzConjecture2"), Arguments.of("tests", "Doubles"),
-        Arguments.of("tests", "Floats"), Arguments.of("examples", "PiLeibniz"),
-        Arguments.of("tests", "BitShifts"), Arguments.of("tests", "UnsignedRightShift"),
-        Arguments.of("tests", "CompoundAssignments"), Arguments.of("tests", "BitOperators"),
-        Arguments.of("examples", "RussianPeasant"), Arguments.of("tests", "IntArrays"),
-        Arguments.of("tests", "DoubleArrays"), Arguments.of("tests", "ByteArrays"),
-        Arguments.of("tests", "ShortArrays"), Arguments.of("tests", "LongArrays"),
-        Arguments.of("tests", "FloatArrays"), Arguments.of("examples", "QuickSort")
-    /** ,Arguments.of("tests", "MultidimensionalArrays") */
-    );
+        Arguments.of("tests", "ParallelAssignmentsMultiple"),
+        Arguments.of("tests", "BreakLoops"),
+        Arguments.of("tests", "ByteAndShorts"),
+        Arguments.of("tests", "Longs"),
+        Arguments.of("examples", "CollatzConjecture2"),
+        Arguments.of("tests", "Doubles"),
+        Arguments.of("tests", "Floats"),
+        Arguments.of("examples", "PiLeibniz"),
+        Arguments.of("tests", "BitShifts"),
+        Arguments.of("tests", "UnsignedRightShift"),
+        Arguments.of("tests", "CompoundAssignments"),
+        Arguments.of("tests", "BitOperators"),
+        Arguments.of("examples", "RussianPeasant"),
+        Arguments.of("tests", "IntArrays"),
+        Arguments.of("tests", "DoubleArrays"),
+        Arguments.of("tests", "ByteArrays"),
+        Arguments.of("tests", "ShortArrays"),
+        Arguments.of("tests", "LongArrays"),
+        Arguments.of("tests", "FloatArrays"),
+        Arguments.of("examples", "QuickSort"),
+        Arguments.of("tests", "Chars"),
+        Arguments.of("tests", "MultidimensionalArrays"));
   }
 
   @ParameterizedTest
   @MethodSource
   public void testKommpeiler(String folder, String programName)
       throws IOException, ClassNotFoundException, IllegalAccessException, IllegalArgumentException,
-      InvocationTargetException, NoSuchMethodException, SecurityException {
+          InvocationTargetException, NoSuchMethodException, SecurityException {
     String inputPath =
         this.getClass().getResource(folder + File.separator + programName + ".java").getPath();
     // compile using Kommpeiler
@@ -87,9 +105,18 @@ public class OrzoTest {
     System.out.flush();
     System.setOut(old);
     String actual = baos.toString();
-    String expected = Files.readString(Path.of(this.getClass()
-        .getResource(folder + File.separator + "output" + File.separator + programName + ".output")
-        .getPath()));
+    String expected =
+        Files.readString(
+            Path.of(
+                this.getClass()
+                    .getResource(
+                        folder
+                            + File.separator
+                            + "output"
+                            + File.separator
+                            + programName
+                            + ".output")
+                    .getPath()));
     assertEquals(expected, actual);
   }
 }

@@ -33,7 +33,7 @@ public class TokenList {
   public Token next(Token token) {
     do {
       idx++;
-    } while (idx < tokens.size() && tokens.get(idx) != token);
+    } while (idx < tokens.size() && !tokens.get(idx).equals(token));
     return curr();
   }
 

@@ -12,7 +12,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Argument;
-import io.github.martinschneider.orzo.parser.productions.ArrayInitialiser;
+import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.ArraySelector;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
@@ -50,8 +50,13 @@ public class TestHelper {
     return new ArraySelector(selectors);
   }
 
-  public static ArrayInitialiser arrInit(String type, int dim, List<Expression> vals) {
-    return new ArrayInitialiser(type, List.of(dim), List.of(vals));
+  public static ArrayInit arrInit(
+      String type, List<Integer> dimensions, List<List<Expression>> vals) {
+    return new ArrayInit(type, dimensions, vals);
+  }
+
+  public static ArrayInit arrInit(String type, int dim, List<Expression> vals) {
+    return arrInit(type, List.of(dim), List.of(vals));
   }
 
   public static Assignment assign(Identifier left, Expression right) {

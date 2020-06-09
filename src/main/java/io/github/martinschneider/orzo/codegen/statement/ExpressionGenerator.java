@@ -15,6 +15,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.FMUL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FREM;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FSUB;
 import static io.github.martinschneider.orzo.codegen.OpCodes.I2B;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2C;
 import static io.github.martinschneider.orzo.codegen.OpCodes.I2S;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IADD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IAND;
@@ -47,6 +48,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
@@ -68,14 +70,11 @@ import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
-import io.github.martinschneider.orzo.parser.ExpressionParser2;
-import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ExpressionGenerator {
@@ -104,7 +103,7 @@ public class ExpressionGenerator {
     if (expr == null) {
       return null;
     }
-    List<Token> tokens = new ExpressionParser2(ctx, getMethodNames(ctx.clazz)).postfix(expr.tokens);
+    List<Token> tokens = expr.tokens;
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
       if (token instanceof Identifier) {
@@ -145,7 +144,10 @@ public class ExpressionGenerator {
             ctx.opsGenerator.pushDouble(out, intValue.doubleValue());
           } else if (type.equals(FLOAT)) {
             ctx.opsGenerator.pushFloat(out, intValue.floatValue());
-          } else if (type.equals(INT) || type.equals(BYTE) || (type.equals(SHORT))) {
+          } else if (type.equals(INT)
+              || type.equals(BYTE)
+              || (type.equals(SHORT))
+              || type.equals(CHAR)) {
             ctx.opsGenerator.pushInteger(out, intValue.intValue());
           }
         }
@@ -198,6 +200,9 @@ public class ExpressionGenerator {
               case BYTE:
                 out.write(IADD);
                 break;
+              case CHAR:
+                out.write(IADD);
+                break;
               case SHORT:
                 out.write(IADD);
                 break;
@@ -217,6 +222,9 @@ public class ExpressionGenerator {
                 out.write(FSUB);
                 break;
               case BYTE:
+                out.write(ISUB);
+                break;
+              case CHAR:
                 out.write(ISUB);
                 break;
               case SHORT:
@@ -240,6 +248,9 @@ public class ExpressionGenerator {
               case BYTE:
                 out.write(IMUL);
                 break;
+              case CHAR:
+                out.write(IMUL);
+                break;
               case SHORT:
                 out.write(IMUL);
                 break;
@@ -259,6 +270,9 @@ public class ExpressionGenerator {
                 out.write(FDIV);
                 break;
               case BYTE:
+                out.write(IDIV);
+                break;
+              case CHAR:
                 out.write(IDIV);
                 break;
               case SHORT:
@@ -283,6 +297,9 @@ public class ExpressionGenerator {
                 out.write(IREM);
                 break;
               case SHORT:
+                out.write(IREM);
+                break;
+              case CHAR:
                 out.write(IREM);
                 break;
               case LONG:
@@ -367,6 +384,8 @@ public class ExpressionGenerator {
                 incByte(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
               case SHORT:
                 incShort(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
+              case CHAR:
+                incChar(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
             }
             break;
           case POST_DECREMENT:
@@ -387,6 +406,8 @@ public class ExpressionGenerator {
                 incByte(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
               case SHORT:
                 incShort(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
+              case CHAR:
+                incChar(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
             }
           default:
         }
@@ -395,14 +416,6 @@ public class ExpressionGenerator {
     // TODO: this is not working yet
     // what to return if the val cannot be determined at compile time?
     return new ExpressionResult(type, val);
-  }
-
-  private List<Identifier> getMethodNames(Clazz clazz) {
-    List<Identifier> ids = new ArrayList<>();
-    for (Method method : clazz.body) {
-      ids.add(method.name);
-    }
-    return ids;
   }
 
   private HasOutput incInteger(DynamicByteArray out, byte idx, byte val) {
@@ -431,6 +444,15 @@ public class ExpressionGenerator {
     return out;
   }
 
+  // short cannot be increased directly, load to the stack and convert
+  private HasOutput incChar(DynamicByteArray out, byte idx, byte val) {
+    loadInteger(out, idx);
+    ctx.opsGenerator.pushInteger(out, val);
+    out.write(IADD);
+    out.write(I2C);
+    return out;
+  }
+
   // long type cannot be increased directly, load to the stack and add
   private HasOutput incLong(DynamicByteArray out, byte idx) {
     loadLong(out, idx);
@@ -439,7 +461,7 @@ public class ExpressionGenerator {
     return out;
   }
 
-  // there is not long constant for -1, therefore using +1 and LSUB
+  // there is no long constant for -1, therefore using +1 and LSUB
   // to avoid explicitly storing -1 in the constant pool
   private HasOutput decLong(DynamicByteArray out, byte idx) {
     loadLong(out, idx);

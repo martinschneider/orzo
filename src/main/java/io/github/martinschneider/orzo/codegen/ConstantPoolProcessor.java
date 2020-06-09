@@ -8,7 +8,7 @@ import io.github.martinschneider.orzo.lexer.tokens.DoubleNum;
 import io.github.martinschneider.orzo.lexer.tokens.IntNum;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
-import io.github.martinschneider.orzo.parser.productions.ArrayInitialiser;
+import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
@@ -55,8 +55,8 @@ public class ConstantPoolProcessor {
       Declaration decl = (Declaration) stmt;
       Expression val = decl.val;
       if (val != null) {
-        if (val instanceof ArrayInitialiser) {
-          for (List<Expression> exprs : ((ArrayInitialiser) val).vals) {
+        if (val instanceof ArrayInit) {
+          for (List<Expression> exprs : ((ArrayInit) val).vals) {
             for (Expression arrInit : exprs) {
               constPool = processExpression(constPool, decl.type, arrInit);
             }

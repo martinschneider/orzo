@@ -3,12 +3,12 @@ package io.github.martinschneider.orzo.parser.productions;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ArrayInitialiser extends Expression {
+public class ArrayInit extends Expression {
   public String type;
   public List<Integer> dims;
   public List<List<Expression>> vals;
 
-  public ArrayInitialiser(String type, List<Integer> dims, List<List<Expression>> vals) {
+  public ArrayInit(String type, List<Integer> dims, List<List<Expression>> vals) {
     this.type = type;
     this.dims = dims;
     this.vals = vals;
@@ -35,7 +35,7 @@ public class ArrayInitialiser extends Expression {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    ArrayInitialiser other = (ArrayInitialiser) obj;
+    ArrayInit other = (ArrayInit) obj;
     if (dims == null) {
       if (other.dims != null) {
         return false;

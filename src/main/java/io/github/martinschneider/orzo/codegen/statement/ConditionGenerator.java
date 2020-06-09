@@ -14,8 +14,11 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLT;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPNE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LCMP;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -25,7 +28,7 @@ import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.Condition;
 import java.math.BigInteger;
 
-public class ConditionalGenerator {
+public class ConditionGenerator {
   public CGContext ctx;
 
   public HasOutput generateCondition(
@@ -44,11 +47,15 @@ public class ConditionalGenerator {
     ExpressionResult left = ctx.exprGenerator.eval(condOut, variables, null, cond.left, false);
     ExpressionResult right =
         ctx.exprGenerator.eval(condOut, variables, left.type, cond.right, false);
-    if (left.type.equals(INT)) {
+    if (left.type.equals(INT)
+        || left.type.equals(BYTE)
+        || left.type.equals(SHORT)
+        || left.type.equals(CHAR)) {
       return generateIntCondition(condOut, out, cond, left, right, branchBytes, isDoLoop);
     } else if (left.type.equals(LONG)) {
       return generateLongCondition(condOut, out, cond, left, right, branchBytes, isDoLoop);
     }
+    // TODO: double and float
     return null;
   }
 

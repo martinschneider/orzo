@@ -1,7 +1,7 @@
 package io.github.martinschneider.orzo.codegen;
 
 import io.github.martinschneider.orzo.codegen.constants.ConstantPool;
-import io.github.martinschneider.orzo.codegen.statement.ConditionalGenerator;
+import io.github.martinschneider.orzo.codegen.statement.ConditionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ExpressionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.StatementDelegator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -17,7 +17,7 @@ public class CGContext {
   public StatementDelegator delegator;
   public BasicCodeGenerator opsGenerator;
   public ExpressionGenerator exprGenerator;
-  public ConditionalGenerator condGenerator;
+  public ConditionGenerator condGenerator;
   public ConstantPoolProcessor constPoolProcessor;
   public CompilerErrors errors;
   public ParserContext parserCtx;

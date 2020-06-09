@@ -1,9 +1,13 @@
 package io.github.martinschneider.orzo.codegen;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
+
 import io.github.martinschneider.orzo.lexer.tokens.DoubleNum;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntNum;
@@ -48,8 +52,14 @@ public class NumExprTypeDecider {
       return FLOAT;
     } else if (types.contains(LONG)) {
       return LONG;
-    } else {
+    } else if (types.contains(INT)) {
       return INT;
+    } else if (types.contains(SHORT)) {
+      return SHORT;
+    } else if (types.contains(BYTE)) {
+      return BYTE;
+    } else {
+      return CHAR;
     }
   }
 }
