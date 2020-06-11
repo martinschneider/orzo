@@ -9,6 +9,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.lexer.tokens.Chr;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Num;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
@@ -62,6 +63,7 @@ public class ExpressionParser implements ProdParser<Expression> {
     int parenthesis = 0;
     while (tokens.curr() instanceof Num
         || tokens.curr() instanceof Str
+        || tokens.curr() instanceof Chr
         || tokens.curr() instanceof Identifier
         || tokens.curr() instanceof Operator
         || tokens.curr().eq(sym(LPAREN))

@@ -14,6 +14,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] float
 - [X] double
 - [ ] boolean
+- [X] char
 - [X] one-dimensional arrays
 - [ ] multi-dimensional arrays
 - [X] String
@@ -38,7 +39,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [ ] unary plus `+`
 - [X] unary minus `-`
 - [ ] `instanceof`
-- [ ] String concatenation `+`
+- [ ] String and char concatenation `+`
 - [ ] ternary `?:`
 - [ ] cast `()`
 - [ ] object creation `new`
@@ -61,16 +62,40 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [ ] uint, ushort, ubyte, ulong types
 
 ## Notes
-- Array defintions must be of the form `int[] a`, `int a[]` is not supported (because it's confusing and ugly) 
+- Array defintions must be of the form `int[] a`, `int a[]` is not supported (because it's confusing and wrong) 
 
 # Examples
 Working examples can be found [here](src/test/resources/io/github/martinschneider/orzo/examples).
 
+# Building
+
+The compiler can be built using `javac` and `jar`, for example:
+
+`javac $(find ./src/main/java -name "*.java") -d bin && jar cfe orzo.jar io.github.martinschneider.orzo.Orzo -C bin .`
+
+For convenience, there is also a Maven configuration, so you could simply call `mvn package` instead.
+
+Once Orzo is self-compiling, you should be able to use `orzo $(find ./src/main/java -name "*.java") -d bin && jar cfe orzo.jar io.github.martinschneider.orzo.Orzo -C bin .` as well.
+
 # Usage
 
-To compile `Example.java` run:
+To compile `HelloWorld.java` run `java -jar orzo.jar HelloWorld.java`. This will generate a class file based on the package and class names defined in `HelloWorld.java`.
 
-`java -jar kommpeiler.java Example.java Example.class`
+For example, the following Java program will be compiled into a class file at `com/examples/HelloWorld.class`. Unlike `javac`, Orzo does not check whether the class name matches the Java source filename.
+
+```
+package com.examples;
+
+public class HelloWorld {
+  public static void main(String[] args) {
+    System.out.println("Hello world");
+  }
+}
+```
+
+The root of the output folder is the current directory. This can be changed using the `-d` option. For example, `java -jar orzo.jar HelloWorld.java -d /tmp/test` will create `/tmp/test/com/examples/HelloWorld.class`.
+
+Optionally, you can create an alias `alias orzo="java -jar /path/to/orzo.jar"` and simply call `orzo HelloWorld.java`.
 
 # Design considerations
 The compiler is split into three parts: [Lexer](src/main/java/io/github/martinschneider/orzo/lexer/Lexer.java), [Parser](src/main/java/io/github/martinschneider/orzo/parser/Parser.java) and [Code Generator](src/main/java/io/github/martinschneider/orzo/codegen/CodeGenerator.java).
@@ -96,19 +121,20 @@ There is (roughly) one implementation of the [`ProdParser`](src/main/java/io/git
 
 This allows passing the [`TokenList`](src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java) through the different sub-parsers.
 
-We use a very simplistic DI pattern to inject different [`ProdParser`](src/main/java/io/github/martinschneider/orzo/parser/ProdParser.java) implementations into each other, check [`ParserContext`](src/main/java/io/github/martinschneider/orzo/parser/ParserContext.java) for more details.
+We use a very simplistic dependency injection pattern to call different [`ProdParser`](src/main/java/io/github/martinschneider/orzo/parser/ProdParser.java) implementations from each other. Each class has an instance of [`ParserContext`](src/main/java/io/github/martinschneider/orzo/parser/ParserContext.java) which has references to everything else.
 
 ### Code generator
 
-The Code generator takes the AST from the parser and outputs a byte array (wrapped inside an [`Output`](src/main/java/io/github/martinschneider/orzo/codegen/Output.java) object) which is then written to a JVM-compatible class file.
+The Code generator takes the AST returned by the parser and outputs a byte array (wrapped inside an [`Output`](src/main/java/io/github/martinschneider/orzo/codegen/Output.java) object) which is then written to a JVM-compatible class file.
 
 Similarly to the parser, there is one implementation of [`StatementGenerator`](src/main/java/io/github/martinschneider/orzo/codegen/statement/StatementGenerator.java) [for each statement type](src/main/java/io/github/martinschneider/orzo/codegen/statement) and a similar dependency injection concept (see [`CGContext`](src/main/java/io/github/martinschneider/orzo/codegen/CGContext.java)).
 
 ### Tests
 
-High coverage with meaningful tests is crucial for a project like this. There are four main types of tests used:
+High coverage with meaningful tests is crucial for a project like this. There are five types of tests used:
 
  - Lexer: [unit tests](src/test/java/io/github/martinschneider/orzo/lexer) for each token type
  - Parser: [unit tests](src/test/java/io/github/martinschneider/orzo/parser) for each production type
  - Code Generator: [unit tests](src/test/java/io/github/martinschneider/orzo/codegen) for each production/statement type (currently missing)
- - [integration tests](src/test/java/io/github/martinschneider/orzo/OrzoTest.java) compiling [sample programs](src/test/resources/io/github/martinschneider/orzo/tests) and verifying their output against [predefined expectations](src/test/resources/io/github/martinschneider/orzo/tests/output).
+ - [integration tests](src/test/java/io/github/martinschneider/orzo/OrzoTest.java) compiling [sample programs](src/test/resources/io/github/martinschneider/orzo/tests) using Orzo and verifying their output against [predefined expectations](src/test/resources/io/github/martinschneider/orzo/tests/output)
+ - self-compilation tests (WIP)

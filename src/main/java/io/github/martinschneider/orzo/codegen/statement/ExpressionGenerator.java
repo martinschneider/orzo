@@ -5,41 +5,16 @@ import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadInteger;
 import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadLong;
 import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadValue;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DDIV;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DMUL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DREM;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DSUB;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.FDIV;
-import static io.github.martinschneider.orzo.codegen.OpCodes.FMUL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.FREM;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FSUB;
 import static io.github.martinschneider.orzo.codegen.OpCodes.I2B;
 import static io.github.martinschneider.orzo.codegen.OpCodes.I2C;
 import static io.github.martinschneider.orzo.codegen.OpCodes.I2S;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IAND;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IDIV;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IINC;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IMUL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IOR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IREM;
-import static io.github.martinschneider.orzo.codegen.OpCodes.ISHL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.ISHR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.ISUB;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IUSHR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IXOR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LAND;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LDIV;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LMUL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LOR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LREM;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LSHL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LSHR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSUB;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LUSHR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LXOR;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
@@ -63,6 +38,7 @@ import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
+import io.github.martinschneider.orzo.lexer.tokens.Chr;
 import io.github.martinschneider.orzo.lexer.tokens.DoubleNum;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntNum;
@@ -75,11 +51,12 @@ import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.List;
 
 public class ExpressionGenerator {
   public CGContext ctx;
-  public static final String LOGGER_NAME = "expression code generator";
+  private static final String LOGGER_NAME = "expression code generator";
 
   public ExpressionResult eval(
       DynamicByteArray out, VariableMap variables, String type, Expression expr) {
@@ -109,7 +86,7 @@ public class ExpressionGenerator {
       if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
         String varType = variables.get(id).type;
-        // look ahead for ++ or -- operators because in that case we do not push the val to the
+        // look ahead for ++ or -- operators because in that case we do not push the value to the
         // stack
         if (i + 1 == tokens.size()
             || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
@@ -163,6 +140,10 @@ public class ExpressionGenerator {
       } else if (token instanceof Str) {
         ctx.opsGenerator.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
         type = STRING;
+      } else if (token instanceof Chr) {
+        char chr = (char) ((Chr) token).val;
+        ctx.opsGenerator.pushInteger(out, chr);
+        type = CHAR;
       } else if (token instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) token;
         String methodName = methodCall.name.toString();
@@ -184,232 +165,61 @@ public class ExpressionGenerator {
         type = method.type;
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
-        // TODO: map types and op codes more elegantly
-        switch (op) {
-          case PLUS:
-            switch (type) {
-              case INT:
-                out.write(IADD);
-                break;
-              case DOUBLE:
-                out.write(DADD);
-                break;
-              case FLOAT:
-                out.write(FADD);
-                break;
-              case BYTE:
-                out.write(IADD);
-                break;
-              case CHAR:
-                out.write(IADD);
-                break;
-              case SHORT:
-                out.write(IADD);
-                break;
-              case LONG:
-                out.write(LADD);
-            }
-            break;
-          case MINUS:
-            switch (type) {
-              case INT:
-                out.write(ISUB);
-                break;
-              case DOUBLE:
-                out.write(DSUB);
-                break;
-              case FLOAT:
-                out.write(FSUB);
-                break;
-              case BYTE:
-                out.write(ISUB);
-                break;
-              case CHAR:
-                out.write(ISUB);
-                break;
-              case SHORT:
-                out.write(ISUB);
-                break;
-              case LONG:
-                out.write(LSUB);
-            }
-            break;
-          case TIMES:
-            switch (type) {
-              case INT:
-                out.write(IMUL);
-                break;
-              case DOUBLE:
-                out.write(DMUL);
-                break;
-              case FLOAT:
-                out.write(FMUL);
-                break;
-              case BYTE:
-                out.write(IMUL);
-                break;
-              case CHAR:
-                out.write(IMUL);
-                break;
-              case SHORT:
-                out.write(IMUL);
-                break;
-              case LONG:
-                out.write(LMUL);
-            }
-            break;
-          case DIV:
-            switch (type) {
-              case INT:
-                out.write(IDIV);
-                break;
-              case DOUBLE:
-                out.write(DDIV);
-                break;
-              case FLOAT:
-                out.write(FDIV);
-                break;
-              case BYTE:
-                out.write(IDIV);
-                break;
-              case CHAR:
-                out.write(IDIV);
-                break;
-              case SHORT:
-                out.write(IDIV);
-                break;
-              case LONG:
-                out.write(LDIV);
-            }
-            break;
-          case MOD:
-            switch (type) {
-              case INT:
-                out.write(IREM);
-                break;
-              case DOUBLE:
-                out.write(DREM);
-                break;
-              case FLOAT:
-                out.write(FREM);
-                break;
-              case BYTE:
-                out.write(IREM);
-                break;
-              case SHORT:
-                out.write(IREM);
-                break;
-              case CHAR:
-                out.write(IREM);
-                break;
-              case LONG:
-                out.write(LREM);
-            }
-            break;
-          case LSHIFT:
-            switch (type) {
-              case INT:
-                out.write(ISHL);
-                break;
-              case LONG:
-                out.write(LSHL);
-                break;
-            }
-            break;
-          case RSHIFT:
-            switch (type) {
-              case INT:
-                out.write(ISHR);
-                break;
-              case LONG:
-                out.write(LSHR);
-                break;
-            }
-            break;
-          case RSHIFTU:
-            switch (type) {
-              case INT:
-                out.write(IUSHR);
-                break;
-              case LONG:
-                out.write(LUSHR);
-                break;
-            }
-            break;
-          case BITWISE_AND:
-            switch (type) {
-              case INT:
-                out.write(IAND);
-                break;
-              case LONG:
-                out.write(LAND);
-                break;
-            }
-            break;
-          case BITWISE_OR:
-            switch (type) {
-              case INT:
-                out.write(IOR);
-                break;
-              case LONG:
-                out.write(LOR);
-                break;
-            }
-            break;
-          case BITWISE_XOR:
-            switch (type) {
-              case INT:
-                out.write(IXOR);
-                break;
-              case LONG:
-                out.write(LXOR);
-                break;
-            }
-            break;
-          case POST_INCREMENT:
-            switch (type) {
-              case INT:
-                incInteger(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
-                break;
-              case DOUBLE:
-                incDouble(out, variables.get(tokens.get(i - 1)).idx);
-                break;
-              case FLOAT:
-                incFloat(out, variables.get(tokens.get(i - 1)).idx);
-                break;
-              case LONG:
-                incLong(out, variables.get(tokens.get(i - 1)).idx);
-                break;
-              case BYTE:
-                incByte(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
-              case SHORT:
-                incShort(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
-              case CHAR:
-                incChar(out, variables.get(tokens.get(i - 1)).idx, (byte) 1);
-            }
-            break;
-          case POST_DECREMENT:
-            switch (type) {
-              case INT:
-                incInteger(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
-                break;
-              case DOUBLE:
-                decDouble(out, variables.get(tokens.get(i - 1)).idx);
-                break;
-              case FLOAT:
-                decFloat(out, variables.get(tokens.get(i - 1)).idx);
-                break;
-              case LONG:
-                decLong(out, variables.get(tokens.get(i - 1)).idx);
-                break;
-              case BYTE:
-                incByte(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
-              case SHORT:
-                incShort(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
-              case CHAR:
-                incChar(out, variables.get(tokens.get(i - 1)).idx, (byte) -1);
-            }
-          default:
+        if (op.equals(POST_INCREMENT)) {
+          byte idx = variables.get(tokens.get(i - 1)).idx;
+          switch (type) {
+            case INT:
+              incInteger(out, idx, (byte) 1);
+              break;
+            case DOUBLE:
+              incDouble(out, idx);
+              break;
+            case FLOAT:
+              incFloat(out, idx);
+              break;
+            case LONG:
+              incLong(out, idx);
+              break;
+            case BYTE:
+              incByte(out, idx, (byte) 1);
+              break;
+            case SHORT:
+              incShort(out, idx, (byte) 1);
+              break;
+            case CHAR:
+              incChar(out, idx, (byte) 1);
+              break;
+          }
+        } else if (op.equals(POST_DECREMENT)) {
+          byte idx = variables.get(tokens.get(i - 1)).idx;
+          switch (type) {
+            case INT:
+              incInteger(out, idx, (byte) -1);
+              break;
+            case DOUBLE:
+              decDouble(out, idx);
+              break;
+            case FLOAT:
+              decFloat(out, idx);
+              break;
+            case LONG:
+              decLong(out, idx);
+              break;
+            case BYTE:
+              incByte(out, idx, (byte) -1);
+              break;
+            case SHORT:
+              incShort(out, idx, (byte) -1);
+              break;
+            case CHAR:
+              incChar(out, idx, (byte) -1);
+              break;
+          }
+        } else {
+          Byte opCode = ArithmeticOperators.map.getOrDefault(op, Collections.emptyMap()).get(type);
+          if (opCode != null) {
+            out.write(opCode);
+          }
         }
       }
     }

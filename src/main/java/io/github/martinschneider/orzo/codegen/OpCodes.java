@@ -49,6 +49,7 @@ public class OpCodes {
   public static final byte FALOAD = (byte) 48;
   public static final byte DALOAD = (byte) 49;
   public static final byte BALOAD = (byte) 51;
+  public static final byte CALOAD = (byte) 52;
   public static final byte SALOAD = (byte) 53;
   public static final byte ISTORE = (byte) 54;
   public static final byte LSTORE = (byte) 55;
@@ -81,6 +82,7 @@ public class OpCodes {
   public static final byte DASTORE = (byte) 82;
   public static final byte AASTORE = (byte) 83;
   public static final byte BASTORE = (byte) 84;
+  public static final byte CASTORE = (byte) 85;
   public static final byte SASTORE = (byte) 86;
   public static final byte DUP = (byte) 89;
   public static final byte IADD = (byte) 96;

@@ -11,6 +11,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -79,6 +80,7 @@ public class OrzoTest {
         Arguments.of("tests", "FloatArrays"),
         Arguments.of("examples", "QuickSort"),
         Arguments.of("tests", "Chars"),
+        Arguments.of("tests", "Chars2"),
         Arguments.of("tests", "MultidimensionalArrays"));
   }
 
@@ -89,10 +91,10 @@ public class OrzoTest {
           InvocationTargetException, NoSuchMethodException, SecurityException {
     String inputPath =
         this.getClass().getResource(folder + File.separator + programName + ".java").getPath();
-    // compile using Kommpeiler
+    // compile using Orzo
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     PrintStream ps = new PrintStream(baos);
-    new Orzo(new File(inputPath), new Output(ps), null).compile();
+    new Orzo(List.of(new File(inputPath)), null).compile(new Output(ps));
     ps.flush();
     ByteClassLoader classLoader = new ByteClassLoader(ClassLoader.getSystemClassLoader());
     classLoader.put(programName, baos.toByteArray());

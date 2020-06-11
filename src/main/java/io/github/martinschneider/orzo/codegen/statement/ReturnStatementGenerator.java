@@ -41,19 +41,18 @@ public class ReturnStatementGenerator implements StatementGenerator {
     switch (type) {
       case INT:
         out.write(IRETURN);
-        return out;
+        break;
       case LONG:
         out.write(LRETURN);
-        return out;
+        break;
       case DOUBLE:
         out.write(DRETURN);
-        return out;
+        break;
       case FLOAT:
         out.write(FRETURN);
-        return out;
+        break;
       case VOID:
         out.write(RETURN);
-        return out;
     }
     return out;
   }

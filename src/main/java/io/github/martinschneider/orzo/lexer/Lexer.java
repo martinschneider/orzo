@@ -40,6 +40,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.chr;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.cmp;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.fp;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
@@ -108,6 +109,10 @@ public class Lexer {
       // operators
       if (tokenList.size() == tokenCount) {
         scanOps();
+      }
+      // Character
+      if (tokenList.size() == tokenCount) {
+        scanChr();
       }
       // Strings
       if (tokenList.size() == tokenCount) {
@@ -378,6 +383,20 @@ public class Lexer {
     } else if (character == ']') {
       tokenList.add(sym(RBRAK).wLoc(inputReader.getLoc()));
     }
+  }
+
+  private void scanChr() throws IOException {
+    if ((character == '\'')) {
+      int c;
+      if ((c = inputReader.read()) != -1) {
+        tokenList.add(chr((char) c).wLoc(inputReader.getLoc()));
+      }
+      if ((c = (char) inputReader.read()) != '\'') {
+        errors.addError("scan character", "missing '");
+        inputReader.unread(c);
+      }
+    }
+    buffer.setLength(0);
   }
 
   private void scanStr() throws IOException {

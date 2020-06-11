@@ -49,6 +49,10 @@ public class Token {
     return new Token(val);
   }
 
+  public static Chr chr(char val) {
+    return new Chr(val);
+  }
+
   public static Str str(String val) {
     return new Str(val);
   }

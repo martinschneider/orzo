@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.BYTE_ARRAY;
+import static io.github.martinschneider.orzo.codegen.ArrayTypes.CHAR_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.DOUBLE_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.FLOAT_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.INT_ARRAY;
@@ -8,6 +9,8 @@ import static io.github.martinschneider.orzo.codegen.ArrayTypes.LONG_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.SHORT_ARRAY;
 import static io.github.martinschneider.orzo.codegen.OpCodes.BALOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.BASTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.CALOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.CASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DALOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FALOAD;
@@ -19,6 +22,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SALOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SASTORE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
@@ -40,6 +44,8 @@ public class TypeUtils {
         return DALOAD;
       case FLOAT:
         return FALOAD;
+      case CHAR:
+        return CALOAD;
     }
     return 0;
   }
@@ -58,6 +64,8 @@ public class TypeUtils {
         return DASTORE;
       case FLOAT:
         return FASTORE;
+      case CHAR:
+        return CASTORE;
     }
     return 0;
   }
@@ -76,6 +84,8 @@ public class TypeUtils {
         return DOUBLE_ARRAY;
       case FLOAT:
         return FLOAT_ARRAY;
+      case CHAR:
+        return CHAR_ARRAY;
     }
     return 0;
   }
