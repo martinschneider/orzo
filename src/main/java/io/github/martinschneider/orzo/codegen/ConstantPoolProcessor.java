@@ -34,8 +34,8 @@ public class ConstantPoolProcessor {
       constPool.addUtf8(method.name.val.toString());
       // add type descriptor to constant pool
       constPool.addUtf8(method.getTypeDescr());
-      addMethodRef(
-          constPool, clazz.name.val.toString(), method.name.val.toString(), method.getTypeDescr());
+      constPool.addMethodRef(
+          clazz.name.val.toString(), method.name.val.toString(), method.getTypeDescr());
       // add constants from method body to constant pool
       for (Statement stmt : method.body) {
         constPool = processStatement(constPool, stmt);
@@ -123,12 +123,6 @@ public class ConstantPoolProcessor {
         }
       }
     }
-    return constPool;
-  }
-
-  public ConstantPool addMethodRef(
-      ConstantPool constPool, String className, String methodName, String typeSignature) {
-    constPool.addMethodRef(className, methodName, typeSignature);
     return constPool;
   }
 }

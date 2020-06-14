@@ -53,7 +53,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] break
 - [ ] switch
 - [ ] lambdas
-- [X] static method calls within the same class
+- [X] static method calls
 - [ ] other method calls
 - [ ] constructor calls
 

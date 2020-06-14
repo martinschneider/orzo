@@ -1,16 +1,39 @@
 package io.github.martinschneider.orzo.codegen;
 
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class MethodProcessor {
   // TODO: does this justify its own class?
-  public Map<String, Method> getMethodMap(Clazz clazz) {
+  public Map<String, Method> getMethodMap(Clazz currentClazz, List<Clazz> clazzes) {
     Map<String, Method> methodMap = new HashMap<>();
-    for (Method method : clazz.body) {
+    for (Method method : currentClazz.body) {
       methodMap.put(method.name.val.toString(), method);
+    }
+    addImported(methodMap, currentClazz, clazzes);
+    return methodMap;
+  }
+
+  public Map<String, Method> addImported(
+      Map<String, Method> methodMap, Clazz currentClazz, List<Clazz> clazzes) {
+    List<Import> imports = currentClazz.imports;
+    List<String> importStrings = imports.stream().map(x -> x.id).collect(Collectors.toList());
+    for (Clazz clazz : clazzes) {
+      if (currentClazz != clazz
+          && (currentClazz.packageName.equals(clazz.packageName)
+              || importStrings.contains(clazz.fqn()))) {
+        for (Method method : clazz.body) {
+          methodMap.put(clazz.name.val.toString() + '.' + method.name.val.toString(), method);
+          methodMap.put(clazz.fqn() + '.' + method.name.val.toString(), method);
+          // TODO: only do this for static import
+          methodMap.put(method.name.val.toString(), method);
+        }
+      }
     }
     return methodMap;
   }

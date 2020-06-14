@@ -13,11 +13,19 @@ import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntNum;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.Method;
+import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.math.BigInteger;
 import java.util.HashSet;
 import java.util.Set;
 
 public class NumExprTypeDecider {
+  private CGContext ctx;
+
+  public NumExprTypeDecider(CGContext ctx) {
+    this.ctx = ctx;
+  }
+
   public String getType(VariableMap variables, Expression expr) {
     Set<String> types = new HashSet<>();
     for (Token token : expr.tokens) {
@@ -39,6 +47,12 @@ public class NumExprTypeDecider {
           } else {
             types.add(var.type);
           }
+        }
+      } else if (token instanceof MethodCall) {
+        MethodCall methodCall = (MethodCall) token;
+        Method method = ctx.methodMap.get(methodCall.name.toString());
+        if (method != null) {
+          types.add(method.type);
         }
       }
     }

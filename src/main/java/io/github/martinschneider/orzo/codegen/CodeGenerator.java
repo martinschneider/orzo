@@ -9,7 +9,6 @@ import io.github.martinschneider.orzo.codegen.statement.ConditionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ExpressionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.StatementDelegator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
-import io.github.martinschneider.orzo.parser.ParserContext;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -22,26 +21,16 @@ public class CodeGenerator {
   private static final short JAVA_CLASS_MAJOR_VERSION = 49;
   private static final short JAVA_CLASS_MINOR_VERSION = 0;
   private CGContext ctx;
+  private List<Output> outputs;
+  private List<Clazz> clazzes;
+  private CompilerErrors errors;
   private Output out;
 
-  public CodeGenerator(Clazz clazz, Output out, ParserContext parserCtx) {
-    this.out = out;
+  public CodeGenerator(List<Clazz> clazzes, List<Output> outputs, CompilerErrors errors) {
+    this.outputs = outputs;
+    this.clazzes = clazzes;
+    this.errors = errors;
     ctx = new CGContext();
-    ctx.clazz = clazz;
-    ctx.errors = parserCtx.errors;
-    ctx.condGenerator = new ConditionGenerator();
-    ctx.constPoolProcessor = new ConstantPoolProcessor();
-    ctx.constPool = ctx.constPoolProcessor.processConstantPool(clazz);
-    ctx.delegator = new StatementDelegator();
-    ctx.exprGenerator = new ExpressionGenerator();
-    ctx.methodMap = new MethodProcessor().getMethodMap(clazz);
-    ctx.opsGenerator = new BasicCodeGenerator();
-    ctx.parserCtx = parserCtx;
-    ctx.condGenerator.ctx = ctx;
-    ctx.delegator.ctx = ctx;
-    ctx.exprGenerator.ctx = ctx;
-    ctx.opsGenerator.ctx = ctx;
-    ctx.delegator.init();
   }
 
   public CompilerErrors getErrors() {
@@ -70,20 +59,41 @@ public class CodeGenerator {
     out.write((short) 0);
   }
 
+  private void init(int idx) {
+    out = outputs.get(idx);
+    ctx.clazz = clazzes.get(idx);
+    ctx.errors = errors;
+    ctx.condGenerator = new ConditionGenerator();
+    ctx.constPoolProcessor = new ConstantPoolProcessor();
+    ctx.constPool = ctx.constPoolProcessor.processConstantPool(ctx.clazz);
+    ctx.delegator = new StatementDelegator();
+    ctx.exprGenerator = new ExpressionGenerator();
+    ctx.methodMap = new MethodProcessor().getMethodMap(ctx.clazz, clazzes);
+    ctx.opsGenerator = new BasicCodeGenerator();
+    ctx.condGenerator.ctx = ctx;
+    ctx.delegator.ctx = ctx;
+    ctx.exprGenerator.ctx = ctx;
+    ctx.opsGenerator.ctx = ctx;
+    ctx.delegator.init();
+  }
+
   public void generate() {
-    supportPrint();
-    header();
-    HasOutput methods = methods(new DynamicByteArray());
-    HasOutput constPool = constPool(new DynamicByteArray());
-    out.write(constPool.getBytes());
-    accessModifiers();
-    classIndex();
-    superClassIndex();
-    interfaces();
-    fields();
-    out.write(methods.getBytes());
-    attributes();
-    out.flush();
+    for (int i = 0; i < clazzes.size(); i++) {
+      init(i);
+      header();
+      supportPrint();
+      HasOutput methods = methods(new DynamicByteArray());
+      HasOutput constPool = constPool(new DynamicByteArray());
+      out.write(constPool.getBytes());
+      accessModifiers();
+      classIndex();
+      superClassIndex();
+      interfaces();
+      fields();
+      out.write(methods.getBytes());
+      attributes();
+      out.flush();
+    }
   }
 
   private void generateCode(
@@ -158,11 +168,5 @@ public class CodeGenerator {
     ctx.constPool.addClass("java/lang/System");
     ctx.constPool.addClass("java/io/PrintStream");
     ctx.constPool.addFieldRef("java/lang/System", "out", "Ljava/io/PrintStream;");
-    ctx.constPoolProcessor.addMethodRef(
-        ctx.constPool, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
-    ctx.constPoolProcessor.addMethodRef(ctx.constPool, "java/io/PrintStream", "println", "(I)V");
-    ctx.constPoolProcessor.addMethodRef(ctx.constPool, "java/io/PrintStream", "println", "(J)V");
-    ctx.constPoolProcessor.addMethodRef(ctx.constPool, "java/io/PrintStream", "println", "(D)V");
-    ctx.constPoolProcessor.addMethodRef(ctx.constPool, "java/io/PrintStream", "println", "(F)V");
   }
 }

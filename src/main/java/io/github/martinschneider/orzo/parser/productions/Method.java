@@ -1,16 +1,6 @@
 package io.github.martinschneider.orzo.parser.productions;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
-
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import java.util.List;
@@ -22,9 +12,16 @@ public class Method {
   public Identifier name;
   public Scope scope;
   public String type;
+  public String fqClassName;
 
   public Method(
-      Scope scope, String type, Identifier name, List<Argument> arguments, List<Statement> body) {
+      String fqClassName,
+      Scope scope,
+      String type,
+      Identifier name,
+      List<Argument> arguments,
+      List<Statement> body) {
+    this.fqClassName = fqClassName;
     this.scope = scope;
     this.type = type;
     this.name = name;
@@ -33,39 +30,13 @@ public class Method {
   }
 
   public String getTypeDescr() {
-    String typeDescr = getDescr(type);
+    String typeDescr = TypeUtils.descr(type);
     StringBuilder strBuilder = new StringBuilder("(");
-    strBuilder.append(args.stream().map(x -> getDescr(x.type)).collect(Collectors.joining("")));
+    strBuilder.append(
+        args.stream().map(x -> TypeUtils.descr(x.type)).collect(Collectors.joining("")));
     strBuilder.append(')');
     strBuilder.append(typeDescr);
     return strBuilder.toString();
-  }
-
-  public String getDescr(String type) {
-    // TODO: general handling of reference types and arrays
-    if (type.contains(STRING)) {
-      type = type.replaceAll(STRING, "Ljava/lang/String;");
-      return type;
-    } else if (type.contains(BYTE)) {
-      type = type.replaceAll(BYTE, "B");
-    } else if (type.contains(CHAR)) {
-      type = type.replaceAll(CHAR, "C");
-    } else if (type.contains(DOUBLE)) {
-      type = type.replaceAll(DOUBLE, "D");
-    } else if (type.contains(FLOAT)) {
-      type = type.replaceAll(FLOAT, "F");
-    } else if (type.contains(INT)) {
-      type = type.replaceAll(INT, "I");
-    } else if (type.contains(LONG)) {
-      type = type.replaceAll(LONG, "J");
-    } else if (type.contains(SHORT)) {
-      type = type.replaceAll(SHORT, "S");
-    } else if (type.contains(VOID)) {
-      type = type.replaceAll(VOID, "V");
-    } else if (type.contains(BOOLEAN)) {
-      type = type.replaceAll(BOOLEAN, "Z");
-    }
-    return type;
   }
 
   @Override

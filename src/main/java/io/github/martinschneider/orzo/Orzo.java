@@ -5,6 +5,7 @@ import io.github.martinschneider.orzo.codegen.Output;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.parser.Parser;
+import io.github.martinschneider.orzo.parser.ParserContext;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -63,39 +64,48 @@ public class Orzo {
   }
 
   public void compile() throws IOException {
-    compile(null);
+    compile(new ArrayList<>());
   }
 
-  public void compile(Output output) throws IOException {
-    for (File input : inputs) {
-      System.out.println("Reading from: " + input.getAbsolutePath());
+  public void compile(List<Output> outputs) throws IOException {
+    List<Clazz> clazzes = new ArrayList<>();
+    ParserContext ctx = null;
+    for (int i = 0; i < inputs.size(); i++) {
+      System.out.println("Reading from: " + inputs.get(i).getAbsolutePath());
       Lexer scanner = new Lexer();
-      TokenList tokens = scanner.getTokens(input);
+      TokenList tokens = scanner.getTokens(inputs.get(i));
       System.out.println(
           "Scanner output: "
               + tokens.list().stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
       Parser parser = new Parser(scanner.getErrors());
       Clazz clazz = parser.parse(tokens);
       System.out.println("Parser output: " + clazz);
-      File outputFile = new File(classPath(outputPath, clazz));
-      System.out.println("Writing to: " + outputFile.getAbsolutePath());
+      Output output = null;
+      if (outputs != null && outputs.size() > i) {
+        output = outputs.get(i);
+      }
       if (output == null) {
+        File outputFile = new File(classPath(outputPath, clazz));
+        System.out.println("Writing to: " + outputFile.getAbsolutePath());
         output = fileOutput(outputFile);
       }
-      CodeGenerator codeGen = new CodeGenerator(clazz, output, parser.ctx);
-      codeGen.generate();
-      if (!codeGen.getErrors().getErrors().isEmpty()) {
-        StringBuilder errors = new StringBuilder("\n");
-        int errCount = codeGen.getErrors().getErrors().size();
-        errors.append(errCount);
-        errors.append(" error");
-        if (errCount > 1) {
-          errors.append("s");
-        }
-        errors.append("\n");
-        errors.append(codeGen.getErrors());
-        System.out.println(errors.toString());
+      clazzes.add(clazz);
+      outputs.add(output);
+      ctx = parser.ctx;
+    }
+    CodeGenerator codeGen = new CodeGenerator(clazzes, outputs, ctx.errors);
+    codeGen.generate();
+    if (!codeGen.getErrors().getErrors().isEmpty()) {
+      StringBuilder errors = new StringBuilder("\n");
+      int errCount = codeGen.getErrors().getErrors().size();
+      errors.append(errCount);
+      errors.append(" error");
+      if (errCount > 1) {
+        errors.append("s");
       }
+      errors.append("\n");
+      errors.append(codeGen.getErrors());
+      System.out.println(errors.toString());
     }
     System.out.println("Ok bye!\n");
   }

@@ -5,14 +5,15 @@ import io.github.martinschneider.orzo.codegen.statement.ConditionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ExpressionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.StatementDelegator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
-import io.github.martinschneider.orzo.parser.ParserContext;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.Map;
 
 public class CGContext {
   public Clazz clazz;
+  public int currentIdx;
   public ConstantPool constPool;
+  public ClassMembers classMembers;
   public Map<String, Method> methodMap;
   public StatementDelegator delegator;
   public BasicCodeGenerator opsGenerator;
@@ -20,5 +21,4 @@ public class CGContext {
   public ConditionGenerator condGenerator;
   public ConstantPoolProcessor constPoolProcessor;
   public CompilerErrors errors;
-  public ParserContext parserCtx;
 }

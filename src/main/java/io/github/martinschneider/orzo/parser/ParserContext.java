@@ -1,8 +1,10 @@
 package io.github.martinschneider.orzo.parser;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
+import io.github.martinschneider.orzo.parser.productions.Clazz;
 
 public class ParserContext {
+  public Clazz currClazz;
   public CompilerErrors errors;
   public ArrayInitParser arrayInitParser;
   public ArraySelectorParser arraySelectorParser;

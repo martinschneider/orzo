@@ -126,7 +126,17 @@ public class TestHelper {
 
   public static Method method(
       Scope scope, String type, Identifier name, List<Argument> arguments, List<Statement> body) {
-    return new Method(scope, type, name, arguments, body);
+    return new Method(null, scope, type, name, arguments, body);
+  }
+
+  public static Method method(
+      String fqClassName,
+      Scope scope,
+      String type,
+      Identifier name,
+      List<Argument> arguments,
+      List<Statement> body) {
+    return new Method(fqClassName, scope, type, name, arguments, body);
   }
 
   public static MethodCall methodCall(Identifier name, List<Expression> parameters) {

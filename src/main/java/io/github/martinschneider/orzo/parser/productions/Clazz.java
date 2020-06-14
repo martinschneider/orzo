@@ -83,6 +83,13 @@ public class Clazz {
     return true;
   }
 
+  public String fqn() {
+    StringBuilder strBuilder = new StringBuilder(packageName);
+    strBuilder.append('.');
+    strBuilder.append(name);
+    return strBuilder.toString();
+  }
+
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();

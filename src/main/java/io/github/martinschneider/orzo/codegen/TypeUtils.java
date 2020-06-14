@@ -21,6 +21,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LALOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SALOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SASTORE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
@@ -28,8 +29,37 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
 
 public class TypeUtils {
+  public static String descr(String type) {
+    // TODO: general handling of reference types and arrays
+    if (type.contains(STRING)) {
+      type = type.replaceAll(STRING, "Ljava/lang/String;");
+      return type;
+    } else if (type.contains(BYTE)) {
+      type = type.replaceAll(BYTE, "B");
+    } else if (type.contains(CHAR)) {
+      type = type.replaceAll(CHAR, "C");
+    } else if (type.contains(DOUBLE)) {
+      type = type.replaceAll(DOUBLE, "D");
+    } else if (type.contains(FLOAT)) {
+      type = type.replaceAll(FLOAT, "F");
+    } else if (type.contains(INT)) {
+      type = type.replaceAll(INT, "I");
+    } else if (type.contains(LONG)) {
+      type = type.replaceAll(LONG, "J");
+    } else if (type.contains(SHORT)) {
+      type = type.replaceAll(SHORT, "S");
+    } else if (type.contains(VOID)) {
+      type = type.replaceAll(VOID, "V");
+    } else if (type.contains(BOOLEAN)) {
+      type = type.replaceAll(BOOLEAN, "Z");
+    }
+    return type;
+  }
+
   public static byte getLoadOpCode(String type) {
     switch (type) {
       case INT:

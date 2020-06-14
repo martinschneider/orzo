@@ -35,7 +35,12 @@ public class MethodCallGenerator implements StatementGenerator {
       for (Expression param : methodCall.params) {
         ctx.opsGenerator.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
         ExpressionResult result = ctx.exprGenerator.eval(out, variables, null, param);
-        print(out, result.type);
+        if (result != null) {
+          print(out, result.type);
+        } else {
+          ctx.errors.addError(LOGGER_NAME, "error evaluating expression " + param);
+          return null;
+        }
       }
     } else {
       String methodName = methodCall.name.toString();

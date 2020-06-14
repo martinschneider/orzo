@@ -74,7 +74,7 @@ public class ExpressionGenerator {
     // TODO: error handling, e.g. only "+" operator is valid for String concatenation, "%" is not
     // valid for doubles etc.
     if (type == null) {
-      type = new NumExprTypeDecider().getType(variables, expr);
+      type = new NumExprTypeDecider(ctx).getType(variables, expr);
     }
     Object val = null;
     if (expr == null) {
@@ -148,6 +148,14 @@ public class ExpressionGenerator {
         MethodCall methodCall = (MethodCall) token;
         String methodName = methodCall.name.toString();
         Method method = ctx.methodMap.get(methodName);
+        String clazzName = ctx.clazz.name.val.toString();
+        if (methodName.contains(".")) {
+          String[] tmp = methodName.split("\\.");
+          clazzName = method.fqClassName.replaceAll("\\.", "/");
+          methodName = tmp[1];
+          ctx.constPool.addClass(clazzName);
+          ctx.constPool.addMethodRef(clazzName, methodName, method.getTypeDescr());
+        }
         if (method == null) {
           ctx.errors.addError(
               LOGGER_NAME,
@@ -160,8 +168,7 @@ public class ExpressionGenerator {
         for (Expression exp : methodCall.params) {
           eval(out, variables, type, exp);
         }
-        ctx.opsGenerator.invokeStatic(
-            out, ctx.clazz.name.val.toString(), methodName, method.getTypeDescr());
+        ctx.opsGenerator.invokeStatic(out, clazzName, methodName, method.getTypeDescr());
         type = method.type;
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();

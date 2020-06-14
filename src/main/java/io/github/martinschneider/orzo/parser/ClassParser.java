@@ -52,6 +52,8 @@ public class ClassParser implements ProdParser<Clazz> {
           ctx.errors.missingExpected(LOG_NAME, sym(LBRACE), tokens);
         }
         tokens.next();
+        // set temporary clazz object for the method parser's use
+        ctx.currClazz = new Clazz(packageDeclaration, imports, scope, name, null);
         body = parseClassBody(tokens);
         if (body == null) {
           ctx.errors.addError(LOG_NAME, "missing class body");
@@ -60,7 +62,8 @@ public class ClassParser implements ProdParser<Clazz> {
           ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
         }
         tokens.next();
-        return new Clazz(packageDeclaration, imports, scope, name, body);
+        ctx.currClazz.body = body;
+        return ctx.currClazz;
       }
     }
     return null;
