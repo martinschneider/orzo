@@ -47,7 +47,6 @@ import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Expression;
-import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -86,6 +85,7 @@ public class ExpressionGenerator {
       if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
         String varType = variables.get(id).type;
+        String arrType = variables.get(id).arrType;
         // look ahead for ++ or -- operators because in that case we do not push the value to the
         // stack
         if (i + 1 == tokens.size()
@@ -102,7 +102,7 @@ public class ExpressionGenerator {
             loadValue(out, varType, varIdx);
           }
         }
-        if (!type.equals(varType)) {
+        if (!type.equals(varType) && arrType == null) {
           ctx.opsGenerator.convert(out, varType, type);
         }
       } else if (token instanceof IntNum) {
@@ -145,31 +145,7 @@ public class ExpressionGenerator {
         ctx.opsGenerator.pushInteger(out, chr);
         type = CHAR;
       } else if (token instanceof MethodCall) {
-        MethodCall methodCall = (MethodCall) token;
-        String methodName = methodCall.name.toString();
-        Method method = ctx.methodMap.get(methodName);
-        String clazzName = ctx.clazz.name.val.toString();
-        if (methodName.contains(".")) {
-          String[] tmp = methodName.split("\\.");
-          clazzName = method.fqClassName.replaceAll("\\.", "/");
-          methodName = tmp[1];
-          ctx.constPool.addClass(clazzName);
-          ctx.constPool.addMethodRef(clazzName, methodName, method.getTypeDescr());
-        }
-        if (method == null) {
-          ctx.errors.addError(
-              LOGGER_NAME,
-              "missing method declaration \""
-                  + methodName
-                  + "\", known methods: "
-                  + ctx.methodMap.keySet());
-          return null;
-        }
-        for (Expression exp : methodCall.params) {
-          eval(out, variables, type, exp);
-        }
-        ctx.opsGenerator.invokeStatic(out, clazzName, methodName, method.getTypeDescr());
-        type = method.type;
+        type = ctx.methodCallGenerator.generate(out, variables, (MethodCall) token);
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
         if (op.equals(POST_INCREMENT)) {

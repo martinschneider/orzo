@@ -32,6 +32,14 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
 
+import io.github.martinschneider.orzo.parser.productions.Argument;
+import io.github.martinschneider.orzo.parser.productions.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public class TypeUtils {
   public static String descr(String type) {
     // TODO: general handling of reference types and arrays
@@ -58,6 +66,27 @@ public class TypeUtils {
       type = type.replaceAll(BOOLEAN, "Z");
     }
     return type;
+  }
+
+  public static String methodDescr(Method method) {
+    StringBuilder strBuilder = new StringBuilder(argsDescr(method.args));
+    strBuilder.append(TypeUtils.descr(method.type));
+    return strBuilder.toString();
+  }
+
+  public static String argsDescr(List<Argument> args) {
+    StringBuilder strBuilder = new StringBuilder("(");
+    strBuilder.append(
+        args.stream().map(x -> TypeUtils.descr(x.type)).collect(Collectors.joining("")));
+    strBuilder.append(')');
+    return strBuilder.toString();
+  }
+
+  public static String typesDescr(List<String> types) {
+    StringBuilder strBuilder = new StringBuilder("(");
+    strBuilder.append(types.stream().map(x -> TypeUtils.descr(x)).collect(Collectors.joining("")));
+    strBuilder.append(')');
+    return strBuilder.toString();
   }
 
   public static byte getLoadOpCode(String type) {
@@ -118,5 +147,53 @@ public class TypeUtils {
         return CHAR_ARRAY;
     }
     return 0;
+  }
+
+  public static List<String> assignableTo(String type) {
+    if (type.contains("[")) {
+      return List.of(type);
+    }
+    switch (type) {
+      case INT:
+        return List.of(INT, LONG);
+      case BYTE:
+        return List.of(BYTE, SHORT, INT, LONG);
+      case SHORT:
+        return List.of(SHORT, INT, LONG);
+      case LONG:
+        return List.of(LONG);
+      case DOUBLE:
+        return List.of(DOUBLE);
+      case FLOAT:
+        return List.of(FLOAT, DOUBLE);
+      case CHAR:
+        return List.of(CHAR, INT, LONG);
+    }
+    return Collections.emptyList();
+  }
+
+  // cartesian product
+  // see:
+  // https://codereview.stackexchange.com/questions/67804/generate-cartesian-product-of-list-in-java
+  // input: a list of possible types for each argument of a method, for example if
+  // the method call is `m(a,b)` with `a` being float and `b` being `int`, typesList = {{float,
+  // double}, {int, long}}.
+  // output: a list of all possible combinations of types these arguments can be matched
+  // to, in the given example: {{float, int}, {float, long}, {double, int}, {double, long}}
+  // this can be used to find methods signatures that match input argument types
+  public static <T> List<List<T>> combinations(List<List<T>> lists) {
+    List<List<T>> combinations = Arrays.asList(Arrays.asList());
+    for (List<T> list : lists) {
+      List<List<T>> extraColumnCombinations = new ArrayList<>();
+      for (List<T> combination : combinations) {
+        for (T element : list) {
+          List<T> newCombination = new ArrayList<>(combination);
+          newCombination.add(element);
+          extraColumnCombinations.add(newCombination);
+        }
+      }
+      combinations = extraColumnCombinations;
+    }
+    return combinations;
   }
 }

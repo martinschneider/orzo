@@ -32,18 +32,20 @@ public class NumExprTypeDecider {
       if (token instanceof IntNum) {
         long intValue = ((BigInteger) token.val).longValue();
         if (intValue > Integer.MAX_VALUE) {
-          types.add(LONG);
+          types.add(TypeUtils.descr(LONG));
         } else {
-          types.add(INT);
+          types.add(TypeUtils.descr(INT));
         }
       } else if (token instanceof DoubleNum) {
-        types.add(DOUBLE);
+        types.add(TypeUtils.descr(DOUBLE));
       } else if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
         VariableInfo var = variables.get(token);
         if (var != null) {
           if (id.arrSel != null) {
             types.add(var.arrType);
+          } else if (var.arrType != null) {
+            types.add("[" + var.arrType);
           } else {
             types.add(var.type);
           }
@@ -60,7 +62,13 @@ public class NumExprTypeDecider {
   }
 
   private String getSmallestType(Set<String> types) {
-    if (types.contains(DOUBLE)) {
+    String arrayType = getArrayType(types);
+    if (arrayType != null) {
+      return arrayType;
+    }
+    if (types.contains(CHAR)) {
+      return CHAR;
+    } else if (types.contains(DOUBLE)) {
       return DOUBLE;
     } else if (types.contains(FLOAT)) {
       return FLOAT;
@@ -72,8 +80,16 @@ public class NumExprTypeDecider {
       return SHORT;
     } else if (types.contains(BYTE)) {
       return BYTE;
-    } else {
-      return CHAR;
     }
+    return INT;
+  }
+
+  private String getArrayType(Set<String> types) {
+    for (String type : types) {
+      if (type.contains("[")) {
+        return type;
+      }
+    }
+    return null;
   }
 }

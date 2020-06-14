@@ -1,6 +1,5 @@
 package io.github.martinschneider.orzo.parser.productions;
 
-import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import java.util.List;
@@ -27,16 +26,6 @@ public class Method {
     this.name = name;
     this.args = arguments;
     this.body = body;
-  }
-
-  public String getTypeDescr() {
-    String typeDescr = TypeUtils.descr(type);
-    StringBuilder strBuilder = new StringBuilder("(");
-    strBuilder.append(
-        args.stream().map(x -> TypeUtils.descr(x.type)).collect(Collectors.joining("")));
-    strBuilder.append(')');
-    strBuilder.append(typeDescr);
-    return strBuilder.toString();
   }
 
   @Override

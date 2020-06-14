@@ -5,6 +5,10 @@ public class MathUtils {
     return a * b;
   }
 
+  public static double times(int a, int b) {
+    return a * b;
+  }
+
   public static double pi() {
     // Calculate pi using the Leibniz series
     double d = 1;

@@ -13,13 +13,13 @@ public class MethodProcessor {
   public Map<String, Method> getMethodMap(Clazz currentClazz, List<Clazz> clazzes) {
     Map<String, Method> methodMap = new HashMap<>();
     for (Method method : currentClazz.body) {
-      methodMap.put(method.name.val.toString(), method);
+      methodMap.put(getKey(method), method);
     }
     addImported(methodMap, currentClazz, clazzes);
     return methodMap;
   }
 
-  public Map<String, Method> addImported(
+  private Map<String, Method> addImported(
       Map<String, Method> methodMap, Clazz currentClazz, List<Clazz> clazzes) {
     List<Import> imports = currentClazz.imports;
     List<String> importStrings = imports.stream().map(x -> x.id).collect(Collectors.toList());
@@ -28,13 +28,17 @@ public class MethodProcessor {
           && (currentClazz.packageName.equals(clazz.packageName)
               || importStrings.contains(clazz.fqn()))) {
         for (Method method : clazz.body) {
-          methodMap.put(clazz.name.val.toString() + '.' + method.name.val.toString(), method);
-          methodMap.put(clazz.fqn() + '.' + method.name.val.toString(), method);
+          methodMap.put(clazz.name.val.toString() + '.' + getKey(method), method);
+          methodMap.put(clazz.fqn() + '.' + getKey(method), method);
           // TODO: only do this for static import
-          methodMap.put(method.name.val.toString(), method);
+          methodMap.put(getKey(method), method);
         }
       }
     }
     return methodMap;
+  }
+
+  private String getKey(Method method) {
+    return method.name.val.toString() + TypeUtils.argsDescr(method.args);
   }
 }

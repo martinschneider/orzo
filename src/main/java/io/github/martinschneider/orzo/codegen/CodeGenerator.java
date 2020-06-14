@@ -7,6 +7,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 
 import io.github.martinschneider.orzo.codegen.statement.ConditionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ExpressionGenerator;
+import io.github.martinschneider.orzo.codegen.statement.MethodCallGenerator;
 import io.github.martinschneider.orzo.codegen.statement.StatementDelegator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.Argument;
@@ -68,6 +69,7 @@ public class CodeGenerator {
     ctx.constPool = ctx.constPoolProcessor.processConstantPool(ctx.clazz);
     ctx.delegator = new StatementDelegator();
     ctx.exprGenerator = new ExpressionGenerator();
+    ctx.methodCallGenerator = new MethodCallGenerator(ctx);
     ctx.methodMap = new MethodProcessor().getMethodMap(ctx.clazz, clazzes);
     ctx.opsGenerator = new BasicCodeGenerator();
     ctx.condGenerator.ctx = ctx;
@@ -132,7 +134,7 @@ public class CodeGenerator {
       }
       out.write((short) 9); // public static
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.name.val));
-      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.getTypeDescr()));
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, TypeUtils.methodDescr(method)));
       out.write((short) 1); // attribute size
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Code"));
       DynamicByteArray methodOut = new DynamicByteArray();

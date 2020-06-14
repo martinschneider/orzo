@@ -13,18 +13,49 @@ import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MethodCallGenerator implements StatementGenerator {
   private static final String LOGGER_NAME = "method call code generator";
-  private CGContext ctx;
+  public CGContext ctx;
 
   public MethodCallGenerator(CGContext ctx) {
     this.ctx = ctx;
+  }
+
+  public String generate(DynamicByteArray out, VariableMap variables, MethodCall methodCall) {
+    List<String> types = new ArrayList<>();
+    for (Expression exp : methodCall.params) {
+      types.add(ctx.exprGenerator.eval(out, variables, null, exp).type);
+    }
+    String methodName = methodCall.name.toString();
+    Method method = findMatchingMethod(methodName, types);
+    String clazzName = ctx.clazz.name.val.toString();
+    if (methodName.contains(".")) {
+      String[] tmp = methodName.split("\\.");
+      clazzName = method.fqClassName.replaceAll("\\.", "/");
+      methodName = tmp[1];
+      ctx.constPool.addClass(clazzName);
+      ctx.constPool.addMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
+    }
+    if (method == null) {
+      ctx.errors.addError(
+          LOGGER_NAME,
+          "missing method declaration \""
+              + methodName
+              + "\", known methods: "
+              + ctx.methodMap.keySet());
+      return null;
+    }
+    ctx.opsGenerator.invokeStatic(out, clazzName, methodName, TypeUtils.methodDescr(method));
+    return method.type;
   }
 
   @Override
@@ -43,22 +74,7 @@ public class MethodCallGenerator implements StatementGenerator {
         }
       }
     } else {
-      String methodName = methodCall.name.toString();
-      Method methodToCall = ctx.methodMap.get(methodName);
-      if (methodToCall == null) {
-        ctx.errors.addError(
-            LOGGER_NAME,
-            "missing method declaration \""
-                + methodName
-                + "\", known methods: "
-                + ctx.methodMap.keySet());
-        return null;
-      }
-      for (Expression expr : methodCall.params) {
-        ctx.exprGenerator.eval(out, variables, null, expr);
-      }
-      ctx.opsGenerator.invokeStatic(
-          out, ctx.clazz.name.val.toString(), methodName, methodToCall.getTypeDescr());
+      generate(out, variables, methodCall);
     }
     return out;
   }
@@ -85,5 +101,21 @@ public class MethodCallGenerator implements StatementGenerator {
       // TODO: call toString() first
     }
     return out;
+  }
+
+  private Method findMatchingMethod(String methodName, List<String> types) {
+    List<List<String>> typesList = new ArrayList<>();
+    for (int i = 0; i < types.size(); i++) {
+      typesList.add(TypeUtils.assignableTo(types.get(i)));
+    }
+    Method method = null;
+    for (List<String> assignTypes : TypeUtils.combinations(typesList)) {
+      String methodKey = methodName + TypeUtils.typesDescr(assignTypes);
+      method = ctx.methodMap.get(methodKey);
+      if (method != null) {
+        break;
+      }
+    }
+    return method;
   }
 }

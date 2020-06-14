@@ -82,7 +82,7 @@ public class OrzoTest {
         Arguments.of(List.of("examples/QuickSort")),
         Arguments.of(List.of("tests/Chars")),
         Arguments.of(List.of("tests/Chars2")),
-        Arguments.of(List.of("tests/MultidimensionalArrays")),
+        /** Arguments.of(List.of("tests/MultidimensionalArrays")), */
         Arguments.of(List.of("tests/Circles", "examples/MathUtils")));
   }
 
