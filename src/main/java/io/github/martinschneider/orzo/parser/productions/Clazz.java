@@ -84,8 +84,11 @@ public class Clazz {
   }
 
   public String fqn() {
-    StringBuilder strBuilder = new StringBuilder(packageName);
-    strBuilder.append('.');
+    StringBuilder strBuilder = new StringBuilder();
+    if (packageName != null) {
+      strBuilder.append(packageName);
+      strBuilder.append('.');
+    }
     strBuilder.append(name);
     return strBuilder.toString();
   }
