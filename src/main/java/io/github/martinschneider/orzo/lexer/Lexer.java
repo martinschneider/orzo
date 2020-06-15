@@ -25,6 +25,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU_ASSIGN;
@@ -281,6 +282,8 @@ public class Lexer {
     } else if (character == '*') {
       if ((character = (char) inputReader.read()) == '=') {
         tokenList.add(op(TIMES_ASSIGN).wLoc(inputReader.getLoc()));
+      } else if (character == '*') {
+        tokenList.add(op(POW).wLoc(inputReader.getLoc()));
       } else {
         inputReader.unread(character);
         tokenList.add(op(TIMES).wLoc(inputReader.getLoc()));

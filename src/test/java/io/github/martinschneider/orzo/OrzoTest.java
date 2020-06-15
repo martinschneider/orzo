@@ -83,7 +83,9 @@ public class OrzoTest {
         Arguments.of(List.of("tests/Chars")),
         Arguments.of(List.of("tests/Chars2")),
         /** Arguments.of(List.of("tests/MultidimensionalArrays")), */
-        Arguments.of(List.of("tests/Circles", "examples/MathUtils")));
+        Arguments.of(List.of("tests/Circles", "examples/MathUtils")),
+        Arguments.of(List.of("tests/JavaLangImports")),
+        Arguments.of(List.of("tests/Pow")));
   }
 
   @ParameterizedTest

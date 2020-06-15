@@ -7,16 +7,20 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 
 import io.github.martinschneider.orzo.lexer.tokens.DoubleNum;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntNum;
+import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class NumExprTypeDecider {
@@ -32,12 +36,14 @@ public class NumExprTypeDecider {
       if (token instanceof IntNum) {
         long intValue = ((BigInteger) token.val).longValue();
         if (intValue > Integer.MAX_VALUE) {
-          types.add(TypeUtils.descr(LONG));
+          types.add(LONG);
         } else {
-          types.add(TypeUtils.descr(INT));
+          types.add(INT);
         }
       } else if (token instanceof DoubleNum) {
-        types.add(TypeUtils.descr(DOUBLE));
+        types.add(DOUBLE);
+      } else if (token instanceof Str) {
+        types.add(STRING);
       } else if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
         VariableInfo var = variables.get(token);
@@ -52,7 +58,12 @@ public class NumExprTypeDecider {
         }
       } else if (token instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) token;
-        Method method = ctx.methodMap.get(methodCall.name.toString());
+        List<String> argTypes = new ArrayList<>();
+        for (Expression exp : methodCall.params) {
+          argTypes.add(new NumExprTypeDecider(ctx).getType(variables, exp));
+        }
+        Method method =
+            ctx.methodCallGenerator.findMatchingMethod(methodCall.name.toString(), argTypes);
         if (method != null) {
           types.add(method.type);
         }
@@ -80,6 +91,8 @@ public class NumExprTypeDecider {
       return SHORT;
     } else if (types.contains(BYTE)) {
       return BYTE;
+    } else if (types.contains(STRING)) {
+      return STRING;
     }
     return INT;
   }

@@ -121,6 +121,11 @@ public class ConstantPoolProcessor {
         } else {
           constPool.addDouble(doubleValue.doubleValue());
         }
+      } else if (token instanceof MethodCall) {
+        MethodCall methodCall = (MethodCall) token;
+        for (Expression subParam : methodCall.params) {
+          constPool = processExpression(constPool, subParam);
+        }
       }
     }
     return constPool;

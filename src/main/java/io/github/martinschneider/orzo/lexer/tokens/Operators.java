@@ -19,6 +19,7 @@ public enum Operators {
   MINUS(11),
   PLUS(11),
   TIMES(12),
+  POW(12),
   DIV(12),
   MOD(12),
   LSHIFT(10),

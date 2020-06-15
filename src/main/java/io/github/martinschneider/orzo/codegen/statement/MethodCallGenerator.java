@@ -13,6 +13,7 @@ import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -33,18 +34,10 @@ public class MethodCallGenerator implements StatementGenerator {
   public String generate(DynamicByteArray out, VariableMap variables, MethodCall methodCall) {
     List<String> types = new ArrayList<>();
     for (Expression exp : methodCall.params) {
-      types.add(ctx.exprGenerator.eval(out, variables, null, exp).type);
+      types.add(new NumExprTypeDecider(ctx).getType(variables, exp));
     }
     String methodName = methodCall.name.toString();
     Method method = findMatchingMethod(methodName, types);
-    String clazzName = ctx.clazz.name.val.toString();
-    if (methodName.contains(".")) {
-      String[] tmp = methodName.split("\\.");
-      clazzName = method.fqClassName.replaceAll("\\.", "/");
-      methodName = tmp[1];
-      ctx.constPool.addClass(clazzName);
-      ctx.constPool.addMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
-    }
     if (method == null) {
       ctx.errors.addError(
           LOGGER_NAME,
@@ -52,7 +45,23 @@ public class MethodCallGenerator implements StatementGenerator {
               + methodName
               + "\", known methods: "
               + ctx.methodMap.keySet());
-      return null;
+      return "";
+    }
+    String clazzName = ctx.clazz.name.val.toString();
+    if (methodName.contains(".")) {
+      String[] tmp = methodName.split("\\.");
+      clazzName = method.fqClassName.replaceAll("\\.", "/");
+      methodName = tmp[1];
+      ctx.constPool.addClass(clazzName);
+      ctx.constPool.addMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
+    } else if (!ctx.clazz.fqn().equals(method.fqClassName)) { // static import
+      clazzName = method.fqClassName.replaceAll("\\.", "/");
+      ctx.constPool.addClass(clazzName);
+      ctx.constPool.addMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
+    }
+    for (int i = 0; i < types.size(); i++) {
+      ctx.exprGenerator.eval(out, variables, method.args.get(i).type, methodCall.params.get(i));
+      ctx.opsGenerator.convert(out, types.get(i), method.args.get(i).type);
     }
     ctx.opsGenerator.invokeStatic(out, clazzName, methodName, TypeUtils.methodDescr(method));
     return method.type;
@@ -103,7 +112,7 @@ public class MethodCallGenerator implements StatementGenerator {
     return out;
   }
 
-  private Method findMatchingMethod(String methodName, List<String> types) {
+  public Method findMatchingMethod(String methodName, List<String> types) {
     List<List<String>> typesList = new ArrayList<>();
     for (int i = 0; i < types.size(); i++) {
       typesList.add(TypeUtils.assignableTo(types.get(i)));

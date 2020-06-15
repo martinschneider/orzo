@@ -43,9 +43,13 @@ import java.util.stream.Collectors;
 public class TypeUtils {
   public static String descr(String type) {
     // TODO: general handling of reference types and arrays
-    if (type.contains(STRING)) {
-      type = type.replaceAll(STRING, "Ljava/lang/String;");
+    if (type.startsWith("L") && type.endsWith(";")) {
       return type;
+    }
+    if (type.contains("java.lang.String")) {
+      type = type.replaceAll("java.lang.String", "Ljava/lang/String;");
+    } else if (type.contains(STRING)) {
+      type = type.replaceAll(STRING, "Ljava/lang/String;");
     } else if (type.contains(BYTE)) {
       type = type.replaceAll(BYTE, "B");
     } else if (type.contains(CHAR)) {
@@ -154,6 +158,8 @@ public class TypeUtils {
       return List.of(type);
     }
     switch (type) {
+      case STRING:
+        return List.of("Ljava/lang/String;");
       case INT:
         return List.of(INT, LONG);
       case BYTE:
