@@ -67,6 +67,7 @@ public class BasicCodeGenerator {
     } else if (number == 2) {
       out.write(FCONST_2);
     } else {
+      ctx.constPool.addFloat(number);
       ldc(out, CONSTANT_FLOAT, number);
     }
     return out;

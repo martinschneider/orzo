@@ -62,26 +62,32 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [ ] uint, ushort, ubyte, ulong types
 
 ## Notes
-- Array defintions must be of the form `int[] a`, `int a[]` is not supported (because it's confusing and wrong) 
+- Array defintions must be of the form `int[] a`, `int a[]`
+- For now, Orzo creates class files targeting JDK 5 (major version 49) or newer
 
 # Examples
 Working examples can be found [here](src/test/resources/io/github/martinschneider/orzo/examples).
 
 # Building
 
-The compiler can be built using `javac` and `jar`, for example:
+## Using mvn
+`mvn package`
 
+## Using `javac` and `jar`
 `javac $(find ./src/main/java -name "*.java") -d bin && jar cfe orzo.jar io.github.martinschneider.orzo.Orzo -C bin .`
 
-For convenience, there is also a Maven configuration, so you could simply call `mvn package` instead.
+## Using `orzo` (not working yet)
+`orzo $(find ./src/main/java -name "*.java") -d bin && jar cfe orzo.jar io.github.martinschneider.orzo.Orzo -C bin .`
 
-Once Orzo is self-compiling, you should be able to use `orzo $(find ./src/main/java -name "*.java") -d bin && jar cfe orzo.jar io.github.martinschneider.orzo.Orzo -C bin .` as well.
+# Setup alias (optional)
+`alias orzo="java -jar /path/to/orzo.jar"`
+The following examples assume the above alias. If you don't have it, replace `orzo` with `java -jar orzo.jar`.
 
 # Usage
 
-To compile `HelloWorld.java` run `java -jar orzo.jar HelloWorld.java`. This will generate a class file based on the package and class names defined in `HelloWorld.java`.
+To compile `HelloWorld.java` run `orzo HelloWorld.java`. This will generate a class file based on the package and class names defined in `HelloWorld.java`.
 
-For example, the following Java program will be compiled into a class file at `com/examples/HelloWorld.class`. Unlike `javac`, Orzo does not check whether the class name matches the Java source filename.
+For example, the following Java program will be compiled into a class file at `com/examples/HelloWorld.class`.
 
 ```
 package com.examples;
@@ -93,16 +99,14 @@ public class HelloWorld {
 }
 ```
 
-The root of the output folder is the current directory. This can be changed using the `-d` option. For example, `java -jar orzo.jar HelloWorld.java -d /tmp/test` will create `/tmp/test/com/examples/HelloWorld.class`.
-
-Optionally, you can create an alias `alias orzo="java -jar /path/to/orzo.jar"` and simply call `orzo HelloWorld.java`.
+The root of the output folder is the current directory. This can be changed using the `-d` option. For example, `orzo HelloWorld.java -d /tmp/test` will create `/tmp/test/com/examples/HelloWorld.class`.
 
 # Design considerations
 The compiler is split into three parts: [Lexer](src/main/java/io/github/martinschneider/orzo/lexer/Lexer.java), [Parser](src/main/java/io/github/martinschneider/orzo/parser/Parser.java) and [Code Generator](src/main/java/io/github/martinschneider/orzo/codegen/CodeGenerator.java).
 
-It only uses Java core libraries and has no external dependencies (except for unit testing which requires JUnit).
+It only uses Java core libraries and has no external dependencies (except for unit testing which requires [JUnit](https://junit.org).
 
-To make the code less verbose public fields and static imports are heavily used. This might not be considered best practice for other Java projects but it serves its purpose well for this one.
+To make the code less verbose, public fields and static imports are heavily used. This might not be considered best practice for other Java projects but it serves its purpose well for this one.
 
 ## Lexer
 The Lexer uses a [`PushbackReader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/PushbackReader.html) with a wrapper around it which keeps track of line information to facilitate useful error messages.

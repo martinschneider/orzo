@@ -124,7 +124,7 @@ public class MethodProcessor {
             ProcessingEnvironment.class,
             ProcessHandle.class,
             Readable.class,
-            Record.class,
+            // Record.class,
             ReflectiveOperationException.class,
             Runnable.class,
             Runtime.class,
