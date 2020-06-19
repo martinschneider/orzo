@@ -58,7 +58,9 @@ public class AssignmentParser implements ProdParser<Assignment> {
       if (tokens.curr().eq(op(ASSIGN))) {
         tokens.next();
       } else if (tokens.curr().eq(op(POST_INCREMENT)) || tokens.curr().eq(op(POST_DECREMENT))) {
-        tokens.prev();
+        // see post increment parser
+        tokens.setIdx(idx);
+        return null;
       } else if (tokens.curr().eq(op(PLUS_ASSIGN))) {
         tokens.insert(op(PLUS));
         tokens.insert(left);

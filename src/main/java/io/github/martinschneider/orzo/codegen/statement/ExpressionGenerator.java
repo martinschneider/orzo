@@ -1,24 +1,12 @@
 package io.github.martinschneider.orzo.codegen.statement;
 
-import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadDouble;
-import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadInteger;
-import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadLong;
 import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadValue;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DSUB;
-import static io.github.martinschneider.orzo.codegen.OpCodes.FADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.FSUB;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2B;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2C;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2S;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IINC;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LSUB;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
@@ -34,7 +22,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
-import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
@@ -56,6 +43,8 @@ import java.util.List;
 public class ExpressionGenerator {
   public CGContext ctx;
   private static final String LOGGER_NAME = "expression code generator";
+  private static final List<Operators> INCREMENT_DECREMENT_OPS =
+      List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT);
 
   public ExpressionResult eval(
       DynamicByteArray out, VariableMap variables, String type, Expression expr) {
@@ -90,7 +79,9 @@ public class ExpressionGenerator {
         // stack
         if (i + 1 == tokens.size()
             || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
-                && !tokens.get(i + 1).eq(op(POST_INCREMENT)))) {
+                && !tokens.get(i + 1).eq(op(POST_INCREMENT))
+                && !tokens.get(i + 1).eq(op(PRE_INCREMENT))
+                && !tokens.get(i + 1).eq(op(PRE_DECREMENT)))) {
           VariableInfo varInfo = variables.get(id);
           byte varIdx = varInfo.idx;
           if (id.arrSel != null) {
@@ -152,50 +143,100 @@ public class ExpressionGenerator {
           byte idx = variables.get(tokens.get(i - 1)).idx;
           switch (type) {
             case INT:
-              incInteger(out, idx, (byte) 1);
+              ctx.incrGenerator.incInteger(out, idx, (byte) 1, false, false);
               break;
             case DOUBLE:
-              incDouble(out, idx);
+              ctx.incrGenerator.incDouble(out, idx, false, false);
               break;
             case FLOAT:
-              incFloat(out, idx);
+              ctx.incrGenerator.incFloat(out, idx, false, false);
               break;
             case LONG:
-              incLong(out, idx);
+              ctx.incrGenerator.incLong(out, idx, false, false);
               break;
             case BYTE:
-              incByte(out, idx, (byte) 1);
+              ctx.incrGenerator.incByte(out, idx, (byte) 1, false, false);
               break;
             case SHORT:
-              incShort(out, idx, (byte) 1);
+              ctx.incrGenerator.incShort(out, idx, (byte) 1, false, false);
               break;
             case CHAR:
-              incChar(out, idx, (byte) 1);
+              ctx.incrGenerator.incChar(out, idx, (byte) 1, false, false);
               break;
           }
         } else if (op.equals(POST_DECREMENT)) {
           byte idx = variables.get(tokens.get(i - 1)).idx;
           switch (type) {
             case INT:
-              incInteger(out, idx, (byte) -1);
+              ctx.incrGenerator.incInteger(out, idx, (byte) -1, false, false);
               break;
             case DOUBLE:
-              decDouble(out, idx);
+              ctx.incrGenerator.decDouble(out, idx, false, false);
               break;
             case FLOAT:
-              decFloat(out, idx);
+              ctx.incrGenerator.decFloat(out, idx, false, false);
               break;
             case LONG:
-              decLong(out, idx);
+              ctx.incrGenerator.decLong(out, idx, false, false);
               break;
             case BYTE:
-              incByte(out, idx, (byte) -1);
+              ctx.incrGenerator.incByte(out, idx, (byte) -1, false, false);
               break;
             case SHORT:
-              incShort(out, idx, (byte) -1);
+              ctx.incrGenerator.incShort(out, idx, (byte) -1, false, false);
               break;
             case CHAR:
-              incChar(out, idx, (byte) -1);
+              ctx.incrGenerator.incChar(out, idx, (byte) -1, false, false);
+              break;
+          }
+        } else if (op.equals(PRE_INCREMENT)) {
+          byte idx = variables.get(tokens.get(i - 1)).idx;
+          switch (type) {
+            case INT:
+              ctx.incrGenerator.incInteger(out, idx, (byte) 1, true, false);
+              break;
+            case DOUBLE:
+              ctx.incrGenerator.incDouble(out, idx, true, false);
+              break;
+            case FLOAT:
+              ctx.incrGenerator.incFloat(out, idx, true, false);
+              break;
+            case LONG:
+              ctx.incrGenerator.incLong(out, idx, true, false);
+              break;
+            case BYTE:
+              ctx.incrGenerator.incByte(out, idx, (byte) 1, true, false);
+              break;
+            case SHORT:
+              ctx.incrGenerator.incShort(out, idx, (byte) 1, true, false);
+              break;
+            case CHAR:
+              ctx.incrGenerator.incChar(out, idx, (byte) 1, true, false);
+              break;
+          }
+        } else if (op.equals(PRE_DECREMENT)) {
+          byte idx = variables.get(tokens.get(i - 1)).idx;
+          switch (type) {
+            case INT:
+              ctx.incrGenerator.incInteger(out, idx, (byte) -1, true, false);
+              break;
+            case DOUBLE:
+              ctx.incrGenerator.decDouble(out, idx, true, false);
+              break;
+            case FLOAT:
+              ctx.incrGenerator.decFloat(out, idx, true, false);
+              break;
+            case LONG:
+              ctx.incrGenerator.decLong(out, idx, true, false);
+              break;
+            case BYTE:
+              ctx.incrGenerator.incByte(out, idx, (byte) -1, true, false);
+              break;
+            case SHORT:
+              ctx.incrGenerator.incShort(out, idx, (byte) -1, true, false);
+              break;
+            case CHAR:
+              ctx.incrGenerator.incChar(out, idx, (byte) -1, true, false);
               break;
           }
         } else {
@@ -206,84 +247,6 @@ public class ExpressionGenerator {
         }
       }
     }
-    // TODO: this is not working yet
-    // what to return if the val cannot be determined at compile time?
     return new ExpressionResult(type, val);
-  }
-
-  private HasOutput incInteger(DynamicByteArray out, byte idx, byte val) {
-    out.write(IINC);
-    out.write(idx);
-    out.write(val);
-    loadInteger(out, idx);
-    return out;
-  }
-
-  // byte cannot be increased directly, load to the stack and convert
-  private HasOutput incByte(DynamicByteArray out, byte idx, byte val) {
-    loadInteger(out, idx);
-    ctx.opsGenerator.pushInteger(out, val);
-    out.write(IADD);
-    out.write(I2B);
-    return out;
-  }
-
-  // short cannot be increased directly, load to the stack and convert
-  private HasOutput incShort(DynamicByteArray out, byte idx, byte val) {
-    loadInteger(out, idx);
-    ctx.opsGenerator.pushInteger(out, val);
-    out.write(IADD);
-    out.write(I2S);
-    return out;
-  }
-
-  // short cannot be increased directly, load to the stack and convert
-  private HasOutput incChar(DynamicByteArray out, byte idx, byte val) {
-    loadInteger(out, idx);
-    ctx.opsGenerator.pushInteger(out, val);
-    out.write(IADD);
-    out.write(I2C);
-    return out;
-  }
-
-  // long type cannot be increased directly, load to the stack and add
-  private HasOutput incLong(DynamicByteArray out, byte idx) {
-    loadLong(out, idx);
-    ctx.opsGenerator.pushLong(out, 1);
-    out.write(LADD);
-    return out;
-  }
-
-  // there is no long constant for -1, therefore using +1 and LSUB
-  // to avoid explicitly storing -1 in the constant pool
-  private HasOutput decLong(DynamicByteArray out, byte idx) {
-    loadLong(out, idx);
-    ctx.opsGenerator.pushLong(out, 1);
-    out.write(LSUB);
-    return out;
-  }
-
-  private void incDouble(DynamicByteArray out, byte idx) {
-    loadDouble(out, idx);
-    ctx.opsGenerator.pushDouble(out, 1);
-    out.write(DADD);
-  }
-
-  private void incFloat(DynamicByteArray out, byte idx) {
-    loadDouble(out, idx);
-    ctx.opsGenerator.pushDouble(out, 1);
-    out.write(FADD);
-  }
-
-  private void decDouble(DynamicByteArray out, byte idx) {
-    loadDouble(out, idx);
-    ctx.opsGenerator.pushDouble(out, 1);
-    out.write(DSUB);
-  }
-
-  private void decFloat(DynamicByteArray out, byte idx) {
-    loadDouble(out, idx);
-    ctx.opsGenerator.pushDouble(out, 1);
-    out.write(FSUB);
   }
 }

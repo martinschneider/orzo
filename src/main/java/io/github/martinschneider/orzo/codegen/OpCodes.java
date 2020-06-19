@@ -85,6 +85,7 @@ public class OpCodes {
   public static final byte CASTORE = (byte) 85;
   public static final byte SASTORE = (byte) 86;
   public static final byte DUP = (byte) 89;
+  public static final byte DUP2 = (byte) 92;
   public static final byte IADD = (byte) 96;
   public static final byte LADD = (byte) 97;
   public static final byte FADD = (byte) 98;

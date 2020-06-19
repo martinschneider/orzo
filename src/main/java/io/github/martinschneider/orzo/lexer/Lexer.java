@@ -26,6 +26,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU_ASSIGN;
@@ -55,6 +57,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.type;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BASIC_TYPES;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
+import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Keywords;
 import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
@@ -251,8 +254,11 @@ public class Lexer {
   private void scanOps() throws IOException {
     if (character == '-') {
       if ((character = (char) inputReader.read()) == '-') {
-        // TODO: distinction between pre and post increment operators
-        tokenList.add(op(POST_DECREMENT).wLoc(inputReader.getLoc()));
+        if (!(tokenList.get(tokenList.size() - 1) instanceof Identifier)) {
+          tokenList.add(op(PRE_DECREMENT).wLoc(inputReader.getLoc()));
+        } else {
+          tokenList.add(op(POST_DECREMENT).wLoc(inputReader.getLoc()));
+        }
       } else if (character == '=') {
         tokenList.add(op(MINUS_ASSIGN).wLoc(inputReader.getLoc()));
       } else {
@@ -291,8 +297,11 @@ public class Lexer {
     } else if (character == '+') {
       char character;
       if ((character = (char) inputReader.read()) == '+') {
-        // TODO: distinction between pre and post increment operators
-        tokenList.add(op(POST_INCREMENT).wLoc(inputReader.getLoc()));
+        if (!(tokenList.get(tokenList.size() - 1) instanceof Identifier)) {
+          tokenList.add(op(PRE_INCREMENT).wLoc(inputReader.getLoc()));
+        } else {
+          tokenList.add(op(POST_INCREMENT).wLoc(inputReader.getLoc()));
+        }
       } else if (character == '=') {
         tokenList.add(op(PLUS_ASSIGN).wLoc(inputReader.getLoc()));
       } else {

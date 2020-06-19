@@ -28,7 +28,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] arithmetic `+`, `-`, `*`, `/`, `%`
 - [X] parenthesis `(` ,`)`
 - [X] unary post-increment and decrement `++`, `--`
-- [ ] unary pre-increment and decrement `++`, `--`
+- [X] unary pre-increment and decrement `++`, `--`
 - [X] compound assignments `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=`, `>>>=`, `&=`, `^=`, `|=`
 - [X] relational `<`, `<=`, `>=`, `>`
 - [X] equality `==`, `!=`,

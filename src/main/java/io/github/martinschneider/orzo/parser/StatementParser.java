@@ -26,6 +26,10 @@ public class StatementParser implements ProdParser<Statement> {
     Statement stmt;
     if ((stmt = ctx.assignParser.parse(tokens)) != null) {
       return stmt;
+    } else if ((stmt = ctx.postIncrementParser.parse(tokens)) != null) {
+      return stmt;
+    } else if ((stmt = ctx.preIncrementParser.parse(tokens)) != null) {
+      return stmt;
     } else if ((stmt = ctx.ifParser.parse(tokens)) != null) {
       return stmt;
     } else if ((stmt = ctx.doParser.parse(tokens)) != null) {

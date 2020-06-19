@@ -69,7 +69,7 @@ public class ForParser implements ProdParser<ForStatement> {
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (body == null) {
         tokens.next(sym(RBRACE));
-        ctx.errors.addError(LOG_NAME, "missing boday");
+        ctx.errors.addError(LOG_NAME, "missing body");
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
         tokens.next(sym(RBRACE));

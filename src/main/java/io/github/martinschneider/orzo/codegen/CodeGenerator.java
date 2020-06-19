@@ -7,6 +7,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 
 import io.github.martinschneider.orzo.codegen.statement.ConditionGenerator;
 import io.github.martinschneider.orzo.codegen.statement.ExpressionGenerator;
+import io.github.martinschneider.orzo.codegen.statement.IncrementGenerator;
 import io.github.martinschneider.orzo.codegen.statement.MethodCallGenerator;
 import io.github.martinschneider.orzo.codegen.statement.StatementDelegator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -69,6 +70,7 @@ public class CodeGenerator {
     ctx.constPool = ctx.constPoolProcessor.processConstantPool(ctx.clazz);
     ctx.delegator = new StatementDelegator();
     ctx.exprGenerator = new ExpressionGenerator();
+    ctx.incrGenerator = new IncrementGenerator(ctx);
     ctx.methodCallGenerator = new MethodCallGenerator(ctx);
     ctx.methodMap = new MethodProcessor().getMethodMap(ctx.clazz, clazzes);
     ctx.opsGenerator = new BasicCodeGenerator();

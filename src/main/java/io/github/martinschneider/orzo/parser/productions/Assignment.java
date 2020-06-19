@@ -51,6 +51,9 @@ public class Assignment implements Statement {
 
   @Override
   public String toString() {
+    if (left == null) {
+      return right.toString();
+    }
     return left.toString() + ":=" + right.toString();
   }
 }

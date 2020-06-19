@@ -9,6 +9,7 @@ import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.DoStatement;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
+import io.github.martinschneider.orzo.parser.productions.Increment;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelAssignment;
@@ -32,6 +33,7 @@ public class StatementDelegator {
     reg.put(ParallelAssignment.class, new ParallelAssignmentGenerator(ctx));
     reg.put(ReturnStatement.class, new ReturnStatementGenerator(ctx));
     reg.put(WhileStatement.class, new WhileStatementGenerator(ctx));
+    reg.put(Increment.class, new IncrementGenerator(ctx));
   }
 
   public HasOutput generate(
