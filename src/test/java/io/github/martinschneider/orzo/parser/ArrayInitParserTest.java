@@ -2,7 +2,7 @@ package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.parser.TestHelper.arrInit;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.parser.TestHelper.exp;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -22,10 +22,12 @@ public class ArrayInitParserTest {
   private static Stream<Arguments> test() throws IOException {
     return Stream.of(
         Arguments.of("", null),
-        Arguments.of("new int[]{1,2,3};", arrInit("int", 3, List.of(exp("1"), exp("2"), exp("3")))),
-        Arguments.of("new int[]{1,2,3}", arrInit("int", 3, List.of(exp("1"), exp("2"), exp("3")))),
         Arguments.of(
-            "new int[3]{1,2,3}", arrInit("int", 3, List.of(exp("1"), exp("2"), exp("3")))));
+            "new int[]{1,2,3};", arrInit("int", 3, List.of(expr("1"), expr("2"), expr("3")))),
+        Arguments.of(
+            "new int[]{1,2,3}", arrInit("int", 3, List.of(expr("1"), expr("2"), expr("3")))),
+        Arguments.of(
+            "new int[3]{1,2,3}", arrInit("int", 3, List.of(expr("1"), expr("2"), expr("3")))));
   }
 
   @ParameterizedTest

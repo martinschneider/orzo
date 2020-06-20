@@ -3,7 +3,7 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.arrSel;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.parser.TestHelper.exp;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.methodCall;
 import static java.util.Collections.emptyList;
@@ -34,13 +34,13 @@ public class MethodCallParserTest {
             "calculateSomething(a[x])",
             methodCall(
                 id("calculateSomething"),
-                List.of(exp(List.of(id("a", arrSel(List.of(exp("x"))))))))),
+                List.of(expr(List.of(id("a", arrSel(List.of(expr("x"))))))))),
         Arguments.of("calculateSomething()", methodCall(id("calculateSomething"), emptyList())),
         Arguments.of(
-            "calculateSomething(x)", methodCall(id("calculateSomething"), List.of(exp("x")))),
+            "calculateSomething(x)", methodCall(id("calculateSomething"), List.of(expr("x")))),
         Arguments.of(
             "calculateSomething(a,b,c)",
-            methodCall(id("calculateSomething"), List.of(exp("a"), exp("b"), exp("c")))));
+            methodCall(id("calculateSomething"), List.of(expr("a"), expr("b"), expr("c")))));
   }
 
   @ParameterizedTest
@@ -54,8 +54,8 @@ public class MethodCallParserTest {
   private static Stream<Arguments> testArgs() throws IOException {
     return Stream.of(
         Arguments.of("()", Collections.emptyList()),
-        Arguments.of("(x)", List.of(exp("x"))),
-        Arguments.of("(ab,cd,efg)", List.of(exp("ab"), exp("cd"), exp("efg"))));
+        Arguments.of("(x)", List.of(expr("x"))),
+        Arguments.of("(ab,cd,efg)", List.of(expr("ab"), expr("cd"), expr("efg"))));
   }
 
   @ParameterizedTest

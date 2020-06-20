@@ -1,7 +1,7 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.parser.TestHelper.exp;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -20,7 +20,7 @@ public class ReturnParserTest {
   private static Stream<Arguments> test() throws IOException {
     return Stream.of(
         Arguments.of("", null),
-        Arguments.of("return a;", new ReturnStatement(exp("a"))),
+        Arguments.of("return a;", new ReturnStatement(expr("a"))),
         Arguments.of("return;", new ReturnStatement(null)));
   }
 

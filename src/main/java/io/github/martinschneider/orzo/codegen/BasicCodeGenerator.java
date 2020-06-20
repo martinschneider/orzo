@@ -34,10 +34,14 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_INTEGER;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_LONG;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -45,6 +49,30 @@ import java.util.List;
 
 public class BasicCodeGenerator {
   public CGContext ctx;
+
+  public HasOutput push(DynamicByteArray out, String type, int number) {
+    return push(out, type, (double) number);
+  }
+
+  public HasOutput push(DynamicByteArray out, String type, double number) {
+    switch (type) {
+      case LONG:
+        return pushLong(out, (long) number);
+      case FLOAT:
+        return pushFloat(out, (float) number);
+      case DOUBLE:
+        return pushDouble(out, number);
+      case INT:
+        return pushInteger(out, (int) number);
+      case BYTE:
+        return pushInteger(out, (int) number);
+      case SHORT:
+        return pushInteger(out, (int) number);
+      case CHAR:
+        return pushInteger(out, (int) number);
+    }
+    return out;
+  }
 
   // push long
   public HasOutput pushLong(DynamicByteArray out, long number) {

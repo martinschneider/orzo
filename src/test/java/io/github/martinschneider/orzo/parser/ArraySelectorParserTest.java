@@ -2,7 +2,7 @@ package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.parser.TestHelper.arrSel;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.parser.TestHelper.exp;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -24,9 +24,10 @@ public class ArraySelectorParserTest {
     return Stream.of(
         Arguments.of("", null),
         Arguments.of("()", null),
-        Arguments.of("[1]", arrSel(List.of(exp("1")))),
+        Arguments.of("[1]", arrSel(List.of(expr("1")))),
         Arguments.of(
-            "[1][2+3][3*4][test]", arrSel(List.of(exp("1"), exp("2+3"), exp("3*4"), exp("test")))));
+            "[1][2+3][3*4][test]",
+            arrSel(List.of(expr("1"), expr("2+3"), expr("3*4"), expr("test")))));
   }
 
   @ParameterizedTest

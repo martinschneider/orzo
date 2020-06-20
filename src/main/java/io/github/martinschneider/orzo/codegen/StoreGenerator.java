@@ -42,6 +42,26 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 
 public class StoreGenerator {
+  public static HasOutput store(DynamicByteArray out, String type, byte idx) {
+    switch (type) {
+      case LONG:
+        return storeLong(out, idx);
+      case FLOAT:
+        return storeFloat(out, idx);
+      case DOUBLE:
+        return storeDouble(out, idx);
+      case INT:
+        return storeInteger(out, idx);
+      case BYTE:
+        return storeInteger(out, idx);
+      case SHORT:
+        return storeInteger(out, idx);
+      case CHAR:
+        return storeInteger(out, idx);
+    }
+    return out;
+  }
+
   public static HasOutput storeValue(DynamicByteArray out, String type, byte idx) {
     switch (type) {
       case BYTE:

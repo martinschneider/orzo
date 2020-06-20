@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo.codegen.statement;
 
 import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadValue;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
+import static io.github.martinschneider.orzo.codegen.statement.OperatorMaps.arithmeticOps;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
@@ -139,108 +140,11 @@ public class ExpressionGenerator {
         type = ctx.methodCallGenerator.generate(out, variables, (MethodCall) token);
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
-        if (op.equals(POST_INCREMENT)) {
+        if (List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT).contains(op)) {
           byte idx = variables.get(tokens.get(i - 1)).idx;
-          switch (type) {
-            case INT:
-              ctx.incrGenerator.incInteger(out, idx, (byte) 1, false, false);
-              break;
-            case DOUBLE:
-              ctx.incrGenerator.incDouble(out, idx, false, false);
-              break;
-            case FLOAT:
-              ctx.incrGenerator.incFloat(out, idx, false, false);
-              break;
-            case LONG:
-              ctx.incrGenerator.incLong(out, idx, false, false);
-              break;
-            case BYTE:
-              ctx.incrGenerator.incByte(out, idx, (byte) 1, false, false);
-              break;
-            case SHORT:
-              ctx.incrGenerator.incShort(out, idx, (byte) 1, false, false);
-              break;
-            case CHAR:
-              ctx.incrGenerator.incChar(out, idx, (byte) 1, false, false);
-              break;
-          }
-        } else if (op.equals(POST_DECREMENT)) {
-          byte idx = variables.get(tokens.get(i - 1)).idx;
-          switch (type) {
-            case INT:
-              ctx.incrGenerator.incInteger(out, idx, (byte) -1, false, false);
-              break;
-            case DOUBLE:
-              ctx.incrGenerator.decDouble(out, idx, false, false);
-              break;
-            case FLOAT:
-              ctx.incrGenerator.decFloat(out, idx, false, false);
-              break;
-            case LONG:
-              ctx.incrGenerator.decLong(out, idx, false, false);
-              break;
-            case BYTE:
-              ctx.incrGenerator.incByte(out, idx, (byte) -1, false, false);
-              break;
-            case SHORT:
-              ctx.incrGenerator.incShort(out, idx, (byte) -1, false, false);
-              break;
-            case CHAR:
-              ctx.incrGenerator.incChar(out, idx, (byte) -1, false, false);
-              break;
-          }
-        } else if (op.equals(PRE_INCREMENT)) {
-          byte idx = variables.get(tokens.get(i - 1)).idx;
-          switch (type) {
-            case INT:
-              ctx.incrGenerator.incInteger(out, idx, (byte) 1, true, false);
-              break;
-            case DOUBLE:
-              ctx.incrGenerator.incDouble(out, idx, true, false);
-              break;
-            case FLOAT:
-              ctx.incrGenerator.incFloat(out, idx, true, false);
-              break;
-            case LONG:
-              ctx.incrGenerator.incLong(out, idx, true, false);
-              break;
-            case BYTE:
-              ctx.incrGenerator.incByte(out, idx, (byte) 1, true, false);
-              break;
-            case SHORT:
-              ctx.incrGenerator.incShort(out, idx, (byte) 1, true, false);
-              break;
-            case CHAR:
-              ctx.incrGenerator.incChar(out, idx, (byte) 1, true, false);
-              break;
-          }
-        } else if (op.equals(PRE_DECREMENT)) {
-          byte idx = variables.get(tokens.get(i - 1)).idx;
-          switch (type) {
-            case INT:
-              ctx.incrGenerator.incInteger(out, idx, (byte) -1, true, false);
-              break;
-            case DOUBLE:
-              ctx.incrGenerator.decDouble(out, idx, true, false);
-              break;
-            case FLOAT:
-              ctx.incrGenerator.decFloat(out, idx, true, false);
-              break;
-            case LONG:
-              ctx.incrGenerator.decLong(out, idx, true, false);
-              break;
-            case BYTE:
-              ctx.incrGenerator.incByte(out, idx, (byte) -1, true, false);
-              break;
-            case SHORT:
-              ctx.incrGenerator.incShort(out, idx, (byte) -1, true, false);
-              break;
-            case CHAR:
-              ctx.incrGenerator.incChar(out, idx, (byte) -1, true, false);
-              break;
-          }
+          ctx.incrGenerator.inc(out, type, idx, op, false);
         } else {
-          Byte opCode = ArithmeticOperators.map.getOrDefault(op, Collections.emptyMap()).get(type);
+          Byte opCode = arithmeticOps.getOrDefault(op, Collections.emptyMap()).get(type);
           if (opCode != null) {
             out.write(opCode);
           }

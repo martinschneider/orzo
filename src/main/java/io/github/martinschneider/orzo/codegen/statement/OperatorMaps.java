@@ -5,6 +5,8 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.DDIV;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DMUL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DREM;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DSUB;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FADD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FDIV;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FMUL;
@@ -55,11 +57,11 @@ import static java.util.Map.entry;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import java.util.Map;
 
-public class ArithmeticOperators {
+public class OperatorMaps {
   // mapping operator and types to the corresponding JVM opcodes, e.g. LSHIFT and LONG should return
   // LSHL
   // I prefer the static map over using switch expressions
-  public static final Map<Operators, Map<String, Byte>> map =
+  public static final Map<Operators, Map<String, Byte>> arithmeticOps =
       Map.ofEntries(
           entry(
               PLUS,
@@ -92,4 +94,6 @@ public class ArithmeticOperators {
           entry(BITWISE_AND, Map.of(INT, IAND, LONG, LAND)),
           entry(BITWISE_OR, Map.of(INT, IOR, LONG, LOR)),
           entry(BITWISE_XOR, Map.of(INT, IXOR, LONG, LXOR)));
+  public static final Map<String, Byte> dupOps =
+      Map.of(INT, DUP, SHORT, DUP, BYTE, DUP, FLOAT, DUP, CHAR, DUP, LONG, DUP2, DOUBLE, DUP2);
 }

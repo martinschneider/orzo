@@ -9,6 +9,7 @@ import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Comparator;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Argument;
@@ -24,6 +25,7 @@ import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.IfBlock;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.Import;
+import io.github.martinschneider.orzo.parser.productions.Increment;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelAssignment;
@@ -33,12 +35,12 @@ import java.io.IOException;
 import java.util.List;
 
 public class TestHelper {
-  public static Expression exp(String input) throws IOException {
+  public static Expression expr(String input) throws IOException {
     return new ExpressionParser(ParserContext.build(new CompilerErrors()))
         .parse(new Lexer().getTokens(input));
   }
 
-  public static Expression exp(List<Token> input) throws IOException {
+  public static Expression expr(List<Token> input) throws IOException {
     return new Expression(input);
   }
 
@@ -57,6 +59,10 @@ public class TestHelper {
 
   public static ArrayInit arrInit(String type, int dim, List<Expression> vals) {
     return arrInit(type, List.of(dim), List.of(vals));
+  }
+
+  public static Increment inc(Identifier id, Operator op) throws IOException {
+    return new Increment(expr(List.of(id, op)));
   }
 
   public static Assignment assign(Identifier left, Expression right) {

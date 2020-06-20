@@ -3,7 +3,7 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.cmp;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.cond;
-import static io.github.martinschneider.orzo.parser.TestHelper.exp;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -24,12 +24,12 @@ public class ConditionParserTest {
     return Stream.of(
         Arguments.of("", null),
         Arguments.of("y=0", null),
-        Arguments.of("y==0", cond(exp("y"), cmp(Comparators.EQUAL), exp("0"))),
-        Arguments.of("x<=z", cond(exp("x"), cmp(Comparators.SMALLEREQ), exp("z"))),
-        Arguments.of("abc<xyz", cond(exp("abc"), cmp(Comparators.SMALLER), exp("xyz"))),
+        Arguments.of("y==0", cond(expr("y"), cmp(Comparators.EQUAL), expr("0"))),
+        Arguments.of("x<=z", cond(expr("x"), cmp(Comparators.SMALLEREQ), expr("z"))),
+        Arguments.of("abc<xyz", cond(expr("abc"), cmp(Comparators.SMALLER), expr("xyz"))),
         Arguments.of(
             "basketball > football",
-            cond(exp("basketball"), cmp(Comparators.GREATER), exp("football"))));
+            cond(expr("basketball"), cmp(Comparators.GREATER), expr("football"))));
   }
 
   @ParameterizedTest

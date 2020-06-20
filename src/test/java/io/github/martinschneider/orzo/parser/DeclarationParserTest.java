@@ -4,7 +4,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.arrInit;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.decl;
-import static io.github.martinschneider.orzo.parser.TestHelper.exp;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -25,14 +25,18 @@ public class DeclarationParserTest {
 
   private static Stream<Arguments> test() throws IOException {
     return Stream.of(
-        Arguments.of("int x=100;", decl(id("x"), "int", exp("100"), true)),
+        Arguments.of("int x=100;", decl(id("x"), "int", expr("100"), true)),
         Arguments.of("String martin", decl(id("martin"), "String", null, false)),
-        Arguments.of("double d=1.23", decl(id("d"), "double", exp("1.23"), true)),
-        Arguments.of("int i=fac(100)", decl(id("i"), "int", exp("fac(100)"), true)),
+        Arguments.of("double d=1.23", decl(id("d"), "double", expr("1.23"), true)),
+        Arguments.of("int i=fac(100)", decl(id("i"), "int", expr("fac(100)"), true)),
         Arguments.of(
             "int[] a = new int[] {1, 2, 3};",
             decl(
-                id("a"), "int", 1, arrInit("int", 3, List.of(exp("1"), exp("2"), exp("3"))), true)),
+                id("a"),
+                "int",
+                1,
+                arrInit("int", 3, List.of(expr("1"), expr("2"), expr("3"))),
+                true)),
         Arguments.of(
             "int[] a = new int[5];",
             decl(id("a"), "int", 1, arrInit("int", List.of(5), emptyList()), false)));

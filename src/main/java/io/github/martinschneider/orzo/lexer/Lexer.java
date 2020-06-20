@@ -254,10 +254,12 @@ public class Lexer {
   private void scanOps() throws IOException {
     if (character == '-') {
       if ((character = (char) inputReader.read()) == '-') {
-        if (!(tokenList.get(tokenList.size() - 1) instanceof Identifier)) {
-          tokenList.add(op(PRE_DECREMENT).wLoc(inputReader.getLoc()));
-        } else {
+        if (tokenList.size() > 0
+            && (tokenList.get(tokenList.size() - 1) instanceof Identifier
+                || tokenList.get(tokenList.size() - 1).equals(sym(RBRAK)))) {
           tokenList.add(op(POST_DECREMENT).wLoc(inputReader.getLoc()));
+        } else {
+          tokenList.add(op(PRE_DECREMENT).wLoc(inputReader.getLoc()));
         }
       } else if (character == '=') {
         tokenList.add(op(MINUS_ASSIGN).wLoc(inputReader.getLoc()));
@@ -297,10 +299,12 @@ public class Lexer {
     } else if (character == '+') {
       char character;
       if ((character = (char) inputReader.read()) == '+') {
-        if (!(tokenList.get(tokenList.size() - 1) instanceof Identifier)) {
-          tokenList.add(op(PRE_INCREMENT).wLoc(inputReader.getLoc()));
-        } else {
+        if ((tokenList.size() > 0)
+            && (tokenList.get(tokenList.size() - 1) instanceof Identifier
+                || tokenList.get(tokenList.size() - 1).equals(sym(RBRAK)))) {
           tokenList.add(op(POST_INCREMENT).wLoc(inputReader.getLoc()));
+        } else {
+          tokenList.add(op(PRE_INCREMENT).wLoc(inputReader.getLoc()));
         }
       } else if (character == '=') {
         tokenList.add(op(PLUS_ASSIGN).wLoc(inputReader.getLoc()));

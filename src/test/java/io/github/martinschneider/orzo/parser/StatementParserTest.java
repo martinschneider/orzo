@@ -6,7 +6,7 @@ import static io.github.martinschneider.orzo.parser.TestHelper.assign;
 import static io.github.martinschneider.orzo.parser.TestHelper.cond;
 import static io.github.martinschneider.orzo.parser.TestHelper.decl;
 import static io.github.martinschneider.orzo.parser.TestHelper.doStmt;
-import static io.github.martinschneider.orzo.parser.TestHelper.exp;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifBlk;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifStmt;
 import static io.github.martinschneider.orzo.parser.TestHelper.whileStmt;
@@ -37,7 +37,7 @@ public class StatementParserTest {
             "do{x=y+1;y=y-1;} while(i>0)",
             doStmt(cond("i>0"), List.of(assign("x=y+1"), assign("y=y-1")))),
         Arguments.of("int z;", decl(id("z"), "int", null, false)),
-        Arguments.of("int z=300;", decl(id("z"), "int", exp("300"), true)));
+        Arguments.of("int z=300;", decl(id("z"), "int", expr("300"), true)));
   }
 
   @ParameterizedTest

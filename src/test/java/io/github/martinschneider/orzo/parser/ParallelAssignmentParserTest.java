@@ -3,7 +3,7 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.arrSel;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.parser.TestHelper.exp;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.pAssign;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,32 +26,34 @@ public class ParallelAssignmentParserTest {
   private static Stream<Arguments> test() throws IOException {
     return Stream.of(
         Arguments.of("", null),
-        Arguments.of("a=b", pAssign(List.of(id("a")), List.of(exp("b")))),
+        Arguments.of("a=b", pAssign(List.of(id("a")), List.of(expr("b")))),
         Arguments.of(
             "a[1],b=b,c",
             pAssign(
-                List.of(id("a", arrSel(List.of(exp("1")))), id("b")), List.of(exp("b"), exp("c")))),
+                List.of(id("a", arrSel(List.of(expr("1")))), id("b")),
+                List.of(expr("b"), expr("c")))),
         Arguments.of(
-            "a,c=b[1],d", pAssign(List.of(id("a"), id("c")), List.of(exp("b[1]"), exp("d")))),
+            "a,c=b[1],d", pAssign(List.of(id("a"), id("c")), List.of(expr("b[1]"), expr("d")))),
         Arguments.of(
             "array[left],array[right]=array[right],array[left]",
             pAssign(
                 List.of(
-                    id("array", arrSel(List.of(exp("left")))),
-                    id("array", arrSel(List.of(exp("right"))))),
-                List.of(exp("array[right]"), exp("array[left]")))),
+                    id("array", arrSel(List.of(expr("left")))),
+                    id("array", arrSel(List.of(expr("right"))))),
+                List.of(expr("array[right]"), expr("array[left]")))),
         Arguments.of(
-            "a,b=b+1,a+1", pAssign(List.of(id("a"), id("b")), List.of(exp("b+1"), exp("a+1")))),
+            "a,b=b+1,a+1", pAssign(List.of(id("a"), id("b")), List.of(expr("b+1"), expr("a+1")))),
         Arguments.of(
             "a,b,c=d,e,f",
-            pAssign(List.of(id("a"), id("b"), id("c")), List.of(exp("d"), exp("e"), exp("f")))),
+            pAssign(List.of(id("a"), id("b"), id("c")), List.of(expr("d"), expr("e"), expr("f")))),
         Arguments.of(
-            "a,b=test(b),a", pAssign(List.of(id("a"), id("b")), List.of(exp("test(b)"), exp("a")))),
+            "a,b=test(b),a",
+            pAssign(List.of(id("a"), id("b")), List.of(expr("test(b)"), expr("a")))),
         Arguments.of(
             "a,b,c=1+2*3/4%5>>6>>>7<<8,test(3*4),a+test(1/2)",
             pAssign(
                 List.of(id("a"), id("b"), id("c")),
-                List.of(exp("1+2*3/4%5>>6>>>7<<8"), exp("test(3*4)"), exp("a+test(1/2)")))));
+                List.of(expr("1+2*3/4%5>>6>>>7<<8"), expr("test(3*4)"), expr("a+test(1/2)")))));
   }
 
   @ParameterizedTest

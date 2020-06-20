@@ -9,7 +9,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.parser.TestHelper.exp;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -29,15 +29,16 @@ public class ExpressionParserTest {
   private static Stream<Arguments> test() throws IOException {
     return Stream.of(
         Arguments.of("", null),
-        Arguments.of("3+4", exp(List.of(integer(3), integer(4), op(PLUS)))),
+        Arguments.of("3+4", expr(List.of(integer(3), integer(4), op(PLUS)))),
         Arguments.of(
             "3+x*y-7",
-            exp(List.of(integer(3), id("x"), id("y"), op(TIMES), op(PLUS), integer(7), op(MINUS)))),
+            expr(
+                List.of(integer(3), id("x"), id("y"), op(TIMES), op(PLUS), integer(7), op(MINUS)))),
         Arguments.of(
-            "-5*7+4", exp(List.of(integer(-5), integer(7), op(TIMES), integer(4), op(PLUS)))),
+            "-5*7+4", expr(List.of(integer(-5), integer(7), op(TIMES), integer(4), op(PLUS)))),
         Arguments.of(
             "x*3+7-8/1+0%6",
-            exp(
+            expr(
                 List.of(
                     id("x"),
                     integer(3),
@@ -52,10 +53,10 @@ public class ExpressionParserTest {
                     integer(6),
                     op(MOD),
                     op(PLUS)))),
-        Arguments.of("3+4", exp(List.of(integer(3), integer(4), op(PLUS)))),
-        Arguments.of("5+7/2", exp(List.of(integer(5), integer(7), integer(2), op(DIV), op(PLUS)))),
+        Arguments.of("3+4", expr(List.of(integer(3), integer(4), op(PLUS)))),
+        Arguments.of("5+7/2", expr(List.of(integer(5), integer(7), integer(2), op(DIV), op(PLUS)))),
         Arguments.of(
-            "(5+7)/2", exp(List.of(integer(5), integer(7), op(PLUS), integer(2), op(DIV)))));
+            "(5+7)/2", expr(List.of(integer(5), integer(7), op(PLUS), integer(2), op(DIV)))));
   }
 
   @MethodSource

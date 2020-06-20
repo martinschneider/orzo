@@ -32,11 +32,32 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 
 public class LoadGenerator {
+  public static HasOutput load(DynamicByteArray out, String type, byte idx) {
+    switch (type) {
+      case LONG:
+        return loadLong(out, idx);
+      case FLOAT:
+        return loadFloat(out, idx);
+      case DOUBLE:
+        return loadDouble(out, idx);
+      case INT:
+        return loadInteger(out, idx);
+      case SHORT:
+        return loadInteger(out, idx);
+      case BYTE:
+        return loadInteger(out, idx);
+      case CHAR:
+        return loadInteger(out, idx);
+    }
+    return out;
+  }
+
   public static HasOutput loadDouble(DynamicByteArray out, byte idx) {
     if (idx == 0) {
       out.write(DLOAD_0);

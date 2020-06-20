@@ -4,7 +4,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
 import static io.github.martinschneider.orzo.parser.TestHelper.cond;
-import static io.github.martinschneider.orzo.parser.TestHelper.exp;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.forStmt;
 import static io.github.martinschneider.orzo.parser.TestHelper.methodCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +33,7 @@ public class ForParserTest {
                 assign("int i=1"),
                 cond("i<100"),
                 assign("i++"),
-                List.of(methodCall(id("doSomething"), List.of(exp("i")))))));
+                List.of(methodCall(id("doSomething"), List.of(expr("i")))))));
   }
 
   @ParameterizedTest
