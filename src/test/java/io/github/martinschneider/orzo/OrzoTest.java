@@ -1,8 +1,10 @@
 package io.github.martinschneider.orzo;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.codegen.Output;
+import io.github.martinschneider.orzo.parser.productions.Clazz;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -126,20 +128,30 @@ public class OrzoTest {
     List<File> inputs = new ArrayList<>();
     List<Output> outputs = new ArrayList<>();
     List<String> classNames = new ArrayList<>();
+    List<Path> expectedClasses = new ArrayList<>();
     List<ByteArrayOutputStream> streams = new ArrayList<>();
     ByteClassLoader classLoader = new ByteClassLoader(ClassLoader.getSystemClassLoader());
     for (int i = 0; i < programs.size(); i++) {
       String[] tmp = programs.get(i).split("/");
-      classNames.add(tmp[1]);
       inputs.add(
           new File(
               this.getClass().getResource(tmp[0] + File.separator + tmp[1] + ".java").getPath()));
+      expectedClasses.add(
+          Path.of(
+              this.getClass()
+                  .getResource(
+                      tmp[0] + File.separator + "class" + File.separator + tmp[1] + ".class")
+                  .getPath()));
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       PrintStream ps = new PrintStream(baos);
       outputs.add(new Output(ps));
       streams.add(baos);
     }
-    new Orzo(inputs, null).compile(outputs);
+    Orzo orzo = new Orzo(inputs, null);
+    orzo.compile(outputs);
+    for (Clazz clazz : orzo.clazzes) {
+      classNames.add(clazz.fqn());
+    }
     for (int i = 0; i < programs.size(); i++) {
       classLoader.put(classNames.get(i), streams.get(i).toByteArray());
     }
@@ -152,6 +164,9 @@ public class OrzoTest {
     System.out.flush();
     System.setOut(old);
     String[] tmp = programs.get(0).split("/");
+    for (int i = 0; i < streams.size(); i++) {
+      assertArrayEquals(Files.readAllBytes(expectedClasses.get(i)), streams.get(i).toByteArray());
+    }
     String actual = baos.toString();
     String expected =
         Files.readString(

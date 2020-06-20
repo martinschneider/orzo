@@ -49,7 +49,7 @@ public class CodeGenerator {
   }
 
   private void classIndex() {
-    out.write(ctx.constPool.indexOf(CONSTANT_CLASS, ctx.clazz.name.val));
+    out.write(ctx.constPool.indexOf(CONSTANT_CLASS, ctx.clazz.fqn('/')));
   }
 
   private HasOutput constPool(HasOutput out) {

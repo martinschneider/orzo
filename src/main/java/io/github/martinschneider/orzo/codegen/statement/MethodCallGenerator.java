@@ -48,7 +48,7 @@ public class MethodCallGenerator implements StatementGenerator {
               + ctx.methodMap.keySet());
       return "";
     }
-    String clazzName = ctx.clazz.name.val.toString();
+    String clazzName = ctx.clazz.fqn('/');
     if (methodName.contains(".")) {
       String[] tmp = methodName.split("\\.");
       clazzName = method.fqClassName.replaceAll("\\.", "/");

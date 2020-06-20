@@ -31,7 +31,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <mainClass>
-                io.github.martinschneider.kommpeiler.codegen.Kommpeiler
+                io.github.martinschneider.orzo.Orzo
               </mainClass>
             </manifest>
           </archive>

@@ -27,7 +27,7 @@ import java.util.List;
 public class ConstantPoolProcessor {
   public ConstantPool processConstantPool(Clazz clazz) {
     ConstantPool constPool = new ConstantPool();
-    constPool.addClass(clazz.name.val.toString());
+    constPool.addClass(clazz.fqn('/'));
     constPool.addClass("java/lang/Object");
     for (Method method : clazz.body) {
       // add method name to constant pool
@@ -35,7 +35,7 @@ public class ConstantPoolProcessor {
       // add type descriptor to constant pool
       constPool.addUtf8(TypeUtils.methodDescr(method));
       constPool.addMethodRef(
-          clazz.name.val.toString(), method.name.val.toString(), TypeUtils.methodDescr(method));
+          clazz.fqn('/'), method.name.val.toString(), TypeUtils.methodDescr(method));
       // add constants from method body to constant pool
       for (Statement stmt : method.body) {
         constPool = processStatement(constPool, stmt);

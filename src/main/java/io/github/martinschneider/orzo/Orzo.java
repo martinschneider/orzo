@@ -57,6 +57,8 @@ public class Orzo {
 
   private List<File> inputs;
   private String outputPath;
+  // package private for unit test
+  List<Clazz> clazzes = new ArrayList<>();
 
   public Orzo(List<File> inputs, String outputPath) {
     this.inputs = inputs;
@@ -68,7 +70,7 @@ public class Orzo {
   }
 
   public void compile(List<Output> outputs) throws IOException {
-    List<Clazz> clazzes = new ArrayList<>();
+    clazzes = new ArrayList<>();
     ParserContext ctx = null;
     for (int i = 0; i < inputs.size(); i++) {
       System.out.println("Reading from: " + inputs.get(i).getAbsolutePath());

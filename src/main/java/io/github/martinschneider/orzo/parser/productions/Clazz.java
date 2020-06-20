@@ -84,10 +84,14 @@ public class Clazz {
   }
 
   public String fqn() {
+    return fqn('.');
+  }
+
+  public String fqn(char sep) {
     StringBuilder strBuilder = new StringBuilder();
     if (packageName != null) {
-      strBuilder.append(packageName);
-      strBuilder.append('.');
+      strBuilder.append(packageName.replace('.', sep));
+      strBuilder.append(sep);
     }
     strBuilder.append(name);
     return strBuilder.toString();
