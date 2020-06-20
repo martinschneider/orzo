@@ -11,8 +11,6 @@ public enum Keywords {
   CLASS,
   PACKAGE,
   IMPORT,
-  TRUE,
-  FALSE,
   BREAK,
   NEW;
 }

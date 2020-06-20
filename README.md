@@ -7,28 +7,21 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 # Features
 
 ## Types
-- [X] short
-- [X] byte
-- [X] int
-- [X] long
-- [X] float
-- [X] double
-- [ ] boolean
-- [X] char
-- [X] one-dimensional arrays
+- [X] [primitive types (byte, short, int, char, boolean, long, float, double)](https://docs.oracle.com/javase/specs/jvms/se14/html/jvms-2.html#jvms-2.3)
+- [X] one-dimensional [arrays](https://docs.oracle.com/javase/specs/jvms/se14/html/jvms-3.html#jvms-3.9)
 - [ ] multi-dimensional arrays
 - [X] String
-- [ ] reference types
+- [ ] [reference types](https://docs.oracle.com/javase/specs/jvms/se14/html/jvms-2.html#jvms-2.4)
 - [ ] class inheritance
 - [ ] interfaces
-- [ ] enums
+- [ ] [enums](https://docs.oracle.com/javase/specs/jls/se14/html/jls-8.html#jls-8.9)
+- [ ] [exceptions](https://docs.oracle.com/javase/specs/jvms/se14/html/jvms-2.html#jvms-2.10)
 
 ## Operators
 - [X] assignment `=`
 - [X] arithmetic `+`, `-`, `*`, `/`, `%`
 - [X] parenthesis `(` ,`)`
-- [X] unary post-increment and decrement `++`, `--`
-- [X] unary pre-increment and decrement `++`, `--`
+- [X] unary post/pre-increment and decrement `++`, `--`
 - [X] compound assignments `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=`, `>>>=`, `&=`, `^=`, `|=`
 - [X] relational `<`, `<=`, `>=`, `>`
 - [X] equality `==`, `!=`,
@@ -46,11 +39,8 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 
 ## Statements
 - [X] System.out.println
-- [X] if/else if/else
-- [X] while loops
-- [X] do loops
-- [X] for loops
-- [X] break
+- [X] if, else if and else statements
+- [X] while, do and for loops + break statement
 - [ ] switch
 - [ ] lambdas
 - [X] static method calls

@@ -15,4 +15,8 @@ public class PushGenerator {
     out.write((byte) number);
     return out;
   }
+
+  public static HasOutput pushBool(DynamicByteArray out, boolean value) {
+    return bipush(out, (value) ? 1 : 0);
+  }
 }

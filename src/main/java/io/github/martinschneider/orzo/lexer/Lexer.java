@@ -43,6 +43,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.bool;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.chr;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.cmp;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.fp;
@@ -213,6 +214,11 @@ public class Lexer {
           tokenList.add(scope(Scopes.valueOf(str.toUpperCase())).wLoc(inputReader.getLoc()));
           buffer.setLength(0);
         }
+      }
+      // bool literal
+      if (str.equals("true") || str.equals("false")) {
+        tokenList.add(bool(str));
+        buffer.setLength(0);
       }
       // basic types
       if (BASIC_TYPES.contains(str)) {

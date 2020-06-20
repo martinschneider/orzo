@@ -74,7 +74,6 @@ public class BasicCodeGenerator {
     return out;
   }
 
-  // push long
   public HasOutput pushLong(DynamicByteArray out, long number) {
     if (number == 0) {
       out.write(LCONST_0);
@@ -86,7 +85,6 @@ public class BasicCodeGenerator {
     return out;
   }
 
-  // push float
   public HasOutput pushFloat(DynamicByteArray out, float number) {
     if (number == 0) {
       out.write(FCONST_0);
@@ -101,7 +99,6 @@ public class BasicCodeGenerator {
     return out;
   }
 
-  // push double
   public HasOutput pushDouble(DynamicByteArray out, double number) {
     if (number == 0.0) {
       out.write(DCONST_0);
@@ -113,7 +110,7 @@ public class BasicCodeGenerator {
     return out;
   }
 
-  // push int, byte or short
+  // push int, byte, short or bool
   public HasOutput pushInteger(DynamicByteArray out, int number) {
     if (number == -1) {
       out.write(ICONST_M1);

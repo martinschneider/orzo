@@ -26,6 +26,8 @@ public class DeclarationParserTest {
   private static Stream<Arguments> test() throws IOException {
     return Stream.of(
         Arguments.of("int x=100;", decl(id("x"), "int", expr("100"), true)),
+        Arguments.of("boolean b=true;", decl(id("b"), "boolean", expr("true"), true)),
+        Arguments.of("boolean bool=false;", decl(id("bool"), "boolean", expr("false"), true)),
         Arguments.of("String martin", decl(id("martin"), "String", null, false)),
         Arguments.of("double d=1.23", decl(id("d"), "double", expr("1.23"), true)),
         Arguments.of("int i=fac(100)", decl(id("i"), "int", expr("fac(100)"), true)),

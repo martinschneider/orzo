@@ -6,6 +6,7 @@ import static io.github.martinschneider.orzo.codegen.PushGenerator.bipush;
 import static io.github.martinschneider.orzo.codegen.PushGenerator.sipush;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
@@ -45,18 +46,30 @@ public class DeclarationGenerator implements StatementGenerator {
     if (decl.val != null) {
       ctx.exprGenerator.eval(out, variables, decl.type, decl.val);
     } else {
-      if (decl.type.equals(INT)) {
-        ctx.opsGenerator.pushInteger(out, INTEGER_DEFAULT_VALUE);
-      } else if (decl.type.equals(BYTE) || decl.type.equals(CHAR)) {
-        bipush(out, INTEGER_DEFAULT_VALUE);
-      } else if (decl.type.equals(SHORT)) {
-        sipush(out, INTEGER_DEFAULT_VALUE);
-      } else if (decl.type.equals(LONG)) {
-        ctx.opsGenerator.pushLong(out, INTEGER_DEFAULT_VALUE);
-      } else if (decl.type.equals(FLOAT)) {
-        ctx.opsGenerator.pushDouble(out, DOUBLE_DEFAULT_VALUE);
-      } else if (decl.type.equals(DOUBLE)) {
-        ctx.opsGenerator.pushFloat(out, DOUBLE_DEFAULT_VALUE);
+      switch (decl.type) {
+        case INT:
+          ctx.opsGenerator.pushInteger(out, INTEGER_DEFAULT_VALUE);
+          break;
+        case BOOLEAN:
+          bipush(out, INTEGER_DEFAULT_VALUE);
+          break;
+        case BYTE:
+          bipush(out, INTEGER_DEFAULT_VALUE);
+          break;
+        case CHAR:
+          bipush(out, INTEGER_DEFAULT_VALUE);
+          break;
+        case SHORT:
+          sipush(out, INTEGER_DEFAULT_VALUE);
+          break;
+        case LONG:
+          ctx.opsGenerator.pushLong(out, INTEGER_DEFAULT_VALUE);
+          break;
+        case FLOAT:
+          ctx.opsGenerator.pushDouble(out, DOUBLE_DEFAULT_VALUE);
+          break;
+        case DOUBLE:
+          ctx.opsGenerator.pushFloat(out, DOUBLE_DEFAULT_VALUE);
       }
     }
     ctx.opsGenerator.assign(out, variables, decl.type, decl.name);

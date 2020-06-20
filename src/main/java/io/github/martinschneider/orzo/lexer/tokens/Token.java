@@ -57,44 +57,44 @@ public class Token {
     return new Str(val);
   }
 
-  public static IntNum integer(Long val) {
-    return new IntNum(BigInteger.valueOf(val), true);
+  public static IntLiteral integer(Long val) {
+    return new IntLiteral(BigInteger.valueOf(val), true);
   }
 
-  public static IntNum integer(Integer val) {
-    return new IntNum(BigInteger.valueOf(val), false);
+  public static IntLiteral integer(Integer val) {
+    return new IntLiteral(BigInteger.valueOf(val), false);
   }
 
-  public static IntNum integer(BigInteger val, boolean isLong) {
-    return new IntNum(val, isLong);
+  public static IntLiteral integer(BigInteger val, boolean isLong) {
+    return new IntLiteral(val, isLong);
   }
 
-  public static IntNum integer(BigInteger val) {
-    return new IntNum(val, false);
+  public static IntLiteral integer(BigInteger val) {
+    return new IntLiteral(val, false);
   }
 
-  public static IntNum integer(String val) {
-    return new IntNum(new BigInteger(val), false);
+  public static IntLiteral integer(String val) {
+    return new IntLiteral(new BigInteger(val), false);
   }
 
-  public static IntNum integer(String val, boolean isLong) {
-    return new IntNum(new BigInteger(val), isLong);
+  public static IntLiteral integer(String val, boolean isLong) {
+    return new IntLiteral(new BigInteger(val), isLong);
   }
 
-  public static DoubleNum fp(double val, boolean isFloat) {
-    return new DoubleNum(val, isFloat);
+  public static FPLiteral fp(double val, boolean isFloat) {
+    return new FPLiteral(val, isFloat);
   }
 
-  public static DoubleNum fp(String val, boolean isFloat) {
-    return new DoubleNum(Double.valueOf(val), isFloat);
+  public static FPLiteral fp(String val, boolean isFloat) {
+    return new FPLiteral(Double.valueOf(val), isFloat);
   }
 
-  public static DoubleNum fp(double val) {
-    return new DoubleNum(val, false);
+  public static FPLiteral fp(double val) {
+    return new FPLiteral(val, false);
   }
 
-  public static DoubleNum fp(String val) {
-    return new DoubleNum(Double.valueOf(val), false);
+  public static FPLiteral fp(String val) {
+    return new FPLiteral(Double.valueOf(val), false);
   }
 
   public static Identifier id(String val) {
@@ -127,6 +127,10 @@ public class Token {
 
   public static Type type(String val) {
     return new Type(val);
+  }
+
+  public static BoolLiteral bool(String val) {
+    return new BoolLiteral(Boolean.parseBoolean(val));
   }
 
   public static Token eof() {

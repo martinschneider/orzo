@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen.statement;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
@@ -106,6 +107,8 @@ public class MethodCallGenerator implements StatementGenerator {
       ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(F)V");
     } else if (type.equals(CHAR)) {
       ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(C)V");
+    } else if (type.equals(BOOLEAN)) {
+      ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(Z)V");
     } else {
       // TODO: call toString() first
     }

@@ -11,7 +11,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.IntNum;
+import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -41,8 +41,8 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
       List<Integer> dimensions = new ArrayList<>();
       while (tokens.curr().eq(sym(LBRAK))) {
         tokens.next();
-        if (tokens.curr() instanceof IntNum) {
-          long size = ((IntNum) tokens.curr()).intValue();
+        if (tokens.curr() instanceof IntLiteral) {
+          long size = ((IntLiteral) tokens.curr()).intValue();
           if (size > Integer.MAX_VALUE || size < 0) {
             ctx.errors.addError(LOG_NAME, "invalid array size: " + size, tokens);
             tokens.next();

@@ -4,8 +4,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 
 import io.github.martinschneider.orzo.codegen.constants.ConstantPool;
-import io.github.martinschneider.orzo.lexer.tokens.DoubleNum;
-import io.github.martinschneider.orzo.lexer.tokens.IntNum;
+import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
@@ -104,9 +104,9 @@ public class ConstantPoolProcessor {
     for (Token token : param.tokens) {
       if (token instanceof Str) {
         constPool.addString(token.val.toString());
-      } else if (token instanceof IntNum) {
+      } else if (token instanceof IntLiteral) {
         long intValue = ((BigInteger) (token.val)).longValue();
-        if (((IntNum) token).isLong
+        if (((IntLiteral) token).isLong
             || (type != null && type.equals(LONG))
             || intValue < Integer.MIN_VALUE
             || intValue > Integer.MAX_VALUE) {
@@ -114,9 +114,9 @@ public class ConstantPoolProcessor {
         } else if (intValue < -32768 || intValue >= 32768) {
           constPool.addInteger((int) intValue);
         }
-      } else if (token instanceof DoubleNum) {
+      } else if (token instanceof FPLiteral) {
         BigDecimal doubleValue = ((BigDecimal) (token.val));
-        if (((DoubleNum) token).isFloat || (type != null && type.equals(FLOAT))) {
+        if (((FPLiteral) token).isFloat || (type != null && type.equals(FLOAT))) {
           constPool.addFloat(doubleValue.floatValue());
         } else {
           constPool.addDouble(doubleValue.doubleValue());

@@ -2,19 +2,19 @@ package io.github.martinschneider.orzo.lexer.tokens;
 
 import java.math.BigInteger;
 
-public class IntNum extends Token implements Num {
+public class IntLiteral extends Token implements Num {
   public boolean isLong;
 
-  public IntNum(BigInteger val, boolean isLong) {
+  public IntLiteral(BigInteger val, boolean isLong) {
     super(val);
     this.isLong = isLong;
   }
 
-  public IntNum(Integer val, boolean isLong) {
+  public IntLiteral(Integer val, boolean isLong) {
     this(BigInteger.valueOf(val), isLong);
   }
 
-  public IntNum wLoc(Location loc) {
+  public IntLiteral wLoc(Location loc) {
     this.loc = loc;
     return this;
   }

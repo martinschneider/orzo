@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.codegen.statement;
 
 import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadValue;
+import static io.github.martinschneider.orzo.codegen.PushGenerator.pushBool;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.orzo.codegen.statement.OperatorMaps.arithmeticOps;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
@@ -26,10 +27,11 @@ import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
+import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Chr;
-import io.github.martinschneider.orzo.lexer.tokens.DoubleNum;
+import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
-import io.github.martinschneider.orzo.lexer.tokens.IntNum;
+import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
@@ -97,8 +99,8 @@ public class ExpressionGenerator {
         if (!type.equals(varType) && arrType == null) {
           ctx.opsGenerator.convert(out, varType, type);
         }
-      } else if (token instanceof IntNum) {
-        BigInteger bigInt = (BigInteger) ((IntNum) token).val;
+      } else if (token instanceof IntLiteral) {
+        BigInteger bigInt = (BigInteger) ((IntLiteral) token).val;
         Long intValue = bigInt.longValue();
         // look ahead for <<, >> or >>> operators which require the second argument to be an integer
         if (i + 1 < tokens.size()
@@ -121,8 +123,12 @@ public class ExpressionGenerator {
           }
         }
         val = bigInt;
-      } else if (token instanceof DoubleNum) {
-        BigDecimal bigDec = (BigDecimal) ((DoubleNum) token).val;
+      } else if (token instanceof BoolLiteral) {
+        Boolean bool = (Boolean) ((BoolLiteral) token).val;
+        pushBool(out, bool);
+        val = bool;
+      } else if (token instanceof FPLiteral) {
+        BigDecimal bigDec = (BigDecimal) ((FPLiteral) token).val;
         if (type.equals(DOUBLE)) {
           ctx.opsGenerator.pushDouble(out, bigDec.doubleValue());
         } else if (type.equals(FLOAT)) {

@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
@@ -9,9 +10,10 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 
-import io.github.martinschneider.orzo.lexer.tokens.DoubleNum;
+import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
-import io.github.martinschneider.orzo.lexer.tokens.IntNum;
+import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -33,15 +35,17 @@ public class NumExprTypeDecider {
   public String getType(VariableMap variables, Expression expr) {
     Set<String> types = new HashSet<>();
     for (Token token : expr.tokens) {
-      if (token instanceof IntNum) {
+      if (token instanceof IntLiteral) {
         long intValue = ((BigInteger) token.val).longValue();
         if (intValue > Integer.MAX_VALUE) {
           types.add(LONG);
         } else {
           types.add(INT);
         }
-      } else if (token instanceof DoubleNum) {
+      } else if (token instanceof FPLiteral) {
         types.add(DOUBLE);
+      } else if (token instanceof BoolLiteral) {
+        types.add(BOOLEAN);
       } else if (token instanceof Str) {
         types.add(STRING);
       } else if (token instanceof Identifier) {
@@ -79,6 +83,8 @@ public class NumExprTypeDecider {
     }
     if (types.contains(CHAR)) {
       return CHAR;
+    } else if (types.contains(BOOLEAN)) {
+      return BOOLEAN;
     } else if (types.contains(DOUBLE)) {
       return DOUBLE;
     } else if (types.contains(FLOAT)) {

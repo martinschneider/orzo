@@ -28,6 +28,8 @@ public class AssignmentParserTest {
         Arguments.of("x>5", null),
         Arguments.of("x,y=u,v", null),
         Arguments.of("x=5", assign(id("x"), expr("5"))),
+        Arguments.of("x=true", assign(id("x"), expr("true"))),
+        Arguments.of("x=false", assign(id("x"), expr("false"))),
         Arguments.of("x=5*12-3/6+12%4", assign(id("x"), expr("5*12-3/6+12%4"))),
         Arguments.of("x[1]=3", assign(id("x", arrSel(List.of(expr("1")))), expr("3"))));
   }

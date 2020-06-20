@@ -28,6 +28,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_3;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
@@ -53,6 +54,8 @@ public class LoadGenerator {
       case BYTE:
         return loadInteger(out, idx);
       case CHAR:
+        return loadInteger(out, idx);
+      case BOOLEAN:
         return loadInteger(out, idx);
     }
     return out;

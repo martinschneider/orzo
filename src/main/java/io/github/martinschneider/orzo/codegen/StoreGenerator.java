@@ -32,6 +32,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_3;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SASTORE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
@@ -58,6 +59,8 @@ public class StoreGenerator {
         return storeInteger(out, idx);
       case CHAR:
         return storeInteger(out, idx);
+      case BOOLEAN:
+        return storeInteger(out, idx);
     }
     return out;
   }
@@ -73,6 +76,8 @@ public class StoreGenerator {
       case LONG:
         return storeLong(out, idx);
       case INT:
+        return storeInteger(out, idx);
+      case BOOLEAN:
         return storeInteger(out, idx);
       case DOUBLE:
         return storeDouble(out, idx);

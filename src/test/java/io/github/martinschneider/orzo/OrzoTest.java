@@ -68,6 +68,7 @@ public class OrzoTest {
         Arguments.of(List.of("examples/CollatzConjecture2")),
         Arguments.of(List.of("tests/Doubles")),
         Arguments.of(List.of("tests/Floats")),
+        Arguments.of(List.of("tests/Booleans")),
         Arguments.of(List.of("examples/PiLeibniz", "examples/MathUtils")),
         Arguments.of(List.of("tests/BitShifts")),
         Arguments.of(List.of("tests/UnsignedRightShift")),
