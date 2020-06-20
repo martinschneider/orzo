@@ -39,7 +39,7 @@ public class OrzoTest {
     }
   }
 
-  private static Stream<Arguments> testKommpeiler() {
+  private static Stream<Arguments> tests() {
     return Stream.of(
         Arguments.of(List.of("examples/HelloWorld")),
         Arguments.of(List.of("tests/IntegerConstants")),
@@ -121,14 +121,13 @@ public class OrzoTest {
   }
 
   @ParameterizedTest
-  @MethodSource
-  public void testKommpeiler(List<String> programs)
+  @MethodSource("tests")
+  public void testCorrectness(List<String> programs)
       throws IOException, ClassNotFoundException, IllegalAccessException, IllegalArgumentException,
           InvocationTargetException, NoSuchMethodException, SecurityException {
     List<File> inputs = new ArrayList<>();
     List<Output> outputs = new ArrayList<>();
     List<String> classNames = new ArrayList<>();
-    List<Path> expectedClasses = new ArrayList<>();
     List<ByteArrayOutputStream> streams = new ArrayList<>();
     ByteClassLoader classLoader = new ByteClassLoader(ClassLoader.getSystemClassLoader());
     for (int i = 0; i < programs.size(); i++) {
@@ -136,12 +135,6 @@ public class OrzoTest {
       inputs.add(
           new File(
               this.getClass().getResource(tmp[0] + File.separator + tmp[1] + ".java").getPath()));
-      expectedClasses.add(
-          Path.of(
-              this.getClass()
-                  .getResource(
-                      tmp[0] + File.separator + "class" + File.separator + tmp[1] + ".class")
-                  .getPath()));
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       PrintStream ps = new PrintStream(baos);
       outputs.add(new Output(ps));
@@ -164,9 +157,6 @@ public class OrzoTest {
     System.out.flush();
     System.setOut(old);
     String[] tmp = programs.get(0).split("/");
-    for (int i = 0; i < streams.size(); i++) {
-      assertArrayEquals(Files.readAllBytes(expectedClasses.get(i)), streams.get(i).toByteArray());
-    }
     String actual = baos.toString();
     String expected =
         Files.readString(
@@ -176,5 +166,37 @@ public class OrzoTest {
                         tmp[0] + File.separator + "output" + File.separator + tmp[1] + ".output")
                     .getPath()));
     assertEquals(expected, actual);
+  }
+
+  @ParameterizedTest
+  @MethodSource("tests")
+  public void testBytecode(List<String> programs)
+      throws IOException, ClassNotFoundException, IllegalAccessException, IllegalArgumentException,
+          InvocationTargetException, NoSuchMethodException, SecurityException {
+    List<File> inputs = new ArrayList<>();
+    List<Output> outputs = new ArrayList<>();
+    List<Path> expectedClasses = new ArrayList<>();
+    List<ByteArrayOutputStream> streams = new ArrayList<>();
+    for (int i = 0; i < programs.size(); i++) {
+      String[] tmp = programs.get(i).split("/");
+      inputs.add(
+          new File(
+              this.getClass().getResource(tmp[0] + File.separator + tmp[1] + ".java").getPath()));
+      expectedClasses.add(
+          Path.of(
+              this.getClass()
+                  .getResource(
+                      tmp[0] + File.separator + "class" + File.separator + tmp[1] + ".class")
+                  .getPath()));
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      PrintStream ps = new PrintStream(baos);
+      outputs.add(new Output(ps));
+      streams.add(baos);
+    }
+    Orzo orzo = new Orzo(inputs, null);
+    orzo.compile(outputs);
+    for (int i = 0; i < streams.size(); i++) {
+      assertArrayEquals(Files.readAllBytes(expectedClasses.get(i)), streams.get(i).toByteArray());
+    }
   }
 }
