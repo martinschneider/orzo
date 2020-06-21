@@ -7,6 +7,7 @@ import static io.github.martinschneider.orzo.codegen.statement.OperatorMaps.arit
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
@@ -149,6 +150,13 @@ public class ExpressionGenerator {
         if (List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT).contains(op)) {
           byte idx = variables.get(tokens.get(i - 1)).idx;
           ctx.incrGenerator.inc(out, type, idx, op, false);
+        } else if (op.equals(POW)) {
+          if (type.equals(DOUBLE)) {
+            ctx.opsGenerator.invokeStatic(out, "java/lang/Math", "pow", "(DD)D");
+          } else {
+            // TODO: BigInteger.pow and BigInteger.intValue could be used but we need to avoid
+            // pushing the int arguments on the stack (instead creating a BigInteger instance first)
+          }
         } else {
           Byte opCode = arithmeticOps.getOrDefault(op, Collections.emptyMap()).get(type);
           if (opCode != null) {

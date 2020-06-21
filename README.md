@@ -6,6 +6,8 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 
 # Features
 
+🔥 Orzo-only features (not available in Java) 
+
 ## Types
 - [X] [primitive types (byte, short, int, char, boolean, long, float, double)](https://docs.oracle.com/javase/specs/jvms/se14/html/jvms-2.html#jvms-2.3)
 - [X] one-dimensional [arrays](https://docs.oracle.com/javase/specs/jvms/se14/html/jvms-3.html#jvms-3.9)
@@ -19,7 +21,9 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 
 ## Operators
 - [X] assignment `=`
+- [X] [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment), e.g. `a,b=b+1,a-1` 🔥
 - [X] arithmetic `+`, `-`, `*`, `/`, `%`
+- [X] `**` power operator 🔥 (for `double` arguments, others are WIP)
 - [X] parenthesis `(` ,`)`
 - [X] unary post/pre-increment and decrement `++`, `--`
 - [X] compound assignments `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=`, `>>>=`, `&=`, `^=`, `|=`
@@ -47,12 +51,8 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [ ] other method calls
 - [ ] constructor calls
 
-## Non-standard Java features
-- [X] [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment), e.g. `a,b=b+1,a-1`
-- [ ] uint, ushort, ubyte, ulong types
-
 ## Notes
-- Array defintions must be of the form `int[] a`, `int a[]`
+- Array defintions must be of the form `int[] a`, `int a[]` is not supported
 - For now, Orzo creates class files targeting JDK 5 (major version 49) or newer
 
 # Examples
