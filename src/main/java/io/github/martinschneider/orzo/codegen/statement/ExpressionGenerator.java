@@ -75,7 +75,12 @@ public class ExpressionGenerator {
     List<Token> tokens = expr.tokens;
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
-      if (token instanceof Identifier) {
+      if (!type.equals(DOUBLE)
+          && ((i + 2 < tokens.size() && tokens.get(i + 2).eq(op(POW)))
+              || (i + 1 < tokens.size() && tokens.get(i + 1).eq(op(POW))))) {
+        // Calculating powers for integer types uses BigInteger and requires loading the operands in
+        // a different order. Therefore, we skip processing them here.
+      } else if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
         String varType = variables.get(id).type;
         String arrType = variables.get(id).arrType;
@@ -152,10 +157,22 @@ public class ExpressionGenerator {
           ctx.incrGenerator.inc(out, type, idx, op, false);
         } else if (op.equals(POW)) {
           if (type.equals(DOUBLE)) {
+            ctx.constPool.addClass("java/lang/Math");
             ctx.opsGenerator.invokeStatic(out, "java/lang/Math", "pow", "(DD)D");
           } else {
-            // TODO: BigInteger.pow and BigInteger.intValue could be used but we need to avoid
-            // pushing the int arguments on the stack (instead creating a BigInteger instance first)
+            eval(out, variables, LONG, new Expression(List.of(tokens.get(i - 1))));
+            ctx.constPool.addClass("java/math/BigInteger");
+            ctx.constPool.addMethodRef(
+                "java/math/BigInteger", "valueOf", "(J)Ljava/math/BigInteger;");
+            ctx.constPool.addMethodRef("java/math/BigInteger", "pow", "(I)Ljava/math/BigInteger;");
+            ctx.constPool.addMethodRef("java/math/BigInteger", "longValue", "()J");
+            ctx.opsGenerator.invokeStatic(
+                out, "java/math/BigInteger", "valueOf", "(J)Ljava/math/BigInteger;");
+            eval(out, variables, INT, new Expression(List.of(tokens.get(i - 2))));
+            ctx.opsGenerator.invokeVirtual(
+                out, "java/math/BigInteger", "pow", "(I)Ljava/math/BigInteger;");
+            ctx.opsGenerator.invokeVirtual(out, "java/math/BigInteger", "longValue", "()J");
+            type = LONG;
           }
         } else {
           Byte opCode = arithmeticOps.getOrDefault(op, Collections.emptyMap()).get(type);

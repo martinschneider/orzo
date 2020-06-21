@@ -84,8 +84,11 @@ public class OpCodes {
   public static final byte BASTORE = (byte) 84;
   public static final byte CASTORE = (byte) 85;
   public static final byte SASTORE = (byte) 86;
+  public static final byte POP = (byte) 87;
+  public static final byte POP2 = (byte) 88;
   public static final byte DUP = (byte) 89;
   public static final byte DUP2 = (byte) 92;
+  public static final byte SWAP = (byte) 95;
   public static final byte IADD = (byte) 96;
   public static final byte LADD = (byte) 97;
   public static final byte FADD = (byte) 98;
@@ -145,6 +148,8 @@ public class OpCodes {
   public static final byte RETURN = (byte) 177;
   public static final byte GETSTATIC = (byte) 178;
   public static final byte INVOKEVIRTUAL = (byte) 182;
+  public static final byte INVOKESPECIAL = (byte) 183;
   public static final byte INVOKESTATIC = (byte) 184;
+  public static final byte NEW = (byte) 187;
   public static final byte NEWARRAY = (byte) 188;
 }

@@ -22,12 +22,14 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LCONST_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LCONST_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LDC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LDC2_W;
+import static io.github.martinschneider.orzo.codegen.OpCodes.NEW;
 import static io.github.martinschneider.orzo.codegen.PushGenerator.bipush;
 import static io.github.martinschneider.orzo.codegen.PushGenerator.sipush;
 import static io.github.martinschneider.orzo.codegen.StoreGenerator.storeInArray;
 import static io.github.martinschneider.orzo.codegen.StoreGenerator.storeReference;
 import static io.github.martinschneider.orzo.codegen.StoreGenerator.storeValue;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getLoadOpCode;
+import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_DOUBLE;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FLOAT;
@@ -230,5 +232,11 @@ public class BasicCodeGenerator {
       out.write(I2L);
     }
     // TODO: others
+  }
+
+  public HasOutput newInstance(DynamicByteArray out, String clazz) {
+    out.write(NEW);
+    out.write(ctx.constPool.indexOf(CONSTANT_CLASS, clazz));
+    return out;
   }
 }

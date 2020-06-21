@@ -23,7 +23,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] assignment `=`
 - [X] [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment), e.g. `a,b=b+1,a-1` 🔥
 - [X] arithmetic `+`, `-`, `*`, `/`, `%`
-- [X] `**` power operator 🔥 (for `double` arguments, others are WIP)
+- [X] `**` power operator 🔥
 - [X] parenthesis `(` ,`)`
 - [X] unary post/pre-increment and decrement `++`, `--`
 - [X] compound assignments `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=`, `>>>=`, `&=`, `^=`, `|=`
