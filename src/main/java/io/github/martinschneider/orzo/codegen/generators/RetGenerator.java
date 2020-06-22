@@ -1,4 +1,4 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.DRETURN;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FRETURN;
@@ -20,10 +20,10 @@ import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 
-public class ReturnStatementGenerator implements StatementGenerator {
+public class RetGenerator implements StatementGenerator {
   private CGContext ctx;
 
-  public ReturnStatementGenerator(CGContext ctx) {
+  public RetGenerator(CGContext ctx) {
     this.ctx = ctx;
   }
 
@@ -37,7 +37,8 @@ public class ReturnStatementGenerator implements StatementGenerator {
 
   private HasOutput ret(
       DynamicByteArray out, VariableMap variables, String type, Expression retValue) {
-    ctx.exprGenerator.eval(out, variables, type, retValue);
+    ctx.exprGen.eval(out, variables, type, retValue);
+    ctx.basicGen.convert(out, ctx.opStack.type(), type);
     switch (type) {
       case INT:
         out.write(IRETURN);

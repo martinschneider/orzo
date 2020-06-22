@@ -1,9 +1,7 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen.generators;
 
-import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadValue;
-import static io.github.martinschneider.orzo.codegen.PushGenerator.pushBool;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
-import static io.github.martinschneider.orzo.codegen.statement.OperatorMaps.arithmeticOps;
+import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.arithmeticOps;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
@@ -13,13 +11,10 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMEN
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
@@ -38,6 +33,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -95,15 +91,15 @@ public class ExpressionGenerator {
           byte varIdx = varInfo.idx;
           if (id.arrSel != null) {
             // array
-            ctx.opsGenerator.loadValueFromArray(
+            ctx.loadGen.loadValueFromArray(
                 out, variables, id.arrSel.exprs, varInfo.arrType, varIdx);
             type = varInfo.arrType;
           } else {
-            loadValue(out, varType, varIdx);
+            ctx.loadGen.load(out, varType, varIdx);
           }
         }
         if (!type.equals(varType) && arrType == null) {
-          ctx.opsGenerator.convert(out, varType, type);
+          ctx.basicGen.convert(out, varType, type);
         }
       } else if (token instanceof IntLiteral) {
         BigInteger bigInt = (BigInteger) ((IntLiteral) token).val;
@@ -113,52 +109,38 @@ public class ExpressionGenerator {
             && ((tokens.get(i + 1).eq(op(LSHIFT))
                 || (tokens.get(i + 1).eq(op(RSHIFT)))
                 || (tokens.get(i + 1).eq(op(RSHIFTU)))))) {
-          ctx.opsGenerator.pushInteger(out, intValue.intValue());
+          ctx.pushGen.push(out, INT, intValue.intValue());
         } else if (!type.equals(INT) || intValue != 0 || pushIfZero) {
-          if (type.equals(LONG)) {
-            ctx.opsGenerator.pushLong(out, intValue.longValue());
-          } else if (type.equals(DOUBLE)) {
-            ctx.opsGenerator.pushDouble(out, intValue.doubleValue());
-          } else if (type.equals(FLOAT)) {
-            ctx.opsGenerator.pushFloat(out, intValue.floatValue());
-          } else if (type.equals(INT)
-              || type.equals(BYTE)
-              || (type.equals(SHORT))
-              || type.equals(CHAR)) {
-            ctx.opsGenerator.pushInteger(out, intValue.intValue());
-          }
+          ctx.pushGen.push(out, type, intValue.doubleValue());
         }
         val = bigInt;
       } else if (token instanceof BoolLiteral) {
         Boolean bool = (Boolean) ((BoolLiteral) token).val;
-        pushBool(out, bool);
+        ctx.pushGen.pushBool(out, bool);
         val = bool;
       } else if (token instanceof FPLiteral) {
         BigDecimal bigDec = (BigDecimal) ((FPLiteral) token).val;
-        if (type.equals(DOUBLE)) {
-          ctx.opsGenerator.pushDouble(out, bigDec.doubleValue());
-        } else if (type.equals(FLOAT)) {
-          ctx.opsGenerator.pushFloat(out, bigDec.floatValue());
-        }
+        ctx.pushGen.push(out, type, bigDec.doubleValue());
         val = bigDec;
       } else if (token instanceof Str) {
-        ctx.opsGenerator.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
+        ctx.loadGen.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
         type = STRING;
       } else if (token instanceof Chr) {
         char chr = (char) ((Chr) token).val;
-        ctx.opsGenerator.pushInteger(out, chr);
+        ctx.pushGen.push(out, CHAR, chr);
         type = CHAR;
       } else if (token instanceof MethodCall) {
-        type = ctx.methodCallGenerator.generate(out, variables, (MethodCall) token);
+        type = ctx.methodCallGen.generate(out, variables, (MethodCall) token);
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
         if (List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT).contains(op)) {
           byte idx = variables.get(tokens.get(i - 1)).idx;
-          ctx.incrGenerator.inc(out, type, idx, op, false);
+          ctx.incrGen.inc(out, type, idx, op, false);
         } else if (op.equals(POW)) {
           if (type.equals(DOUBLE)) {
             ctx.constPool.addClass("java/lang/Math");
-            ctx.opsGenerator.invokeStatic(out, "java/lang/Math", "pow", "(DD)D");
+            ctx.invokeGen.invokeStatic(
+                out, new Method("java.lang.Math", "pow", DOUBLE, List.of(DOUBLE, DOUBLE)));
           } else {
             eval(out, variables, LONG, new Expression(List.of(tokens.get(i - 1))));
             ctx.constPool.addClass("java/math/BigInteger");
@@ -166,17 +148,24 @@ public class ExpressionGenerator {
                 "java/math/BigInteger", "valueOf", "(J)Ljava/math/BigInteger;");
             ctx.constPool.addMethodRef("java/math/BigInteger", "pow", "(I)Ljava/math/BigInteger;");
             ctx.constPool.addMethodRef("java/math/BigInteger", "longValue", "()J");
-            ctx.opsGenerator.invokeStatic(
-                out, "java/math/BigInteger", "valueOf", "(J)Ljava/math/BigInteger;");
+            ctx.invokeGen.invokeStatic(
+                out,
+                new Method(
+                    "java.math.BigInteger", "valueOf", "Ljava/math/BigInteger;", List.of(LONG)));
             eval(out, variables, INT, new Expression(List.of(tokens.get(i - 2))));
-            ctx.opsGenerator.invokeVirtual(
-                out, "java/math/BigInteger", "pow", "(I)Ljava/math/BigInteger;");
-            ctx.opsGenerator.invokeVirtual(out, "java/math/BigInteger", "longValue", "()J");
+            ctx.invokeGen.invokeVirtual(
+                out,
+                new Method("java/math/BigInteger", "pow", "Ljava/math/BigInteger;", List.of(INT)));
+            ctx.invokeGen.invokeVirtual(
+                out,
+                new Method("java/math/BigInteger", "longValue", LONG, Collections.emptyList()));
             type = LONG;
           }
         } else {
           Byte opCode = arithmeticOps.getOrDefault(op, Collections.emptyMap()).get(type);
           if (opCode != null) {
+            ctx.opStack.pop2();
+            ctx.opStack.push(type);
             out.write(opCode);
           }
         }

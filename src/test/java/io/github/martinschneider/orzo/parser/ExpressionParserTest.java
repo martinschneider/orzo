@@ -4,12 +4,15 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.fp;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.expr;
+import static io.github.martinschneider.orzo.parser.TestHelper.methodCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -56,7 +59,29 @@ public class ExpressionParserTest {
         Arguments.of("3+4", expr(List.of(integer(3), integer(4), op(PLUS)))),
         Arguments.of("5+7/2", expr(List.of(integer(5), integer(7), integer(2), op(DIV), op(PLUS)))),
         Arguments.of(
-            "(5+7)/2", expr(List.of(integer(5), integer(7), op(PLUS), integer(2), op(DIV)))));
+            "(5+7)/2", expr(List.of(integer(5), integer(7), op(PLUS), integer(2), op(DIV)))),
+        Arguments.of("√5", expr(List.of(fp(2.23606797749979)))),
+        Arguments.of("√n", expr(List.of(methodCall(id("Math.sqrt"), List.of(expr("n")))))),
+        Arguments.of("√(n)", expr(List.of(methodCall(id("Math.sqrt"), List.of(expr("n")))))),
+        Arguments.of("1 ** 2", expr(List.of(integer(1), integer(2), op(POW)))),
+        Arguments.of("-1 ** 2", expr(List.of(integer(-1), integer(2), op(POW)))),
+        Arguments.of("-1 ** -2", expr(List.of(integer(-1), integer(-2), op(POW)))),
+        Arguments.of("-1 * -2", expr(List.of(integer(-1), integer(-2), op(TIMES)))),
+        Arguments.of("-1 / -2", expr(List.of(integer(-1), integer(-2), op(DIV)))),
+        Arguments.of("-1 % -2", expr(List.of(integer(-1), integer(-2), op(MOD)))),
+        Arguments.of("-1 - (-2)", expr(List.of(integer(-1), integer(-2), op(MINUS)))),
+        Arguments.of("1 ** i", expr(List.of(integer(1), id("i"), op(POW)))),
+        Arguments.of("-1 ** i", expr(List.of(integer(-1), id("i"), op(POW)))),
+        Arguments.of(
+            "-1 ** -i", expr(List.of(integer(-1), integer(-1), id("i"), op(TIMES), op(POW)))),
+        Arguments.of(
+            "-1 * -i", expr(List.of(integer(-1), integer(-1), id("i"), op(TIMES), op(TIMES)))),
+        Arguments.of(
+            "-1 / -i", expr(List.of(integer(-1), integer(-1), id("i"), op(TIMES), op(DIV)))),
+        Arguments.of(
+            "-1 % -i", expr(List.of(integer(-1), integer(-1), id("i"), op(TIMES), op(MOD)))),
+        Arguments.of(
+            "-1 - (-i)", expr(List.of(integer(-1), integer(-1), id("i"), op(TIMES), op(MINUS)))));
   }
 
   @MethodSource

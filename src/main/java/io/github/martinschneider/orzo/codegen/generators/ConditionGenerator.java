@@ -1,4 +1,4 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFEQ;
@@ -44,9 +44,8 @@ public class ConditionGenerator {
       boolean isDoLoop) {
     DynamicByteArray condOut = new DynamicByteArray();
     // TODO: support other boolean conditions
-    ExpressionResult left = ctx.exprGenerator.eval(condOut, variables, null, cond.left, false);
-    ExpressionResult right =
-        ctx.exprGenerator.eval(condOut, variables, left.type, cond.right, false);
+    ExpressionResult left = ctx.exprGen.eval(condOut, variables, null, cond.left, false);
+    ExpressionResult right = ctx.exprGen.eval(condOut, variables, left.type, cond.right, false);
     if (left.type.equals(INT)
         || left.type.equals(BYTE)
         || left.type.equals(SHORT)

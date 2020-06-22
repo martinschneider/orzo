@@ -24,6 +24,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment), e.g. `a,b=b+1,a-1` 🔥
 - [X] arithmetic `+`, `-`, `*`, `/`, `%`
 - [X] `**` power operator 🔥
+- [X] `√` sqrt operator 🔥
 - [X] parenthesis `(` ,`)`
 - [X] unary post/pre-increment and decrement `++`, `--`
 - [X] compound assignments `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=`, `>>>=`, `&=`, `^=`, `|=`
@@ -52,8 +53,8 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [ ] constructor calls
 
 ## Notes
-- Array defintions must be of the form `int[] a`, `int a[]` is not supported
-- For now, Orzo creates class files targeting JDK 5 (major version 49) or newer
+- array defintions must be of the form `int[] a`, `int a[]` is not supported
+- Orzo creates class files targeting JDK 5 (major version 49) or newer
 
 # Examples
 Working examples can be found [here](src/test/resources/io/github/martinschneider/orzo/examples).

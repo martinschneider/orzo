@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo.parser.productions;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,16 @@ public class Method {
     this.name = name;
     this.args = arguments;
     this.body = body;
+  }
+
+  public Method(String clazz, String field, String type, List<String> args) {
+    this.fqClassName = clazz;
+    this.name = new Identifier(field);
+    this.type = type;
+    this.args = new ArrayList<>();
+    for (int i = 0; i < args.size(); i++) {
+      this.args.add(new Argument(args.get(i), new Identifier("arg" + i)));
+    }
   }
 
   @Override

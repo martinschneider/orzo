@@ -5,11 +5,17 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 
-import io.github.martinschneider.orzo.codegen.statement.ConditionGenerator;
-import io.github.martinschneider.orzo.codegen.statement.ExpressionGenerator;
-import io.github.martinschneider.orzo.codegen.statement.IncrementGenerator;
-import io.github.martinschneider.orzo.codegen.statement.MethodCallGenerator;
-import io.github.martinschneider.orzo.codegen.statement.StatementDelegator;
+import io.github.martinschneider.orzo.codegen.generators.AssignmentGenerator;
+import io.github.martinschneider.orzo.codegen.generators.BasicGenerator;
+import io.github.martinschneider.orzo.codegen.generators.ConditionGenerator;
+import io.github.martinschneider.orzo.codegen.generators.ExpressionGenerator;
+import io.github.martinschneider.orzo.codegen.generators.IncrementGenerator;
+import io.github.martinschneider.orzo.codegen.generators.InvokeGenerator;
+import io.github.martinschneider.orzo.codegen.generators.LoadGenerator;
+import io.github.martinschneider.orzo.codegen.generators.MethodCallGenerator;
+import io.github.martinschneider.orzo.codegen.generators.PushGenerator;
+import io.github.martinschneider.orzo.codegen.generators.StatementDelegator;
+import io.github.martinschneider.orzo.codegen.generators.StoreGenerator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
@@ -66,18 +72,22 @@ public class CodeGenerator {
     ctx.clazz = clazzes.get(idx);
     ctx.errors = errors;
     ctx.condGenerator = new ConditionGenerator();
-    ctx.constPoolProcessor = new ConstantPoolProcessor();
-    ctx.constPool = ctx.constPoolProcessor.processConstantPool(ctx.clazz);
+    ctx.constPoolProc = new ConstantPoolProcessor();
+    ctx.constPool = ctx.constPoolProc.processConstantPool(ctx.clazz);
     ctx.delegator = new StatementDelegator();
-    ctx.exprGenerator = new ExpressionGenerator();
-    ctx.incrGenerator = new IncrementGenerator(ctx);
-    ctx.methodCallGenerator = new MethodCallGenerator(ctx);
+    ctx.exprGen = new ExpressionGenerator();
+    ctx.incrGen = new IncrementGenerator(ctx);
+    ctx.methodCallGen = new MethodCallGenerator(ctx);
     ctx.methodMap = new MethodProcessor().getMethodMap(ctx.clazz, clazzes);
-    ctx.opsGenerator = new BasicCodeGenerator();
+    ctx.assignGen = new AssignmentGenerator(ctx);
+    ctx.basicGen = new BasicGenerator(ctx);
+    ctx.invokeGen = new InvokeGenerator(ctx);
+    ctx.pushGen = new PushGenerator(ctx);
+    ctx.loadGen = new LoadGenerator(ctx);
+    ctx.storeGen = new StoreGenerator(ctx);
     ctx.condGenerator.ctx = ctx;
     ctx.delegator.ctx = ctx;
-    ctx.exprGenerator.ctx = ctx;
-    ctx.opsGenerator.ctx = ctx;
+    ctx.exprGen.ctx = ctx;
     ctx.delegator.init();
   }
 
@@ -116,6 +126,7 @@ public class CodeGenerator {
   }
 
   private HasOutput methods(HasOutput out) {
+    ctx.opStack = new OperandStack();
     List<Method> methods = ctx.clazz.body;
     // number of methods
     out.write((short) methods.size());
@@ -152,8 +163,7 @@ public class CodeGenerator {
       }
       out.write(methodOut.size() + 12); // stack size (2) + local var size (2) + code size (4) +
       // exception table size (2) + attribute count size (2)
-      // TODO: set this dynamically
-      out.write((short) 100); // max stack size
+      out.write((short) ctx.opStack.maxSize()); // max stack size
       out.write((short) (variables.size)); // max local var size
       out.write(methodOut.size());
       out.write(methodOut.flush());

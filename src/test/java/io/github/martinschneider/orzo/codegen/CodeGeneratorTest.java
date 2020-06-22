@@ -11,8 +11,10 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_4;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_5;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_M1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SIPUSH;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
+import io.github.martinschneider.orzo.codegen.generators.PushGenerator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
@@ -23,11 +25,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class CodeGeneratorTest {
-  private BasicCodeGenerator target = new BasicCodeGenerator();
+  private PushGenerator target = new PushGenerator(new CGContext());
 
   @BeforeAll
   public void setup() {
-    target.ctx = new CGContext();
+    target.ctx.opStack = new OperandStack();
   }
 
   private static Stream<Arguments> testIntegerConstants() {
@@ -53,6 +55,6 @@ public class CodeGeneratorTest {
   @MethodSource
   /** verify that ICONST_*, BIPUSH and SIPUSH are used where applicable */
   public void testIntegerConstants(int val, byte[] expected) {
-    assertArrayEquals(target.pushInteger(new DynamicByteArray(), val).getBytes(), expected);
+    assertArrayEquals(target.push(new DynamicByteArray(), INT, val).getBytes(), expected);
   }
 }

@@ -43,6 +43,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SQRT;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.bool;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.chr;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.cmp;
@@ -388,6 +389,8 @@ public class Lexer {
         inputReader.unread(character);
         tokenList.add(op(BITWISE_XOR).wLoc(inputReader.getLoc()));
       }
+    } else if (character == '√') {
+      tokenList.add(sym(SQRT));
     }
   }
 

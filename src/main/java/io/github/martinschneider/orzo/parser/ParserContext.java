@@ -23,6 +23,7 @@ public class ParserContext {
   public PreIncrementParser preIncrementParser;
   public ReturnParser retParser;
   public ScopeParser scopeParser;
+  public SqrtParser sqrtParser;
   public StatementParser stmtParser;
   public WhileParser whileParser;
 
@@ -46,6 +47,7 @@ public class ParserContext {
     ctx.preIncrementParser = new PreIncrementParser(ctx);
     ctx.retParser = new ReturnParser(ctx);
     ctx.scopeParser = new ScopeParser();
+    ctx.sqrtParser = new SqrtParser();
     ctx.stmtParser = new StatementParser(ctx);
     ctx.whileParser = new WhileParser(ctx);
     return ctx;

@@ -1,4 +1,4 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;

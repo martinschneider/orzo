@@ -72,6 +72,16 @@ public class TypeUtils {
     return type;
   }
 
+  public static String fromDesr(String type) {
+    switch (type) {
+      case "I":
+        return INT;
+      case "D":
+        return DOUBLE;
+    }
+    return null;
+  }
+
   public static String methodDescr(Method method) {
     StringBuilder strBuilder = new StringBuilder(argsDescr(method.args));
     strBuilder.append(TypeUtils.descr(method.type));
@@ -161,7 +171,7 @@ public class TypeUtils {
       case STRING:
         return List.of("Ljava/lang/String;");
       case INT:
-        return List.of(INT, LONG);
+        return List.of(INT, LONG, DOUBLE);
       case BYTE:
         return List.of(BYTE, SHORT, INT, LONG);
       case SHORT:

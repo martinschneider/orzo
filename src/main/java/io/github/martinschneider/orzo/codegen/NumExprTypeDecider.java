@@ -66,8 +66,7 @@ public class NumExprTypeDecider {
         for (Expression exp : methodCall.params) {
           argTypes.add(new NumExprTypeDecider(ctx).getType(variables, exp));
         }
-        Method method =
-            ctx.methodCallGenerator.findMatchingMethod(methodCall.name.toString(), argTypes);
+        Method method = ctx.methodCallGen.findMatchingMethod(methodCall.name.toString(), argTypes);
         if (method != null) {
           types.add(method.type);
         }

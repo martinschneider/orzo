@@ -1,11 +1,8 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen.generators;
 
-import static io.github.martinschneider.orzo.codegen.LoadGenerator.load;
-import static io.github.martinschneider.orzo.codegen.LoadGenerator.loadInteger;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IINC;
-import static io.github.martinschneider.orzo.codegen.StoreGenerator.store;
-import static io.github.martinschneider.orzo.codegen.statement.OperatorMaps.arithmeticOps;
-import static io.github.martinschneider.orzo.codegen.statement.OperatorMaps.dupOps;
+import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.arithmeticOps;
+import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.dupOps;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
@@ -66,21 +63,21 @@ public class IncrementGenerator implements StatementGenerator {
       return incInt(out, idx, op.equals(PLUS) ? (byte) 1 : (byte) -1, pre, evalOnly);
     }
     if (pre) {
-      load(out, type, idx);
-      ctx.opsGenerator.push(out, type, 1);
+      ctx.loadGen.load(out, type, idx);
+      ctx.pushGen.push(out, type, 1);
       out.write(arithmeticOps.get(op).get(type));
       if (!evalOnly) {
         out.write(dupOps.get(type));
       }
-      store(out, type, idx);
+      ctx.storeGen.store(out, type, idx);
     } else {
-      load(out, type, idx);
+      ctx.loadGen.load(out, type, idx);
       if (!evalOnly) {
         out.write(dupOps.get(type));
       }
-      ctx.opsGenerator.push(out, type, 1);
+      ctx.pushGen.push(out, type, 1);
       out.write(arithmeticOps.get(op).get(type));
-      store(out, type, idx);
+      ctx.storeGen.store(out, type, idx);
     }
     return out;
   }
@@ -88,13 +85,13 @@ public class IncrementGenerator implements StatementGenerator {
   private HasOutput incInt(
       DynamicByteArray out, byte idx, byte val, boolean pre, boolean evalOnly) {
     if (!evalOnly && !pre) {
-      loadInteger(out, idx);
+      ctx.loadGen.load(out, INT, idx);
     }
     out.write(IINC);
     out.write(idx);
     out.write(val);
     if (!evalOnly && pre) {
-      loadInteger(out, idx);
+      ctx.loadGen.load(out, INT, idx);
     }
     return out;
   }

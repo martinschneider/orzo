@@ -42,6 +42,13 @@ public class TokenList {
     return curr();
   }
 
+  public Token peekPrev() {
+    idx--;
+    Token ret = curr();
+    idx++;
+    return ret;
+  }
+
   public Token fw(int steps) {
     idx += steps;
     return curr();
@@ -54,6 +61,24 @@ public class TokenList {
 
   public void insert(Token token) {
     tokens.add(idx + 1, token);
+  }
+
+  public void insert(int idx, Token token) {
+    tokens.add(idx, token);
+  }
+
+  public void remove(int idx) {
+    tokens.remove(idx);
+  }
+
+  public void replace(int idx, Token token) {
+    tokens.remove(idx);
+    tokens.add(idx, token);
+  }
+
+  public void replace(Token token) {
+    tokens.remove(idx);
+    tokens.add(idx, token);
   }
 
   public Token get(int idx) {

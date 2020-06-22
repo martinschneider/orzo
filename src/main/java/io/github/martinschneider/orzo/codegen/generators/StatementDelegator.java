@@ -1,4 +1,4 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen.generators;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class StatementDelegator {
-  private Map<Class<? extends Statement>, StatementGenerator> reg = new HashMap<>();
+  public Map<Class<? extends Statement>, StatementGenerator> reg = new HashMap<>();
   public CGContext ctx;
 
   public void init() {
@@ -31,7 +31,7 @@ public class StatementDelegator {
     reg.put(IfStatement.class, new IfStatementGenerator(ctx));
     reg.put(MethodCall.class, new MethodCallGenerator(ctx));
     reg.put(ParallelAssignment.class, new ParallelAssignmentGenerator(ctx));
-    reg.put(ReturnStatement.class, new ReturnStatementGenerator(ctx));
+    reg.put(ReturnStatement.class, new RetGenerator(ctx));
     reg.put(WhileStatement.class, new WhileStatementGenerator(ctx));
     reg.put(Increment.class, new IncrementGenerator(ctx));
   }

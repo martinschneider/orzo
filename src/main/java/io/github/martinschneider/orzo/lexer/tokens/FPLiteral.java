@@ -19,6 +19,10 @@ public class FPLiteral extends Token implements Num {
     return this;
   }
 
+  public double doubleVal() {
+    return ((BigDecimal) val).doubleValue();
+  }
+
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder("FP(");
@@ -32,6 +36,6 @@ public class FPLiteral extends Token implements Num {
 
   @Override
   public void changeSign() {
-    val = (Double) val * -1;
+    val = ((BigDecimal) val).multiply(BigDecimal.valueOf(-1));
   }
 }

@@ -51,18 +51,20 @@ public class Orzo {
           break;
         }
       }
-      new Orzo(inputs, outputPath).compile();
+      new Orzo(inputs, outputPath, false).compile();
     }
   }
 
   private List<File> inputs;
   private String outputPath;
+  private boolean verbose;
   // package private for unit test
   List<Clazz> clazzes = new ArrayList<>();
 
-  public Orzo(List<File> inputs, String outputPath) {
+  public Orzo(List<File> inputs, String outputPath, boolean verbose) {
     this.inputs = inputs;
     this.outputPath = outputPath;
+    this.verbose = verbose;
   }
 
   public void compile() throws IOException {
@@ -73,22 +75,30 @@ public class Orzo {
     clazzes = new ArrayList<>();
     ParserContext ctx = null;
     for (int i = 0; i < inputs.size(); i++) {
-      System.out.println("Reading from: " + inputs.get(i).getAbsolutePath());
+      if (verbose) {
+        System.out.println("Reading from: " + inputs.get(i).getAbsolutePath());
+      }
       Lexer scanner = new Lexer();
       TokenList tokens = scanner.getTokens(inputs.get(i));
-      System.out.println(
-          "Scanner output: "
-              + tokens.list().stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
+      if (verbose) {
+        System.out.println(
+            "Scanner output: "
+                + tokens.list().stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
+      }
       Parser parser = new Parser(scanner.getErrors());
       Clazz clazz = parser.parse(tokens);
-      System.out.println("Parser output: " + clazz);
+      if (verbose) {
+        System.out.println("Parser output: " + clazz);
+      }
       Output output = null;
       if (outputs != null && outputs.size() > i) {
         output = outputs.get(i);
       }
       if (output == null) {
         File outputFile = new File(classPath(outputPath, clazz));
-        System.out.println("Writing to: " + outputFile.getAbsolutePath());
+        if (verbose) {
+          System.out.println("Writing to: " + outputFile.getAbsolutePath());
+        }
         output = fileOutput(outputFile);
       }
       clazzes.add(clazz);
@@ -109,7 +119,9 @@ public class Orzo {
       errors.append(codeGen.getErrors());
       System.out.println(errors.toString());
     }
-    System.out.println("Ok bye!\n");
+    if (verbose) {
+      System.out.println("Ok bye!\n");
+    }
   }
 
   private String classPath(String dir, Clazz clazz) {

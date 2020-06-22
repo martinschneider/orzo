@@ -1,4 +1,4 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
@@ -9,6 +9,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -48,23 +49,12 @@ public class MethodCallGenerator implements StatementGenerator {
               + ctx.methodMap.keySet());
       return "";
     }
-    String clazzName = ctx.clazz.fqn('/');
-    if (methodName.contains(".")) {
-      String[] tmp = methodName.split("\\.");
-      clazzName = method.fqClassName.replaceAll("\\.", "/");
-      methodName = tmp[1];
-      ctx.constPool.addClass(clazzName);
-      ctx.constPool.addMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
-    } else if (!ctx.clazz.fqn().equals(method.fqClassName)) { // static import
-      clazzName = method.fqClassName.replaceAll("\\.", "/");
-      ctx.constPool.addClass(clazzName);
-      ctx.constPool.addMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
-    }
     for (int i = 0; i < types.size(); i++) {
-      ctx.exprGenerator.eval(out, variables, method.args.get(i).type, methodCall.params.get(i));
-      ctx.opsGenerator.convert(out, types.get(i), method.args.get(i).type);
+      ExpressionResult exprResult =
+          ctx.exprGen.eval(out, variables, method.args.get(i).type, methodCall.params.get(i));
+      ctx.basicGen.convert(out, exprResult.type, method.args.get(i).type);
     }
-    ctx.opsGenerator.invokeStatic(out, clazzName, methodName, TypeUtils.methodDescr(method));
+    ctx.invokeGen.invokeStatic(out, method);
     return method.type;
   }
 
@@ -74,8 +64,8 @@ public class MethodCallGenerator implements StatementGenerator {
     MethodCall methodCall = (MethodCall) stmt;
     if ("System.out.println".equals(methodCall.name.toString())) {
       for (Expression param : methodCall.params) {
-        ctx.opsGenerator.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        ExpressionResult result = ctx.exprGenerator.eval(out, variables, null, param);
+        ctx.invokeGen.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        ExpressionResult result = ctx.exprGen.eval(out, variables, null, param);
         if (result != null) {
           print(out, result.type);
         } else {
@@ -95,20 +85,26 @@ public class MethodCallGenerator implements StatementGenerator {
    */
   private DynamicByteArray print(DynamicByteArray out, String type) {
     if (type.equals(STRING)) {
-      ctx.opsGenerator.invokeVirtual(
-          out, "java/io/PrintStream", "println", "(Ljava/lang/String;)V");
+      ctx.invokeGen.invokeVirtual(
+          out, new Method("java/io/PrintStream", "println", VOID, List.of("Ljava/lang/String;")));
     } else if (type.equals(INT) || type.equals(BYTE) || type.equals(SHORT)) {
-      ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(I)V");
+      ctx.invokeGen.invokeVirtual(
+          out, new Method("java/io/PrintStream", "println", VOID, List.of(INT)));
     } else if (type.equals(LONG)) {
-      ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(J)V");
+      ctx.invokeGen.invokeVirtual(
+          out, new Method("java/io/PrintStream", "println", VOID, List.of(LONG)));
     } else if (type.equals(DOUBLE)) {
-      ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(D)V");
+      ctx.invokeGen.invokeVirtual(
+          out, new Method("java/io/PrintStream", "println", VOID, List.of(DOUBLE)));
     } else if (type.equals(FLOAT)) {
-      ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(F)V");
+      ctx.invokeGen.invokeVirtual(
+          out, new Method("java/io/PrintStream", "println", VOID, List.of(FLOAT)));
     } else if (type.equals(CHAR)) {
-      ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(C)V");
+      ctx.invokeGen.invokeVirtual(
+          out, new Method("java/io/PrintStream", "println", VOID, List.of(CHAR)));
     } else if (type.equals(BOOLEAN)) {
-      ctx.opsGenerator.invokeVirtual(out, "java/io/PrintStream", "println", "(Z)V");
+      ctx.invokeGen.invokeVirtual(
+          out, new Method("java/io/PrintStream", "println", VOID, List.of(BOOLEAN)));
     } else {
       // TODO: call toString() first
     }

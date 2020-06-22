@@ -71,7 +71,7 @@ public class OrzoTest {
         Arguments.of(List.of("tests/Doubles")),
         Arguments.of(List.of("tests/Floats")),
         Arguments.of(List.of("tests/Booleans")),
-        Arguments.of(List.of("examples/PiLeibniz", "examples/MathUtils")),
+        Arguments.of(List.of("examples/Pi", "examples/MathUtils")),
         Arguments.of(List.of("tests/BitShifts")),
         Arguments.of(List.of("tests/UnsignedRightShift")),
         Arguments.of(List.of("tests/CompoundAssignments")),
@@ -117,7 +117,8 @@ public class OrzoTest {
         Arguments.of(List.of("tests/PreDecrementShort")),
         Arguments.of(List.of("tests/PreDecrementByte")),
         Arguments.of(List.of("tests/PreDecrementLong")),
-        Arguments.of(List.of("tests/PreDecrementChar")));
+        Arguments.of(List.of("tests/PreDecrementChar")),
+        Arguments.of(List.of("examples/Fibonacci2", "examples/MathUtils")));
   }
 
   @ParameterizedTest
@@ -140,7 +141,7 @@ public class OrzoTest {
       outputs.add(new Output(ps));
       streams.add(baos);
     }
-    Orzo orzo = new Orzo(inputs, null);
+    Orzo orzo = new Orzo(inputs, null, false);
     orzo.compile(outputs);
     for (Clazz clazz : orzo.clazzes) {
       classNames.add(clazz.fqn());
@@ -193,7 +194,7 @@ public class OrzoTest {
       outputs.add(new Output(ps));
       streams.add(baos);
     }
-    Orzo orzo = new Orzo(inputs, null);
+    Orzo orzo = new Orzo(inputs, null, false);
     orzo.compile(outputs);
     for (int i = 0; i < streams.size(); i++) {
       assertArrayEquals(Files.readAllBytes(expectedClasses.get(i)), streams.get(i).toByteArray());

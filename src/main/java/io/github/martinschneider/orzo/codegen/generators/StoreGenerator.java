@@ -1,4 +1,4 @@
-package io.github.martinschneider.orzo.codegen;
+package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.AASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE;
@@ -42,8 +42,18 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 
+import io.github.martinschneider.orzo.codegen.CGContext;
+import io.github.martinschneider.orzo.codegen.DynamicByteArray;
+import io.github.martinschneider.orzo.codegen.HasOutput;
+
 public class StoreGenerator {
-  public static HasOutput store(DynamicByteArray out, String type, byte idx) {
+  public CGContext ctx;
+
+  public StoreGenerator(CGContext ctx) {
+    this.ctx = ctx;
+  }
+
+  public HasOutput store(DynamicByteArray out, String type, byte idx) {
     switch (type) {
       case LONG:
         return storeLong(out, idx);
@@ -65,7 +75,7 @@ public class StoreGenerator {
     return out;
   }
 
-  public static HasOutput storeValue(DynamicByteArray out, String type, byte idx) {
+  public HasOutput storeValue(DynamicByteArray out, String type, byte idx) {
     switch (type) {
       case BYTE:
         return storeInteger(out, idx);
@@ -89,7 +99,7 @@ public class StoreGenerator {
     return out;
   }
 
-  public static HasOutput storeLong(HasOutput out, int idx) {
+  public HasOutput storeLong(HasOutput out, int idx) {
     if (idx == 0) {
       out.write(LSTORE_0);
     } else if (idx == 1) {
@@ -105,7 +115,7 @@ public class StoreGenerator {
     return out;
   }
 
-  public static HasOutput storeReference(DynamicByteArray out, byte idx) {
+  public HasOutput storeReference(DynamicByteArray out, byte idx) {
     if (idx == 0) {
       out.write(ASTORE_0);
     } else if (idx == 1) {
@@ -121,7 +131,7 @@ public class StoreGenerator {
     return out;
   }
 
-  public static HasOutput storeDouble(DynamicByteArray out, byte idx) {
+  public HasOutput storeDouble(DynamicByteArray out, byte idx) {
     if (idx == 0) {
       out.write(DSTORE_0);
     } else if (idx == 1) {
@@ -137,7 +147,7 @@ public class StoreGenerator {
     return out;
   }
 
-  public static HasOutput storeFloat(DynamicByteArray out, byte idx) {
+  public HasOutput storeFloat(DynamicByteArray out, byte idx) {
     if (idx == 0) {
       out.write(FSTORE_0);
     } else if (idx == 1) {
@@ -153,7 +163,7 @@ public class StoreGenerator {
     return out;
   }
 
-  public static HasOutput storeInteger(HasOutput out, int idx) {
+  public HasOutput storeInteger(HasOutput out, int idx) {
     if (idx == 0) {
       out.write(ISTORE_0);
     } else if (idx == 1) {
@@ -169,7 +179,7 @@ public class StoreGenerator {
     return out;
   }
 
-  public static HasOutput storeInArray(HasOutput out, String type) {
+  public HasOutput storeInArray(HasOutput out, String type) {
     switch (type) {
       case BYTE:
         out.write(BASTORE);

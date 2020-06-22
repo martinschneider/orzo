@@ -1,19 +1,10 @@
-package io.github.martinschneider.orzo.codegen.statement;
+package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
-import static io.github.martinschneider.orzo.codegen.PushGenerator.bipush;
-import static io.github.martinschneider.orzo.codegen.PushGenerator.sipush;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -26,8 +17,7 @@ import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.List;
 
 public class DeclarationGenerator implements StatementGenerator {
-  private static final int INTEGER_DEFAULT_VALUE = 0;
-  private static final float DOUBLE_DEFAULT_VALUE = 0.0f;
+  private static final int ZERO = 0;
   private static final String LOG_NAME = "generate declaration code";
 
   public DeclarationGenerator(CGContext ctx) {
@@ -44,35 +34,11 @@ public class DeclarationGenerator implements StatementGenerator {
       return generateArray(out, variables, method, decl);
     }
     if (decl.val != null) {
-      ctx.exprGenerator.eval(out, variables, decl.type, decl.val);
+      ctx.exprGen.eval(out, variables, decl.type, decl.val);
     } else {
-      switch (decl.type) {
-        case INT:
-          ctx.opsGenerator.pushInteger(out, INTEGER_DEFAULT_VALUE);
-          break;
-        case BOOLEAN:
-          bipush(out, INTEGER_DEFAULT_VALUE);
-          break;
-        case BYTE:
-          bipush(out, INTEGER_DEFAULT_VALUE);
-          break;
-        case CHAR:
-          bipush(out, INTEGER_DEFAULT_VALUE);
-          break;
-        case SHORT:
-          sipush(out, INTEGER_DEFAULT_VALUE);
-          break;
-        case LONG:
-          ctx.opsGenerator.pushLong(out, INTEGER_DEFAULT_VALUE);
-          break;
-        case FLOAT:
-          ctx.opsGenerator.pushDouble(out, DOUBLE_DEFAULT_VALUE);
-          break;
-        case DOUBLE:
-          ctx.opsGenerator.pushFloat(out, DOUBLE_DEFAULT_VALUE);
-      }
+      ctx.pushGen.push(out, decl.type, ZERO);
     }
-    ctx.opsGenerator.assign(out, variables, decl.type, decl.name);
+    ctx.assignGen.assign(out, variables, decl.type, decl.name);
     return out;
   }
 
@@ -95,18 +61,18 @@ public class DeclarationGenerator implements StatementGenerator {
     else if (arrInit.vals.size() == 1) {
       for (int i = 0; i < arrInit.vals.get(0).size(); i++) {
         out.write(DUP);
-        ctx.opsGenerator.pushInteger(out, i);
-        ctx.exprGenerator.eval(out, variables, type, arrInit.vals.get(0).get(i));
+        ctx.pushGen.push(out, INT, i);
+        ctx.exprGen.eval(out, variables, type, arrInit.vals.get(0).get(i));
         out.write(storeOpCode);
       }
     }
-    ctx.opsGenerator.assignArray(out, variables, type, decl.arrDim, decl.name);
+    ctx.assignGen.assignArray(out, variables, type, decl.arrDim, decl.name);
     return out;
   }
 
   private void createArray(DynamicByteArray out, byte arrayType, List<Integer> dims) {
     if (dims.size() == 1) {
-      ctx.opsGenerator.pushInteger(out, dims.get(0));
+      ctx.pushGen.push(out, INT, dims.get(0));
       out.write(NEWARRAY);
       out.write(arrayType);
     } else {

@@ -1,9 +1,14 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SQRT;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.eof;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
@@ -35,32 +40,7 @@ public class ExpressionParser implements ProdParser<Expression> {
   @Override
   public Expression parse(TokenList tokens) {
     List<Token> exprTokens = new ArrayList<>();
-    boolean negative = false;
-    if (tokens.curr().eq(op(MINUS))) {
-      negative = true;
-      tokens.next();
-      if (tokens.curr() instanceof Num) {
-        Num number = (Num) tokens.curr();
-        if (negative) {
-          number.changeSign();
-        }
-        exprTokens.add(tokens.curr());
-        tokens.next();
-      } else if (tokens.curr() instanceof Identifier) {
-        exprTokens.add(sym(LPAREN));
-        exprTokens.add(integer(-1));
-        exprTokens.add(sym(RPAREN));
-        exprTokens.add(op(TIMES));
-        exprTokens.add(tokens.curr());
-      } else {
-        ctx.errors.addError(
-            LOG_NAME,
-            "unexpected symbol "
-                + tokens.curr()
-                + " after starting \"-\" in expression (expected number literal or identifier)");
-        return null;
-      }
-    }
+    checkNegative(tokens, exprTokens);
     int parenthesis = 0;
     while (tokens.curr() instanceof Num
         || tokens.curr() instanceof BoolLiteral
@@ -68,9 +48,17 @@ public class ExpressionParser implements ProdParser<Expression> {
         || tokens.curr() instanceof Chr
         || tokens.curr() instanceof Identifier
         || tokens.curr() instanceof Operator
+        || tokens.curr().eq(sym(SQRT))
         || tokens.curr().eq(sym(LPAREN))
         || tokens.curr().eq(sym(RPAREN))) {
       int idx = tokens.idx();
+      boolean negative = false;
+      if (List.of(sym(LPAREN), op(TIMES), op(DIV), op(POW), op(MOD)).contains(tokens.peekPrev())) {
+        negative = checkNegative(tokens, exprTokens);
+      }
+      if (negative) {
+        idx = tokens.idx();
+      }
       if (tokens.curr() instanceof Identifier) {
         Identifier id = ((Identifier) tokens.curr());
         tokens.next();
@@ -94,11 +82,42 @@ public class ExpressionParser implements ProdParser<Expression> {
         if (parenthesis > 0) {
           break;
         }
-        exprTokens.add(tokens.curr());
-        tokens.next();
+        Token curr = tokens.curr();
+        if (!curr.eq(eof())) {
+          exprTokens.add(curr);
+          tokens.next();
+        }
       }
     }
     return (exprTokens.size() > 0) ? new Expression(postfix(exprTokens)) : null;
+  }
+
+  private boolean checkNegative(TokenList tokens, List<Token> exprTokens) {
+    if (tokens.curr().eq(op(MINUS))) {
+      tokens.next();
+      if (tokens.curr() instanceof Num) {
+        Num number = (Num) tokens.curr();
+        number.changeSign();
+        exprTokens.add(tokens.curr());
+        tokens.next();
+        return true;
+      } else if (tokens.curr() instanceof Identifier) {
+        exprTokens.add(sym(LPAREN));
+        exprTokens.add(integer(-1));
+        exprTokens.add(op(TIMES));
+        exprTokens.add(tokens.curr());
+        exprTokens.add(sym(RPAREN));
+        tokens.next();
+        return true;
+      } else {
+        ctx.errors.addError(
+            LOG_NAME,
+            "unexpected symbol "
+                + tokens.curr()
+                + " after starting \"-\" in expression (expected number literal or identifier)");
+      }
+    }
+    return false;
   }
 
   private boolean isHigerPrec(Operator op, Token sub) {

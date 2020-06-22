@@ -9,5 +9,6 @@ public enum Symbols {
   COMMA,
   SEMICOLON,
   LBRAK,
-  RBRAK;
+  RBRAK,
+  SQRT;
 }

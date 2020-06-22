@@ -40,7 +40,8 @@ public class MethodCallParserTest {
             "calculateSomething(x)", methodCall(id("calculateSomething"), List.of(expr("x")))),
         Arguments.of(
             "calculateSomething(a,b,c)",
-            methodCall(id("calculateSomething"), List.of(expr("a"), expr("b"), expr("c")))));
+            methodCall(id("calculateSomething"), List.of(expr("a"), expr("b"), expr("c")))),
+        Arguments.of("√(n)", methodCall(id("Math.sqrt"), List.of(expr("n")))));
   }
 
   @ParameterizedTest
