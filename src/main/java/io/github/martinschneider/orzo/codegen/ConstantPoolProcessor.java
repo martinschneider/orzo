@@ -67,9 +67,10 @@ public class ConstantPoolProcessor {
       }
     } else if (stmt instanceof Assignment) {
       Assignment assignment = (Assignment) stmt;
-      Expression val = assignment.right;
-      if (val != null) {
-        constPool = processExpression(constPool, val);
+      for (Expression val : assignment.right) {
+        if (val != null) {
+          constPool = processExpression(constPool, val);
+        }
       }
     } else if (stmt instanceof ReturnStatement) {
       ReturnStatement ret = (ReturnStatement) stmt;

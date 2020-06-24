@@ -25,6 +25,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU_ASSI
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
@@ -34,6 +35,8 @@ import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AssignmentParser implements ProdParser<Assignment> {
   private ParserContext ctx;
@@ -44,15 +47,18 @@ public class AssignmentParser implements ProdParser<Assignment> {
 
   @Override
   public Assignment parse(TokenList tokens) {
-    Identifier left;
-    Expression right;
+    List<Identifier> left = new ArrayList<>();
+    List<Expression> right = new ArrayList<>();
     int idx = tokens.idx();
-    if (tokens.curr() instanceof Identifier) {
-      left = (Identifier) tokens.curr();
-      tokens.next();
-      left.arrSel = ctx.arraySelectorParser.parse(tokens);
-    } else {
-      return null;
+    while (tokens.curr() instanceof Identifier || tokens.curr().eq(sym(COMMA))) {
+      if (tokens.curr() instanceof Identifier) {
+        Identifier id = (Identifier) tokens.curr();
+        tokens.next();
+        id.arrSel = ctx.arraySelectorParser.parse(tokens);
+        left.add(id);
+      } else {
+        tokens.next();
+      }
     }
     if (tokens.curr() instanceof Operator) {
       if (tokens.curr().eq(op(ASSIGN))) {
@@ -63,76 +69,78 @@ public class AssignmentParser implements ProdParser<Assignment> {
         return null;
       } else if (tokens.curr().eq(op(PLUS_ASSIGN))) {
         tokens.insert(op(PLUS));
-        tokens.insert(left);
+        tokens.insert(left.get(0));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(MINUS_ASSIGN))) {
         tokens.insert(op(MINUS));
-        tokens.insert(left);
+        tokens.insert(left.get(0));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(TIMES_ASSIGN))) {
         tokens.insert(op(TIMES));
-        tokens.insert(left);
+        tokens.insert(left.get(0));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(DIV_ASSIGN))) {
         tokens.insert(op(DIV));
-        tokens.insert(left);
+        tokens.insert(left.get(0));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(MOD_ASSIGN))) {
         tokens.insert(op(MOD));
-        tokens.insert(left);
+        tokens.insert(left.get(0));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(LSHIFT_ASSIGN))) {
         tokens.insert(op(LSHIFT));
-        tokens.insert(left);
+        tokens.insert(left.get(0));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(RSHIFT_ASSIGN))) {
         tokens.insert(op(RSHIFT));
-        tokens.insert(left);
+        tokens.insert(left.get(0));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(RSHIFTU_ASSIGN))) {
         tokens.insert(op(RSHIFTU));
-        tokens.insert(left);
+        tokens.insert(left.get(0));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(BITWISE_AND_ASSIGN))) {
         tokens.insert(op(BITWISE_AND));
-        tokens.insert(left);
+        tokens.insert(left.get(0));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(BITWISE_OR_ASSIGN))) {
         tokens.insert(op(BITWISE_OR));
-        tokens.insert(left);
+        tokens.insert(left.get(0));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(BITWISE_XOR_ASSIGN))) {
         tokens.insert(op(BITWISE_XOR));
-        tokens.insert(left);
+        tokens.insert(left.get(0));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else {
         tokens.prev();
         return null;
       }
-      if ((right = ctx.exprParser.parse(tokens)) == null) {
-        tokens.prev();
-      } else {
-        if (tokens.curr().eq(sym(SEMICOLON))) {
+      Expression expression = null;
+      while ((expression = ctx.exprParser.parse(tokens)) != null || tokens.curr().eq(sym(COMMA))) {
+        if (expression != null) {
+          right.add(expression);
+        } else {
           tokens.next();
         }
-        Assignment assignment = new Assignment(left, right);
-        return assignment;
       }
-    } else {
-      tokens.setIdx(idx);
-      return null;
+      Assignment assignment = new Assignment(left, right);
+      if (tokens.curr().eq(sym(SEMICOLON))) {
+        tokens.next();
+      }
+      return assignment;
     }
+    tokens.setIdx(idx);
     return null;
   }
 }

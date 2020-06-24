@@ -18,7 +18,6 @@ public class ParserContext {
   public IfParser ifParser;
   public MethodCallParser methodCallParser;
   public MethodParser methodParser;
-  public ParallelAssignmentParser parallelAssignParser;
   public PostIncrementParser postIncrementParser;
   public PreIncrementParser preIncrementParser;
   public ReturnParser retParser;
@@ -42,7 +41,6 @@ public class ParserContext {
     ctx.ifParser = new IfParser(ctx);
     ctx.methodCallParser = new MethodCallParser(ctx);
     ctx.methodParser = new MethodParser(ctx);
-    ctx.parallelAssignParser = new ParallelAssignmentParser(ctx);
     ctx.postIncrementParser = new PostIncrementParser(ctx);
     ctx.preIncrementParser = new PreIncrementParser(ctx);
     ctx.retParser = new ReturnParser(ctx);

@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 
@@ -13,6 +14,7 @@ import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import java.util.List;
 
 public class AssignmentGenerator implements StatementGenerator {
   private CGContext ctx;
@@ -25,13 +27,37 @@ public class AssignmentGenerator implements StatementGenerator {
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
     Assignment assignment = (Assignment) stmt;
-    Identifier id = assignment.left;
-    if (id.arrSel != null) {
-      assignInArray(out, variables, id, assignment.right);
-    } else {
-      String type = variables.get(id).type;
-      ctx.exprGen.eval(out, variables, type, assignment.right);
-      assign(out, variables, type, id);
+    for (int i = 0; i < assignment.left.size(); i++) {
+      Identifier left = assignment.left.get(i);
+      Expression right = assignment.right.get(i);
+      VariableInfo varInfo = variables.get(left);
+      String type = varInfo.type;
+      byte leftIdx = varInfo.idx;
+      // if the current left side variable appears anywhere on the right side
+      // we store its value in a tmp variable
+      if (i < assignment.left.size() - 1
+          && replaceIds(assignment.right, left, variables.tmpCount)) {
+        if (left.arrSel != null) {
+          type = varInfo.arrType;
+        }
+        Identifier id = id("tmp_" + variables.tmpCount);
+        variables.put(id, new VariableInfo(id.val.toString(), type, (byte) variables.size));
+        byte tmpIdx = variables.get(id).idx;
+        if (left.arrSel == null) {
+          ctx.loadGen.load(out, type, leftIdx);
+        } else {
+          ctx.loadGen.loadValueFromArray(
+              out, variables, left.arrSel.exprs, varInfo.arrType, leftIdx);
+        }
+        ctx.storeGen.storeValue(out, type, tmpIdx);
+        variables.tmpCount++;
+      }
+      if (left.arrSel == null) {
+        ctx.exprGen.eval(out, variables, type, right);
+        ctx.storeGen.storeValue(out, type, leftIdx);
+      } else {
+        assignInArray(out, variables, left, right);
+      }
     }
     return out;
   }
@@ -67,5 +93,17 @@ public class AssignmentGenerator implements StatementGenerator {
     }
     byte idx = variables.get(id).idx;
     return ctx.storeGen.storeReference(out, idx);
+  }
+
+  private boolean replaceIds(List<Expression> expressions, Identifier id, int idx) {
+    Identifier tmpId = new Identifier("tmp_" + idx, null);
+    boolean retValue = false;
+    for (Expression expression : expressions) {
+      expression.tokens.replaceAll(x -> (x.eq(id)) ? tmpId : x);
+      if (expression.tokens.contains(tmpId)) {
+        retValue = true;
+      }
+    }
+    return retValue;
   }
 }

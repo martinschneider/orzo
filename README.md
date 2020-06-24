@@ -6,7 +6,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 
 # Features
 
-🔥 Orzo-only features (not available in Java) 
+✨ Orzo-only features (not available in Java)
 
 ## Types
 - [X] [primitive types (byte, short, int, char, boolean, long, float, double)](https://docs.oracle.com/javase/specs/jvms/se14/html/jvms-2.html#jvms-2.3)
@@ -21,10 +21,10 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 
 ## Operators
 - [X] assignment `=`
-- [X] [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment), e.g. `a,b=b+1,a-1` 🔥
+- [X] [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment) ✨
 - [X] arithmetic `+`, `-`, `*`, `/`, `%`
-- [X] `**` power operator 🔥
-- [X] `√` sqrt operator 🔥
+- [X] `**` power operator ✨, e.g. `int b = a ** 5`
+- [X] `√` sqrt operator ✨, e.g. `double x = √n + √(n+1)`
 - [X] parenthesis `(` ,`)`
 - [X] unary post/pre-increment and decrement `++`, `--`
 - [X] compound assignments `+=`, `-=`, `*=`, `/=`, `%=`, `<<=`, `>>=`, `>>>=`, `&=`, `^=`, `|=`
@@ -51,6 +51,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] static method calls
 - [ ] other method calls
 - [ ] constructor calls
+- [ ] parallel declarations, e.g. `int a,b,c,d,e,f = 1,2,3` ✨
 
 ## Notes
 - array defintions must be of the form `int[] a`, `int a[]` is not supported

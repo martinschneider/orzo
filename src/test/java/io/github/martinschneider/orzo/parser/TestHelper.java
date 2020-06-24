@@ -2,7 +2,6 @@ package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Token.str;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import io.github.martinschneider.orzo.error.CompilerError;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
@@ -28,7 +27,6 @@ import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Increment;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
-import io.github.martinschneider.orzo.parser.productions.ParallelAssignment;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import io.github.martinschneider.orzo.parser.productions.WhileStatement;
 import java.io.IOException;
@@ -52,8 +50,8 @@ public class TestHelper {
     return new ArraySelector(selectors);
   }
 
-  public static ArrayInit arrInit(
-      String type, List<Integer> dimensions, List<List<Expression>> vals) {
+  public static ArrayInit arrInit(String type, List<Integer> dimensions,
+      List<List<Expression>> vals) {
     return new ArrayInit(type, dimensions, vals);
   }
 
@@ -66,7 +64,7 @@ public class TestHelper {
   }
 
   public static Assignment assign(Identifier left, Expression right) {
-    return new Assignment(left, right);
+    return new Assignment(List.of(left), List.of(right));
   }
 
   public static Assignment assign(String input) throws IOException {
@@ -74,8 +72,8 @@ public class TestHelper {
         .parse(new Lexer().getTokens(input));
   }
 
-  public static Clazz clazz(
-      String packageName, List<Import> imports, Scope scope, Identifier name, List<Method> body) {
+  public static Clazz clazz(String packageName, List<Import> imports, Scope scope, Identifier name,
+      List<Method> body) {
     return new Clazz(packageName, imports, scope, name, body);
   }
 
@@ -89,12 +87,12 @@ public class TestHelper {
   }
 
   public static Declaration decl(Identifier name, String type, Expression val, boolean hasValue) {
-    return new Declaration(type, name, val, hasValue);
+    return new Declaration(type, name, val);
   }
 
-  public static Declaration decl(
-      Identifier name, String type, int array, Expression val, boolean hasValue) {
-    return new Declaration(type, array, name, val, hasValue);
+  public static Declaration decl(Identifier name, String type, int array, Expression val,
+      boolean hasValue) {
+    return new Declaration(type, array, name, val);
   }
 
   public static Declaration decl(String input) throws IOException {
@@ -106,11 +104,8 @@ public class TestHelper {
     return new DoStatement(condition, body);
   }
 
-  public static ForStatement forStmt(
-      Statement initialization,
-      Condition condition,
-      Statement loopStatement,
-      List<Statement> body) {
+  public static ForStatement forStmt(Statement initialization, Condition condition,
+      Statement loopStatement, List<Statement> body) {
     return new ForStatement(initialization, condition, loopStatement, body);
   }
 
@@ -130,18 +125,13 @@ public class TestHelper {
     return new IfBlock(condition, body);
   }
 
-  public static Method method(
-      Scope scope, String type, Identifier name, List<Argument> arguments, List<Statement> body) {
+  public static Method method(Scope scope, String type, Identifier name, List<Argument> arguments,
+      List<Statement> body) {
     return new Method(null, scope, type, name, arguments, body);
   }
 
-  public static Method method(
-      String fqClassName,
-      Scope scope,
-      String type,
-      Identifier name,
-      List<Argument> arguments,
-      List<Statement> body) {
+  public static Method method(String fqClassName, Scope scope, String type, Identifier name,
+      List<Argument> arguments, List<Statement> body) {
     return new Method(fqClassName, scope, type, name, arguments, body);
   }
 
@@ -149,8 +139,8 @@ public class TestHelper {
     return new MethodCall(name, parameters);
   }
 
-  public static ParallelAssignment pAssign(List<Identifier> left, List<Expression> right) {
-    return new ParallelAssignment(left, right);
+  public static Assignment assign(List<Identifier> left, List<Expression> right) {
+    return new Assignment(left, right);
   }
 
   public static WhileStatement whileStmt(Condition condition, List<Statement> body)

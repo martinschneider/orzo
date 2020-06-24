@@ -8,16 +8,15 @@ public class Declaration implements Statement {
   public String type;
   public Expression val;
 
-  public Declaration(String type, int arrDim, Identifier name, Expression val, boolean hasValue) {
+  public Declaration(String type, int arrDim, Identifier name, Expression val) {
     this.type = type;
     this.arrDim = arrDim;
     this.name = name;
     this.val = val;
   }
 
-  public Declaration(
-      final String type, final Identifier name, final Expression val, final boolean hasValue) {
-    this(type, 0, name, val, hasValue);
+  public Declaration(String type, Identifier name, Expression val) {
+    this(type, 0, name, val);
   }
 
   @Override

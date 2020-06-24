@@ -4,33 +4,91 @@ import static java.lang.Math.floor;
 import static java.lang.Math.round;
 
 public class MathUtils {
-  public static double times(double a, double b) {
-    return a * b;
-  }
-
-  public static double times(int a, int b) {
-    return a * b;
-  }
-
   public static double pi() {
     return pi(1000000);
   }
-  
+
+  // Calculate pi using Gregory-Leibniz series
   public static double pi(int n) {
-    // Calculate pi using the Leibniz series
     double d = 1;
     for (int i = 1; i < n; i++) {
       d += (-1.0 ** i) / (2 * i + 1);
     }
     return 4 * d;
   }
-  
-  public static double pi2() {
-    return √(7+√(6+√5));
+
+  // Calculate pi using Viete's series
+  public static double pi2(int n) {
+    double d;
+    double pi = 1;
+    for(int i = n; i > 1; i--) {
+      d = 2;
+      for(int j = 1; j < i; j++){
+        d = 2 + √d;
+      }
+      d = √d;
+      pi *= d / 2;
+    }
+    pi *= √2 / 2;
+    pi = 2 / pi;
+    return pi;
+  }
+
+  // Calculate pi using Gauss-Legendre algorithm
+  public static double pi3(int n) {
+    double a;
+    double b;
+    double t;
+    double p;
+    double a1;
+    double b1;
+    double t1;
+    double p1;
+    a, b, t, p = 1, 1/√2, 1/4, 1;
+    for (int i=0; i<n; i++)
+    {
+      a1, b1      =   (a+b)/2, √(a*b);
+      t1          =   t - p * ((a-a1) ** 2);
+      a, b, t, p  =   a1, b1, t1, 2 * p;
+    }
+    return ((a+b) ** 2) / (4 * t);
+  }
+
+  // Calculate pi using Wallis' sequence
+  public static double pi4(int n) {
+    double pi = 4;
+    for (int i = 3; i <= n; i += 2) {
+      pi *= ((i - 1) / i) * ((i + 1) / i);
+    }
+    return pi;
+  }
+
+  // Calculate pi using Nilakantha's sequence
+  public static double pi5(int n) {
+    double pi = 3;
+    for(int i = 2; i < n; i += 2){
+      pi += (-1 ** i) * (4 / (i * (i + 1) * (i + 2)));
+    }
+    return pi;
   }
   
+  // Calculate pi using Euler's formula
+  public static double pi6(int n) {
+    double pi = 1;
+    for(int i = 2; i < n; i++){
+      pi += 1/(i ** 2);
+    }
+    return √(6 * pi);
+  }
+
+  // Calculate the n-th Fibonacci number using the golden ratio
   public static long fib(int n)
   {
+    // return ⌊((1+√5)/2) ** n)/√5+0.5⌋;
     return round(floor((((1+√5)/2) ** n)/√5+0.5));
+  }
+  
+  public static double pi_fun() {
+    return √(7+√(6+√5));
   }
 }

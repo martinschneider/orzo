@@ -6,7 +6,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
-
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
@@ -38,20 +37,20 @@ public class DeclarationParser implements ProdParser<Declaration> {
           tokens.next();
           ArrayInit arrInit = null;
           if (type.arr > 0 && (arrInit = ctx.arrayInitParser.parse(tokens)) != null) {
-            return new Declaration(type.name, type.arr, name, arrInit, !arrInit.vals.isEmpty());
+            return new Declaration(type.name, type.arr, name, arrInit);
           }
           if ((val = ctx.exprParser.parse(tokens)) != null) {
             if (tokens.curr().eq(sym(SEMICOLON))) {
               tokens.next();
             }
-            return new Declaration(type.name, type.arr, name, val, true);
+            return new Declaration(type.name, type.arr, name, val);
           }
           tokens.prev();
         }
         if (tokens.curr().eq(sym(SEMICOLON))) {
           tokens.next();
         }
-        return new Declaration(type.name, name, null, false);
+        return new Declaration(type.name, name, null);
       } else {
         tokens.prev();
       }

@@ -1,12 +1,13 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import java.util.List;
 
 public class Assignment implements Statement {
-  public Identifier left;
-  public Expression right;
+  public List<Identifier> left;
+  public List<Expression> right;
 
-  public Assignment(Identifier left, Expression right) {
+  public Assignment(List<Identifier> left, List<Expression> right) {
     this.left = left;
     this.right = right;
   }
@@ -51,9 +52,6 @@ public class Assignment implements Statement {
 
   @Override
   public String toString() {
-    if (left == null) {
-      return right.toString();
-    }
-    return left.toString() + ":=" + right.toString();
+    return left + "=" + right;
   }
 }

@@ -30,6 +30,10 @@ public class VariableMap {
   }
 
   public VariableInfo get(Token id) {
+    VariableInfo ret = variables.get(id.val.toString());
+    if (ret == null) {
+      // TODO: error handling
+    }
     return variables.get(id.val.toString());
   }
 
