@@ -19,8 +19,7 @@ public class MathUtils {
 
   // Calculate pi using Viete's series
   public static double pi2(int n) {
-    double d;
-    double pi = 1;
+    double pi, d = 1;
     for(int i = n; i > 1; i--) {
       d = 2;
       for(int j = 1; j < i; j++){
@@ -36,15 +35,7 @@ public class MathUtils {
 
   // Calculate pi using Gauss-Legendre algorithm
   public static double pi3(int n) {
-    double a;
-    double b;
-    double t;
-    double p;
-    double a1;
-    double b1;
-    double t1;
-    double p1;
-    a, b, t, p = 1, 1/√2, 1/4, 1;
+    double a, b, t, p, a1, b1, t1, p1 = 1, 1/√2, 1/4, 1;
     for (int i=0; i<n; i++)
     {
       a1, b1      =   (a+b)/2, √(a*b);

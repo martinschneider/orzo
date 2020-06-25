@@ -15,10 +15,6 @@ public class Declaration implements Statement {
     this.val = val;
   }
 
-  public Declaration(String type, Identifier name, Expression val) {
-    this(type, 0, name, val);
-  }
-
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder(type.toString());

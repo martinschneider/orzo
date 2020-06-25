@@ -17,13 +17,13 @@ public class Type extends Token {
   public static final List<String> BASIC_TYPES =
       List.of(VOID, INT, LONG, BYTE, SHORT, DOUBLE, FLOAT, CHAR, BOOLEAN, STRING);
   public String name;
-  public int arr; // 0 = no array, 1 = [], 2= [][] etc.
+  public byte arr; // 0 = no array, 1 = [], 2= [][] etc.
 
   public Type(String name) {
-    this(name, 0);
+    this(name, (byte) 0);
   }
 
-  public Type(String name, int array) {
+  public Type(String name, byte array) {
     super(name);
     this.name = name;
     this.arr = array;

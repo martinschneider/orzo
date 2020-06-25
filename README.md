@@ -51,7 +51,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] static method calls
 - [ ] other method calls
 - [ ] constructor calls
-- [ ] parallel declarations, e.g. `int a,b,c,d,e,f = 1,2,3` ✨
+- [X] parallel declarations, e.g. `int a,b,c,d,e,f = 1,2,3` ✨
 
 ## Notes
 - array defintions must be of the form `int[] a`, `int a[]` is not supported

@@ -23,8 +23,6 @@ public class ArrayInitParserTest {
     return Stream.of(
         Arguments.of("", null),
         Arguments.of(
-            "new int[]{1,2,3};", arrInit("int", 3, List.of(expr("1"), expr("2"), expr("3")))),
-        Arguments.of(
             "new int[]{1,2,3}", arrInit("int", 3, List.of(expr("1"), expr("2"), expr("3")))),
         Arguments.of(
             "new int[3]{1,2,3}", arrInit("int", 3, List.of(expr("1"), expr("2"), expr("3")))));

@@ -4,11 +4,11 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
 import static io.github.martinschneider.orzo.parser.TestHelper.cond;
-import static io.github.martinschneider.orzo.parser.TestHelper.decl;
 import static io.github.martinschneider.orzo.parser.TestHelper.doStmt;
 import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifBlk;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifStmt;
+import static io.github.martinschneider.orzo.parser.TestHelper.pDecl;
 import static io.github.martinschneider.orzo.parser.TestHelper.whileStmt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -36,8 +36,8 @@ public class StatementParserTest {
         Arguments.of(
             "do{x=y+1;y=y-1;} while(i>0)",
             doStmt(cond("i>0"), List.of(assign("x=y+1"), assign("y=y-1")))),
-        Arguments.of("int z;", decl(id("z"), "int", null, false)),
-        Arguments.of("int z=300;", decl(id("z"), "int", expr("300"), true)));
+        Arguments.of("int z;", pDecl(id("z"), "int", null)),
+        Arguments.of("int z=300;", pDecl(id("z"), "int", expr("300"))));
   }
 
   @ParameterizedTest
@@ -57,11 +57,11 @@ public class StatementParserTest {
         Arguments.of(
             "int x=10;x=x+1;int y=20;y=x+2;double z=x+y",
             List.of(
-                decl("int x=10"),
+                pDecl("int x=10"),
                 assign("x=x+1"),
-                decl("int y=20"),
+                pDecl("int y=20"),
                 assign("y=x+2"),
-                decl("double z=x+y"))));
+                pDecl("double z=x+y"))));
   }
 
   @ParameterizedTest

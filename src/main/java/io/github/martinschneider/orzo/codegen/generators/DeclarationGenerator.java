@@ -13,6 +13,7 @@ import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.List;
 
@@ -29,23 +30,25 @@ public class DeclarationGenerator implements StatementGenerator {
   @Override
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
-    Declaration decl = (Declaration) stmt;
-    if (decl.arrDim > 0) {
-      return generateArray(out, variables, method, decl);
+    ParallelDeclaration pDecl = (ParallelDeclaration) stmt;
+    for (Declaration decl : pDecl.declarations) {
+      if (decl.arrDim > 0) {
+        return generateArray(out, variables, method, decl);
+      }
+      if (decl.val != null) {
+        ctx.exprGen.eval(out, variables, decl.type, decl.val);
+      } else {
+        ctx.pushGen.push(out, decl.type, ZERO);
+      }
+      ctx.assignGen.assign(out, variables, decl.type, decl.name);
     }
-    if (decl.val != null) {
-      ctx.exprGen.eval(out, variables, decl.type, decl.val);
-    } else {
-      ctx.pushGen.push(out, decl.type, ZERO);
-    }
-    ctx.assignGen.assign(out, variables, decl.type, decl.name);
     return out;
   }
 
   public HasOutput generateArray(
       DynamicByteArray out, VariableMap variables, Method method, Declaration decl) {
     if (decl.val == null || !(decl.val instanceof ArrayInit)) {
-      ctx.errors.addError(LOG_NAME, "invalid array initialiser" + decl.val);
+      ctx.errors.addError(LOG_NAME, "invalid array initialiser " + decl.val);
       return out;
     }
     String type = decl.type;

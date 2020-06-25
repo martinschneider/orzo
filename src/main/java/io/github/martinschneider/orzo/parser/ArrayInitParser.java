@@ -97,9 +97,6 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
           }
         }
       }
-      if (tokens.curr().eq(sym(SEMICOLON))) {
-        tokens.next();
-      }
       return new ArrayInit(type, dimensions, vals);
     }
     return null;

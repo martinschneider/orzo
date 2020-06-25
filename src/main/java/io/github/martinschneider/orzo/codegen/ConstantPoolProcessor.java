@@ -18,6 +18,7 @@ import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.LoopStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
+import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.math.BigDecimal;
@@ -51,18 +52,20 @@ public class ConstantPoolProcessor {
       for (Expression param : methodCall.params) {
         constPool = processExpression(constPool, param);
       }
-    } else if (stmt instanceof Declaration) {
-      Declaration decl = (Declaration) stmt;
-      Expression val = decl.val;
-      if (val != null) {
-        if (val instanceof ArrayInit) {
-          for (List<Expression> exprs : ((ArrayInit) val).vals) {
-            for (Expression arrInit : exprs) {
-              constPool = processExpression(constPool, decl.type, arrInit);
+    } else if (stmt instanceof ParallelDeclaration) {
+      ParallelDeclaration pDecl = (ParallelDeclaration) stmt;
+      for (Declaration decl : pDecl.declarations) {
+        Expression val = decl.val;
+        if (val != null) {
+          if (val instanceof ArrayInit) {
+            for (List<Expression> exprs : ((ArrayInit) val).vals) {
+              for (Expression arrInit : exprs) {
+                constPool = processExpression(constPool, decl.type, arrInit);
+              }
             }
+          } else {
+            constPool = processExpression(constPool, decl.type, val);
           }
-        } else {
-          constPool = processExpression(constPool, decl.type, val);
         }
       }
     } else if (stmt instanceof Assignment) {
