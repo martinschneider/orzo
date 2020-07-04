@@ -1,8 +1,8 @@
 ![Orzo](logo.png)
 
-Orzo is a (not yet) self-compiling Java compiler with some added syntactical sugar (for example, [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment) support).
+Orzo is a Java-based language for the JVM.
 
-It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorzo-barley) while coding it ☕🌾
+It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorzo-barley) while coding it.
 
 # Features
 
@@ -39,13 +39,14 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [ ] `instanceof`
 - [ ] String and char concatenation `+`
 - [ ] ternary `?:`
-- [ ] cast `()`
+- [X] cast `()` for basic types
 - [ ] object creation `new`
 
 ## Statements
 - [X] System.out.println
-- [X] if, else if and else statements
-- [X] while, do and for loops + break statement
+- [X] if, else if and else
+- [ ] unless keyword ✨
+- [X] while, do, for and break
 - [ ] switch
 - [ ] lambdas
 - [X] static method calls
@@ -55,10 +56,24 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 
 ## Notes
 - array defintions must be of the form `int[] a`, `int a[]` is not supported
-- Orzo creates class files targeting JDK 5 (major version 49) or newer
+- Orzo creates class files with major version 49
 
 # Examples
-Working examples can be found [here](src/test/resources/io/github/martinschneider/orzo/examples).
+Calculating π using the [Gauss-Legendre algorithm](https://en.wikipedia.org/wiki/Gauss%E2%80%93Legendre_algorithm):
+
+```
+public static double pi(int n) {
+  double a, b, t, p, x = 1, 1/√2, 1/4, 1;
+  for (int i=0; i<n; i++)
+  {
+    x, a, b  =  a, (a + b) / 2, √(x*b);
+    t, p     =  t - p * ((x-a) ** 2), 2 * p;
+  }
+  return ((a+b) ** 2) / (4 * t);
+}
+```
+
+More examples can be found [here](src/test/resources/io/github/martinschneider/orzo/examples).
 
 # Building
 
@@ -73,25 +88,13 @@ Working examples can be found [here](src/test/resources/io/github/martinschneide
 
 # Setup alias (optional)
 `alias orzo="java -jar /path/to/orzo.jar"`
-The following examples assume the above alias. If you don't have it, replace `orzo` with `java -jar orzo.jar`.
+The following examples assume the above alias. To usem them without the alias, replace `orzo` with `java -jar orzo.jar`.
 
 # Usage
 
-To compile `HelloWorld.java` run `orzo HelloWorld.java`. This will generate a class file based on the package and class names defined in `HelloWorld.java`.
+`orzo inputFiles -d outputFolder`
 
-For example, the following Java program will be compiled into a class file at `com/examples/HelloWorld.class`.
-
-```
-package com.examples;
-
-public class HelloWorld {
-  public static void main(String[] args) {
-    System.out.println("Hello world");
-  }
-}
-```
-
-The root of the output folder is the current directory. This can be changed using the `-d` option. For example, `orzo HelloWorld.java -d /tmp/test` will create `/tmp/test/com/examples/HelloWorld.class`.
+Note, that orzo will create folders according to the package structure of the input files. For example, the class file for `org.example.demo.HelloWorld` will be written to `outputFolder/org/example/demo/HelloWorld.class`.
 
 # Design considerations
 The compiler is split into three parts: [Lexer](src/main/java/io/github/martinschneider/orzo/lexer/Lexer.java), [Parser](src/main/java/io/github/martinschneider/orzo/parser/Parser.java) and [Code Generator](src/main/java/io/github/martinschneider/orzo/codegen/CodeGenerator.java).
@@ -101,36 +104,37 @@ It only uses Java core libraries and has no external dependencies (except for un
 To make the code less verbose, public fields and static imports are heavily used. This might not be considered best practice for other Java projects but it serves its purpose well for this one.
 
 ## Lexer
-The Lexer uses a [`PushbackReader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/PushbackReader.html) with a wrapper around it which keeps track of line information to facilitate useful error messages.
+The Lexer uses a [`PushbackReader`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/PushbackReader.html) with a small wrapper to keep track of line numbers (for error handling).
 
-Its input is a [`File`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/File.html), the output is a [`TokenList`](src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java).
+Its input is a [`File`](https://docs.oracle.com/en/java/javase/14/docs/api/java.base/java/io/File.html) and it returns a [`TokenList`](src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java).
 
 ### Parser
 
-The Parser takes a [`TokenList`](src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java) and produces a [`Clazz`](src/main/java/io/github/martinschneider/orzo/parser/prdocutions/Clazz.java) instance which represents the AST of the program.
+The Parser takes a [`TokenList`](src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java) and produces a list of [`Clazz`](src/main/java/io/github/martinschneider/orzo/parser/prdocutions/Clazz.java) objects which represent the AST of the program.
 
-A [`TokenList`](src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java) has a pointer which keeps track of its current position.
+A [`TokenList`](src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java) has a pointer which keeps track of the current token processed by the parser.
 
-There is (roughly) one implementation of the [`ProdParser`](src/main/java/io/github/martinschneider/orzo/parser/ProdParser.java) interface [for every production](src/main/java/io/github/martinschneider/orzo/parser) in the grammar. Its `parse` method will return a production if it matches and `null` otherwise. It must also set the pointer in the [`TokenList`](src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java) accordingly:
+There is one implementation of the [`ProdParser`](src/main/java/io/github/martinschneider/orzo/parser/ProdParser.java) interface [for every production](src/main/java/io/github/martinschneider/orzo/parser) in the grammar. Its `parse` method will return a production if it matches and `null` otherwise. It must also set the pointer in the [`TokenList`](src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java) accordingly:
 
-> If there is a match, the token index must point to the next token after that match. If there is no match, the token index must be restored to the val before parse has been called.
+> If there is a match, the token index must point to the next token after the match. If there is no match, the token index must be restored to the val before `parse` has been called.
 
 This allows passing the [`TokenList`](src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java) through the different sub-parsers.
 
-We use a very simplistic dependency injection pattern to call different [`ProdParser`](src/main/java/io/github/martinschneider/orzo/parser/ProdParser.java) implementations from each other. Each class has an instance of [`ParserContext`](src/main/java/io/github/martinschneider/orzo/parser/ParserContext.java) which has references to everything else.
+We use a simple dependency injection pattern to call different [`ProdParser`](src/main/java/io/github/martinschneider/orzo/parser/ProdParser.java) implementations from each other. Each class has an instance of [`ParserContext`](src/main/java/io/github/martinschneider/orzo/parser/ParserContext.java) which has references to all parsers.
 
 ### Code generator
 
-The Code generator takes the AST returned by the parser and outputs a byte array (wrapped inside an [`Output`](src/main/java/io/github/martinschneider/orzo/codegen/Output.java) object) which is then written to a JVM-compatible class file.
+The Code generator takes the AST returned by the parser and outputs a byte array (wrapped inside an [`Output`](src/main/java/io/github/martinschneider/orzo/codegen/Output.java) object) which is then written to a JVM class file.
 
-Similarly to the parser, there is one implementation of [`StatementGenerator`](src/main/java/io/github/martinschneider/orzo/codegen/statement/StatementGenerator.java) [for each statement type](src/main/java/io/github/martinschneider/orzo/codegen/statement) and a similar dependency injection concept (see [`CGContext`](src/main/java/io/github/martinschneider/orzo/codegen/CGContext.java)).
+Similarly to the parser, there is one implementation of [`StatementGenerator`](src/main/java/io/github/martinschneider/orzo/codegen/generators/StatementGenerator.java) [for each statement type](src/main/java/io/github/martinschneider/orzo/codegen/generators) and a similar dependency injection concept (see [`CGContext`](src/main/java/io/github/martinschneider/orzo/codegen/CGContext.java)). Besides, there are some shared generators for basic operations.
 
 ### Tests
 
-High coverage with meaningful tests is crucial for a project like this. There are five types of tests used:
+High coverage with meaningful tests is crucial for a project like this. There are several types of tests:
 
  - Lexer: [unit tests](src/test/java/io/github/martinschneider/orzo/lexer) for each token type
  - Parser: [unit tests](src/test/java/io/github/martinschneider/orzo/parser) for each production type
- - Code Generator: [unit tests](src/test/java/io/github/martinschneider/orzo/codegen) for each production/statement type (currently missing)
+ - Code Generator: [unit tests](src/test/java/io/github/martinschneider/orzo/codegen) for each production/statement type (WIP)
  - [integration tests](src/test/java/io/github/martinschneider/orzo/OrzoTest.java) compiling [sample programs](src/test/resources/io/github/martinschneider/orzo/tests) using Orzo and verifying their output against [predefined expectations](src/test/resources/io/github/martinschneider/orzo/tests/output)
- - self-compilation tests (WIP)
+ - bytecode regression tests: this checks whether the bytecode created by the integration tests matches the one of the previous version. This can be useful to check whether changes to the code generation have any unexpected side effects
+ - self-compilation tests: check whether Orzo can successfuly compile its own source code (WIP)

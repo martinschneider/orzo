@@ -21,7 +21,7 @@ public class OpCodes {
   public static final byte LDC2_W = (byte) 20;
   public static final byte ILOAD = (byte) 21;
   public static final byte LLOAD = (byte) 22;
-  public static final byte FLOAD = (byte) 22;
+  public static final byte FLOAD = (byte) 23;
   public static final byte DLOAD = (byte) 24;
   public static final byte ALOAD = (byte) 25;
   public static final byte ILOAD_0 = (byte) 26;
@@ -123,7 +123,17 @@ public class OpCodes {
   public static final byte LXOR = (byte) 131;
   public static final byte IINC = (byte) 132;
   public static final byte I2L = (byte) 133;
+  public static final byte I2F = (byte) 134;
   public static final byte I2D = (byte) 135;
+  public static final byte L2I = (byte) 136;
+  public static final byte L2F = (byte) 137;
+  public static final byte L2D = (byte) 138;
+  public static final byte F2I = (byte) 139;
+  public static final byte F2L = (byte) 140;
+  public static final byte F2D = (byte) 141;
+  public static final byte D2I = (byte) 142;
+  public static final byte D2L = (byte) 143;
+  public static final byte D2F = (byte) 144;
   public static final byte I2B = (byte) 145;
   public static final byte I2C = (byte) 146;
   public static final byte I2S = (byte) 147;

@@ -35,12 +35,11 @@ public class MathUtils {
 
   // Calculate pi using Gauss-Legendre algorithm
   public static double pi3(int n) {
-    double a, b, t, p, a1, b1, t1, p1 = 1, 1/√2, 1/4, 1;
+    double a, b, t, p, x = 1, 1/√2, 1/4, 1;
     for (int i=0; i<n; i++)
     {
-      a1, b1      =   (a+b)/2, √(a*b);
-      t1          =   t - p * ((a-a1) ** 2);
-      a, b, t, p  =   a1, b1, t1, 2 * p;
+      x, a, b  =  a, (a + b) / 2, √(x*b);
+      t, p     =  t - p * ((x-a) ** 2), 2 * p;
     }
     return ((a+b) ** 2) / (4 * t);
   }
@@ -75,7 +74,7 @@ public class MathUtils {
   // Calculate the n-th Fibonacci number using the golden ratio
   public static long fib(int n)
   {
-    // return ⌊((1+√5)/2) ** n)/√5+0.5⌋;
+//    return ⌊((1+√5)/2) ** n)/√5+0.5⌋;
     return round(floor((((1+√5)/2) ** n)/√5+0.5));
   }
   

@@ -60,6 +60,7 @@ public class MethodCallParser implements ProdParser<MethodCall> {
   // not wanted (for example, inside an expression), we can call this method with
   // saveSemicolon=true.
   public MethodCall parse(TokenList tokens, boolean saveSemicolon) {
+    ctx.floorParser.parse(tokens);
     ctx.sqrtParser.parse(tokens);
     List<Expression> parameters;
     StringBuilder name = new StringBuilder();

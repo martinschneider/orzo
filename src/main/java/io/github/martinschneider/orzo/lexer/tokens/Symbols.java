@@ -10,5 +10,7 @@ public enum Symbols {
   SEMICOLON,
   LBRAK,
   RBRAK,
-  SQRT;
+  SQRT,
+  LFLOOR,
+  RFLOOR
 }

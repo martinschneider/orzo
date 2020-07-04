@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
 
 import java.util.Deque;
 import java.util.LinkedList;
@@ -12,22 +13,26 @@ public class OperandStack {
   private Deque<String> types = new LinkedList<>();
 
   public void push(String type) {
-    types.push(type);
-    size++;
-    if (type != null && (type.equals(LONG) || type.equals(DOUBLE))) {
+    if (!type.equals(VOID)) {
+      types.push(type);
       size++;
-    }
-    if (size > maxSize) {
-      maxSize = size;
+      if (type != null && (type.equals(LONG) || type.equals(DOUBLE))) {
+        size++;
+      }
+      if (size > maxSize) {
+        maxSize = size;
+      }
     }
   }
 
   public void pop() {
-    if (types.peek() != null && (types.peek().equals(LONG) || types.peek().equals(DOUBLE))) {
+    if (types.peek() != null) {
+      if ((types.peek().equals(LONG) || types.peek().equals(DOUBLE))) {
+        size--;
+      }
       size--;
+      types.pop();
     }
-    size--;
-    types.pop();
   }
 
   public void pop2() {

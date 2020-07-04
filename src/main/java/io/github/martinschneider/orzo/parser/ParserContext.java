@@ -10,10 +10,12 @@ public class ParserContext {
   public ArraySelectorParser arraySelectorParser;
   public AssignmentParser assignParser;
   public BreakParser breakParser;
+  public CastParser castParser;
   public ConditionParser condParser;
   public DeclarationParser declParser;
   public DoParser doParser;
   public ExpressionParser exprParser;
+  public FloorParser floorParser;
   public ForParser forParser;
   public IfParser ifParser;
   public MethodCallParser methodCallParser;
@@ -33,10 +35,12 @@ public class ParserContext {
     ctx.arraySelectorParser = new ArraySelectorParser(ctx);
     ctx.assignParser = new AssignmentParser(ctx);
     ctx.breakParser = new BreakParser();
+    ctx.castParser = new CastParser();
     ctx.condParser = new ConditionParser(ctx);
     ctx.declParser = new DeclarationParser(ctx);
     ctx.doParser = new DoParser(ctx);
     ctx.exprParser = new ExpressionParser(ctx);
+    ctx.floorParser = new FloorParser(ctx);
     ctx.forParser = new ForParser(ctx);
     ctx.ifParser = new IfParser(ctx);
     ctx.methodCallParser = new MethodCallParser(ctx);

@@ -67,7 +67,7 @@ public class PushGenerator {
 
   public HasOutput pushBool(DynamicByteArray out, boolean value) {
     ctx.opStack.push(BOOLEAN);
-    return bipush(out, (value) ? 1 : 0);
+    return pushInteger(out, (value) ? 1 : 0);
   }
 
   private HasOutput pushLong(DynamicByteArray out, long number) {

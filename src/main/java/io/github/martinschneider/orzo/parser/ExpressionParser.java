@@ -21,6 +21,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Num;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.ArraySelector;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
@@ -39,6 +40,7 @@ public class ExpressionParser implements ProdParser<Expression> {
 
   @Override
   public Expression parse(TokenList tokens) {
+    Type cast = ctx.castParser.parse(tokens);
     List<Token> exprTokens = new ArrayList<>();
     checkNegative(tokens, exprTokens);
     int parenthesis = 0;
@@ -89,7 +91,7 @@ public class ExpressionParser implements ProdParser<Expression> {
         }
       }
     }
-    return (exprTokens.size() > 0) ? new Expression(postfix(exprTokens)) : null;
+    return (exprTokens.size() > 0) ? new Expression(postfix(exprTokens), cast) : null;
   }
 
   private boolean checkNegative(TokenList tokens, List<Token> exprTokens) {

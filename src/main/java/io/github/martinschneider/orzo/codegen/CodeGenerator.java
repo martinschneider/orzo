@@ -163,8 +163,8 @@ public class CodeGenerator {
       }
       out.write(methodOut.size() + 12); // stack size (2) + local var size (2) + code size (4) +
       // exception table size (2) + attribute count size (2)
-      out.write((short) ctx.opStack.maxSize()); // max stack size
-      out.write((short) (variables.size)); // max local var size
+      out.write((short) (ctx.opStack.maxSize() + 1)); // max stack size
+      out.write((short) (variables.size + 1)); // max local var size
       out.write(methodOut.size());
       out.write(methodOut.flush());
       out.write((short) 0); // exception table of size 0

@@ -1,13 +1,10 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2D;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2L;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
+import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.castOps;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
+import java.util.Collections;
 
 public class BasicGenerator {
   private CGContext ctx;
@@ -17,15 +14,8 @@ public class BasicGenerator {
   }
 
   public void convert(DynamicByteArray out, String from, String to) {
-    if (from.equals(INT) && to.equals(DOUBLE)) {
-      out.write(I2D);
-      ctx.opStack.pop();
-      ctx.opStack.push(DOUBLE);
-    } else if (from.equals(INT) && to.equals(LONG)) {
-      out.write(I2L);
-      ctx.opStack.pop();
-      ctx.opStack.push(LONG);
-    }
-    // TODO: others
+    out.write(castOps.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]));
+    ctx.opStack.pop();
+    ctx.opStack.push(to);
   }
 }

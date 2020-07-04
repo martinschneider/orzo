@@ -38,9 +38,11 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LFLOOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RFLOOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SQRT;
@@ -391,6 +393,10 @@ public class Lexer {
       }
     } else if (character == '√') {
       tokenList.add(sym(SQRT));
+    } else if (character == '⌊') {
+      tokenList.add(sym(LFLOOR));
+    } else if (character == '⌋') {
+      tokenList.add(sym(RFLOOR));
     }
   }
 

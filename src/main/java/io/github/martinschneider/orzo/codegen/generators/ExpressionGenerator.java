@@ -171,6 +171,10 @@ public class ExpressionGenerator {
         }
       }
     }
+    if (expr.cast != null) {
+      ctx.basicGen.convert(out, type, expr.cast.name);
+      type = expr.cast.name;
+    }
     return new ExpressionResult(type, val);
   }
 }

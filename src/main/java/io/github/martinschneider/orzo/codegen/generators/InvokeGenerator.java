@@ -37,7 +37,7 @@ public class InvokeGenerator {
             method.fqClassName,
             method.name.id(),
             TypeUtils.methodDescr(method)));
-    ctx.opStack.pop(method.args.size());
+    ctx.opStack.pop(1 + method.args.size());
     ctx.opStack.push(method.type);
     return out;
   }
@@ -60,7 +60,7 @@ public class InvokeGenerator {
     out.write(
         ctx.constPool.indexOf(
             CONSTANT_METHODREF, clazzName, methodName, TypeUtils.methodDescr(method)));
-    ctx.opStack.pop(method.args.size());
+    ctx.opStack.pop(1 + method.args.size());
     ctx.opStack.push(method.type);
     return out;
   }

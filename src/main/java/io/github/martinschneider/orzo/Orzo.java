@@ -34,13 +34,16 @@ public class Orzo {
   }
 
   public static void main(String args[]) throws IOException {
+    boolean verbose = false;
     if (args.length == 0) {
       System.err.println("Syntax: orzo inputFiles -d outputPath");
     } else {
       List<File> inputs = new ArrayList<>();
       String outputPath = null;
       for (int i = 0; i < args.length; i++) {
-        if (!args[i].equals("-d")) {
+        if (args[i].equals("-v")) {
+          verbose = true;
+        } else if (!args[i].equals("-d")) {
           inputs.add(new File(args[i]));
         } else {
           if (args.length < i + 2) {
@@ -48,10 +51,10 @@ public class Orzo {
             return;
           }
           outputPath = args[i + 1];
-          break;
+          i++;
         }
       }
-      new Orzo(inputs, outputPath, false).compile();
+      new Orzo(inputs, outputPath, verbose).compile();
     }
   }
 
