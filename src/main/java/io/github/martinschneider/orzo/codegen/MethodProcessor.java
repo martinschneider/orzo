@@ -20,7 +20,7 @@ import javax.annotation.processing.ProcessingEnvironment;
 public class MethodProcessor {
   public Map<String, Method> getMethodMap(Clazz currentClazz, List<Clazz> clazzes) {
     Map<String, Method> methodMap = new HashMap<>();
-    for (Method method : currentClazz.body) {
+    for (Method method : currentClazz.methods) {
       methodMap.put(getKey(method), method);
     }
     addImported(methodMap, currentClazz, clazzes);
@@ -36,7 +36,7 @@ public class MethodProcessor {
       if (currentClazz != clazz
           && (currentClazz.packageName.equals(clazz.packageName)
               || importStrings.contains(clazz.fqn()))) {
-        for (Method method : clazz.body) {
+        for (Method method : clazz.methods) {
           methodMap.put(clazz.name.val.toString() + '.' + getKey(method), method);
           methodMap.put(clazz.fqn() + '.' + getKey(method), method);
           // TODO: only do this for static imports

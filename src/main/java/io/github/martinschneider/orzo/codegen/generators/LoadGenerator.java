@@ -15,6 +15,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.I2B;
 import static io.github.martinschneider.orzo.codegen.OpCodes.I2C;
 import static io.github.martinschneider.orzo.codegen.OpCodes.I2S;
@@ -48,6 +49,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.util.List;
@@ -59,7 +61,7 @@ public class LoadGenerator {
     this.ctx = ctx;
   }
 
-  public HasOutput load(DynamicByteArray out, String type, byte idx) {
+  private HasOutput load(DynamicByteArray out, String type, short idx) {
     ctx.opStack.push(type);
     switch (type) {
       case LONG:
@@ -117,20 +119,22 @@ public class LoadGenerator {
   }
 
   public HasOutput loadValueFromArray(
-      DynamicByteArray out,
-      VariableMap variables,
-      List<Expression> indices,
-      String type,
-      byte idx) {
-    loadReference(out, idx);
+      DynamicByteArray out, VariableMap variables, List<Expression> indices, VariableInfo varInfo) {
+    load(out, varInfo);
     for (Expression arrIdx : indices) {
       ctx.exprGen.eval(out, variables, INT, arrIdx);
     }
-    out.write(getLoadOpCode(type.replaceAll("\\[", "")));
+    out.write(getLoadOpCode(varInfo.arrType.replaceAll("\\[", "")));
     return out;
   }
 
-  private HasOutput loadDouble(DynamicByteArray out, byte idx) {
+  public HasOutput getStatic(DynamicByteArray out, short idx) {
+    out.write(GETSTATIC);
+    out.write(idx);
+    return out;
+  }
+
+  private HasOutput loadDouble(DynamicByteArray out, short idx) {
     if (idx == 0) {
       out.write(DLOAD_0);
     } else if (idx == 1) {
@@ -140,13 +144,12 @@ public class LoadGenerator {
     } else if (idx == 3) {
       out.write(DLOAD_3);
     } else {
-      out.write(DLOAD);
-      out.write(idx);
+      ctx.basicGen.wide(out, idx, DLOAD);
     }
     return out;
   }
 
-  private HasOutput loadFloat(DynamicByteArray out, byte idx) {
+  private HasOutput loadFloat(DynamicByteArray out, short idx) {
     if (idx == 0) {
       out.write(FLOAD_0);
     } else if (idx == 1) {
@@ -156,13 +159,12 @@ public class LoadGenerator {
     } else if (idx == 3) {
       out.write(FLOAD_3);
     } else {
-      out.write(FLOAD);
-      out.write(idx);
+      ctx.basicGen.wide(out, idx, FLOAD);
     }
     return out;
   }
 
-  private HasOutput loadInteger(DynamicByteArray out, byte idx) {
+  private HasOutput loadInteger(DynamicByteArray out, short idx) {
     if (idx == 0) {
       out.write(ILOAD_0);
     } else if (idx == 1) {
@@ -172,13 +174,12 @@ public class LoadGenerator {
     } else if (idx == 3) {
       out.write(ILOAD_3);
     } else {
-      out.write(ILOAD);
-      out.write(idx);
+      ctx.basicGen.wide(out, idx, ILOAD);
     }
     return out;
   }
 
-  private HasOutput loadLong(DynamicByteArray out, byte idx) {
+  private HasOutput loadLong(DynamicByteArray out, short idx) {
     if (idx == 0) {
       out.write(LLOAD_0);
     } else if (idx == 1) {
@@ -188,13 +189,12 @@ public class LoadGenerator {
     } else if (idx == 3) {
       out.write(LLOAD_3);
     } else {
-      out.write(LLOAD);
-      out.write(idx);
+      ctx.basicGen.wide(out, idx, LLOAD);
     }
     return out;
   }
 
-  private HasOutput loadReference(DynamicByteArray out, byte idx) {
+  private HasOutput loadReference(DynamicByteArray out, short idx) {
     if (idx == 0) {
       out.write(ALOAD_0);
     } else if (idx == 1) {
@@ -204,8 +204,7 @@ public class LoadGenerator {
     } else if (idx == 3) {
       out.write(ALOAD_3);
     } else {
-      out.write(ALOAD);
-      out.write(idx);
+      ctx.basicGen.wide(out, idx, ALOAD);
     }
     return out;
   }
@@ -222,6 +221,14 @@ public class LoadGenerator {
         return DOUBLE;
       default:
         return REF;
+    }
+  }
+
+  public void load(DynamicByteArray out, VariableInfo varInfo) {
+    if (varInfo.isField) {
+      getStatic(out, varInfo.idx);
+    } else {
+      load(out, varInfo.type, varInfo.idx);
     }
   }
 }

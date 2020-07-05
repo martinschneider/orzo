@@ -88,14 +88,13 @@ public class ExpressionGenerator {
                 && !tokens.get(i + 1).eq(op(PRE_INCREMENT))
                 && !tokens.get(i + 1).eq(op(PRE_DECREMENT)))) {
           VariableInfo varInfo = variables.get(id);
-          byte varIdx = varInfo.idx;
+          short varIdx = varInfo.idx;
           if (id.arrSel != null) {
             // array
-            ctx.loadGen.loadValueFromArray(
-                out, variables, id.arrSel.exprs, varInfo.arrType, varIdx);
+            ctx.loadGen.loadValueFromArray(out, variables, id.arrSel.exprs, varInfo);
             type = varInfo.arrType;
           } else {
-            ctx.loadGen.load(out, varType, varIdx);
+            ctx.loadGen.load(out, varInfo);
           }
         }
         if (!type.equals(varType) && arrType == null) {
@@ -134,8 +133,8 @@ public class ExpressionGenerator {
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
         if (List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT).contains(op)) {
-          byte idx = variables.get(tokens.get(i - 1)).idx;
-          ctx.incrGen.inc(out, type, idx, op, false);
+          VariableInfo varInfo = variables.get(tokens.get(i - 1));
+          ctx.incrGen.inc(out, varInfo, op, false);
         } else if (op.equals(POW)) {
           if (type.equals(DOUBLE)) {
             ctx.constPool.addClass("java/lang/Math");

@@ -32,7 +32,7 @@ public class AssignmentGenerator implements StatementGenerator {
       Expression right = assignment.right.get(i);
       VariableInfo varInfo = variables.get(left);
       String type = varInfo.type;
-      byte leftIdx = varInfo.idx;
+      short leftIdx = varInfo.idx;
       // if the current left side variable appears anywhere on the right side
       // we store its value in a tmp variable
       if (i < assignment.left.size() - 1
@@ -41,20 +41,19 @@ public class AssignmentGenerator implements StatementGenerator {
           type = varInfo.arrType;
         }
         Identifier id = id("tmp_" + variables.tmpCount);
-        variables.put(id, new VariableInfo(id.val.toString(), type, (byte) variables.size));
-        byte tmpIdx = variables.get(id).idx;
+        variables.put(id, new VariableInfo(id.val.toString(), type, false, (short) variables.size));
+        VariableInfo tmpInfo = variables.get(id);
         if (left.arrSel == null) {
-          ctx.loadGen.load(out, type, leftIdx);
+          ctx.loadGen.load(out, varInfo);
         } else {
-          ctx.loadGen.loadValueFromArray(
-              out, variables, left.arrSel.exprs, varInfo.arrType, leftIdx);
+          ctx.loadGen.loadValueFromArray(out, variables, left.arrSel.exprs, varInfo);
         }
-        ctx.storeGen.storeValue(out, type, tmpIdx);
+        ctx.storeGen.store(out, tmpInfo);
         variables.tmpCount++;
       }
       if (left.arrSel == null) {
         ctx.exprGen.eval(out, variables, type, right);
-        ctx.storeGen.storeValue(out, type, leftIdx);
+        ctx.storeGen.store(out, varInfo);
       } else {
         assignInArray(out, variables, left, right);
       }
@@ -64,20 +63,19 @@ public class AssignmentGenerator implements StatementGenerator {
 
   public HasOutput assign(DynamicByteArray out, VariableMap variables, String type, Identifier id) {
     if (!variables.containsKey(id)) {
-      variables.put(id, new VariableInfo(id.val.toString(), type, (byte) variables.size));
+      variables.put(id, new VariableInfo(id.val.toString(), type, false, (short) variables.size));
     }
-    return ctx.storeGen.storeValue(out, type, variables.get(id).idx);
+    return ctx.storeGen.store(out, variables.get(id));
   }
 
   public HasOutput assignInArray(
       DynamicByteArray out, VariableMap variables, Identifier id, Expression val) {
     if (!variables.containsKey(id)) {
-      variables.put(id, new VariableInfo(id.val.toString(), REF, (byte) variables.size));
+      variables.put(id, new VariableInfo(id.val.toString(), REF, false, (short) variables.size));
     }
     VariableInfo varInfo = variables.get(id);
-    byte idx = varInfo.idx;
     String type = varInfo.arrType;
-    ctx.loadGen.load(out, REF, idx);
+    ctx.loadGen.load(out, varInfo);
     for (Expression arrIdx : id.arrSel.exprs) {
       ctx.exprGen.eval(out, variables, INT, arrIdx);
     }
@@ -89,10 +87,10 @@ public class AssignmentGenerator implements StatementGenerator {
   public HasOutput assignArray(
       DynamicByteArray out, VariableMap variables, String type, int arrDim, Identifier id) {
     if (!variables.containsKey(id)) {
-      variables.put(id, new VariableInfo(id.val.toString(), REF, type, (byte) variables.size));
+      variables.put(
+          id, new VariableInfo(id.val.toString(), REF, type, false, (short) variables.size));
     }
-    byte idx = variables.get(id).idx;
-    return ctx.storeGen.storeReference(out, idx);
+    return ctx.storeGen.store(out, variables.get(id));
   }
 
   private boolean replaceIds(List<Expression> expressions, Identifier id, int idx) {

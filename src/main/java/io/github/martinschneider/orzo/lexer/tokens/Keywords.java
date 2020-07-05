@@ -12,5 +12,6 @@ public enum Keywords {
   PACKAGE,
   IMPORT,
   BREAK,
-  NEW;
+  NEW,
+  FINAL;
 }

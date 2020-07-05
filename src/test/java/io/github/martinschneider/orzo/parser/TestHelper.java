@@ -75,8 +75,13 @@ public class TestHelper {
   }
 
   public static Clazz clazz(
-      String packageName, List<Import> imports, Scope scope, Identifier name, List<Method> body) {
-    return new Clazz(packageName, imports, scope, name, body);
+      String packageName,
+      List<Import> imports,
+      Scope scope,
+      Identifier name,
+      List<Method> body,
+      List<ParallelDeclaration> decls) {
+    return new Clazz(packageName, imports, scope, name, body, decls);
   }
 
   public static Condition cond(String input) throws IOException {
@@ -92,20 +97,23 @@ public class TestHelper {
     return new ParallelDeclaration(decls);
   }
 
-  public static Declaration decl(Identifier name, String type, Expression val) {
-    return new Declaration(type, 0, name, val);
+  public static Declaration decl(Scope scope, Identifier name, String type, Expression val) {
+    return new Declaration(scope, type, 0, name, val);
   }
 
-  public static Declaration decl(Identifier name, String type, int array, Expression val) {
-    return new Declaration(type, array, name, val);
+  public static Declaration decl(
+      Scope scope, Identifier name, String type, int array, Expression val) {
+    return new Declaration(scope, type, array, name, val);
   }
 
-  public static ParallelDeclaration pDecl(Identifier name, String type, Expression val) {
-    return new ParallelDeclaration(List.of(new Declaration(type, 0, name, val)));
+  public static ParallelDeclaration pDecl(
+      Scope scope, Identifier name, String type, Expression val) {
+    return new ParallelDeclaration(List.of(new Declaration(scope, type, 0, name, val)));
   }
 
-  public static ParallelDeclaration pDecl(Identifier name, String type, int array, Expression val) {
-    return new ParallelDeclaration(List.of(new Declaration(type, array, name, val)));
+  public static ParallelDeclaration pDecl(
+      Scope scope, Identifier name, String type, int array, Expression val) {
+    return new ParallelDeclaration(List.of(new Declaration(scope, type, array, name, val)));
   }
 
   public static ParallelDeclaration pDecl(String input) throws IOException {

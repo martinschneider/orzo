@@ -132,9 +132,10 @@ Similarly to the parser, there is one implementation of [`StatementGenerator`](s
 
 High coverage with meaningful tests is crucial for a project like this. There are several types of tests:
 
- - Lexer: [unit tests](src/test/java/io/github/martinschneider/orzo/lexer) for each token type
- - Parser: [unit tests](src/test/java/io/github/martinschneider/orzo/parser) for each production type
- - Code Generator: [unit tests](src/test/java/io/github/martinschneider/orzo/codegen) for each production/statement type (WIP)
- - [integration tests](src/test/java/io/github/martinschneider/orzo/OrzoTest.java) compiling [sample programs](src/test/resources/io/github/martinschneider/orzo/tests) using Orzo and verifying their output against [predefined expectations](src/test/resources/io/github/martinschneider/orzo/tests/output)
- - bytecode regression tests: this checks whether the bytecode created by the integration tests matches the one of the previous version. This can be useful to check whether changes to the code generation have any unexpected side effects
- - self-compilation tests: check whether Orzo can successfuly compile its own source code (WIP)
+ - Lexer: [Unit tests](src/test/java/io/github/martinschneider/orzo/lexer) for each token type
+ - Parser: [Unit tests](src/test/java/io/github/martinschneider/orzo/parser) for each production type
+ - Code Generator: [Unit tests](src/test/java/io/github/martinschneider/orzo/codegen) for each production/statement type (mostly missing at the moment)
+ - [Integration tests](src/test/java/io/github/martinschneider/orzo/OrzoTest.java) compiling [sample programs](src/test/resources/io/github/martinschneider/orzo/tests) using Orzo and verifying their output against [predefined expectations](src/test/resources/io/github/martinschneider/orzo/tests/output)
+ - Bytecode regression tests: These tests check whether the bytecode created by the integration tests matches the one of the previous version (the baseline). This can be useful to check whether changes to the code generation have any unexpected side effects. Note: I consider this the least important test type, it is a nice-to-have on top of unit and integration tests.
+ - Self-compilation tests (Phase 1): These tests check whether Orzo can successfully compile its own source code. After running the unit tests, we will re-compile [all files that Orzo can already handle](whitelist.txt) and then re-run only the integration tests (see above) in the `integration-test` phase of the Maven build (this is configured in the `selfcompile` profile): `mvn verify -Pselfcompile`. 
+ - Self-compilation tests (Phase 2): Once Orzo can compile its entire source-code, the next check will be to verify that the self-compiled compiler produces the same bytecode as the one compiled with `javac`.

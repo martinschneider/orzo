@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.DEFAULT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
@@ -46,6 +47,10 @@ public class MethodParser implements ProdParser<Method> {
     }
     if (tokens.curr().eq(keyword(STATIC))) {
       // TODO: handle static (for now we just ignore it)
+      tokens.next();
+    }
+    if (tokens.curr().eq(keyword(FINAL))) {
+      // TODO: handle final (for now we just ignore it)
       tokens.next();
     }
     if (tokens.curr() instanceof Type) {

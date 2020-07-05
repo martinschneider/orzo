@@ -53,4 +53,9 @@ public class OperandStack {
   public int maxSize() {
     return maxSize;
   }
+
+  public void reset() {
+    maxSize = 0;
+    types.clear();
+  }
 }

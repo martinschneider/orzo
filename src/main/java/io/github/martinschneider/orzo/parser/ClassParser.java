@@ -16,9 +16,12 @@ import io.github.martinschneider.orzo.lexer.tokens.EOF;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import io.github.martinschneider.orzo.parser.productions.ClassMember;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +37,9 @@ public class ClassParser implements ProdParser<Clazz> {
   @Override
   public Clazz parse(TokenList tokens) {
     Identifier name;
-    List<Method> body;
+    List<Method> methods;
+    List<ParallelDeclaration> decls;
+    List<ClassMember> members;
     String packageDeclaration = parsePackageDeclaration(tokens);
     List<Import> imports = parseImports(tokens);
     Scope scope = ctx.scopeParser.parse(tokens);
@@ -53,28 +58,46 @@ public class ClassParser implements ProdParser<Clazz> {
         }
         tokens.next();
         // set temporary clazz object for the method parser's use
-        ctx.currClazz = new Clazz(packageDeclaration, imports, scope, name, null);
-        body = parseClassBody(tokens);
-        if (body == null) {
+        ctx.currClazz = new Clazz(packageDeclaration, imports, scope, name, null, null);
+        members = parseClassBody(tokens);
+        if (members == null) {
           ctx.errors.addError(LOG_NAME, "missing class body");
+        }
+        methods = new ArrayList<>();
+        decls = new ArrayList<>();
+        for (ClassMember member : members) {
+          if (member instanceof Method) {
+            methods.add((Method) member);
+          } else if (member instanceof ParallelDeclaration) {
+            decls.add((ParallelDeclaration) member);
+          }
         }
         if (!tokens.curr().eq(sym(RBRACE))) {
           ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
         }
         tokens.next();
-        ctx.currClazz.body = body;
+        ctx.currClazz.methods = methods;
+        ctx.currClazz.fields = decls;
         return ctx.currClazz;
       }
     }
     return null;
   }
 
-  List<Method> parseClassBody(TokenList tokens) {
-    List<Method> classBody = new ArrayList<>();
-    Method method;
-    while ((method = ctx.methodParser.parse(tokens)) != null) {
-      classBody.add(method);
-    }
+  List<ClassMember> parseClassBody(TokenList tokens) {
+    List<ClassMember> classBody = new ArrayList<>();
+    ClassMember member = null;
+    do {
+      if ((member = ctx.methodParser.parse(tokens)) != null) {
+        classBody.add(member);
+      } else if ((member = ctx.declParser.parse(tokens)) != null) {
+        ParallelDeclaration pDecl = (ParallelDeclaration) member;
+        for (Declaration decl : pDecl.declarations) {
+          decl.isField = true;
+        }
+        classBody.add(pDecl);
+      }
+    } while (member != null);
     if (!classBody.isEmpty()) {
       return classBody;
     } else {

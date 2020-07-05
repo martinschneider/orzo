@@ -30,18 +30,19 @@ public class ConstantPoolProcessor {
     ConstantPool constPool = new ConstantPool();
     constPool.addClass(clazz.fqn('/'));
     constPool.addClass("java/lang/Object");
-    for (Method method : clazz.body) {
-      // add method name to constant pool
-      constPool.addUtf8(method.name.val.toString());
-      // add type descriptor to constant pool
-      constPool.addUtf8(TypeUtils.methodDescr(method));
+    for (Method method : clazz.methods) {
       constPool.addMethodRef(
           clazz.fqn('/'), method.name.val.toString(), TypeUtils.methodDescr(method));
-      // add constants from method body to constant pool
       for (Statement stmt : method.body) {
         constPool = processStatement(constPool, stmt);
       }
       constPool.addUtf8("Code");
+    }
+    for (ParallelDeclaration pDecl : clazz.fields) {
+      for (Declaration decl : pDecl.declarations) {
+        constPool.addFieldRef(
+            clazz.fqn('/'), decl.name.id().toString(), TypeUtils.descr(decl.type));
+      }
     }
     return constPool;
   }

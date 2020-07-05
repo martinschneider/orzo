@@ -5,6 +5,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
+import java.util.HashMap;
 import java.util.Map;
 
 public class VariableMap {
@@ -14,6 +15,11 @@ public class VariableMap {
 
   public VariableMap(Map<String, VariableInfo> variables) {
     this.variables = variables;
+  }
+
+  public VariableMap(VariableMap globalFields) {
+    this.variables = new HashMap<>(globalFields.variables);
+    this.size = globalFields.size;
   }
 
   public Map<String, VariableInfo> getVariables() {

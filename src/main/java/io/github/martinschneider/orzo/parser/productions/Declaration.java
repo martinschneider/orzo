@@ -1,22 +1,28 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.Scope;
 
-public class Declaration implements Statement {
+public class Declaration {
+  public Scope scope;
+  public boolean isStatic;
+  public boolean isFinal;
+  public boolean isField;
   public Identifier name;
   public int arrDim;
   public String type;
   public Expression val;
 
-  public Declaration(String type, int arrDim, Identifier name, Expression val) {
+  public Declaration(Scope scope, String type, int arrDim, Identifier name, Expression val) {
+    this.scope = scope;
     this.type = type;
     this.arrDim = arrDim;
     this.name = name;
     this.val = val;
   }
 
-  public Declaration(String type, Identifier name, Expression val) {
-    this(type, 0, name, val);
+  public Declaration(Scope scope, String type, Identifier name, Expression val) {
+    this(scope, type, 0, name, val);
   }
 
   @Override

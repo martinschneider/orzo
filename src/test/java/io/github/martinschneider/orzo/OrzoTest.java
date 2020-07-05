@@ -119,7 +119,8 @@ public class OrzoTest {
         Arguments.of(List.of("tests/PreDecrementLong")),
         Arguments.of(List.of("tests/PreDecrementChar")),
         Arguments.of(List.of("examples/Fibonacci2", "examples/MathUtils")),
-        Arguments.of(List.of("tests/BasicTypeCasts")));
+        Arguments.of(List.of("tests/BasicTypeCasts")),
+        Arguments.of(List.of("tests/GlobalVariables")));
   }
 
   @ParameterizedTest

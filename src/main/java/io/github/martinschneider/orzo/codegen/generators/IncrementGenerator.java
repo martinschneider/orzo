@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.IINC;
+import static io.github.martinschneider.orzo.codegen.OpCodes.WIDE;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.arithmeticOps;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.dupOps;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
@@ -13,6 +14,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
@@ -41,15 +43,14 @@ public class IncrementGenerator implements StatementGenerator {
     }
     Identifier id = (Identifier) incr.expr.tokens.get(0);
     Operators op = ((Operator) incr.expr.tokens.get(1)).opValue();
-    String type = variables.get(id).type;
-    byte idx = variables.get(id).idx;
-    inc(out, type, idx, op, true);
+    VariableInfo varInfo = variables.get(id);
+    inc(out, varInfo, op, true);
     return out;
   }
 
   // if evalOnly==true the variable value will be changed but not put/left on the stack
   public HasOutput inc(
-      DynamicByteArray out, String type, byte idx, Operators incrOp, boolean evalOnly) {
+      DynamicByteArray out, VariableInfo varInfo, Operators incrOp, boolean evalOnly) {
     boolean pre = false;
     Operators op = PLUS;
     if (incrOp.equals(PRE_DECREMENT) || incrOp.equals(PRE_INCREMENT)) {
@@ -59,39 +60,47 @@ public class IncrementGenerator implements StatementGenerator {
       op = MINUS;
     }
     // special handling for integer because there is IINC
-    if (type.equals(INT)) {
-      return incInt(out, idx, op.equals(PLUS) ? (byte) 1 : (byte) -1, pre, evalOnly);
+    if (varInfo.type.equals(INT)) {
+      return incInt(out, varInfo, op.equals(PLUS) ? (byte) 1 : (byte) -1, pre, evalOnly);
     }
     if (pre) {
-      ctx.loadGen.load(out, type, idx);
-      ctx.pushGen.push(out, type, 1);
-      out.write(arithmeticOps.get(op).get(type));
+      ctx.loadGen.load(out, varInfo);
+      ctx.pushGen.push(out, varInfo.type, 1);
+      out.write(arithmeticOps.get(op).get(varInfo.type));
       if (!evalOnly) {
-        out.write(dupOps.get(type));
+        out.write(dupOps.get(varInfo.type));
       }
-      ctx.storeGen.store(out, type, idx);
+      ctx.storeGen.store(out, varInfo);
     } else {
-      ctx.loadGen.load(out, type, idx);
+      ctx.loadGen.load(out, varInfo);
       if (!evalOnly) {
-        out.write(dupOps.get(type));
+        out.write(dupOps.get(varInfo.type));
       }
-      ctx.pushGen.push(out, type, 1);
-      out.write(arithmeticOps.get(op).get(type));
-      ctx.storeGen.store(out, type, idx);
+      ctx.pushGen.push(out, varInfo.type, 1);
+      out.write(arithmeticOps.get(op).get(varInfo.type));
+      ctx.storeGen.store(out, varInfo);
     }
     return out;
   }
 
   private HasOutput incInt(
-      DynamicByteArray out, byte idx, byte val, boolean pre, boolean evalOnly) {
+      DynamicByteArray out, VariableInfo varInfo, short val, boolean pre, boolean evalOnly) {
     if (!evalOnly && !pre) {
-      ctx.loadGen.load(out, INT, idx);
+      ctx.loadGen.load(out, varInfo);
+    }
+    if (varInfo.idx > Byte.MAX_VALUE || val > Byte.MAX_VALUE) {
+      out.write(WIDE);
     }
     out.write(IINC);
-    out.write(idx);
-    out.write(val);
+    if (varInfo.idx > Byte.MAX_VALUE || val > Byte.MAX_VALUE) {
+      out.write(varInfo.idx);
+      out.write(val);
+    } else {
+      out.write((byte) varInfo.idx);
+      out.write((byte) val);
+    }
     if (!evalOnly && pre) {
-      ctx.loadGen.load(out, INT, idx);
+      ctx.loadGen.load(out, varInfo);
     }
     return out;
   }

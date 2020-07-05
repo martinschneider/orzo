@@ -21,7 +21,6 @@ public class CGContext {
   public Clazz clazz;
   public int currentIdx;
   public ConstantPool constPool;
-  public ClassMembers classMembers;
   public Map<String, Method> methodMap;
   public StatementDelegator delegator;
   public AssignmentGenerator assignGen;

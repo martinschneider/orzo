@@ -28,31 +28,33 @@ public class DeclarationParserTest {
 
   private static Stream<Arguments> test() throws IOException {
     return Stream.of(
-        Arguments.of("int x=100;", pDecl(id("x"), INT, expr("100"))),
-        Arguments.of("boolean b=true;", pDecl(id("b"), "boolean", expr("true"))),
-        Arguments.of("boolean bool=false;", pDecl(id("bool"), "boolean", expr("false"))),
-        Arguments.of("String martin", pDecl(id("martin"), "String", null)),
-        Arguments.of("double d=1.23", pDecl(id("d"), "double", expr("1.23"))),
-        Arguments.of("int i=fac(100)", pDecl(id("i"), INT, expr("fac(100)"))),
+        Arguments.of("int x=100;", pDecl(null, id("x"), INT, expr("100"))),
+        Arguments.of("boolean b=true;", pDecl(null, id("b"), "boolean", expr("true"))),
+        Arguments.of("boolean bool=false;", pDecl(null, id("bool"), "boolean", expr("false"))),
+        Arguments.of("String martin", pDecl(null, id("martin"), "String", null)),
+        Arguments.of("double d=1.23", pDecl(null, id("d"), "double", expr("1.23"))),
+        Arguments.of("int i=fac(100)", pDecl(null, id("i"), INT, expr("fac(100)"))),
         Arguments.of(
             "int[] a = new int[] {1, 2, 3};",
-            pDecl(id("a"), INT, 1, arrInit(INT, 3, List.of(expr("1"), expr("2"), expr("3"))))),
+            pDecl(
+                null, id("a"), INT, 1, arrInit(INT, 3, List.of(expr("1"), expr("2"), expr("3"))))),
         Arguments.of(
-            "int[] a = new int[5];", pDecl(id("a"), INT, 1, arrInit(INT, List.of(5), emptyList()))),
+            "int[] a = new int[5];",
+            pDecl(null, id("a"), INT, 1, arrInit(INT, List.of(5), emptyList()))),
         Arguments.of(
             "int a,b,c=1,2,3;",
             pDecl(
                 List.of(
-                    decl(id("a"), INT, expr("1")),
-                    decl(id("b"), INT, expr("2")),
-                    decl(id("c"), INT, expr("3"))))),
+                    decl(null, id("a"), INT, expr("1")),
+                    decl(null, id("b"), INT, expr("2")),
+                    decl(null, id("c"), INT, expr("3"))))),
         Arguments.of(
             "double a,b,c=1,2;",
             pDecl(
                 List.of(
-                    decl(id("a"), DOUBLE, expr("1")),
-                    decl(id("b"), DOUBLE, expr("2")),
-                    decl(id("c"), DOUBLE, null)))));
+                    decl(null, id("a"), DOUBLE, expr("1")),
+                    decl(null, id("b"), DOUBLE, expr("2")),
+                    decl(null, id("c"), DOUBLE, null)))));
   }
 
   @MethodSource

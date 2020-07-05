@@ -6,26 +6,34 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Clazz {
-  public List<Method> body;
+  public List<Method> methods;
   public List<Import> imports;
+  public List<ParallelDeclaration> fields;
   public Identifier name;
   public String packageName;
   public Scope scope;
 
   public Clazz(
-      String packageName, List<Import> imports, Scope scope, Identifier name, List<Method> body) {
+      String packageName,
+      List<Import> imports,
+      Scope scope,
+      Identifier name,
+      List<Method> methods,
+      List<ParallelDeclaration> fields) {
     this.packageName = packageName;
     this.imports = imports;
     this.scope = scope;
     this.name = name;
-    this.body = body;
+    this.methods = methods;
+    this.fields = fields;
   }
 
   @Override
   public int hashCode() {
-    int prime = 31;
+    final int prime = 31;
     int result = 1;
-    result = prime * result + ((body == null) ? 0 : body.hashCode());
+    result = prime * result + ((methods == null) ? 0 : methods.hashCode());
+    result = prime * result + ((fields == null) ? 0 : fields.hashCode());
     result = prime * result + ((imports == null) ? 0 : imports.hashCode());
     result = prime * result + ((name == null) ? 0 : name.hashCode());
     result = prime * result + ((packageName == null) ? 0 : packageName.hashCode());
@@ -45,11 +53,18 @@ public class Clazz {
       return false;
     }
     Clazz other = (Clazz) obj;
-    if (body == null) {
-      if (other.body != null) {
+    if (methods == null) {
+      if (other.methods != null) {
         return false;
       }
-    } else if (!body.equals(other.body)) {
+    } else if (!methods.equals(other.methods)) {
+      return false;
+    }
+    if (fields == null) {
+      if (other.fields != null) {
+        return false;
+      }
+    } else if (!fields.equals(other.fields)) {
       return false;
     }
     if (imports == null) {
@@ -108,8 +123,9 @@ public class Clazz {
     strBuilder.append(", imports[");
     strBuilder.append(imports.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     strBuilder.append("], methods[");
-    strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append("]");
+    strBuilder.append(methods.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
+    strBuilder.append("], fields[");
+    strBuilder.append(fields.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     return strBuilder.toString();
   }
 }

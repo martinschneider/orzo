@@ -36,8 +36,8 @@ public class StatementParserTest {
         Arguments.of(
             "do{x=y+1;y=y-1;} while(i>0)",
             doStmt(cond("i>0"), List.of(assign("x=y+1"), assign("y=y-1")))),
-        Arguments.of("int z;", pDecl(id("z"), "int", null)),
-        Arguments.of("int z=300;", pDecl(id("z"), "int", expr("300"))));
+        Arguments.of("int z;", pDecl(null, id("z"), "int", null)),
+        Arguments.of("int z=300;", pDecl(null, id("z"), "int", expr("300"))));
   }
 
   @ParameterizedTest

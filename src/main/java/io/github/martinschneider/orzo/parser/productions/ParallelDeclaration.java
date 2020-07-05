@@ -2,7 +2,7 @@ package io.github.martinschneider.orzo.parser.productions;
 
 import java.util.List;
 
-public class ParallelDeclaration implements Statement {
+public class ParallelDeclaration implements Statement, ClassMember {
   public ParallelDeclaration(List<Declaration> declarations) {
     this.declarations = declarations;
   }
@@ -37,5 +37,10 @@ public class ParallelDeclaration implements Statement {
       return false;
     }
     return true;
+  }
+
+  @Override
+  public String toString() {
+    return "[declarations=" + declarations + "]";
   }
 }

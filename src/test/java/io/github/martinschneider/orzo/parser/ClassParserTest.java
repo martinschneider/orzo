@@ -43,11 +43,14 @@ public class ClassParserTest {
                         type(VOID).toString(),
                         id("test"),
                         emptyList(),
-                        List.of(assign("x=0")))))),
+                        List.of(assign("x=0")))),
+                emptyList())),
         Arguments.of(
             "private class Laura{}",
-            clazz(null, emptyList(), scope(PRIVATE), id("Laura"), emptyList())),
-        Arguments.of("class Empty{}", clazz(null, emptyList(), null, id("Empty"), emptyList())));
+            clazz(null, emptyList(), scope(PRIVATE), id("Laura"), emptyList(), emptyList())),
+        Arguments.of(
+            "class Empty{}",
+            clazz(null, emptyList(), null, id("Empty"), emptyList(), emptyList())));
   }
 
   @ParameterizedTest

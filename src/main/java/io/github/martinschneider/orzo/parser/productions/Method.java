@@ -2,11 +2,12 @@ package io.github.martinschneider.orzo.parser.productions;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Method {
+public class Method implements ClassMember {
   public List<Argument> args;
   public List<Statement> body;
   public Identifier name;
@@ -37,6 +38,26 @@ public class Method {
     for (int i = 0; i < args.size(); i++) {
       this.args.add(new Argument(args.get(i), new Identifier("arg" + i)));
     }
+  }
+
+  public short accessFlags() {
+    short flags = 0;
+    switch ((Scopes) scope.val) {
+      case PUBLIC:
+        flags += 1;
+        break;
+      case PRIVATE:
+        flags += 2;
+        break;
+      case PROTECTED:
+        flags += 4;
+        break;
+      default:
+        break;
+    }
+    // if (isStatic) TODO: for now, all methods are static
+    flags += 8;
+    return flags;
   }
 
   @Override

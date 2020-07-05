@@ -31,6 +31,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.PUTSTATIC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SASTORE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
@@ -45,6 +46,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.VariableInfo;
 
 public class StoreGenerator {
   public CGContext ctx;
@@ -53,7 +55,7 @@ public class StoreGenerator {
     this.ctx = ctx;
   }
 
-  public HasOutput store(DynamicByteArray out, String type, byte idx) {
+  private HasOutput store(DynamicByteArray out, String type, short idx) {
     switch (type) {
       case LONG:
         return storeLong(out, idx);
@@ -71,35 +73,13 @@ public class StoreGenerator {
         return storeInteger(out, idx);
       case BOOLEAN:
         return storeInteger(out, idx);
-    }
-    return out;
-  }
-
-  public HasOutput storeValue(DynamicByteArray out, String type, byte idx) {
-    switch (type) {
-      case BYTE:
-        return storeInteger(out, idx);
-      case CHAR:
-        return storeInteger(out, idx);
-      case SHORT:
-        return storeInteger(out, idx);
-      case LONG:
-        return storeLong(out, idx);
-      case INT:
-        return storeInteger(out, idx);
-      case BOOLEAN:
-        return storeInteger(out, idx);
-      case DOUBLE:
-        return storeDouble(out, idx);
-      case FLOAT:
-        return storeFloat(out, idx);
       case REF:
         return storeReference(out, idx);
     }
     return out;
   }
 
-  public HasOutput storeLong(HasOutput out, int idx) {
+  private HasOutput storeLong(HasOutput out, short idx) {
     if (idx == 0) {
       out.write(LSTORE_0);
     } else if (idx == 1) {
@@ -109,13 +89,12 @@ public class StoreGenerator {
     } else if (idx == 3) {
       out.write(LSTORE_3);
     } else {
-      out.write(LSTORE);
-      out.write((byte) idx);
+      ctx.basicGen.wide(out, idx, LSTORE);
     }
     return out;
   }
 
-  public HasOutput storeReference(DynamicByteArray out, byte idx) {
+  private HasOutput storeReference(DynamicByteArray out, short idx) {
     if (idx == 0) {
       out.write(ASTORE_0);
     } else if (idx == 1) {
@@ -125,13 +104,12 @@ public class StoreGenerator {
     } else if (idx == 3) {
       out.write(ASTORE_3);
     } else {
-      out.write(ASTORE);
-      out.write(idx);
+      ctx.basicGen.wide(out, idx, ASTORE);
     }
     return out;
   }
 
-  public HasOutput storeDouble(DynamicByteArray out, byte idx) {
+  private HasOutput storeDouble(DynamicByteArray out, short idx) {
     if (idx == 0) {
       out.write(DSTORE_0);
     } else if (idx == 1) {
@@ -141,13 +119,12 @@ public class StoreGenerator {
     } else if (idx == 3) {
       out.write(DSTORE_3);
     } else {
-      out.write(DSTORE);
-      out.write(idx);
+      ctx.basicGen.wide(out, idx, DSTORE);
     }
     return out;
   }
 
-  public HasOutput storeFloat(DynamicByteArray out, byte idx) {
+  private HasOutput storeFloat(DynamicByteArray out, short idx) {
     if (idx == 0) {
       out.write(FSTORE_0);
     } else if (idx == 1) {
@@ -157,13 +134,12 @@ public class StoreGenerator {
     } else if (idx == 3) {
       out.write(FSTORE_3);
     } else {
-      out.write(FSTORE);
-      out.write(idx);
+      ctx.basicGen.wide(out, idx, FSTORE);
     }
     return out;
   }
 
-  public HasOutput storeInteger(HasOutput out, int idx) {
+  private HasOutput storeInteger(HasOutput out, short idx) {
     if (idx == 0) {
       out.write(ISTORE_0);
     } else if (idx == 1) {
@@ -173,8 +149,7 @@ public class StoreGenerator {
     } else if (idx == 3) {
       out.write(ISTORE_3);
     } else {
-      out.write(ISTORE);
-      out.write((byte) idx);
+      ctx.basicGen.wide(out, idx, ISTORE);
     }
     return out;
   }
@@ -204,5 +179,18 @@ public class StoreGenerator {
         break;
     }
     return out;
+  }
+
+  private HasOutput putStatic(DynamicByteArray out, short idx) {
+    out.write(PUTSTATIC);
+    out.write(idx);
+    return out;
+  }
+
+  public HasOutput store(DynamicByteArray out, VariableInfo variableInfo) {
+    if (variableInfo.isField) {
+      return putStatic(out, variableInfo.idx);
+    }
+    return store(out, variableInfo.type, variableInfo.idx);
   }
 }
