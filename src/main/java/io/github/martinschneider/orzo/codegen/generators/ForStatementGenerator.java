@@ -45,13 +45,14 @@ public class ForStatementGenerator implements StatementGenerator {
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {
-      byte[] jmpOffset = shortToByteArray((short) bodyBytes.length - idx + 4);
+      byte[] jmpOffset = shortToByteArray((short) (bodyBytes.length - idx + 4));
       bodyBytes[idx] = jmpOffset[0];
       bodyBytes[idx + 1] = jmpOffset[1];
     }
     out.write(bodyBytes);
     out.write(GOTO);
-    out.write(shortToByteArray(-(bodyOut.getBytes().length + conditionOut.getBytes().length)));
+    out.write(
+        shortToByteArray((short) (-(bodyOut.getBytes().length + conditionOut.getBytes().length))));
     return out;
   }
 }

@@ -4,8 +4,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
@@ -52,7 +50,7 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
     if (tokens.curr() instanceof Type && !tokens.curr().eq("VOID")) {
       type = (Type) tokens.curr();
       tokens.next();
-      type.arr = parseArrayDef(tokens);
+      type.arr = ctx.arrayDefParser.parse(tokens);
       while (tokens.curr() instanceof Identifier || tokens.curr().eq(sym(COMMA))) {
         if (tokens.curr() instanceof Identifier) {
           Identifier id = (Identifier) tokens.curr();
@@ -95,19 +93,5 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       return expr;
     }
     return ctx.exprParser.parse(tokens);
-  }
-
-  byte parseArrayDef(TokenList tokens) {
-    byte array = 0;
-    while (tokens.curr().eq(sym(LBRAK))) {
-      tokens.next();
-      if (tokens.curr().eq(sym(RBRAK))) {
-        array++;
-      } else {
-        return 0;
-      }
-      tokens.next();
-    }
-    return array;
   }
 }

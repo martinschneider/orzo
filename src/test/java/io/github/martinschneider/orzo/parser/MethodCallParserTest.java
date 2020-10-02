@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
+import static io.github.martinschneider.orzo.parser.TestHelper.arrInit;
 import static io.github.martinschneider.orzo.parser.TestHelper.arrSel;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.expr;
@@ -33,19 +34,29 @@ public class MethodCallParserTest {
         Arguments.of(
             "calculateSomething(a[x])",
             methodCall(
-                id("calculateSomething"),
-                List.of(expr(List.of(id("a", arrSel(List.of(expr("x"))))))))),
-        Arguments.of("calculateSomething()", methodCall(id("calculateSomething"), emptyList())),
-        Arguments.of(
-            "calculateSomething(x)", methodCall(id("calculateSomething"), List.of(expr("x")))),
-        Arguments.of(
-            "calculateSomething(a,b,c)",
-            methodCall(id("calculateSomething"), List.of(expr("a"), expr("b"), expr("c")))),
-        Arguments.of("√(n)", methodCall(id("Math.sqrt"), List.of(expr("n")))),
-        Arguments.of("⌊x⌋", methodCall(id("Math.round"), List.of(expr("Math.floor(x)")))));
+                "calculateSomething", List.of(expr(List.of(id("a", arrSel(List.of(expr("x")))))))),
+            Arguments.of("calculateSomething()", methodCall("calculateSomething", emptyList())),
+            Arguments.of(
+                "calculateSomething(x)", methodCall("calculateSomething", List.of(expr("x")))),
+            Arguments.of(
+                "calculateSomething(a,b,c)",
+                methodCall("calculateSomething", List.of(expr("a"), expr("b"), expr("c")))),
+            Arguments.of("√(n)", methodCall("Math.sqrt", List.of(expr("n")))),
+            Arguments.of("⌊x⌋", methodCall("Math.round", List.of(expr("Math.floor(x)")))),
+            Arguments.of(
+                "test(new int[] {1, 2})",
+                methodCall("test", List.of(arrInit("int", 2, List.of(expr("1"), expr("2")))))),
+            Arguments.of(
+                "test(new int[] {1, 2}, new int[] {3, 4})",
+                methodCall(
+                    "test",
+                    List.of(
+                        arrInit("int", 2, List.of(expr("1"), expr("2"))),
+                        arrInit("int", 2, List.of(expr("3"), expr("4"))))))));
     // Arguments.of(
     // "⌊((1+√5)/2) ** n)/√5+0.5⌋",
-    // methodCall(id("Math.round"), List.of(expr("Math.floor(((1+√5)/2) ** n)/√5+0.5)")))));
+    // methodCall(id("Math.round"), List.of(expr("Math.floor(((1+√5)/2) **
+    // n)/√5+0.5)")))));
   }
 
   @ParameterizedTest

@@ -52,7 +52,7 @@ public class MethodProcessor {
   // predefined package java.lang.
   private Map<String, Method> addJavaLang(Map<String, Method> methodMap, Clazz currentClazz) {
     // TODO: not sure whether we should stick with the standard here or limit automatic imports to
-    // ceratin classes
+    // certain classes
     for (Class<?> clazz :
         List.of(
             AbstractMethodError.class,

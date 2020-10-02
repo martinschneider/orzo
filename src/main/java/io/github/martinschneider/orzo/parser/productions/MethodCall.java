@@ -2,18 +2,17 @@ package io.github.martinschneider.orzo.parser.productions;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Location;
-import io.github.martinschneider.orzo.lexer.tokens.Token;
 import java.util.List;
 import java.util.stream.Collectors;
 
 // extending Token is not the most elegant solution but it helps with parsing method calls as part
 // of expressions
-public class MethodCall extends Token implements Statement {
-  public Identifier name;
+public class MethodCall extends Identifier implements Statement {
+  public String name;
   public List<Expression> params;
 
-  public MethodCall(Identifier name, List<Expression> params) {
-    super(name);
+  public MethodCall(String name, List<Expression> params) {
+    super(name, null);
     this.name = name;
     this.params = params;
   }

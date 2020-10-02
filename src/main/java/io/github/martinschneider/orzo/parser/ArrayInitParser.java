@@ -38,20 +38,14 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
       } else {
         ctx.errors.addError(LOG_NAME, "missing type in array initialiser");
       }
-      List<Integer> dimensions = new ArrayList<>();
+      List<Expression> dimensions = new ArrayList<>();
       while (tokens.curr().eq(sym(LBRAK))) {
         tokens.next();
-        if (tokens.curr() instanceof IntLiteral) {
-          long size = ((IntLiteral) tokens.curr()).intValue();
-          if (size > Integer.MAX_VALUE || size < 0) {
-            ctx.errors.addError(LOG_NAME, "invalid array size: " + size, tokens);
-            tokens.next();
-          } else {
-            dimensions.add((int) size);
-            tokens.next();
-          }
+        Expression dim = ctx.exprParser.parse(tokens);
+        if (dim != null) {
+          dimensions.add(dim);
         } else {
-          dimensions.add(-1); // placeholder
+          dimensions.add(null); // placeholder
         }
         if (!tokens.curr().eq(sym(RBRAK))) {
           ctx.errors.missingExpected(LOG_NAME, sym(RBRAK), tokens);
@@ -81,16 +75,25 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
           }
           tokens.next();
         }
+      } else {
+        vals.add(new ArrayList<>());
       }
       for (int i = 0; i < vals.size(); i++) {
-        if (dimensions.get(i) == -1) {
-          dimensions.set(i, vals.get(i).size());
+        if (dimensions.get(i) == null) {
+          dimensions.set(i, new Expression(List.of(new IntLiteral(vals.get(i).size(), false))));
         } else {
-          // this is different from the Java spec which doesn't allow specifying array dimension and
+          // this is different from the Java spec which doesn't allow specifying array
+          // dimension and
           // an initializer
-          // we allow it (even though it's redundant) but fail if the size and the number of vals
-          // doen't match
-          if (dimensions.get(i) != vals.get(i).size() && vals.get(i).size() != 0) {
+          // we allow it (even though it's redundant) but fail if the size and the number
+          // of vals
+          // doesn't match
+          //
+          // if dim is a literal and it doesn't match the number of values found
+          if (dimensions.get(i).tokens.size() == 1
+              && dimensions.get(i).tokens.get(0) instanceof IntLiteral
+              && ((IntLiteral) dimensions.get(i).tokens.get(0)).intValue() != vals.get(i).size()
+              && vals.get(i).size() != 0) {
             ctx.errors.addError(
                 LOG_NAME,
                 "array initializer size mismatch " + dimensions.get(i) + "!=" + vals.get(i).size());

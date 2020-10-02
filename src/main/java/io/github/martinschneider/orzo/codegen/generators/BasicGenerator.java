@@ -16,7 +16,10 @@ public class BasicGenerator {
   }
 
   public void convert(DynamicByteArray out, String from, String to) {
-    out.write(castOps.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]));
+    // TODO: array casts
+    if (from != null && to != null) {
+      out.write(castOps.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]));
+    }
     ctx.opStack.pop();
     ctx.opStack.push(to);
   }

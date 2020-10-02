@@ -71,7 +71,10 @@ public class MethodParserTest {
                 List.of(doStmt(cond("x>0"), emptyList())))),
         Arguments.of(
             "private double calculateMean(){}",
-            method(scope(PRIVATE), "double", id("calculateMean"), emptyList(), emptyList())));
+            method(scope(PRIVATE), "double", id("calculateMean"), emptyList(), emptyList())),
+        Arguments.of(
+            "public byte[] test(){}",
+            method(scope(PUBLIC), "byte[]", id("test"), emptyList(), emptyList())));
   }
 
   @MethodSource

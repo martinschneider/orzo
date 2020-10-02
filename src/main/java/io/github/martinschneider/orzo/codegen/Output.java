@@ -1,6 +1,5 @@
 package io.github.martinschneider.orzo.codegen;
 
-import static io.github.martinschneider.orzo.codegen.ByteUtils.bytesToHex;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.intToByteArray;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.longToByteArray;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
@@ -58,11 +57,6 @@ public class Output implements HasOutput {
 
   public void write(short output) {
     write(shortToByteArray(output));
-  }
-
-  @Override
-  public String toString() {
-    return bytesToHex(array.getBytes());
   }
 
   @Override

@@ -12,6 +12,7 @@ import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
+import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.Statement;
@@ -55,7 +56,7 @@ public class DeclarationGenerator implements StatementGenerator {
     byte arrayType = getArrayType(type);
     byte storeOpCode = getStoreOpCode(type);
     ArrayInit arrInit = (ArrayInit) decl.val;
-    createArray(out, arrayType, arrInit.dims);
+    createArray(out, variables, arrayType, arrInit.dims);
     // multi-dim array
     if (arrInit.vals.size() >= 2) {
       // TODO
@@ -73,9 +74,10 @@ public class DeclarationGenerator implements StatementGenerator {
     return out;
   }
 
-  private void createArray(DynamicByteArray out, byte arrayType, List<Integer> dims) {
+  private void createArray(
+      DynamicByteArray out, VariableMap variables, byte arrayType, List<Expression> dims) {
     if (dims.size() == 1) {
-      ctx.pushGen.push(out, INT, dims.get(0));
+      ctx.exprGen.eval(out, variables, INT, dims.get(0));
       out.write(NEWARRAY);
       out.write(arrayType);
     } else {

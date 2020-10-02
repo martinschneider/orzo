@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.ARETURN;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DRETURN;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FRETURN;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IRETURN;
@@ -54,6 +55,9 @@ public class RetGenerator implements StatementGenerator {
         break;
       case VOID:
         out.write(RETURN);
+    }
+    if (type.contains("[]")) {
+      out.write(ARETURN);
     }
     return out;
   }

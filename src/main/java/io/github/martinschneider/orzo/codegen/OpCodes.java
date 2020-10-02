@@ -155,6 +155,7 @@ public class OpCodes {
   public static final byte LRETURN = (byte) 173;
   public static final byte DRETURN = (byte) 175;
   public static final byte FRETURN = (byte) 174;
+  public static final byte ARETURN = (byte) 176;
   public static final byte RETURN = (byte) 177;
   public static final byte GETSTATIC = (byte) 178;
   public static final byte PUTSTATIC = (byte) 179;

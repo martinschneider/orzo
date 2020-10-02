@@ -2,44 +2,29 @@ package io.github.martinschneider.orzo.codegen;
 
 public class ByteUtils {
   public static byte[] shortToByteArray(short val) {
-    return new byte[] {(byte) ((val >> 8) & 0xff), (byte) (val & 0xff)};
-  }
-
-  public static byte[] shortToByteArray(int val) {
-    return new byte[] {(byte) (((short) val >> 8) & 0xff), (byte) (val & 0xff)};
+    return new byte[] {(byte) ((val >> 8) & 255), (byte) (val & 255)};
   }
 
   public static byte[] intToByteArray(int val) {
     return new byte[] {
-      (byte) ((val >> 24) & 0xff),
-      (byte) ((val >> 16) & 0xff),
-      (byte) ((val >> 8) & 0xff),
-      (byte) (val & 0xff)
+      (byte) ((val >> 24) & 255),
+      (byte) ((val >> 16) & 255),
+      (byte) ((val >> 8) & 255),
+      (byte) (val & 255)
     };
   }
 
   public static byte[] longToByteArray(long val) {
     return new byte[] {
-      (byte) ((val >> 56) & 0xff),
-      (byte) ((val >> 48) & 0xff),
-      (byte) ((val >> 40) & 0xff),
-      (byte) ((val >> 32) & 0xff),
-      (byte) ((val >> 24) & 0xff),
-      (byte) ((val >> 16) & 0xff),
-      (byte) ((val >> 8) & 0xff),
-      (byte) (val & 0xff)
+      (byte) ((val >> 56) & 255),
+      (byte) ((val >> 48) & 255),
+      (byte) ((val >> 40) & 255),
+      (byte) ((val >> 32) & 255),
+      (byte) ((val >> 24) & 255),
+      (byte) ((val >> 16) & 255),
+      (byte) ((val >> 8) & 255),
+      (byte) (val & 255)
     };
-  }
-
-  public static byte[] combine(byte[] left, byte[] right) {
-    byte[] result = new byte[left.length + right.length];
-    for (int i = 0; i < left.length; i++) {
-      result[i] = left[i];
-    }
-    for (int i = 0; i < right.length; i++) {
-      result[i + left.length] = right[i];
-    }
-    return result;
   }
 
   public static byte[] combine(byte left, byte right) {
@@ -62,12 +47,14 @@ public class ByteUtils {
     return combine(shortToByteArray(left), right);
   }
 
-  public static String bytesToHex(byte[] bytes) {
-    StringBuilder result = new StringBuilder();
-    for (byte temp : bytes) {
-      int decimal = temp & 0xff;
-      result.append(Integer.toHexString(decimal));
+  public static byte[] combine(byte[] left, byte[] right) {
+    byte[] result = new byte[left.length + right.length];
+    for (int i = 0; i < left.length; i++) {
+      result[i] = left[i];
     }
-    return result.toString();
+    for (int i = 0; i < right.length; i++) {
+      result[i + left.length] = right[i];
+    }
+    return result;
   }
 }

@@ -6,6 +6,7 @@ import io.github.martinschneider.orzo.parser.productions.Clazz;
 public class ParserContext {
   public Clazz currClazz;
   public CompilerErrors errors;
+  public ArrayDefParser arrayDefParser;
   public ArrayInitParser arrayInitParser;
   public ArraySelectorParser arraySelectorParser;
   public AssignmentParser assignParser;
@@ -31,6 +32,7 @@ public class ParserContext {
   public static ParserContext build(CompilerErrors errors) {
     ParserContext ctx = new ParserContext();
     ctx.errors = errors;
+    ctx.arrayDefParser = new ArrayDefParser();
     ctx.arrayInitParser = new ArrayInitParser(ctx);
     ctx.arraySelectorParser = new ArraySelectorParser(ctx);
     ctx.assignParser = new AssignmentParser(ctx);

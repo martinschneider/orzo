@@ -37,7 +37,7 @@ public class MethodParser implements ProdParser<Method> {
   public Method parse(TokenList tokens) {
     int idx = tokens.idx();
     Scope scope = scope(DEFAULT);
-    String type = null;
+    Type type = null;
     Identifier name;
     List<Argument> arguments = new ArrayList<>();
     List<Statement> body;
@@ -54,8 +54,9 @@ public class MethodParser implements ProdParser<Method> {
       tokens.next();
     }
     if (tokens.curr() instanceof Type) {
-      type = ((Type) tokens.curr()).name;
+      type = ((Type) tokens.curr());
       tokens.next();
+      type.arr = ctx.arrayDefParser.parse(tokens);
     }
     if (tokens.curr() instanceof Identifier) {
       name = (Identifier) tokens.curr();
@@ -97,7 +98,7 @@ public class MethodParser implements ProdParser<Method> {
         arguments = new ArrayList<>();
       }
       String fqn = (ctx.currClazz == null) ? null : ctx.currClazz.fqn();
-      return new Method(fqn, scope, type, name, arguments, body);
+      return new Method(fqn, scope, type.toString(), name, arguments, body);
     }
     return null;
   }

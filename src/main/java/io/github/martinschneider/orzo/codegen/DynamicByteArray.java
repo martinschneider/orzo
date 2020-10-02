@@ -1,6 +1,5 @@
 package io.github.martinschneider.orzo.codegen;
 
-import static io.github.martinschneider.orzo.codegen.ByteUtils.bytesToHex;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.intToByteArray;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
 
@@ -64,11 +63,6 @@ public class DynamicByteArray implements HasOutput {
   @Override
   public void write(short val) {
     write(shortToByteArray(val));
-  }
-
-  @Override
-  public String toString() {
-    return bytesToHex(array);
   }
 
   @Override

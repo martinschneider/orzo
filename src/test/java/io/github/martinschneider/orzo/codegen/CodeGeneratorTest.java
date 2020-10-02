@@ -34,7 +34,7 @@ public class CodeGeneratorTest {
 
   private static Stream<Arguments> testIntegerConstants() {
     return Stream.of(
-        Arguments.of(-32768, combine(SIPUSH, shortToByteArray(-32768))),
+        Arguments.of(-32768, combine(SIPUSH, shortToByteArray((short) -32768))),
         Arguments.of(-129, combine(SIPUSH, (short) -129)),
         Arguments.of(-128, combine(BIPUSH, (byte) -128)),
         Arguments.of(-2, combine(BIPUSH, (byte) -2)),

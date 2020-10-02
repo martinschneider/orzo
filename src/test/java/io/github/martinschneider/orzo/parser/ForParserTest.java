@@ -1,6 +1,5 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
 import static io.github.martinschneider.orzo.parser.TestHelper.cond;
@@ -33,7 +32,7 @@ public class ForParserTest {
                 assign("int i=1"),
                 cond("i<100"),
                 assign("i++"),
-                List.of(methodCall(id("doSomething"), List.of(expr("i")))))));
+                List.of(methodCall("doSomething", List.of(expr("i")))))));
   }
 
   @ParameterizedTest

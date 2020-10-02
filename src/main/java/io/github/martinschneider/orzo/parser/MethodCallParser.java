@@ -7,7 +7,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.eof;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
@@ -35,12 +34,14 @@ public class MethodCallParser implements ProdParser<MethodCall> {
     if (tokens.curr().eq(sym(LPAREN))) {
       tokens.next();
       Expression factor;
-      if ((factor = ctx.exprParser.parse(tokens)) != null) {
+      if ((factor = ctx.exprParser.parse(tokens)) != null
+          || (factor = ctx.arrayInitParser.parse(tokens)) != null) {
         parameters.add(factor);
       }
       while (tokens.curr().eq(sym(COMMA))) {
         tokens.next();
-        if ((factor = ctx.exprParser.parse(tokens)) != null) {
+        if ((factor = ctx.exprParser.parse(tokens)) != null
+            || (factor = ctx.arrayInitParser.parse(tokens)) != null) {
           parameters.add(factor);
         }
         // TODO: else
@@ -56,7 +57,8 @@ public class MethodCallParser implements ProdParser<MethodCall> {
     return null;
   }
 
-  // By default a method call production matches the trailing semicolon. In situations where this is
+  // By default a method call production matches the trailing semicolon. In
+  // situations where this is
   // not wanted (for example, inside an expression), we can call this method with
   // saveSemicolon=true.
   public MethodCall parse(TokenList tokens, boolean saveSemicolon) {
@@ -81,7 +83,7 @@ public class MethodCallParser implements ProdParser<MethodCall> {
         tokens.setIdx(idx);
         return null;
       }
-      return new MethodCall(id(name.toString()), parameters).wLoc(idToken.loc);
+      return new MethodCall(name.toString(), parameters).wLoc(idToken.loc);
     }
     return null;
   }

@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.str;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -12,6 +13,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.ArraySelector;
@@ -44,6 +46,10 @@ public class TestHelper {
     return new Expression(input);
   }
 
+  public static Expression expr(List<Token> input, Type cast) throws IOException {
+    return new Expression(input, cast);
+  }
+
   public static Argument arg(String type, Identifier name) throws IOException {
     return new Argument(type, name);
   }
@@ -53,12 +59,12 @@ public class TestHelper {
   }
 
   public static ArrayInit arrInit(
-      String type, List<Integer> dimensions, List<List<Expression>> vals) {
+      String type, List<Expression> dimensions, List<List<Expression>> vals) {
     return new ArrayInit(type, dimensions, vals);
   }
 
-  public static ArrayInit arrInit(String type, int dim, List<Expression> vals) {
-    return arrInit(type, List.of(dim), List.of(vals));
+  public static ArrayInit arrInit(String type, int dim, List<Expression> vals) throws IOException {
+    return arrInit(type, List.of(expr(List.of(integer(dim)))), List.of(vals));
   }
 
   public static Increment inc(Identifier id, Operator op) throws IOException {
@@ -141,6 +147,16 @@ public class TestHelper {
     return new Identifier(val, selector);
   }
 
+  public static Identifier id(String... vals) {
+    Identifier id = new Identifier(vals[0], null);
+    Identifier root = id;
+    for (int i = 1; i < vals.length; i++) {
+      id.next = new Identifier(vals[i]);
+      id = id.next;
+    }
+    return root;
+  }
+
   public static IfStatement ifStmt(List<IfBlock> ifBlocks, boolean hasElse) {
     return new IfStatement(ifBlocks, false);
   }
@@ -164,7 +180,7 @@ public class TestHelper {
     return new Method(fqClassName, scope, type, name, arguments, body);
   }
 
-  public static MethodCall methodCall(Identifier name, List<Expression> parameters) {
+  public static MethodCall methodCall(String name, List<Expression> parameters) {
     return new MethodCall(name, parameters);
   }
 

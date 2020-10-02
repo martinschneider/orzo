@@ -12,12 +12,14 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.expr;
+import static io.github.martinschneider.orzo.parser.TestHelper.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.methodCall;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.io.IOException;
 import java.util.List;
@@ -61,8 +63,8 @@ public class ExpressionParserTest {
         Arguments.of(
             "(5+7)/2", expr(List.of(integer(5), integer(7), op(PLUS), integer(2), op(DIV)))),
         Arguments.of("√5", expr(List.of(fp(2.23606797749979)))),
-        Arguments.of("√n", expr(List.of(methodCall(id("Math.sqrt"), List.of(expr("n")))))),
-        Arguments.of("√(n)", expr(List.of(methodCall(id("Math.sqrt"), List.of(expr("n")))))),
+        Arguments.of("√n", expr(List.of(methodCall("Math.sqrt", List.of(expr("n")))))),
+        Arguments.of("√(n)", expr(List.of(methodCall("Math.sqrt", List.of(expr("n")))))),
         Arguments.of("1 ** 2", expr(List.of(integer(1), integer(2), op(POW)))),
         Arguments.of("-1 ** 2", expr(List.of(integer(-1), integer(2), op(POW)))),
         Arguments.of("-1 ** -2", expr(List.of(integer(-1), integer(-2), op(POW)))),
@@ -81,7 +83,9 @@ public class ExpressionParserTest {
         Arguments.of(
             "-1 % -i", expr(List.of(integer(-1), integer(-1), id("i"), op(TIMES), op(MOD)))),
         Arguments.of(
-            "-1 - (-i)", expr(List.of(integer(-1), integer(-1), id("i"), op(TIMES), op(MINUS)))));
+            "-1 - (-i)", expr(List.of(integer(-1), integer(-1), id("i"), op(TIMES), op(MINUS)))),
+        Arguments.of("(byte) 1", expr(List.of(integer(1)), Type.type("byte"))));
+        //Arguments.of("a.b", expr(List.of(id("a", "b"))))
   }
 
   @MethodSource

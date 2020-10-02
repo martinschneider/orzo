@@ -45,35 +45,28 @@ public class Expression {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
     Expression other = (Expression) obj;
     if (cast == null) {
-      if (other.cast != null) {
-        return false;
-      }
-    } else if (!cast.equals(other.cast)) {
-      return false;
-    }
+      if (other.cast != null) return false;
+    } else if (!cast.equals(other.cast)) return false;
     if (tokens == null) {
-      if (other.tokens != null) {
-        return false;
-      }
-    } else if (!tokens.equals(other.tokens)) {
-      return false;
-    }
+      if (other.tokens != null) return false;
+    } else if (!tokens.equals(other.tokens)) return false;
     return true;
   }
 
   @Override
   public String toString() {
-    return tokens.stream().map(Object::toString).collect(Collectors.joining(","));
+    StringBuilder strBuilder = new StringBuilder();
+    if (cast != null) {
+      strBuilder.append('(');
+      strBuilder.append(cast.name);
+      strBuilder.append(')');
+    }
+    strBuilder.append(tokens.stream().map(Object::toString).collect(Collectors.joining(",")));
+    return strBuilder.toString();
   }
 }

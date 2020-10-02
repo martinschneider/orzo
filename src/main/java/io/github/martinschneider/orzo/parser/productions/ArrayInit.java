@@ -5,10 +5,10 @@ import java.util.stream.Collectors;
 
 public class ArrayInit extends Expression {
   public String type;
-  public List<Integer> dims;
+  public List<Expression> dims;
   public List<List<Expression>> vals;
 
-  public ArrayInit(String type, List<Integer> dims, List<List<Expression>> vals) {
+  public ArrayInit(String type, List<Expression> dims, List<List<Expression>> vals) {
     this.type = type;
     this.dims = dims;
     this.vals = vals;
@@ -26,37 +26,19 @@ public class ArrayInit extends Expression {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (!super.equals(obj)) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
+    if (this == obj) return true;
+    if (!super.equals(obj)) return false;
+    if (getClass() != obj.getClass()) return false;
     ArrayInit other = (ArrayInit) obj;
     if (dims == null) {
-      if (other.dims != null) {
-        return false;
-      }
-    } else if (!dims.equals(other.dims)) {
-      return false;
-    }
+      if (other.dims != null) return false;
+    } else if (!dims.equals(other.dims)) return false;
     if (type == null) {
-      if (other.type != null) {
-        return false;
-      }
-    } else if (!type.equals(other.type)) {
-      return false;
-    }
+      if (other.type != null) return false;
+    } else if (!type.equals(other.type)) return false;
     if (vals == null) {
-      if (other.vals != null) {
-        return false;
-      }
-    } else if (!vals.equals(other.vals)) {
-      return false;
-    }
+      if (other.vals != null) return false;
+    } else if (!vals.equals(other.vals)) return false;
     return true;
   }
 
@@ -64,7 +46,7 @@ public class ArrayInit extends Expression {
   public String toString() {
     StringBuilder strBuilder = new StringBuilder("new ");
     strBuilder.append(type);
-    for (Integer dim : dims) {
+    for (Expression dim : dims) {
       strBuilder.append('[');
       strBuilder.append(dim);
       strBuilder.append(']');

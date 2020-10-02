@@ -1,5 +1,9 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
+import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
+import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.arithmeticOps;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
@@ -20,6 +24,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
+import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
@@ -32,6 +37,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
@@ -42,7 +48,7 @@ import java.util.List;
 
 public class ExpressionGenerator {
   public CGContext ctx;
-  private static final String LOGGER_NAME = "expression code generator";
+  private static final String LOG_NAME = "expression code generator";
   private static final List<Operators> INCREMENT_DECREMENT_OPS =
       List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT);
 
@@ -59,8 +65,14 @@ public class ExpressionGenerator {
       boolean pushIfZero) {
     // TODO: support String concatenation
     // TODO: support different types
-    // TODO: error handling, e.g. only "+" operator is valid for String concatenation, "%" is not
+    // TODO: error handling, e.g. only "+" operator is valid for String
+    // concatenation, "%" is not
     // valid for doubles etc.
+    if (expr instanceof ArrayInit) {
+      ArrayInit arrInit = (ArrayInit) expr;
+      generateArray(out, variables, arrInit);
+      return new ExpressionResult(arrInit.type, null);
+    }
     if (type == null) {
       type = new NumExprTypeDecider(ctx).getType(variables, expr);
     }
@@ -74,13 +86,15 @@ public class ExpressionGenerator {
       if (!type.equals(DOUBLE)
           && ((i + 2 < tokens.size() && tokens.get(i + 2).eq(op(POW)))
               || (i + 1 < tokens.size() && tokens.get(i + 1).eq(op(POW))))) {
-        // Calculating powers for integer types uses BigInteger and requires loading the operands in
+        // Calculating powers for integer types uses BigInteger and requires loading the
+        // operands in
         // a different order. Therefore, we skip processing them here.
-      } else if (token instanceof Identifier) {
+      } else if (token instanceof Identifier && !(token instanceof MethodCall)) {
         Identifier id = (Identifier) token;
         String varType = variables.get(id).type;
         String arrType = variables.get(id).arrType;
-        // look ahead for ++ or -- operators because in that case we do not push the value to the
+        // look ahead for ++ or -- operators because in that case we do not push the
+        // value to the
         // stack
         if (i + 1 == tokens.size()
             || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
@@ -103,7 +117,8 @@ public class ExpressionGenerator {
       } else if (token instanceof IntLiteral) {
         BigInteger bigInt = (BigInteger) ((IntLiteral) token).val;
         Long intValue = bigInt.longValue();
-        // look ahead for <<, >> or >>> operators which require the second argument to be an integer
+        // look ahead for <<, >> or >>> operators which require the second argument to
+        // be an integer
         if (i + 1 < tokens.size()
             && ((tokens.get(i + 1).eq(op(LSHIFT))
                 || (tokens.get(i + 1).eq(op(RSHIFT)))
@@ -175,5 +190,38 @@ public class ExpressionGenerator {
       type = expr.cast.name;
     }
     return new ExpressionResult(type, val);
+  }
+
+  public HasOutput generateArray(DynamicByteArray out, VariableMap variables, ArrayInit arrInit) {
+    String type = arrInit.type;
+    byte arrayType = getArrayType(type);
+    byte storeOpCode = getStoreOpCode(type);
+    createArray(out, variables, arrayType, arrInit.dims);
+    // multi-dim array
+    if (arrInit.vals.size() >= 2) {
+      // TODO
+    }
+    // one-dim array
+    else if (arrInit.vals.size() == 1) {
+      for (int i = 0; i < arrInit.vals.get(0).size(); i++) {
+        out.write(DUP);
+        ctx.pushGen.push(out, INT, i);
+        ctx.exprGen.eval(out, variables, type, arrInit.vals.get(0).get(i));
+        // out.write(storeOpCode);
+      }
+    }
+    // ctx.assignGen.assignArray(out, variables, type, decl.arrDim, decl.name);
+    return out;
+  }
+
+  private void createArray(
+      DynamicByteArray out, VariableMap variables, byte arrayType, List<Expression> dims) {
+    if (dims.size() == 1) {
+      ctx.exprGen.eval(out, variables, INT, dims.get(0));
+      out.write(NEWARRAY);
+      out.write(arrayType);
+    } else {
+      // TODO:
+    }
   }
 }

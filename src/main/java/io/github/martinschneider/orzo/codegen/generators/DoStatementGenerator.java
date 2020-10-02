@@ -44,7 +44,7 @@ public class DoStatementGenerator implements StatementGenerator {
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {
       byte[] jmpOffset =
-          shortToByteArray((short) bodyBytes.length - idx + 1 + conditionOut.getBytes().length);
+          shortToByteArray((short) (bodyBytes.length - idx + 1 + conditionOut.getBytes().length));
       bodyBytes[idx] = jmpOffset[0];
       bodyBytes[idx + 1] = jmpOffset[1];
     }

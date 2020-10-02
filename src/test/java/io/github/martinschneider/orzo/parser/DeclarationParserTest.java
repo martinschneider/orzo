@@ -39,8 +39,7 @@ public class DeclarationParserTest {
             pDecl(
                 null, id("a"), INT, 1, arrInit(INT, 3, List.of(expr("1"), expr("2"), expr("3"))))),
         Arguments.of(
-            "int[] a = new int[5];",
-            pDecl(null, id("a"), INT, 1, arrInit(INT, List.of(5), emptyList()))),
+            "int[] a = new int[5];", pDecl(null, id("a"), INT, 1, arrInit(INT, 5, emptyList()))),
         Arguments.of(
             "int a,b,c=1,2,3;",
             pDecl(
