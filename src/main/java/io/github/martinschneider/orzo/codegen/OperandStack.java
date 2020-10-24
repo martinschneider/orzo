@@ -25,19 +25,20 @@ public class OperandStack {
     }
   }
 
-  public void pop() {
+  public String pop() {
     if (types.peek() != null) {
       if ((types.peek().equals(LONG) || types.peek().equals(DOUBLE))) {
         size--;
       }
       size--;
-      types.pop();
+      return types.pop();
     }
+    return null;
   }
 
-  public void pop2() {
+  public String pop2() {
     pop();
-    pop();
+    return pop();
   }
 
   public void pop(int n) {

@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
+import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
 import static io.github.martinschneider.orzo.parser.TestHelper.cond;
@@ -8,7 +9,9 @@ import static io.github.martinschneider.orzo.parser.TestHelper.doStmt;
 import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifBlk;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifStmt;
+import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.pDecl;
+import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.whileStmt;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,17 +30,15 @@ public class StatementParserTest {
   private StatementParser target = new StatementParser(ParserContext.build(new CompilerErrors()));
 
   private static Stream<Arguments> test() throws IOException {
-    return Stream.of(
-        Arguments.of("x=5*12-3/6+12;", assign("x=5*12-3/6+12")),
-        Arguments.of(
-            "if (x==1){ x=2; }",
-            ifStmt(List.of(ifBlk(cond("x==1"), List.of(assign("x=2")))), false)),
-        Arguments.of("while (x>=0){ x=x-1; }", whileStmt(cond("x>=0"), List.of(assign("x=x-1")))),
-        Arguments.of(
+    return stream(
+        args("x=5*12-3/6+12;", assign("x=5*12-3/6+12")),
+        args("if (x==1){ x=2; }", ifStmt(list(ifBlk(cond("x==1"), list(assign("x=2")))), false)),
+        args("while (x>=0){ x=x-1; }", whileStmt(cond("x>=0"), list(assign("x=x-1")))),
+        args(
             "do{x=y+1;y=y-1;} while(i>0)",
-            doStmt(cond("i>0"), List.of(assign("x=y+1"), assign("y=y-1")))),
-        Arguments.of("int z;", pDecl(null, id("z"), "int", null)),
-        Arguments.of("int z=300;", pDecl(null, id("z"), "int", expr("300"))));
+            doStmt(cond("i>0"), list(assign("x=y+1"), assign("y=y-1")))),
+        args("int z;", pDecl(null, id("z"), "int", null)),
+        args("int z=300;", pDecl(null, id("z"), "int", expr("300"))));
   }
 
   @ParameterizedTest
@@ -49,14 +50,14 @@ public class StatementParserTest {
   }
 
   private static Stream<Arguments> testStmtSeq() throws IOException {
-    return Stream.of(
-        Arguments.of("", null),
-        Arguments.of("x=5*12-3/6+12%4;", List.of(assign("x=5*12-3/6+12%4"))),
-        Arguments.of("x=5*12-3/6+12%4;abc=9", List.of(assign("x=5*12-3/6+12%4"), assign("abc=9"))),
-        Arguments.of("y=9%(4+7)*3;", List.of(assign("y=9%(4+7)*3"))),
-        Arguments.of(
+    return stream(
+        args("", null),
+        args("x=5*12-3/6+12%4;", list(assign("x=5*12-3/6+12%4"))),
+        args("x=5*12-3/6+12%4;abc=9", list(assign("x=5*12-3/6+12%4"), assign("abc=9"))),
+        args("y=9%(4+7)*3;", list(assign("y=9%(4+7)*3"))),
+        args(
             "int x=10;x=x+1;int y=20;y=x+2;double z=x+y",
-            List.of(
+            list(
                 pDecl("int x=10"),
                 assign("x=x+1"),
                 pDecl("int y=20"),

@@ -8,7 +8,6 @@ import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 
 public class CastParser implements ProdParser<Type> {
-  private static final String LOG_NAME = "parse cast";
 
   @Override
   public Type parse(TokenList tokens) {

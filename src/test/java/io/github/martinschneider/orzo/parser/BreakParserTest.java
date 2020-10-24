@@ -1,6 +1,8 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
+import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.lexer.Lexer;
@@ -16,8 +18,7 @@ public class BreakParserTest {
   private BreakParser target = new BreakParser();
 
   private static Stream<Arguments> test() throws IOException {
-    return Stream.of(
-        Arguments.of("", null), Arguments.of("break;", new Break()), Arguments.of("break", null));
+    return stream(args("", null), args("break;", new Break()), args("break", null));
   }
 
   @ParameterizedTest

@@ -121,10 +121,16 @@ public class LoadGenerator {
   public HasOutput loadValueFromArray(
       DynamicByteArray out, VariableMap variables, List<Expression> indices, VariableInfo varInfo) {
     load(out, varInfo);
+    loadValueFromArrayOnStack(out, variables, indices, varInfo.arrType);
+    return out;
+  }
+
+  public HasOutput loadValueFromArrayOnStack(
+      DynamicByteArray out, VariableMap variables, List<Expression> indices, String type) {
     for (Expression arrIdx : indices) {
       ctx.exprGen.eval(out, variables, INT, arrIdx);
     }
-    out.write(getLoadOpCode(varInfo.arrType.replaceAll("\\[", "")));
+    out.write(getLoadOpCode(type.replaceAll("\\[", "")));
     return out;
   }
 

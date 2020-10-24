@@ -4,7 +4,9 @@ import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PRIVATE;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PROTECTED;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PUBLIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
+import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
+import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.lexer.Lexer;
@@ -21,12 +23,12 @@ public class ScopeParserTest {
   private Lexer lexer = new Lexer();
 
   private static Stream<Arguments> test() {
-    return Stream.of(
-        Arguments.of("", null),
-        Arguments.of("public", scope(PUBLIC)),
-        Arguments.of("private", scope(PRIVATE)),
-        Arguments.of("protected", scope(PROTECTED)),
-        Arguments.of("Public", null));
+    return stream(
+        args("", null),
+        args("public", scope(PUBLIC)),
+        args("private", scope(PRIVATE)),
+        args("protected", scope(PROTECTED)),
+        args("Public", null));
   }
 
   @ParameterizedTest

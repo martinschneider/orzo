@@ -31,12 +31,12 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -185,7 +185,7 @@ public class TypeUtils {
       case CHAR:
         return List.of(CHAR, INT, LONG);
     }
-    return Collections.emptyList();
+    return emptyList();
   }
 
   // cartesian product

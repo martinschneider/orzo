@@ -37,11 +37,13 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.str;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.type;
+import static io.github.martinschneider.orzo.parser.TestHelper.args;
+import static io.github.martinschneider.orzo.parser.TestHelper.list;
+import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -52,20 +54,18 @@ public class LexerTest {
   private Lexer scanner = new Lexer();
 
   private static Stream<Arguments> tokenTest() throws IOException {
-    return Stream.of(
-        Arguments.of(
-            "das ist ein test",
-            new TokenList(List.of(id("das"), id("ist"), id("ein"), id("test")))),
-        Arguments.of("f1 f_1", new TokenList(List.of(id("f1"), id("f_1")))),
-        Arguments.of(
+    return stream(
+        args("das ist ein test", new TokenList(list(id("das"), id("ist"), id("ein"), id("test")))),
+        args("f1 f_1", new TokenList(list(id("f1"), id("f_1")))),
+        args(
             "12  13 15 17",
-            new TokenList(List.of(integer(12), integer(13), integer(15), integer(17)))),
-        Arguments.of("0.9", new TokenList(List.of(fp(0.9)))),
-        Arguments.of(".87", new TokenList(List.of(fp(0.87)))),
-        Arguments.of(
+            new TokenList(list(integer(12), integer(13), integer(15), integer(17)))),
+        args("0.9", new TokenList(list(fp(0.9)))),
+        args(".87", new TokenList(list(fp(0.87)))),
+        args(
             "1+2-3*4/5%6=7",
             new TokenList(
-                List.of(
+                list(
                     integer(1),
                     op(PLUS),
                     integer(2),
@@ -79,10 +79,10 @@ public class LexerTest {
                     integer(6),
                     op(ASSIGN),
                     integer(7)))),
-        Arguments.of(
+        args(
             "7<8<=9>10>=11!=12==13",
             new TokenList(
-                List.of(
+                list(
                     integer(7),
                     cmp(SMALLER),
                     integer(8),
@@ -96,21 +96,21 @@ public class LexerTest {
                     integer(12),
                     cmp(EQUAL),
                     integer(13)))),
-        Arguments.of(".x", new TokenList(List.of(sym(DOT), id("x")))),
-        Arguments.of(
+        args(".x", new TokenList(list(sym(DOT), id("x")))),
+        args(
             "noch.ein,test;",
             new TokenList(
-                List.of(id("noch"), sym(DOT), id("ein"), sym(COMMA), id("test"), sym(SEMICOLON)))),
-        Arguments.of(
+                list(id("noch"), sym(DOT), id("ein"), sym(COMMA), id("test"), sym(SEMICOLON)))),
+        args(
             "String x = \"Halleluja!\"",
-            new TokenList(List.of(type("String"), id("x"), op(ASSIGN), str("Halleluja!")))),
-        Arguments.of(
+            new TokenList(list(type("String"), id("x"), op(ASSIGN), str("Halleluja!")))),
+        args(
             "void int double String",
-            new TokenList(List.of(type("void"), type("int"), type("double"), type("String")))),
-        Arguments.of(
+            new TokenList(list(type("void"), type("int"), type("double"), type("String")))),
+        args(
             "if else do while for return static class package",
             new TokenList(
-                List.of(
+                list(
                     keyword(IF),
                     keyword(ELSE),
                     keyword(DO),
@@ -120,18 +120,17 @@ public class LexerTest {
                     keyword(STATIC),
                     keyword(CLASS),
                     keyword(PACKAGE)))),
-        Arguments.of(
+        args(
             "public private protected",
-            new TokenList(List.of(scope(PUBLIC), scope(PRIVATE), scope(PROTECTED)))),
-        Arguments.of("/* das ist ein kommentar */ /*und noch einer*/", new TokenList(emptyList())),
-        Arguments.of("// test \\n", new TokenList(emptyList())),
-        Arguments.of(
-            "/* abc//123\"\"\\$@ */ /*und noch einer*/\n//x=y+1;\n", new TokenList(emptyList())),
-        Arguments.of("// test", new TokenList(emptyList())),
-        Arguments.of("/* /* /* test */ */ */", new TokenList(emptyList())),
-        Arguments.of(
+            new TokenList(list(scope(PUBLIC), scope(PRIVATE), scope(PROTECTED)))),
+        args("/* das ist ein kommentar */ /*und noch einer*/", new TokenList(emptyList())),
+        args("// test \\n", new TokenList(emptyList())),
+        args("/* abc//123\"\"\\$@ */ /*und noch einer*/\n//x=y+1;\n", new TokenList(emptyList())),
+        args("// test", new TokenList(emptyList())),
+        args("/* /* /* test */ */ */", new TokenList(emptyList())),
+        args(
             "System.out.println",
-            new TokenList(List.of(id("System"), sym(DOT), id("out"), sym(DOT), id("println")))));
+            new TokenList(list(id("System"), sym(DOT), id("out"), sym(DOT), id("println")))));
   }
 
   @MethodSource

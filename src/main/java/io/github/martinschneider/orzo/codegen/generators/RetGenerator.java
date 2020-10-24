@@ -39,7 +39,7 @@ public class RetGenerator implements StatementGenerator {
   private HasOutput ret(
       DynamicByteArray out, VariableMap variables, String type, Expression retValue) {
     ctx.exprGen.eval(out, variables, type, retValue);
-    ctx.basicGen.convert(out, ctx.opStack.type(), type);
+    ctx.basicGen.convert1(out, ctx.opStack.type(), type);
     switch (type) {
       case INT:
         out.write(IRETURN);
@@ -56,7 +56,7 @@ public class RetGenerator implements StatementGenerator {
       case VOID:
         out.write(RETURN);
     }
-    if (type.contains("[]")) {
+    if (type.contains("[")) {
       out.write(ARETURN);
     }
     return out;

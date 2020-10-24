@@ -164,5 +164,6 @@ public class OpCodes {
   public static final byte INVOKESTATIC = (byte) 184;
   public static final byte NEW = (byte) 187;
   public static final byte NEWARRAY = (byte) 188;
+  public static final byte ARRAYLENGTH = (byte) 190;
   public static final byte WIDE = (byte) 196;
 }

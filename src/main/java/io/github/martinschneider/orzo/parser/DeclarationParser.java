@@ -32,7 +32,6 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
     List<Identifier> names = new ArrayList<>();
     List<Byte> arrDims = new ArrayList<>();
     List<Expression> values = new ArrayList<>();
-    Declaration decl = null;
     Scope scope = null;
     if (tokens.curr() instanceof Scope) {
       scope = (Scope) tokens.curr();

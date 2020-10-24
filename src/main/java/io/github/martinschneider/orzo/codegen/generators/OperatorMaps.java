@@ -122,8 +122,8 @@ public class OperatorMaps {
               Map.of(
                   LONG,
                   new byte[] {I2L},
-                  SHORT,
-                  new byte[] {I2S},
+                  //                  SHORT,
+                  //                  new byte[] {I2S},
                   DOUBLE,
                   new byte[] {I2D},
                   FLOAT,
@@ -133,8 +133,8 @@ public class OperatorMaps {
               Map.of(
                   LONG,
                   new byte[] {I2L},
-                  BYTE,
-                  new byte[] {I2B},
+                  //                  BYTE,
+                  //                  new byte[] {I2B},
                   DOUBLE,
                   new byte[] {I2D},
                   FLOAT,
@@ -149,10 +149,10 @@ public class OperatorMaps {
               Map.of(
                   LONG,
                   new byte[] {I2L},
-                  BYTE,
-                  new byte[] {I2B},
-                  SHORT,
-                  new byte[] {I2S},
+                  //                  BYTE,
+                  //                  new byte[] {I2B},
+                  //                  SHORT,
+                  //                  new byte[] {I2S},
                   DOUBLE,
                   new byte[] {I2D},
                   FLOAT,
@@ -208,6 +208,92 @@ public class OperatorMaps {
                   new byte[] {D2F},
                   BOOLEAN,
                   new byte[] {D2I, I2B},
+                  CHAR,
+                  new byte[] {D2I})),
+          entry(
+              CHAR,
+              Map.of(LONG, new byte[] {I2L}, DOUBLE, new byte[] {I2D}, FLOAT, new byte[] {I2F})));
+
+  // never cast "below" integer
+  public static final Map<String, Map<String, byte[]>> castOps1 =
+      Map.ofEntries(
+          entry(
+              BYTE,
+              Map.of(LONG, new byte[] {I2L}, DOUBLE, new byte[] {I2D}, FLOAT, new byte[] {I2F})),
+          entry(
+              SHORT,
+              Map.of(
+                  LONG,
+                  new byte[] {I2L},
+                  DOUBLE,
+                  new byte[] {I2D},
+                  FLOAT,
+                  new byte[] {I2F},
+                  BOOLEAN,
+                  new byte[] {I2B})),
+          entry(
+              BOOLEAN,
+              Map.of(LONG, new byte[] {I2L}, DOUBLE, new byte[] {I2D}, FLOAT, new byte[] {I2F})),
+          entry(
+              INT,
+              Map.of(
+                  LONG,
+                  new byte[] {I2L},
+                  DOUBLE,
+                  new byte[] {I2D},
+                  FLOAT,
+                  new byte[] {I2F},
+                  BOOLEAN,
+                  new byte[] {I2B})),
+          entry(
+              LONG,
+              Map.of(
+                  INT,
+                  new byte[] {L2I},
+                  BYTE,
+                  new byte[] {L2I},
+                  SHORT,
+                  new byte[] {L2I},
+                  DOUBLE,
+                  new byte[] {L2D},
+                  FLOAT,
+                  new byte[] {L2F},
+                  BOOLEAN,
+                  new byte[] {L2I},
+                  CHAR,
+                  new byte[] {L2I})),
+          entry(
+              FLOAT,
+              Map.of(
+                  LONG,
+                  new byte[] {F2L},
+                  INT,
+                  new byte[] {F2I},
+                  BYTE,
+                  new byte[] {F2I},
+                  SHORT,
+                  new byte[] {F2I},
+                  DOUBLE,
+                  new byte[] {F2D},
+                  BOOLEAN,
+                  new byte[] {F2I},
+                  CHAR,
+                  new byte[] {F2I})),
+          entry(
+              DOUBLE,
+              Map.of(
+                  LONG,
+                  new byte[] {D2L},
+                  INT,
+                  new byte[] {D2I},
+                  BYTE,
+                  new byte[] {D2I},
+                  SHORT,
+                  new byte[] {D2I},
+                  FLOAT,
+                  new byte[] {D2F},
+                  BOOLEAN,
+                  new byte[] {D2I},
                   CHAR,
                   new byte[] {D2I})),
           entry(

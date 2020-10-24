@@ -32,7 +32,6 @@ public class AssignmentGenerator implements StatementGenerator {
       Expression right = assignment.right.get(i);
       VariableInfo varInfo = variables.get(left);
       String type = varInfo.type;
-      short leftIdx = varInfo.idx;
       // if the current left side variable appears anywhere on the right side
       // we store its value in a tmp variable
       if (i < assignment.left.size() - 1

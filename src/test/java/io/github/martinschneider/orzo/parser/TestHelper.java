@@ -4,6 +4,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.str;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import io.github.martinschneider.orzo.codegen.VariableInfo;
+import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.error.CompilerError;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
@@ -34,7 +36,11 @@ import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import io.github.martinschneider.orzo.parser.productions.WhileStatement;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.params.provider.Arguments;
 
 public class TestHelper {
   public static Expression expr(String input) throws IOException {
@@ -64,15 +70,15 @@ public class TestHelper {
   }
 
   public static ArrayInit arrInit(String type, int dim, List<Expression> vals) throws IOException {
-    return arrInit(type, List.of(expr(List.of(integer(dim)))), List.of(vals));
+    return arrInit(type, list(expr(list(integer(dim)))), list(vals));
   }
 
   public static Increment inc(Identifier id, Operator op) throws IOException {
-    return new Increment(expr(List.of(id, op)));
+    return new Increment(expr(list(id, op)));
   }
 
   public static Assignment assign(Identifier left, Expression right) {
-    return new Assignment(List.of(left), List.of(right));
+    return new Assignment(list(left), list(right));
   }
 
   public static Assignment assign(String input) throws IOException {
@@ -114,12 +120,12 @@ public class TestHelper {
 
   public static ParallelDeclaration pDecl(
       Scope scope, Identifier name, String type, Expression val) {
-    return new ParallelDeclaration(List.of(new Declaration(scope, type, 0, name, val)));
+    return new ParallelDeclaration(list(new Declaration(scope, type, 0, name, val)));
   }
 
   public static ParallelDeclaration pDecl(
       Scope scope, Identifier name, String type, int array, Expression val) {
-    return new ParallelDeclaration(List.of(new Declaration(scope, type, array, name, val)));
+    return new ParallelDeclaration(list(new Declaration(scope, type, array, name, val)));
   }
 
   public static ParallelDeclaration pDecl(String input) throws IOException {
@@ -184,6 +190,11 @@ public class TestHelper {
     return new MethodCall(name, parameters);
   }
 
+  public static MethodCall methodCall(
+      String name, List<Expression> parameters, ArraySelector arrSel) {
+    return new MethodCall(name, parameters, arrSel);
+  }
+
   public static Assignment assign(List<Identifier> left, List<Expression> right) {
     return new Assignment(left, right);
   }
@@ -210,7 +221,38 @@ public class TestHelper {
     }
   }
 
-  // TODO
+  public static VariableInfo varInfo(String name, String type, int idx) {
+    return new VariableInfo(name, type, false, (short) idx);
+  }
+
+  public static VariableInfo varInfoArr(String name, String type, int idx) {
+    return new VariableInfo(name, "reference", type, false, (short) idx);
+  }
+
+  public static VariableMap varMap(List<VariableInfo> varInfos) {
+    Map<String, VariableInfo> map = new HashMap<>();
+    for (VariableInfo varInfo : varInfos) {
+      map.put(varInfo.name, varInfo);
+    }
+    return new VariableMap(map);
+  }
+
+  @SafeVarargs
+  public static <E> List<E> list(E... e) {
+    return List.of(e);
+  }
+
+  @SafeVarargs
+  public static <T> Stream<T> stream(T... t) {
+    return Stream.of(t);
+  }
+
+  @SafeVarargs
+  public static Arguments args(Object... e) {
+    return Arguments.of(e);
+  }
+
+  // TODO this is currently unused
   private static final Token[] TOKENS = new Token[] {str("test")};
 
   public static Token randomToken() {

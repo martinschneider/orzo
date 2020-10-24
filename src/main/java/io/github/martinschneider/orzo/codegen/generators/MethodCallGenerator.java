@@ -43,16 +43,13 @@ public class MethodCallGenerator implements StatementGenerator {
     if (method == null) {
       ctx.errors.addError(
           LOGGER_NAME,
-          "missing method declaration \""
-              + methodName
-              + "\", known methods: "
-              + ctx.methodMap.keySet());
+          methodCall.loc.toString() + " missing method declaration \"" + methodName + types + "\"");
       return "";
     }
     for (int i = 0; i < types.size(); i++) {
       ExpressionResult exprResult =
           ctx.exprGen.eval(out, variables, method.args.get(i).type, methodCall.params.get(i));
-      ctx.basicGen.convert(out, exprResult.type, method.args.get(i).type);
+      ctx.basicGen.convert1(out, exprResult.type, method.args.get(i).type);
     }
     ctx.invokeGen.invokeStatic(out, method);
     return method.type;

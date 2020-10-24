@@ -15,6 +15,7 @@ import io.github.martinschneider.orzo.codegen.generators.StoreGenerator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import java.util.List;
 import java.util.Map;
 
 public class CGContext {
@@ -36,4 +37,28 @@ public class CGContext {
   public InvokeGenerator invokeGen;
   public OperandStack opStack;
   public CompilerErrors errors;
+
+  public void init(CompilerErrors errors, int idx, List<Clazz> clazzes) {
+    clazz = clazzes.get(idx);
+    this.errors = errors;
+    condGenerator = new ConditionGenerator();
+    constPoolProc = new ConstantPoolProcessor();
+    constPool = constPoolProc.processConstantPool(clazz);
+    delegator = new StatementDelegator();
+    exprGen = new ExpressionGenerator();
+    incrGen = new IncrementGenerator(this);
+    methodCallGen = new MethodCallGenerator(this);
+    methodMap = new MethodProcessor().getMethodMap(clazz, clazzes);
+    assignGen = new AssignmentGenerator(this);
+    basicGen = new BasicGenerator(this);
+    invokeGen = new InvokeGenerator(this);
+    pushGen = new PushGenerator(this);
+    loadGen = new LoadGenerator(this);
+    storeGen = new StoreGenerator(this);
+    opStack = new OperandStack();
+    condGenerator.ctx = this;
+    delegator.ctx = this;
+    exprGen.ctx = this;
+    delegator.init();
+  }
 }

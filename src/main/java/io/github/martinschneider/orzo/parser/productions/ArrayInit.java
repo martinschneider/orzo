@@ -56,4 +56,13 @@ public class ArrayInit extends Expression {
     strBuilder.append('}');
     return strBuilder.toString();
   }
+
+  public String typeDescr() {
+    StringBuilder strBuilder = new StringBuilder();
+    for (int i = 0; i < dims.size(); i++) {
+      strBuilder.append('[');
+    }
+    strBuilder.append(type);
+    return strBuilder.toString();
+  }
 }

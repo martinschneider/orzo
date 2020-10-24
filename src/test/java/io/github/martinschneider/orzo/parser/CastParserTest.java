@@ -2,7 +2,9 @@ package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Token.type;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
+import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
+import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.lexer.Lexer;
@@ -18,7 +20,7 @@ public class CastParserTest {
   private CastParser target = new CastParser();
 
   private static Stream<Arguments> test() throws IOException {
-    return Stream.of(Arguments.of("", null), Arguments.of("(int)", type(INT)));
+    return stream(args("", null), args("(int)", type(INT)));
   }
 
   @ParameterizedTest

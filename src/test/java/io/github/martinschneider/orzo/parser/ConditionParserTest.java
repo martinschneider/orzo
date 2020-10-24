@@ -1,9 +1,11 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Token.cmp;
+import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.cond;
 import static io.github.martinschneider.orzo.parser.TestHelper.expr;
+import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -21,13 +23,13 @@ public class ConditionParserTest {
   private ConditionParser target = new ConditionParser(ParserContext.build(new CompilerErrors()));
 
   private static Stream<Arguments> test() throws IOException {
-    return Stream.of(
-        Arguments.of("", null),
-        Arguments.of("y=0", null),
-        Arguments.of("y==0", cond(expr("y"), cmp(Comparators.EQUAL), expr("0"))),
-        Arguments.of("x<=z", cond(expr("x"), cmp(Comparators.SMALLEREQ), expr("z"))),
-        Arguments.of("abc<xyz", cond(expr("abc"), cmp(Comparators.SMALLER), expr("xyz"))),
-        Arguments.of(
+    return stream(
+        args("", null),
+        args("y=0", null),
+        args("y==0", cond(expr("y"), cmp(Comparators.EQUAL), expr("0"))),
+        args("x<=z", cond(expr("x"), cmp(Comparators.SMALLEREQ), expr("z"))),
+        args("abc<xyz", cond(expr("abc"), cmp(Comparators.SMALLER), expr("xyz"))),
+        args(
             "basketball > football",
             cond(expr("basketball"), cmp(Comparators.GREATER), expr("football"))));
   }

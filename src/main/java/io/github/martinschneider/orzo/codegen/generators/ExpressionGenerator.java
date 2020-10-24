@@ -15,11 +15,14 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMEN
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -48,9 +51,6 @@ import java.util.List;
 
 public class ExpressionGenerator {
   public CGContext ctx;
-  private static final String LOG_NAME = "expression code generator";
-  private static final List<Operators> INCREMENT_DECREMENT_OPS =
-      List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT);
 
   public ExpressionResult eval(
       DynamicByteArray out, VariableMap variables, String type, Expression expr) {
@@ -89,31 +89,8 @@ public class ExpressionGenerator {
         // Calculating powers for integer types uses BigInteger and requires loading the
         // operands in
         // a different order. Therefore, we skip processing them here.
-      } else if (token instanceof Identifier && !(token instanceof MethodCall)) {
-        Identifier id = (Identifier) token;
-        String varType = variables.get(id).type;
-        String arrType = variables.get(id).arrType;
-        // look ahead for ++ or -- operators because in that case we do not push the
-        // value to the
-        // stack
-        if (i + 1 == tokens.size()
-            || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
-                && !tokens.get(i + 1).eq(op(POST_INCREMENT))
-                && !tokens.get(i + 1).eq(op(PRE_INCREMENT))
-                && !tokens.get(i + 1).eq(op(PRE_DECREMENT)))) {
-          VariableInfo varInfo = variables.get(id);
-          short varIdx = varInfo.idx;
-          if (id.arrSel != null) {
-            // array
-            ctx.loadGen.loadValueFromArray(out, variables, id.arrSel.exprs, varInfo);
-            type = varInfo.arrType;
-          } else {
-            ctx.loadGen.load(out, varInfo);
-          }
-        }
-        if (!type.equals(varType) && arrType == null) {
-          ctx.basicGen.convert(out, varType, type);
-        }
+      } else if (token instanceof Identifier) {
+        type = handleId(out, variables, tokens, i, token, type);
       } else if (token instanceof IntLiteral) {
         BigInteger bigInt = (BigInteger) ((IntLiteral) token).val;
         Long intValue = bigInt.longValue();
@@ -143,8 +120,6 @@ public class ExpressionGenerator {
         char chr = (char) ((Chr) token).val;
         ctx.pushGen.push(out, CHAR, chr);
         type = CHAR;
-      } else if (token instanceof MethodCall) {
-        type = ctx.methodCallGen.generate(out, variables, (MethodCall) token);
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
         if (List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT).contains(op)) {
@@ -171,12 +146,17 @@ public class ExpressionGenerator {
                 out,
                 new Method("java/math/BigInteger", "pow", "Ljava/math/BigInteger;", List.of(INT)));
             ctx.invokeGen.invokeVirtual(
-                out,
-                new Method("java/math/BigInteger", "longValue", LONG, Collections.emptyList()));
+                out, new Method("java/math/BigInteger", "longValue", LONG, emptyList()));
             type = LONG;
           }
         } else {
           Byte opCode = arithmeticOps.getOrDefault(op, Collections.emptyMap()).get(type);
+          // there are no opcodes for arithmetic operations specific to byte and short
+          // so it's important to indicate that the type changes to int to ensure that,
+          // if necessary, we cast it back to byte and short later
+          if (type.equals(BYTE) || type.equals(SHORT)) {
+            type = INT;
+          }
           if (opCode != null) {
             ctx.opStack.pop2();
             ctx.opStack.push(type);
@@ -186,10 +166,67 @@ public class ExpressionGenerator {
       }
     }
     if (expr.cast != null) {
-      ctx.basicGen.convert(out, type, expr.cast.name);
+      String currType = ctx.opStack.pop();
+      ctx.basicGen.convert(out, currType, expr.cast.name);
       type = expr.cast.name;
+      ctx.opStack.push(type);
     }
     return new ExpressionResult(type, val);
+  }
+
+  private String handleId(
+      DynamicByteArray out,
+      VariableMap variables,
+      List<Token> tokens,
+      int i,
+      Token token,
+      String type) {
+    Identifier curr = (Identifier) token;
+    Identifier prev = null;
+    do {
+      if (token instanceof MethodCall) {
+        MethodCall methodCall = (MethodCall) token;
+        type = ctx.methodCallGen.generate(out, variables, methodCall);
+        if (curr.arrSel != null) {
+          ctx.loadGen.loadValueFromArrayOnStack(out, variables, curr.arrSel.exprs, type);
+          if (!type.isEmpty()) {
+            // remove leading '[' from type
+            type = type.substring(methodCall.arrSel.exprs.size());
+          }
+        }
+      } else {
+        if (prev != null && variables.get(prev).arrType != null) {
+          ctx.basicGen.arrayLength(out);
+          type = INT;
+        } else {
+          String varType = variables.get(curr).type;
+          String arrType = variables.get(curr).arrType;
+          // look ahead for ++ or -- operators because in that case we do not push the
+          // value to the
+          // stack
+          if (i + 1 == tokens.size()
+              || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
+                  && !tokens.get(i + 1).eq(op(POST_INCREMENT))
+                  && !tokens.get(i + 1).eq(op(PRE_INCREMENT))
+                  && !tokens.get(i + 1).eq(op(PRE_DECREMENT)))) {
+            VariableInfo varInfo = variables.get(curr);
+            if (curr.arrSel != null) {
+              // array
+              ctx.loadGen.loadValueFromArray(out, variables, curr.arrSel.exprs, varInfo);
+              type = varInfo.arrType;
+            } else {
+              ctx.loadGen.load(out, varInfo);
+            }
+          }
+          if (!type.equals(varType) && arrType == null) {
+            ctx.basicGen.convert1(out, varType, type);
+          }
+        }
+      }
+      prev = curr;
+      curr = curr.next;
+    } while (curr != null);
+    return type;
   }
 
   public HasOutput generateArray(DynamicByteArray out, VariableMap variables, ArrayInit arrInit) {
@@ -207,7 +244,7 @@ public class ExpressionGenerator {
         out.write(DUP);
         ctx.pushGen.push(out, INT, i);
         ctx.exprGen.eval(out, variables, type, arrInit.vals.get(0).get(i));
-        // out.write(storeOpCode);
+        out.write(storeOpCode);
       }
     }
     // ctx.assignGen.assignArray(out, variables, type, decl.arrDim, decl.name);

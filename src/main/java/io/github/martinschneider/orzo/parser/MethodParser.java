@@ -98,7 +98,7 @@ public class MethodParser implements ProdParser<Method> {
         arguments = new ArrayList<>();
       }
       String fqn = (ctx.currClazz == null) ? null : ctx.currClazz.fqn();
-      return new Method(fqn, scope, type.toString(), name, arguments, body);
+      return new Method(fqn, scope, type.descr(), name, arguments, body);
     }
     return null;
   }

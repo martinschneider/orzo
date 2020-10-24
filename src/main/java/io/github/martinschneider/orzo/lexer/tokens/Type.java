@@ -67,4 +67,13 @@ public class Type extends Token {
     }
     return strBuilder.toString();
   }
+
+  public String descr() {
+    StringBuilder strBuilder = new StringBuilder();
+    for (int i = 0; i < arr; i++) {
+      strBuilder.append("[");
+    }
+    strBuilder.append(name);
+    return strBuilder.toString();
+  }
 }
