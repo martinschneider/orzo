@@ -11,6 +11,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.parser.productions.ArraySelector;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.util.ArrayList;
@@ -76,6 +77,7 @@ public class MethodCallParser implements ProdParser<MethodCall> {
       } while ((tokens.curr().eq(sym(DOT)) && !tokens.next().eq(eof())));
       name.deleteCharAt(name.length() - 1);
       parameters = parseArgs(tokens);
+      ArraySelector arrSel = ctx.arraySelectorParser.parse(tokens);
       if (tokens.curr().eq(sym(SEMICOLON)) && !saveSemicolon) {
         tokens.next();
       }
@@ -83,7 +85,7 @@ public class MethodCallParser implements ProdParser<MethodCall> {
         tokens.setIdx(idx);
         return null;
       }
-      return new MethodCall(name.toString(), parameters).wLoc(idToken.loc);
+      return new MethodCall(name.toString(), parameters, arrSel).wLoc(idToken.loc);
     }
     return null;
   }

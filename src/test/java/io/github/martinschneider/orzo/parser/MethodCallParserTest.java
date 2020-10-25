@@ -1,12 +1,14 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
+import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.arrInit;
 import static io.github.martinschneider.orzo.parser.TestHelper.arrSel;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.id;
+import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.methodCall;
+import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -16,7 +18,6 @@ import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,35 +28,34 @@ public class MethodCallParserTest {
   private MethodCallParser target = new MethodCallParser(ParserContext.build(new CompilerErrors()));
 
   private static Stream<Arguments> test() throws IOException {
-    return Stream.of(
-        Arguments.of("", null),
-        Arguments.of("a", null),
-        Arguments.of("a.b", null),
-        Arguments.of(
+    return stream(
+        args("", null),
+        args("a", null),
+        args("a.b", null),
+        args(
             "calculateSomething(a[x])",
+            methodCall("calculateSomething", list(expr(list(id("a", arrSel(list(expr("x"))))))))),
+        args("calculateSomething()", methodCall("calculateSomething", emptyList())),
+        args("calculateSomething(x)", methodCall("calculateSomething", list(expr("x")))),
+        args(
+            "calculateSomething(a,b,c)",
+            methodCall("calculateSomething", list(expr("a"), expr("b"), expr("c")))),
+        args("√(n)", methodCall("Math.sqrt", list(expr("n")))),
+        args("⌊x⌋", methodCall("Math.round", list(expr("Math.floor(x)")))),
+        args(
+            "test(new int[] {1, 2})",
+            methodCall("test", list(arrInit("int", 2, list(expr("1"), expr("2")))))),
+        args(
+            "test(new int[] {1, 2}, new int[] {3, 4})",
             methodCall(
-                "calculateSomething", List.of(expr(List.of(id("a", arrSel(List.of(expr("x")))))))),
-            Arguments.of("calculateSomething()", methodCall("calculateSomething", emptyList())),
-            Arguments.of(
-                "calculateSomething(x)", methodCall("calculateSomething", List.of(expr("x")))),
-            Arguments.of(
-                "calculateSomething(a,b,c)",
-                methodCall("calculateSomething", List.of(expr("a"), expr("b"), expr("c")))),
-            Arguments.of("√(n)", methodCall("Math.sqrt", List.of(expr("n")))),
-            Arguments.of("⌊x⌋", methodCall("Math.round", List.of(expr("Math.floor(x)")))),
-            Arguments.of(
-                "test(new int[] {1, 2})",
-                methodCall("test", List.of(arrInit("int", 2, List.of(expr("1"), expr("2")))))),
-            Arguments.of(
-                "test(new int[] {1, 2}, new int[] {3, 4})",
-                methodCall(
-                    "test",
-                    List.of(
-                        arrInit("int", 2, List.of(expr("1"), expr("2"))),
-                        arrInit("int", 2, List.of(expr("3"), expr("4"))))))));
-    // Arguments.of(
+                "test",
+                list(
+                    arrInit("int", 2, list(expr("1"), expr("2"))),
+                    arrInit("int", 2, list(expr("3"), expr("4")))))),
+        args("doSomething()[0]", methodCall("doSomething", emptyList(), arrSel(list(expr("0"))))));
+    // args(
     // "⌊((1+√5)/2) ** n)/√5+0.5⌋",
-    // methodCall(id("Math.round"), List.of(expr("Math.floor(((1+√5)/2) **
+    // methodCall(id("Math.round"), list(expr("Math.floor(((1+√5)/2) **
     // n)/√5+0.5)")))));
   }
 
@@ -68,10 +68,10 @@ public class MethodCallParserTest {
   }
 
   private static Stream<Arguments> testArgs() throws IOException {
-    return Stream.of(
-        Arguments.of("()", Collections.emptyList()),
-        Arguments.of("(x)", List.of(expr("x"))),
-        Arguments.of("(ab,cd,efg)", List.of(expr("ab"), expr("cd"), expr("efg"))));
+    return stream(
+        args("()", emptyList()),
+        args("(x)", list(expr("x"))),
+        args("(ab,cd,efg)", list(expr("ab"), expr("cd"), expr("efg"))));
   }
 
   @ParameterizedTest

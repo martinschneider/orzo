@@ -12,8 +12,6 @@ import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 
 public class SqrtParser {
-  private static final String LOG_NAME = "parse sqrt";
-
   public void parse(TokenList tokens) {
     int idx = tokens.idx();
     if (tokens.curr().eq(sym(SQRT))) {

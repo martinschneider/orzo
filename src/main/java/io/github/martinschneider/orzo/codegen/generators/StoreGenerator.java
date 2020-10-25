@@ -56,6 +56,7 @@ public class StoreGenerator {
   }
 
   private HasOutput store(DynamicByteArray out, String type, short idx) {
+    // ctx.basicGen.convert(out, ctx.opStack.type(), type);
     switch (type) {
       case LONG:
         return storeLong(out, idx);

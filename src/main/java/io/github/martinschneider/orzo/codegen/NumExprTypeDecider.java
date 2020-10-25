@@ -16,6 +16,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
@@ -34,6 +35,9 @@ public class NumExprTypeDecider {
 
   public String getType(VariableMap variables, Expression expr) {
     Set<String> types = new HashSet<>();
+    if (expr instanceof ArrayInit) {
+      types.add(((ArrayInit) expr).typeDescr());
+    }
     for (Token token : expr.tokens) {
       if (token instanceof IntLiteral) {
         long intValue = ((BigInteger) token.val).longValue();
@@ -48,6 +52,20 @@ public class NumExprTypeDecider {
         types.add(BOOLEAN);
       } else if (token instanceof Str) {
         types.add(STRING);
+      } else if (token instanceof MethodCall) {
+        MethodCall methodCall = (MethodCall) token;
+        List<String> argTypes = new ArrayList<>();
+        for (Expression exp : methodCall.params) {
+          argTypes.add(new NumExprTypeDecider(ctx).getType(variables, exp));
+        }
+        Method method = ctx.methodCallGen.findMatchingMethod(methodCall.name.toString(), argTypes);
+        if (method != null) {
+          if (methodCall.arrSel != null) {
+            types.add(method.type.substring(methodCall.arrSel.exprs.size()));
+          } else {
+            types.add(method.type);
+          }
+        }
       } else if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
         VariableInfo var = variables.get(token);
@@ -59,16 +77,6 @@ public class NumExprTypeDecider {
           } else {
             types.add(var.type);
           }
-        }
-      } else if (token instanceof MethodCall) {
-        MethodCall methodCall = (MethodCall) token;
-        List<String> argTypes = new ArrayList<>();
-        for (Expression exp : methodCall.params) {
-          argTypes.add(new NumExprTypeDecider(ctx).getType(variables, exp));
-        }
-        Method method = ctx.methodCallGen.findMatchingMethod(methodCall.name.toString(), argTypes);
-        if (method != null) {
-          types.add(method.type);
         }
       }
     }

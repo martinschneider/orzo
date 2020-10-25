@@ -6,18 +6,8 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
+import static java.util.Collections.emptyList;
 
-import io.github.martinschneider.orzo.codegen.generators.AssignmentGenerator;
-import io.github.martinschneider.orzo.codegen.generators.BasicGenerator;
-import io.github.martinschneider.orzo.codegen.generators.ConditionGenerator;
-import io.github.martinschneider.orzo.codegen.generators.ExpressionGenerator;
-import io.github.martinschneider.orzo.codegen.generators.IncrementGenerator;
-import io.github.martinschneider.orzo.codegen.generators.InvokeGenerator;
-import io.github.martinschneider.orzo.codegen.generators.LoadGenerator;
-import io.github.martinschneider.orzo.codegen.generators.MethodCallGenerator;
-import io.github.martinschneider.orzo.codegen.generators.PushGenerator;
-import io.github.martinschneider.orzo.codegen.generators.StatementDelegator;
-import io.github.martinschneider.orzo.codegen.generators.StoreGenerator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Scopes;
@@ -29,7 +19,6 @@ import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -81,26 +70,7 @@ public class CodeGenerator {
 
   private void init(int idx) {
     out = outputs.get(idx);
-    ctx.clazz = clazzes.get(idx);
-    ctx.errors = errors;
-    ctx.condGenerator = new ConditionGenerator();
-    ctx.constPoolProc = new ConstantPoolProcessor();
-    ctx.constPool = ctx.constPoolProc.processConstantPool(ctx.clazz);
-    ctx.delegator = new StatementDelegator();
-    ctx.exprGen = new ExpressionGenerator();
-    ctx.incrGen = new IncrementGenerator(ctx);
-    ctx.methodCallGen = new MethodCallGenerator(ctx);
-    ctx.methodMap = new MethodProcessor().getMethodMap(ctx.clazz, clazzes);
-    ctx.assignGen = new AssignmentGenerator(ctx);
-    ctx.basicGen = new BasicGenerator(ctx);
-    ctx.invokeGen = new InvokeGenerator(ctx);
-    ctx.pushGen = new PushGenerator(ctx);
-    ctx.loadGen = new LoadGenerator(ctx);
-    ctx.storeGen = new StoreGenerator(ctx);
-    ctx.condGenerator.ctx = ctx;
-    ctx.delegator.ctx = ctx;
-    ctx.exprGen.ctx = ctx;
-    ctx.delegator.init();
+    ctx.init(errors, idx, clazzes);
   }
 
   public void generate() {
@@ -240,12 +210,7 @@ public class CodeGenerator {
     if (init) {
       Method clInit =
           new Method(
-              "",
-              new Scope(Scopes.DEFAULT),
-              "void",
-              id("<clinit>"),
-              Collections.emptyList(),
-              Collections.emptyList());
+              "", new Scope(Scopes.DEFAULT), "void", id("<clinit>"), emptyList(), emptyList());
       ctx.constPool.addUtf8(clInit.name.val.toString());
       ctx.constPool.addUtf8(TypeUtils.methodDescr(clInit));
       List<Statement> statements = new ArrayList<>();

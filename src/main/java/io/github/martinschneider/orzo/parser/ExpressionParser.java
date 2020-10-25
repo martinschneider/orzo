@@ -5,6 +5,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SQRT;
@@ -39,59 +40,93 @@ public class ExpressionParser implements ProdParser<Expression> {
   }
 
   @Override
+  // TODO: simplify and document this
   public Expression parse(TokenList tokens) {
     Type cast = ctx.castParser.parse(tokens);
     List<Token> exprTokens = new ArrayList<>();
     checkNegative(tokens, exprTokens);
     int parenthesis = 0;
-    while (tokens.curr() instanceof Num
-        || tokens.curr() instanceof BoolLiteral
-        || tokens.curr() instanceof Str
-        || tokens.curr() instanceof Chr
-        || tokens.curr() instanceof Identifier
-        || tokens.curr() instanceof Operator
-        || tokens.curr().eq(sym(SQRT))
-        || tokens.curr().eq(sym(LPAREN))
-        || tokens.curr().eq(sym(RPAREN))) {
-      int idx = tokens.idx();
-      boolean negative = false;
-      if (List.of(sym(LPAREN), op(TIMES), op(DIV), op(POW), op(MOD)).contains(tokens.peekPrev())) {
-        negative = checkNegative(tokens, exprTokens);
-      }
-      if (negative) {
-        idx = tokens.idx();
-      }
-      if (tokens.curr() instanceof Identifier) {
-        Identifier id = ((Identifier) tokens.curr());
-        tokens.next();
-        ArraySelector sel = ctx.arraySelectorParser.parse(tokens, true);
-        if (sel != null) {
-          id.arrSel = sel;
-        } else {
-          tokens.prev();
+    outer:
+    {
+      while (tokens.curr() instanceof Num
+          || tokens.curr() instanceof BoolLiteral
+          || tokens.curr() instanceof Str
+          || tokens.curr() instanceof Chr
+          || tokens.curr() instanceof Identifier
+          || tokens.curr() instanceof Operator
+          || tokens.curr().eq(sym(SQRT))
+          || tokens.curr().eq(sym(LPAREN))
+          || tokens.curr().eq(sym(RPAREN))) {
+        int idx = tokens.idx();
+        boolean negative = false;
+        if (List.of(sym(LPAREN), op(TIMES), op(DIV), op(POW), op(MOD))
+            .contains(tokens.peekPrev())) {
+          negative = checkNegative(tokens, exprTokens);
         }
-      }
-      MethodCall methodCall = ctx.methodCallParser.parse(tokens, true);
-      if (methodCall != null) {
-        exprTokens.add(methodCall);
-      } else {
-        tokens.setIdx(idx);
-        if (tokens.curr().eq(sym(LPAREN))) {
-          parenthesis--;
-        } else if (tokens.curr().eq(sym(RPAREN))) {
-          parenthesis++;
+        if (negative) {
+          idx = tokens.idx();
         }
-        if (parenthesis > 0) {
-          break;
-        }
-        Token curr = tokens.curr();
-        if (!curr.eq(eof())) {
-          exprTokens.add(curr);
-          tokens.next();
-        }
+        List<Identifier> selectors = new ArrayList<>();
+        do {
+          idx = tokens.idx();
+          MethodCall methodCall = parseMethod(tokens);
+          if (methodCall != null) {
+            selectors.add(methodCall);
+          } else {
+            tokens.setIdx(idx);
+            if (tokens.curr().eq(sym(LPAREN))) {
+              parenthesis--;
+            } else if (tokens.curr().eq(sym(RPAREN))) {
+              parenthesis++;
+            }
+            if (parenthesis > 0) {
+              break outer;
+            }
+            Token curr = tokens.curr();
+            if (!curr.eq(eof())) {
+              if (curr instanceof Identifier) {
+                selectors.add((Identifier) curr);
+                tokens.next();
+              } else {
+                exprTokens.add(curr);
+                tokens.next();
+                break;
+              }
+            }
+          }
+        } while (tokens.curr().eq(sym(DOT)) && tokens.next() != null);
+        if (!selectors.isEmpty()) exprTokens.add(flattenId(selectors));
       }
     }
     return (exprTokens.size() > 0) ? new Expression(postfix(exprTokens), cast) : null;
+  }
+
+  private Token flattenId(List<Identifier> selectors) {
+    Identifier id = selectors.get(0);
+    Identifier root = id;
+    for (int i = 1; i < selectors.size(); i++) {
+      id.next = selectors.get(i);
+      id = id.next;
+    }
+    return root;
+  }
+
+  private MethodCall parseMethod(TokenList tokens) {
+    if (tokens.curr() instanceof Identifier) {
+      Identifier id = ((Identifier) tokens.curr());
+      tokens.next();
+      ArraySelector sel = ctx.arraySelectorParser.parse(tokens, true);
+      if (sel != null) {
+        id.arrSel = sel;
+      } else {
+        tokens.prev();
+      }
+    }
+    MethodCall methodCall = ctx.methodCallParser.parse(tokens, true);
+    if (methodCall != null) {
+      return methodCall;
+    }
+    return null;
   }
 
   private boolean checkNegative(TokenList tokens, List<Token> exprTokens) {

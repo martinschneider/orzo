@@ -10,12 +10,15 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.parser.TestHelper.arg;
+import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
 import static io.github.martinschneider.orzo.parser.TestHelper.cond;
 import static io.github.martinschneider.orzo.parser.TestHelper.doStmt;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifStmt;
+import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.method;
+import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.whileStmt;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,44 +40,43 @@ public class MethodParserTest {
   private MethodParser target = new MethodParser(ParserContext.build(new CompilerErrors()));
 
   private static Stream<Arguments> test() throws IOException {
-    return Stream.of(
-        Arguments.of("", null),
-        Arguments.of("{}", null),
-        Arguments.of("method()", null),
-        Arguments.of(
+    return stream(
+        args("", null),
+        args("{}", null),
+        args("method()", null),
+        args(
             "public void test(){x=1;y=2;if(x==y){fehler=1;}}",
             method(
                 scope(PUBLIC),
                 "void",
                 id("test"),
                 emptyList(),
-                List.of(
+                list(
                     assign("x=1"),
                     assign("y=2"),
-                    ifStmt(
-                        List.of(new IfBlock(cond("x==y"), List.of(assign("fehler=1")))), false)))),
-        Arguments.of(
+                    ifStmt(list(new IfBlock(cond("x==y"), list(assign("fehler=1")))), false)))),
+        args(
             "void test(){x=100;while(x>0){x=x-1;}}",
             method(
                 scope(DEFAULT),
                 "void",
                 id("test"),
                 emptyList(),
-                List.of(assign("x=100"), whileStmt(cond("x>0"), List.of(assign("x=x-1")))))),
-        Arguments.of(
+                list(assign("x=100"), whileStmt(cond("x>0"), list(assign("x=x-1")))))),
+        args(
             "protected int huber(){do{}while(x>0)}",
             method(
                 scope(PROTECTED),
                 "int",
                 id("huber"),
                 emptyList(),
-                List.of(doStmt(cond("x>0"), emptyList())))),
-        Arguments.of(
+                list(doStmt(cond("x>0"), emptyList())))),
+        args(
             "private double calculateMean(){}",
             method(scope(PRIVATE), "double", id("calculateMean"), emptyList(), emptyList())),
-        Arguments.of(
+        args(
             "public byte[] test(){}",
-            method(scope(PUBLIC), "byte[]", id("test"), emptyList(), emptyList())));
+            method(scope(PUBLIC), "[byte", id("test"), emptyList(), emptyList())));
   }
 
   @MethodSource
@@ -86,15 +88,15 @@ public class MethodParserTest {
   }
 
   private static Stream<Arguments> testArgs() throws IOException {
-    return Stream.of(
-        Arguments.of("", null, emptyList()),
-        Arguments.of("(", null),
-        Arguments.of(")", null),
-        Arguments.of("a, b, c", null),
-        Arguments.of("int a", List.of(arg(INT, id("a")))),
-        Arguments.of(
+    return stream(
+        args("", null, emptyList()),
+        args("(", null),
+        args(")", null),
+        args("a, b, c", null),
+        args("int a", list(arg(INT, id("a")))),
+        args(
             "int a, boolean b, double d",
-            List.of(arg(INT, id("a")), arg(BOOLEAN, id("b")), arg(DOUBLE, id("d")))));
+            list(arg(INT, id("a")), arg(BOOLEAN, id("b")), arg(DOUBLE, id("d")))));
   }
 
   @ParameterizedTest

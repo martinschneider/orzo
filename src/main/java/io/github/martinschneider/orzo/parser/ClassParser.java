@@ -10,6 +10,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.EOF;
@@ -23,7 +24,6 @@ import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class ClassParser implements ProdParser<Clazz> {
@@ -101,7 +101,7 @@ public class ClassParser implements ProdParser<Clazz> {
     if (!classBody.isEmpty()) {
       return classBody;
     } else {
-      return Collections.emptyList();
+      return emptyList();
     }
   }
 

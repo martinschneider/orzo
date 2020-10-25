@@ -12,6 +12,8 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_5;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_M1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SIPUSH;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
+import static io.github.martinschneider.orzo.parser.TestHelper.args;
+import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 import io.github.martinschneider.orzo.codegen.generators.PushGenerator;
@@ -33,22 +35,22 @@ public class CodeGeneratorTest {
   }
 
   private static Stream<Arguments> testIntegerConstants() {
-    return Stream.of(
-        Arguments.of(-32768, combine(SIPUSH, shortToByteArray((short) -32768))),
-        Arguments.of(-129, combine(SIPUSH, (short) -129)),
-        Arguments.of(-128, combine(BIPUSH, (byte) -128)),
-        Arguments.of(-2, combine(BIPUSH, (byte) -2)),
-        Arguments.of(-1, new byte[] {ICONST_M1}),
-        Arguments.of(0, new byte[] {ICONST_0}),
-        Arguments.of(1, new byte[] {ICONST_1}),
-        Arguments.of(2, new byte[] {ICONST_2}),
-        Arguments.of(3, new byte[] {ICONST_3}),
-        Arguments.of(4, new byte[] {ICONST_4}),
-        Arguments.of(5, new byte[] {ICONST_5}),
-        Arguments.of(6, combine(BIPUSH, (byte) 6)),
-        Arguments.of(127, combine(BIPUSH, (byte) 127)),
-        Arguments.of(128, combine(SIPUSH, (short) 128)),
-        Arguments.of(32767, combine(SIPUSH, (short) 32767)));
+    return stream(
+        args(-32768, combine(SIPUSH, shortToByteArray((short) -32768))),
+        args(-129, combine(SIPUSH, (short) -129)),
+        args(-128, combine(BIPUSH, (byte) -128)),
+        args(-2, combine(BIPUSH, (byte) -2)),
+        args(-1, new byte[] {ICONST_M1}),
+        args(0, new byte[] {ICONST_0}),
+        args(1, new byte[] {ICONST_1}),
+        args(2, new byte[] {ICONST_2}),
+        args(3, new byte[] {ICONST_3}),
+        args(4, new byte[] {ICONST_4}),
+        args(5, new byte[] {ICONST_5}),
+        args(6, combine(BIPUSH, (byte) 6)),
+        args(127, combine(BIPUSH, (byte) 127)),
+        args(128, combine(SIPUSH, (short) 128)),
+        args(32767, combine(SIPUSH, (short) 32767)));
   }
 
   @ParameterizedTest

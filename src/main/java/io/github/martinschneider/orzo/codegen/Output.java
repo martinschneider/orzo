@@ -1,8 +1,8 @@
 package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.codegen.ByteUtils.intToByteArray;
-import static io.github.martinschneider.orzo.codegen.ByteUtils.longToByteArray;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
+import static io.github.martinschneider.orzo.codegen.ByteUtils2.longToByteArray;
 
 import java.io.IOException;
 import java.io.PrintStream;

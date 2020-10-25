@@ -4,6 +4,9 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
+import static io.github.martinschneider.orzo.parser.TestHelper.args;
+import static io.github.martinschneider.orzo.parser.TestHelper.list;
+import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
@@ -14,10 +17,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class TypeUtilsTest {
   private static Stream<Arguments> testPermutations() {
-    return Stream.of(
-        Arguments.of(
-            List.of(List.of(BYTE, SHORT, INT), List.of(LONG)),
-            List.of(List.of(BYTE, LONG), List.of(SHORT, LONG), List.of(INT, LONG))));
+    return stream(
+        args(
+            list(list(BYTE, SHORT, INT), list(LONG)),
+            list(list(BYTE, LONG), list(SHORT, LONG), list(INT, LONG))));
   }
 
   @MethodSource

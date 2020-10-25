@@ -48,6 +48,7 @@ public class DeclarationGenerator implements StatementGenerator {
 
   public HasOutput generateArray(
       DynamicByteArray out, VariableMap variables, Method method, Declaration decl) {
+    // TODO: handle method calls in array declaration
     if (decl.val == null || !(decl.val instanceof ArrayInit)) {
       ctx.errors.addError(LOG_NAME, "invalid array initialiser " + decl.val);
       return out;

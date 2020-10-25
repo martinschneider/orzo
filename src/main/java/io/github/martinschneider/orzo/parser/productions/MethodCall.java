@@ -17,6 +17,11 @@ public class MethodCall extends Identifier implements Statement {
     this.params = params;
   }
 
+  public MethodCall(String name, List<Expression> params, ArraySelector arrSel) {
+    this(name, params);
+    this.arrSel = arrSel;
+  }
+
   public MethodCall wLoc(Location loc) {
     this.loc = loc;
     return this;
@@ -67,6 +72,9 @@ public class MethodCall extends Identifier implements Statement {
     strBuilder.append('(');
     strBuilder.append(params.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     strBuilder.append(')');
+    if (arrSel != null) {
+      strBuilder.append(arrSel);
+    }
     return strBuilder.toString();
   }
 }
