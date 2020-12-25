@@ -1,4 +1,4 @@
-![Progress](https://progress-bar.dev/2/?title=self-compile)
+![Progress](https://progress-bar.dev/3/?title=self-compile)
 
 ![Orzo](logo.png)
 
