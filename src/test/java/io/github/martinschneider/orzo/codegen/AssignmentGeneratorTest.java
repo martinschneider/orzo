@@ -149,7 +149,9 @@ public class AssignmentGeneratorTest {
                 "pkg",
                 emptyList(),
                 new Scope(Scopes.PUBLIC),
-                new Identifier("Clazz"),
+                "Clazz",
+                emptyList(),
+                Clazz.JAVA_LANG_OBJECT,
                 list(method),
                 emptyList())));
     target = new AssignmentGenerator(ctx);

@@ -38,7 +38,9 @@ public class ClassParserTest {
                 null,
                 emptyList(),
                 scope(PUBLIC),
-                id("Martin"),
+                "Martin",
+                emptyList(),
+                Clazz.JAVA_LANG_OBJECT,
                 list(
                     method(
                         scope(PUBLIC),
@@ -49,10 +51,70 @@ public class ClassParserTest {
                 emptyList())),
         args(
             "private class Laura{}",
-            clazz(null, emptyList(), scope(PRIVATE), id("Laura"), emptyList(), emptyList())),
+            clazz(
+                null,
+                emptyList(),
+                scope(PRIVATE),
+                "Laura",
+                emptyList(),
+                Clazz.JAVA_LANG_OBJECT,
+                emptyList(),
+                emptyList())),
         args(
             "class Empty{}",
-            clazz(null, emptyList(), null, id("Empty"), emptyList(), emptyList())));
+            clazz(
+                null,
+                emptyList(),
+                null,
+                "Empty",
+                emptyList(),
+                Clazz.JAVA_LANG_OBJECT,
+                emptyList(),
+                emptyList())),
+        args(
+            "class Empty implements Interface1{}",
+            clazz(
+                null,
+                emptyList(),
+                null,
+                "Empty",
+                list("Interface1"),
+                Clazz.JAVA_LANG_OBJECT,
+                emptyList(),
+                emptyList())),
+        args(
+            "class Empty implements Interface1, Interface2{}",
+            clazz(
+                null,
+                emptyList(),
+                null,
+                "Empty",
+                list("Interface1", "Interface2"),
+                Clazz.JAVA_LANG_OBJECT,
+                emptyList(),
+                emptyList())),
+        args(
+            "class Empty implements Interface1, Interface2 extends BaseClass{}",
+            clazz(
+                null,
+                emptyList(),
+                null,
+                "Empty",
+                list("Interface1", "Interface2"),
+                "BaseClass",
+                emptyList(),
+                emptyList())),
+        args(
+            "class Empty extends BaseClass implements Interface1, Interface2{}",
+            clazz(
+                null,
+                emptyList(),
+                null,
+                "Empty",
+                list("Interface1", "Interface2"),
+                "BaseClass",
+                emptyList(),
+                emptyList())));
   }
 
   @ParameterizedTest

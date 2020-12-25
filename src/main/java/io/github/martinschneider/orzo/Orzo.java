@@ -135,7 +135,7 @@ public class Orzo {
     strBuilder.append(File.separator);
     strBuilder.append(clazz.packageName.replaceAll("\\.", File.separator));
     strBuilder.append(File.separator);
-    strBuilder.append(clazz.name.val);
+    strBuilder.append(clazz.name);
     strBuilder.append(".class");
     return strBuilder.toString();
   }

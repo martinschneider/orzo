@@ -13,5 +13,7 @@ public enum Keywords {
   IMPORT,
   BREAK,
   NEW,
-  FINAL;
+  FINAL,
+  IMPLEMENTS,
+  EXTENDS;
 }

@@ -36,7 +36,7 @@ public class MethodProcessor {
           && (currentClazz.packageName.equals(clazz.packageName)
               || importStrings.contains(clazz.fqn()))) {
         for (Method method : clazz.methods) {
-          methodMap.put(clazz.name.val.toString() + '.' + getKey(method), method);
+          methodMap.put(clazz.name + '.' + getKey(method), method);
           methodMap.put(clazz.fqn() + '.' + getKey(method), method);
           // TODO: only do this for static imports
           methodMap.put(getKey(method), method);

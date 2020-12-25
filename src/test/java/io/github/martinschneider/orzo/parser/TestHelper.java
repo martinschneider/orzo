@@ -90,10 +90,12 @@ public class TestHelper {
       String packageName,
       List<Import> imports,
       Scope scope,
-      Identifier name,
+      String name,
+      List<String> interfaces,
+      String baseClass,
       List<Method> body,
       List<ParallelDeclaration> decls) {
-    return new Clazz(packageName, imports, scope, name, body, decls);
+    return new Clazz(packageName, imports, scope, name, interfaces, baseClass, body, decls);
   }
 
   public static Condition cond(String input) throws IOException {
