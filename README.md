@@ -1,3 +1,5 @@
+![Progress](https://progress-bar.dev/2/?title=self-compile)
+
 ![Orzo](logo.png)
 
 Orzo is a Java-based language for the JVM.
