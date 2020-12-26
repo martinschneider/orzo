@@ -36,6 +36,7 @@ import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import io.github.martinschneider.orzo.parser.productions.WhileStatement;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +96,19 @@ public class TestHelper {
       String baseClass,
       List<Method> body,
       List<ParallelDeclaration> decls) {
-    return new Clazz(packageName, imports, scope, name, interfaces, baseClass, body, decls);
+    return new Clazz(packageName, imports, scope, name, false, interfaces, baseClass, body, decls);
+  }
+
+  public static Clazz interf(
+      String packageName,
+      List<Import> imports,
+      Scope scope,
+      String name,
+      String baseClass,
+      List<Method> body,
+      List<ParallelDeclaration> decls) {
+    return new Clazz(
+        packageName, imports, scope, name, true, Collections.emptyList(), baseClass, body, decls);
   }
 
   public static Condition cond(String input) throws IOException {

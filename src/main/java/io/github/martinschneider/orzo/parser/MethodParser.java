@@ -35,6 +35,10 @@ public class MethodParser implements ProdParser<Method> {
 
   @Override
   public Method parse(TokenList tokens) {
+    return parse(tokens, false);
+  }
+
+  public Method parse(TokenList tokens, boolean isInterface) {
     int idx = tokens.idx();
     Scope scope = scope(DEFAULT);
     Type type = null;
@@ -75,19 +79,22 @@ public class MethodParser implements ProdParser<Method> {
       tokens.setIdx(idx);
       return null;
     }
-    tokens.next();
-    if (!tokens.curr().eq(sym(LBRACE))) {
-      tokens.setIdx(idx);
-      return null;
+    body = null;
+    if (!isInterface) {
+      tokens.next();
+      if (!tokens.curr().eq(sym(LBRACE))) {
+        tokens.setIdx(idx);
+        return null;
+      }
+      tokens.next();
+      body = ctx.stmtParser.parseStmtSeq(tokens);
+      if (!tokens.curr().eq(sym(RBRACE))) {
+        tokens.setIdx(idx);
+        return null;
+      }
     }
-    tokens.next();
-    body = ctx.stmtParser.parseStmtSeq(tokens);
     if (body == null) {
       body = new ArrayList<>();
-    }
-    if (!tokens.curr().eq(sym(RBRACE))) {
-      tokens.setIdx(idx);
-      return null;
     }
     tokens.next();
     if (tokens.curr().eq(sym(SEMICOLON))) {

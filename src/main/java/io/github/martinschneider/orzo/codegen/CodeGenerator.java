@@ -30,7 +30,7 @@ public class CodeGenerator {
   private List<Clazz> clazzes;
   private CompilerErrors errors;
   private VariableMap fields;
-  private Output out;
+  Output out;
 
   public CodeGenerator(List<Clazz> clazzes, List<Output> outputs, CompilerErrors errors) {
     this.outputs = outputs;
@@ -43,9 +43,14 @@ public class CodeGenerator {
     return ctx.errors;
   }
 
-  private void accessModifiers() {
-    // super + public
-    out.write((short) 0x0021);
+  void accessModifiers(Clazz clazz) {
+    // ACC_SUPER, ACC_PUBLIC
+    short modifiers = ((short) 0x0021);
+    if (clazz.isInterface) {
+      // ACC_INTERFACE, ACC_ABSTRACT, ACC_PUBLIC
+      modifiers = ((short) 0x0601);
+    }
+    out.write(modifiers);
   }
 
   private void attributes() {
@@ -75,17 +80,18 @@ public class CodeGenerator {
 
   public void generate() {
     for (int i = 0; i < clazzes.size(); i++) {
+      Clazz clazz = clazzes.get(i);
       init(i);
       header();
-      supportPrint();
+      supportPrint(clazz);
       processFields();
-      HasOutput methods = methods(new DynamicByteArray());
+      HasOutput methods = methods(new DynamicByteArray(), clazz);
       HasOutput constPool = constPool(new DynamicByteArray());
       out.write(constPool.getBytes());
-      accessModifiers();
+      accessModifiers(clazz);
       classIndex();
       superClassIndex();
-      interfaces();
+      interfaces(clazz);
       fields();
       out.write(methods.getBytes());
       attributes();
@@ -123,18 +129,20 @@ public class CodeGenerator {
     out.write(JAVA_CLASS_MAJOR_VERSION);
   }
 
-  private void interfaces() {
-    out.write((short) 0);
+  private void interfaces(Clazz clazz) {
+    out.write((short) clazz.interfaces.size());
   }
 
-  private HasOutput methods(HasOutput out) {
+  private HasOutput methods(HasOutput out, Clazz clazz) {
     ctx.opStack = new OperandStack();
-    ctx.constPool.addUtf8("Code");
     List<Method> methods = ctx.clazz.methods;
-    addClInit(methods);
+    if (!clazz.isInterface) {
+      ctx.constPool.addUtf8("Code");
+      addClInit(methods);
+    }
     out.write((short) methods.size());
     for (Method method : methods) {
-      writeMethod(out, method);
+      writeMethod(out, method, clazz);
     }
     return out;
   }
@@ -146,7 +154,7 @@ public class CodeGenerator {
     out.write((short) 0); // attribute size
   }
 
-  private void writeMethod(HasOutput out, Method method) {
+  private void writeMethod(HasOutput out, Method method, Clazz clazz) {
     VariableMap variables = new VariableMap(fields);
     for (Argument arg : method.args) {
       // TODO: this code is ugly
@@ -160,30 +168,35 @@ public class CodeGenerator {
           arg.name,
           new VariableInfo(arg.name.val.toString(), type, arrayType, false, (byte) variables.size));
     }
-    out.write(method.accessFlags());
+    out.write(method.accessFlags(clazz.isInterface));
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.name.val));
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, TypeUtils.methodDescr(method)));
-    out.write((short) 1); // attribute size
-    out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Code"));
     DynamicByteArray methodOut = new DynamicByteArray();
-    boolean returned = false;
-    for (Statement stmt : method.body) {
-      generateCode(methodOut, variables, method, stmt);
-      if (stmt instanceof ReturnStatement) {
-        returned = true;
+    if (!clazz.isInterface) {
+      out.write((short) 1); // attribute size
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Code"));
+      boolean returned = false;
+      for (Statement stmt : method.body) {
+        generateCode(methodOut, variables, method, stmt);
+        if (stmt instanceof ReturnStatement) {
+          returned = true;
+        }
       }
+      if (!returned) {
+        methodOut.write(RETURN);
+      }
+      out.write(methodOut.size() + 12); // stack size (2) + local var size (2) + code size (4) +
+      // exception table size (2) + attribute count size (2)
+      out.write((short) (ctx.opStack.maxSize() + 1)); // max stack size
+      out.write((short) (variables.size + 1)); // max local var size
+      out.write(methodOut.size());
+      out.write(methodOut.flush());
+      out.write((short) 0); // exception table of size 0
+      out.write((short) 0); // attribute count for this attribute of 0
+    } else {
+      out.write((short) 0); // attribute size
+      out.write(methodOut.flush());
     }
-    if (!returned) {
-      methodOut.write(RETURN);
-    }
-    out.write(methodOut.size() + 12); // stack size (2) + local var size (2) + code size (4) +
-    // exception table size (2) + attribute count size (2)
-    out.write((short) (ctx.opStack.maxSize() + 1)); // max stack size
-    out.write((short) (variables.size + 1)); // max local var size
-    out.write(methodOut.size());
-    out.write(methodOut.flush());
-    out.write((short) 0); // exception table of size 0
-    out.write((short) 0); // attribute count for this attribute of 0
     ctx.opStack.reset();
   }
 
@@ -224,10 +237,12 @@ public class CodeGenerator {
     out.write(ctx.constPool.indexOf(CONSTANT_CLASS, "java/lang/Object"));
   }
 
-  private void supportPrint() {
-    // hard-coded support for print
-    ctx.constPool.addClass("java/lang/System");
-    ctx.constPool.addClass("java/io/PrintStream");
-    ctx.constPool.addFieldRef("java/lang/System", "out", "Ljava/io/PrintStream;");
+  private void supportPrint(Clazz clazz) {
+    if (!clazz.isInterface) {
+      // hard-coded support for print
+      ctx.constPool.addClass("java/lang/System");
+      ctx.constPool.addClass("java/io/PrintStream");
+      ctx.constPool.addFieldRef("java/lang/System", "out", "Ljava/io/PrintStream;");
+    }
   }
 }

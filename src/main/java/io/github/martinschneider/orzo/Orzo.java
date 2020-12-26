@@ -133,7 +133,9 @@ public class Orzo {
     }
     StringBuilder strBuilder = new StringBuilder(dir);
     strBuilder.append(File.separator);
-    strBuilder.append(clazz.packageName.replaceAll("\\.", File.separator));
+    if (clazz.packageName != null) {
+      strBuilder.append(clazz.packageName.replaceAll("\\.", File.separator));
+    }
     strBuilder.append(File.separator);
     strBuilder.append(clazz.name);
     strBuilder.append(".class");

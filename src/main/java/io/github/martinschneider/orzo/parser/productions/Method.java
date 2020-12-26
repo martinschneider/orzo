@@ -40,23 +40,28 @@ public class Method implements ClassMember {
     }
   }
 
-  public short accessFlags() {
+  public short accessFlags(boolean isInterface) {
+    // TODO: handle the general case
     short flags = 0;
-    switch ((Scopes) scope.val) {
-      case PUBLIC:
-        flags += 1;
-        break;
-      case PRIVATE:
-        flags += 2;
-        break;
-      case PROTECTED:
-        flags += 4;
-        break;
-      default:
-        break;
+    if (isInterface) {
+      flags += (short) 0x0401; // ACC_ABSTRACT, ACC_PUBLIC
+    } else {
+      switch ((Scopes) scope.val) {
+        case PUBLIC:
+          flags += (short) 0x0001;
+          break;
+        case PRIVATE:
+          flags += (short) 0x0002;
+          break;
+        case PROTECTED:
+          flags += (short) 0x0004;
+          break;
+        default:
+          break;
+      }
+      // if (isStatic) TODO: for now, all methods are static
+      flags += (short) 0x0008;
     }
-    // if (isStatic) TODO: for now, all methods are static
-    flags += 8;
     return flags;
   }
 

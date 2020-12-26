@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 public class Clazz {
   public static final String JAVA_LANG_OBJECT = "java.lang.Object";
+  public boolean isInterface;
   public List<Method> methods;
   public List<Import> imports;
   public List<ParallelDeclaration> fields;
@@ -20,6 +21,7 @@ public class Clazz {
       List<Import> imports,
       Scope scope,
       String name,
+      boolean isInterface,
       List<String> interfaces,
       String baseClass,
       List<Method> methods,
@@ -32,6 +34,7 @@ public class Clazz {
     this.fields = fields;
     this.interfaces = interfaces;
     this.baseClass = baseClass;
+    this.isInterface = isInterface;
   }
 
   @Override
@@ -42,6 +45,7 @@ public class Clazz {
     result = prime * result + ((fields == null) ? 0 : fields.hashCode());
     result = prime * result + ((imports == null) ? 0 : imports.hashCode());
     result = prime * result + ((interfaces == null) ? 0 : interfaces.hashCode());
+    result = prime * result + (isInterface ? 1231 : 1237);
     result = prime * result + ((methods == null) ? 0 : methods.hashCode());
     result = prime * result + ((name == null) ? 0 : name.hashCode());
     result = prime * result + ((packageName == null) ? 0 : packageName.hashCode());
@@ -67,6 +71,7 @@ public class Clazz {
     if (interfaces == null) {
       if (other.interfaces != null) return false;
     } else if (!interfaces.equals(other.interfaces)) return false;
+    if (isInterface != other.isInterface) return false;
     if (methods == null) {
       if (other.methods != null) return false;
     } else if (!methods.equals(other.methods)) return false;
@@ -99,6 +104,11 @@ public class Clazz {
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();
+    if (isInterface) {
+      strBuilder.append("interface ");
+    } else {
+      strBuilder.append("class");
+    }
     if (packageName != null && !packageName.isEmpty()) {
       strBuilder.append(packageName);
       strBuilder.append('.');

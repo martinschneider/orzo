@@ -4,6 +4,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CLASS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.EXTENDS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IMPLEMENTS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IMPORT;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INTERFACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.PACKAGE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
@@ -48,8 +49,12 @@ public class ClassParser implements ProdParser<Clazz> {
     List<String> interfaces = new ArrayList<>();
     String baseClass = Clazz.JAVA_LANG_OBJECT;
     Scope scope = ctx.scopeParser.parse(tokens);
+    boolean isInterface = false;
     if (tokens.curr() instanceof Keyword) {
-      if (tokens.curr().eq(keyword(CLASS))) {
+      if (tokens.curr().eq(keyword(INTERFACE))) {
+        isInterface = true;
+      }
+      if (tokens.curr().eq(keyword(CLASS)) || isInterface) {
         tokens.next();
         if (tokens.curr() instanceof Identifier) {
           name = tokens.curr().val.toString();
@@ -69,8 +74,17 @@ public class ClassParser implements ProdParser<Clazz> {
         tokens.next();
         // set temporary clazz object for the method parser's use
         ctx.currClazz =
-            new Clazz(packageDeclaration, imports, scope, name, interfaces, baseClass, null, null);
-        members = parseClassBody(tokens);
+            new Clazz(
+                packageDeclaration,
+                imports,
+                scope,
+                name,
+                isInterface,
+                interfaces,
+                baseClass,
+                null,
+                null);
+        members = parseClassBody(tokens, isInterface);
         if (members == null) {
           ctx.errors.addError(LOG_NAME, "missing class body");
         }
@@ -86,9 +100,9 @@ public class ClassParser implements ProdParser<Clazz> {
         if (!tokens.curr().eq(sym(RBRACE))) {
           ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
         }
-        tokens.next();
         ctx.currClazz.methods = methods;
         ctx.currClazz.fields = decls;
+        tokens.next();
         ctx.currClazz.baseClass = baseClass;
         return ctx.currClazz;
       }
@@ -128,11 +142,11 @@ public class ClassParser implements ProdParser<Clazz> {
     return interfaces;
   }
 
-  List<ClassMember> parseClassBody(TokenList tokens) {
+  List<ClassMember> parseClassBody(TokenList tokens, boolean isInterface) {
     List<ClassMember> classBody = new ArrayList<>();
     ClassMember member = null;
     do {
-      if ((member = ctx.methodParser.parse(tokens)) != null) {
+      if ((member = ctx.methodParser.parse(tokens, isInterface)) != null) {
         classBody.add(member);
       } else if ((member = ctx.declParser.parse(tokens)) != null) {
         ParallelDeclaration pDecl = (ParallelDeclaration) member;

@@ -9,6 +9,7 @@ public enum Keywords {
   RETURN,
   STATIC,
   CLASS,
+  INTERFACE,
   PACKAGE,
   IMPORT,
   BREAK,

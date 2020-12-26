@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
+import static io.github.martinschneider.orzo.parser.TestHelper.clazz;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.varInfo;
@@ -145,7 +146,7 @@ public class AssignmentGeneratorTest {
         new CompilerErrors(),
         0,
         list(
-            new Clazz(
+            clazz(
                 "pkg",
                 emptyList(),
                 new Scope(Scopes.PUBLIC),

@@ -31,12 +31,17 @@ public class ConstantPoolProcessor {
     constPool.addClass(clazz.fqn('/'));
     constPool.addClass("java/lang/Object");
     for (Method method : clazz.methods) {
-      constPool.addMethodRef(
-          clazz.fqn('/'), method.name.val.toString(), TypeUtils.methodDescr(method));
-      for (Statement stmt : method.body) {
-        constPool = processStatement(constPool, stmt);
+      if (clazz.isInterface) {
+        constPool.addUtf8(method.name.val.toString());
+        constPool.addUtf8(TypeUtils.methodDescr(method));
+      } else {
+        constPool.addMethodRef(
+            clazz.fqn('/'), method.name.val.toString(), TypeUtils.methodDescr(method));
+        for (Statement stmt : method.body) {
+          constPool = processStatement(constPool, stmt);
+        }
+        constPool.addUtf8("Code");
       }
-      constPool.addUtf8("Code");
     }
     for (ParallelDeclaration pDecl : clazz.fields) {
       for (Declaration decl : pDecl.declarations) {
