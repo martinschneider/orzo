@@ -15,6 +15,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_AND;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_OR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
@@ -374,6 +376,8 @@ public class Lexer {
     } else if (character == '&') {
       if ((character = (char) inputReader.read()) == '=') {
         tokenList.add(op(BITWISE_AND_ASSIGN).wLoc(inputReader.getLoc()));
+      } else if (character == '&') {
+        tokenList.add(op(LOGICAL_AND).wLoc(inputReader.getLoc()));
       } else {
         inputReader.unread(character);
         tokenList.add(op(BITWISE_AND).wLoc(inputReader.getLoc()));
@@ -381,6 +385,8 @@ public class Lexer {
     } else if (character == '|') {
       if ((character = (char) inputReader.read()) == '=') {
         tokenList.add(op(BITWISE_OR_ASSIGN).wLoc(inputReader.getLoc()));
+      } else if (character == '|') {
+        tokenList.add(op(LOGICAL_OR).wLoc(inputReader.getLoc()));
       } else {
         inputReader.unread(character);
         tokenList.add(op(BITWISE_OR).wLoc(inputReader.getLoc()));

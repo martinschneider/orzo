@@ -1,6 +1,8 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_AND;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_OR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
@@ -86,7 +88,9 @@ public class ExpressionParserTest {
         args("new MyType()", expr(list(constr("MyType", emptyList())))),
         args(
             "new MyType(a,b,c,d)",
-            expr(list(constr("MyType", list(expr("a"), expr("b"), expr("c"), expr("d")))))));
+            expr(list(constr("MyType", list(expr("a"), expr("b"), expr("c"), expr("d")))))),
+        args("a && b", expr(list(id("a"), id("b"), op(LOGICAL_AND)))),
+        args("a || b", expr(list(id("a"), id("b"), op(LOGICAL_OR)))));
   }
 
   @MethodSource
