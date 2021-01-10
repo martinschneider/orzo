@@ -1,4 +1,4 @@
-![Progress](https://progress-bar.dev/5/?title=self-compile)
+![Progress](https://progress-bar.dev/4/?title=self-compile)
 
 ![Orzo](logo.png)
 
@@ -17,7 +17,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] String
 - [ ] [reference types](https://docs.oracle.com/javase/specs/jvms/se14/html/jvms-2.html#jvms-2.4)
 - [ ] class inheritance
-- [ ] interfaces
+- [X] interfaces
 - [ ] [enums](https://docs.oracle.com/javase/specs/jls/se14/html/jls-8.html#jls-8.9)
 - [ ] [exceptions](https://docs.oracle.com/javase/specs/jvms/se14/html/jvms-2.html#jvms-2.10)
 
