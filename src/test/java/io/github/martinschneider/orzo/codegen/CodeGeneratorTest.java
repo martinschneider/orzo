@@ -6,6 +6,9 @@ import static io.github.martinschneider.orzo.parser.TestHelper.interf;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+
+import io.github.martinschneider.orzo.error.CompilerErrors;
+import io.github.martinschneider.orzo.parser.productions.Clazz;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
@@ -13,8 +16,6 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import io.github.martinschneider.orzo.error.CompilerErrors;
-import io.github.martinschneider.orzo.parser.productions.Clazz;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class CodeGeneratorTest {

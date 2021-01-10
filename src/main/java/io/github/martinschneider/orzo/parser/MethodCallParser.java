@@ -30,19 +30,17 @@ public class MethodCallParser implements ProdParser<MethodCall> {
     return parse(tokens, false);
   }
 
-  List<Expression> parseArgs(TokenList tokens) {
+  public List<Expression> parseArgs(TokenList tokens) {
     List<Expression> parameters = new ArrayList<>();
     if (tokens.curr().eq(sym(LPAREN))) {
       tokens.next();
       Expression factor;
-      if ((factor = ctx.exprParser.parse(tokens)) != null
-          || (factor = ctx.arrayInitParser.parse(tokens)) != null) {
+      if ((factor = ctx.exprParser.parse(tokens)) != null) {
         parameters.add(factor);
       }
       while (tokens.curr().eq(sym(COMMA))) {
         tokens.next();
-        if ((factor = ctx.exprParser.parse(tokens)) != null
-            || (factor = ctx.arrayInitParser.parse(tokens)) != null) {
+        if ((factor = ctx.exprParser.parse(tokens)) != null) {
           parameters.add(factor);
         }
         // TODO: else
@@ -50,6 +48,7 @@ public class MethodCallParser implements ProdParser<MethodCall> {
       if (!tokens.curr().eq(sym(RPAREN))) {
         tokens.next(sym(RBRACE));
         ctx.errors.missingExpected(LOG_NAME, sym(RPAREN), tokens);
+        return null;
       }
       tokens.next();
       return parameters;

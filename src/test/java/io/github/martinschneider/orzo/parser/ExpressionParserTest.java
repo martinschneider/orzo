@@ -12,11 +12,13 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
+import static io.github.martinschneider.orzo.parser.TestHelper.constr;
 import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.methodCall;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
+import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -80,7 +82,11 @@ public class ExpressionParserTest {
         args("-1 - (-i)", expr(list(integer(-1), integer(-1), id("i"), op(TIMES), op(MINUS)))),
         args("(byte) 1", expr(list(integer(1)), Type.type("byte"))),
         args("a.b", expr(list(id("a", "b")))),
-        args("a.b.c.d", expr(list(id("a", "b", "c", "d")))));
+        args("a.b.c.d", expr(list(id("a", "b", "c", "d")))),
+        args("new MyType()", expr(list(constr("MyType", emptyList())))),
+        args(
+            "new MyType(a,b,c,d)",
+            expr(list(constr("MyType", list(expr("a"), expr("b"), expr("c"), expr("d")))))));
   }
 
   @MethodSource

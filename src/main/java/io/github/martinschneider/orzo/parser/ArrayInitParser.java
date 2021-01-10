@@ -28,6 +28,7 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
 
   @Override
   public ArrayInit parse(TokenList tokens) {
+    int idx = tokens.idx();
     if (tokens.curr().eq(keyword(NEW))) {
       String type = null;
       List<List<Expression>> vals = new ArrayList<>();
@@ -37,6 +38,8 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
         tokens.next();
       } else {
         ctx.errors.addError(LOG_NAME, "missing type in array initialiser");
+        tokens.setIdx(idx);
+        return null;
       }
       List<Expression> dimensions = new ArrayList<>();
       while (tokens.curr().eq(sym(LBRAK))) {

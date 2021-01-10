@@ -11,6 +11,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SQRT;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.eof;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
@@ -18,12 +19,14 @@ import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Chr;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.Keyword;
 import io.github.martinschneider.orzo.lexer.tokens.Num;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.ArraySelector;
+import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.util.ArrayList;
@@ -42,6 +45,10 @@ public class ExpressionParser implements ProdParser<Expression> {
   @Override
   // TODO: simplify and document this
   public Expression parse(TokenList tokens) {
+    Expression expr = null;
+    if ((expr = ctx.arrayInitParser.parse(tokens)) != null) {
+      return expr;
+    }
     Type cast = ctx.castParser.parse(tokens);
     List<Token> exprTokens = new ArrayList<>();
     checkNegative(tokens, exprTokens);
@@ -56,7 +63,8 @@ public class ExpressionParser implements ProdParser<Expression> {
           || tokens.curr() instanceof Operator
           || tokens.curr().eq(sym(SQRT))
           || tokens.curr().eq(sym(LPAREN))
-          || tokens.curr().eq(sym(RPAREN))) {
+          || tokens.curr().eq(sym(RPAREN))
+          || isNewKeyword(tokens.curr())) {
         int idx = tokens.idx();
         boolean negative = false;
         if (List.of(sym(LPAREN), op(TIMES), op(DIV), op(POW), op(MOD))
@@ -83,10 +91,13 @@ public class ExpressionParser implements ProdParser<Expression> {
               break outer;
             }
             Token curr = tokens.curr();
+            ConstructorCall constrCall = null;
             if (!curr.eq(eof())) {
               if (curr instanceof Identifier) {
                 selectors.add((Identifier) curr);
                 tokens.next();
+              } else if ((constrCall = ctx.constrCallParser.parse(tokens)) != null) {
+                selectors.add(constrCall);
               } else {
                 exprTokens.add(curr);
                 tokens.next();
@@ -99,6 +110,10 @@ public class ExpressionParser implements ProdParser<Expression> {
       }
     }
     return (exprTokens.size() > 0) ? new Expression(postfix(exprTokens), cast) : null;
+  }
+
+  private boolean isNewKeyword(Token curr) {
+    return (curr instanceof Keyword && ((Keyword) curr).eq(keyword("new")));
   }
 
   private Token flattenId(List<Identifier> selectors) {

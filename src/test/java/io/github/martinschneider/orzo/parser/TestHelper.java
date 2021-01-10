@@ -22,6 +22,7 @@ import io.github.martinschneider.orzo.parser.productions.ArraySelector;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Condition;
+import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.DoStatement;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -166,6 +167,10 @@ public class TestHelper {
 
   public static Identifier id(String val, ArraySelector selector) {
     return new Identifier(val, selector);
+  }
+
+  public static ConstructorCall constr(String type, List<Expression> args) {
+    return new ConstructorCall(type, args);
   }
 
   public static Identifier id(String... vals) {

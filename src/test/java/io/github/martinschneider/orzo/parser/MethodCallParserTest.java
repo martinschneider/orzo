@@ -52,7 +52,9 @@ public class MethodCallParserTest {
                 list(
                     arrInit("int", 2, list(expr("1"), expr("2"))),
                     arrInit("int", 2, list(expr("3"), expr("4")))))),
-        args("doSomething()[0]", methodCall("doSomething", emptyList(), arrSel(list(expr("0"))))));
+        args("doSomething()[0]", methodCall("doSomething", emptyList(), arrSel(list(expr("0"))))),
+        args("someMethod(", null),
+        args("someMethod(a", null));
     // args(
     // "⌊((1+√5)/2) ** n)/√5+0.5⌋",
     // methodCall(id("Math.round"), list(expr("Math.floor(((1+√5)/2) **

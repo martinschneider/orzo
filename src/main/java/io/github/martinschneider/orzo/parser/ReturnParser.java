@@ -21,9 +21,6 @@ public class ReturnParser implements ProdParser<ReturnStatement> {
     if (tokens.curr().eq(keyword(RETURN))) {
       tokens.next();
       Expression expression = ctx.exprParser.parse(tokens);
-      if (expression == null) {
-        expression = ctx.arrayInitParser.parse(tokens);
-      }
       if (tokens.curr().eq(sym(SEMICOLON))) {
         tokens.next();
         return new ReturnStatement(expression);
