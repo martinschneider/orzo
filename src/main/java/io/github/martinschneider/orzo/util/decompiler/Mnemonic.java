@@ -206,67 +206,243 @@ public class Mnemonic {
     "jsr_w" /* 201 */
   };
 
-  public static final int[] ADDITIONAL_BYTES = {
-    0, /* nop 0 */ 0, /* aconst_null (1) */ 0, /* iconst_m1 (2) */ 0, /* iconst_0 (3) */
-    0, /* iconst_1 (4) */ 0, /* iconst_2 (5) */ 0, /* iconst_3 (6) */ 0, /* iconst_4 (7) */
-    0, /* iconst_5 (8) */ 0, /* lconst_0 (9) */ 0, /* lconst_1 (10) */ 0, /* fconst_0 (11) */
-    0, /* fconst_1 (12) */ 0, /* fconst_2 (13) */ 0, /* dconst_0 (14) */ 0, /* dconst_1 (15) */
-    1, /* bipush (16) */ 2, /* sipush (17) */ 1, /* ldc (18) */ 2, /* ldc_w (19) */
-    2, /* ldc2_w (20) */ 1, /* iload (21) */ 1, /* lload (22) */ 1, /* fload (23) */
-    1, /* dload (24) */ 1, /* aload (25) */ 0, /* iload_0 (26) */ 0, /* iload_1 (27) */
-    0, /* iload_2 (28) */ 0, /* iload_3 (29) */ 0, /* lload_0 (30) */ 0, /* lload_1 (31) */
-    0, /* lload_2 (32) */ 0, /* lload_3 (33) */ 0, /* fload_0 (34) */ 0, /* fload_1 (35) */
-    0, /* fload_2 (36) */ 0, /* fload_3 (37) */ 0, /* dload_0 (38) */ 0, /* dload_1 (39) */
-    0, /* dload_2 (40) */ 0, /* dload_3 (41) */ 0, /* aload_0 (42) */ 0, /* aload_1 (43) */
-    0, /* aload_2 (44) */ 0, /* aload_3 (45) */ 0, /* iaload (46) */ 0, /* laload (47) */
-    0, /* faload (48) */ 0, /* daload (49) */ 0, /* aaload (50) */ 0, /* baload (51) */
-    0, /* caload (52) */ 0, /* saload (53) */ 1, /* istore (54) */ 1, /* lstore (55) */
-    1, /* fstore (56) */ 1, /* dstore (57) */ 1, /* astore (58) */ 0, /* istore_0 (59) */
-    0, /* istore_1 (60) */ 0, /* istore_2 (61) */ 0, /* istore_3 (62) */ 0, /* lstore_0 (63) */
-    0, /* lstore_1 (64) */ 0, /* lstore_2 (65) */ 0, /* lstore_3 (66) */ 0, /* fstore_0 (67) */
-    0, /* fstore_1 (68) */ 0, /* fstore_2 (69) */ 0, /* fstore_3 (70) */ 0, /* dstore_0 (71) */
-    0, /* dstore_1 (72) */ 0, /* dstore_2 (73) */ 0, /* dstore_3 (74) */ 0, /* astore_0 (75) */
-    0, /* astore_1 (76) */ 0, /* astore_2 (77) */ 0, /* astore_3 (78) */ 0, /* iastore (79) */
-    0, /* lastore (80) */ 0, /* fastore (81) */ 0, /* dastore (82) */ 0, /* aastore (83) */
-    0, /* bastore (84) */ 0, /* castore (85) */ 0, /* sastore (86) */ 0, /* pop (87) */
-    0, /* pop2 (88) */ 0, /* dup (89) */ 0, /* dup_x1 (90) */ 0, /* dup_x2 (91) */
-    0, /* dup2 (92) */ 0, /* dup2_x1 (93) */ 0, /* dup2_x2 (94) */ 0, /* swap (95) */
-    0, /* iadd (96) */ 0, /* ladd (97) */ 0, /* fadd (98) */ 0, /* dadd (99) */ 0, /* isub (100) */
-    0, /* lsub (101) */ 0, /* fsub (102) */ 0, /* dsub (103) */ 0, /* imul (104) */
-    0, /* lmul (105) */ 0, /* fmul (106) */ 0, /* dmul (107) */ 0, /* idiv (108) */
-    0, /* ldiv (109) */ 0, /* fdiv (110) */ 0, /* ddiv (111) */ 0, /* irem (112) */
-    0, /* lrem (113) */ 0, /* frem (114) */ 0, /* drem (115) */ 0, /* ineg (116) */
-    0, /* lneg (117) */ 0, /* fneg (118) */ 0, /* dneg (119) */ 0, /* ishl (120) */
-    0, /* lshl (121) */ 0, /* ishr (122) */ 0, /* lshr (123) */ 0, /* iushr (124) */
-    0, /* lushr (125) */ 0, /* iand (126) */ 0, /* land (127) */ 0, /* ior (128) */
-    0, /* lor (129) */ 0, /* ixor (130) */ 0, /* lxor (131) */ 2, /* iinc (132) */
-    0, /* i2l (133) */ 0, /* i2f (134) */ 0, /* i2d (135) */ 0, /* l2i (136) */ 0, /* l2f (137) */
-    0, /* l2d (138) */ 0, /* f2i (139) */ 0, /* f2l (140) */ 0, /* f2d (141) */ 0, /* d2i (142) */
-    0, /* d2l (143) */ 0, /* d2f (144) */ 0, /* i2b (145) */ 0, /* i2c (146) */ 0, /* i2s (147) */
-    0, /* lcmp (148) */ 0, /* fcmpl (149) */ 0, /* fcmpg (150) */ 0, /* dcmpl (151) */
-    0, /* dcmpg (152) */ 2, /* ifeq (153) */ 2, /* ifne (154) */ 2, /* iflt (155) */
-    2, /* ifge (156) */ 2, /* ifgt (157) */ 2, /* ifle (158) */ 2, /* if_icmpeq (159) */
-    2, /* if_icmpne (160) */ 2, /* if_icmplt (161) */ 2, /* if_icmpge (162) */
-    2, /* if_icmpgt (163) */ 2, /* if_icmple (164) */ 2, /* if_acmpeq (165) */
-    2, /* if_acmpne (166) */ 2, /* goto (167) */ 2, /* jsr (168) */ 1, /* ret (169) */ 16, /*
-                                                                                            * tableswitch (170) TODO: this requires special handling because the number of bytes is
-                                                                                            * flexible
-                                                                                            */
-    8, /*
-        * lookupswitch (171) TODO: this requires special handling because the number of bytes is
+  public enum ParameterType {
+    EMPTY,
+    BYTE,
+    TWO_BYTES,
+    SHORT,
+    SHORT_PLUS_ONE_BYTE,
+    SHORT_PLUS_TWO_BYTES,
+    TWO_SHORTS,
+    INT,
+    SPECIAL
+  }
+
+  public static final ParameterType[] ADDITIONAL_BYTES = {
+    ParameterType.EMPTY, /* nop 0 */
+    ParameterType.EMPTY, /* aconst_null (1) */
+    ParameterType.EMPTY,
+    /* iconst_m1 (2) */ ParameterType.EMPTY, /* iconst_0 (3) */
+    ParameterType.EMPTY, /* iconst_1 (4) */
+    ParameterType.EMPTY, /* iconst_2 (5) */
+    ParameterType.EMPTY, /* iconst_3 (6) */
+    ParameterType.EMPTY, /* iconst_4 (7) */
+    ParameterType.EMPTY, /* iconst_5 (8) */
+    ParameterType.EMPTY, /* lconst_0 (9) */
+    ParameterType.EMPTY, /* lconst_1 (10) */
+    ParameterType.EMPTY, /* fconst_0 (11) */
+    ParameterType.EMPTY, /* fconst_1 (12) */
+    ParameterType.EMPTY, /* fconst_2 (13) */
+    ParameterType.EMPTY, /* dconst_0 (14) */
+    ParameterType.EMPTY, /* dconst_1 (15) */
+    ParameterType.BYTE, /* bipush (16) */
+    ParameterType.SHORT, /* sipush (17) */
+    ParameterType.BYTE, /* ldc (18) */
+    ParameterType.SHORT, /* ldc_w (19) */
+    ParameterType.SHORT, /* ldc2_w (20) */
+    ParameterType.BYTE, /* iload (21) */
+    ParameterType.BYTE, /* lload (22) */
+    ParameterType.BYTE, /* fload (23) */
+    ParameterType.BYTE, /* dload (24) */
+    ParameterType.BYTE, /* aload (25) */
+    ParameterType.EMPTY, /* iload_0 (26) */
+    ParameterType.EMPTY, /* iload_1 (27) */
+    ParameterType.EMPTY, /* iload_2 (28) */
+    ParameterType.EMPTY, /* iload_3 (29) */
+    ParameterType.EMPTY, /* lload_0 (30) */
+    ParameterType.EMPTY, /* lload_1 (31) */
+    ParameterType.EMPTY, /* lload_2 (32) */
+    ParameterType.EMPTY, /* lload_3 (33) */
+    ParameterType.EMPTY, /* fload_0 (34) */
+    ParameterType.EMPTY, /* fload_1 (35) */
+    ParameterType.EMPTY, /* fload_2 (36) */
+    ParameterType.EMPTY, /* fload_3 (37) */
+    ParameterType.EMPTY, /* dload_0 (38) */
+    ParameterType.EMPTY, /* dload_1 (39) */
+    ParameterType.EMPTY, /* dload_2 (40) */
+    ParameterType.EMPTY, /* dload_3 (41) */
+    ParameterType.EMPTY, /* aload_0 (42) */
+    ParameterType.EMPTY, /* aload_1 (43) */
+    ParameterType.EMPTY, /* aload_2 (44) */
+    ParameterType.EMPTY, /* aload_3 (45) */
+    ParameterType.EMPTY, /* iaload (46) */
+    ParameterType.EMPTY, /* laload (47) */
+    ParameterType.EMPTY, /* faload (48) */
+    ParameterType.EMPTY, /* daload (49) */
+    ParameterType.EMPTY, /* aaload (50) */
+    ParameterType.EMPTY, /* baload (51) */
+    ParameterType.EMPTY, /* caload (52) */
+    ParameterType.EMPTY, /* saload (53) */
+    ParameterType.BYTE, /* istore (54) */
+    ParameterType.BYTE, /* lstore (55) */
+    ParameterType.BYTE, /* fstore (56) */
+    ParameterType.BYTE, /* dstore (57) */
+    ParameterType.BYTE, /* astore (58) */
+    ParameterType.EMPTY, /* istore_0 (59) */
+    ParameterType.EMPTY, /* istore_1 (60) */
+    ParameterType.EMPTY, /* istore_2 (61) */
+    ParameterType.EMPTY, /* istore_3 (62) */
+    ParameterType.EMPTY, /* lstore_0 (63) */
+    ParameterType.EMPTY, /* lstore_1 (64) */
+    ParameterType.EMPTY, /* lstore_2 (65) */
+    ParameterType.EMPTY, /* lstore_3 (66) */
+    ParameterType.EMPTY, /* fstore_0 (67) */
+    ParameterType.EMPTY, /* fstore_1 (68) */
+    ParameterType.EMPTY, /* fstore_2 (69) */
+    ParameterType.EMPTY, /* fstore_3 (70) */
+    ParameterType.EMPTY, /* dstore_0 (71) */
+    ParameterType.EMPTY, /* dstore_1 (72) */
+    ParameterType.EMPTY, /* dstore_2 (73) */
+    ParameterType.EMPTY, /* dstore_3 (74) */
+    ParameterType.EMPTY, /* astore_0 (75) */
+    ParameterType.EMPTY, /* astore_1 (76) */
+    ParameterType.EMPTY, /* astore_2 (77) */
+    ParameterType.EMPTY, /* astore_3 (78) */
+    ParameterType.EMPTY, /* iastore (79) */
+    ParameterType.EMPTY, /* lastore (80) */
+    ParameterType.EMPTY, /* fastore (81) */
+    ParameterType.EMPTY, /* dastore (82) */
+    ParameterType.EMPTY, /* aastore (83) */
+    ParameterType.EMPTY, /* bastore (84) */
+    ParameterType.EMPTY, /* castore (85) */
+    ParameterType.EMPTY, /* sastore (86) */
+    ParameterType.EMPTY, /* pop (87) */
+    ParameterType.EMPTY, /* pop2 (88) */
+    ParameterType.EMPTY, /* dup (89) */
+    ParameterType.EMPTY, /* dup_x1 (90) */
+    ParameterType.EMPTY, /* dup_x2 (91) */
+    ParameterType.EMPTY, /* dup2 (92) */
+    ParameterType.EMPTY, /* dup2_x1 (93) */
+    ParameterType.EMPTY, /* dup2_x2 (94) */
+    ParameterType.EMPTY, /* swap (95) */
+    ParameterType.EMPTY, /* iadd (96) */
+    ParameterType.EMPTY, /* ladd (97) */
+    ParameterType.EMPTY, /* fadd (98) */
+    ParameterType.EMPTY, /* dadd (99) */
+    ParameterType.EMPTY, /*
+        * isub (100)
+        */
+    ParameterType.EMPTY, /* lsub (101) */
+    ParameterType.EMPTY, /* fsub (102) */
+    ParameterType.EMPTY, /* dsub (103) */
+    ParameterType.EMPTY, /* imul (104) */
+    ParameterType.EMPTY, /* lmul (105) */
+    ParameterType.EMPTY, /* fmul (106) */
+    ParameterType.EMPTY, /* dmul (107) */
+    ParameterType.EMPTY, /* idiv (108) */
+    ParameterType.EMPTY, /* ldiv (109) */
+    ParameterType.EMPTY, /* fdiv (110) */
+    ParameterType.EMPTY, /* ddiv (111) */
+    ParameterType.EMPTY, /* irem (112) */
+    ParameterType.EMPTY, /* lrem (113) */
+    ParameterType.EMPTY, /* frem (114) */
+    ParameterType.EMPTY, /* drem (115) */
+    ParameterType.EMPTY, /* ineg (116) */
+    ParameterType.EMPTY, /* lneg (117) */
+    ParameterType.EMPTY, /* fneg (118) */
+    ParameterType.EMPTY, /* dneg (119) */
+    ParameterType.EMPTY, /* ishl (120) */
+    ParameterType.EMPTY, /* lshl (121) */
+    ParameterType.EMPTY, /* ishr (122) */
+    ParameterType.EMPTY, /* lshr (123) */
+    ParameterType.EMPTY, /* iushr (124) */
+    ParameterType.EMPTY, /* lushr (125) */
+    ParameterType.EMPTY, /* iand (126) */
+    ParameterType.EMPTY, /* land (127) */
+    ParameterType.EMPTY, /* ior (128) */
+    ParameterType.EMPTY, /* lor (129) */
+    ParameterType.EMPTY, /* ixor (130) */
+    ParameterType.EMPTY, /* lxor (131) */
+    ParameterType.TWO_BYTES, /* iinc (132) */
+    ParameterType.EMPTY, /* i2l (133) */
+    ParameterType.EMPTY, /* i2f (134) */
+    ParameterType.EMPTY, /* i2d (135) */
+    ParameterType.EMPTY, /* l2i (136) */
+    ParameterType.EMPTY, /* l2f (137) */
+    ParameterType.EMPTY, /* l2d (138) */
+    ParameterType.EMPTY, /* f2i (139) */
+    ParameterType.EMPTY, /* f2l (140) */
+    ParameterType.EMPTY, /* f2d (141) */
+    ParameterType.EMPTY, /* d2i (142) */
+    ParameterType.EMPTY, /* d2l (143) */
+    ParameterType.EMPTY, /* d2f (144) */
+    ParameterType.EMPTY, /* i2b (145) */
+    ParameterType.EMPTY, /* i2c (146) */
+    ParameterType.EMPTY, /* i2s (147) */
+    ParameterType.EMPTY, /* lcmp (148) */
+    ParameterType.EMPTY, /* fcmpl (149) */
+    ParameterType.EMPTY, /* fcmpg (150) */
+    ParameterType.EMPTY, /* dcmpl (151) */
+    ParameterType.EMPTY, /* dcmpg (152) */
+    ParameterType.SHORT, /* ifeq (153) */
+    ParameterType.SHORT, /* ifne (154) */
+    ParameterType.SHORT, /* iflt (155) */
+    ParameterType.SHORT, /* ifge (156) */
+    ParameterType.SHORT, /* ifgt (157) */
+    ParameterType.SHORT, /* ifle (158) */
+    ParameterType.SHORT, /* if_icmpeq (159) */
+    ParameterType.SHORT, /* if_icmpne (160) */
+    ParameterType.SHORT, /* if_icmplt (161) */
+    ParameterType.SHORT, /* if_icmpge (162) */
+    ParameterType.SHORT, /* if_icmpgt (163) */
+    ParameterType.SHORT, /* if_icmple (164) */
+    ParameterType.SHORT, /* if_acmpeq (165) */
+    ParameterType.SHORT, /* if_acmpne (166) */
+    ParameterType.SHORT, /* goto (167) */
+    ParameterType.SHORT, /* jsr (168) */
+    ParameterType.BYTE, /* ret (169) */
+    ParameterType.SPECIAL, /*
+         * tableswitch
+         * (170)
+         * this
+         * requires
+         * special
+         * handling
+         * because
+         * the
+         * number
+         * of
+         * bytes
+         * is
+         * flexible
+         */
+    ParameterType.SPECIAL, /*
+        * lookupswitch (171) this requires special handling because the number of bytes is
         * flexible
-        */ 0, /* ireturn (172) */ 0, /* lreturn (173) */ 0, /* freturn (174) */
-    0, /* dreturn (175) */ 0, /* areturn (176) */ 0, /* return (177) */ 2, /* getstatic (178) */
-    2, /* putstatic (179) */ 2, /* getfield (180) */ 2, /* putfield (181) */
-    2, /* invokevirtual (182) */ 2, /* invokespecial (183) */ 2, /* invokestatic (184) */
-    4, /* invokeinterface (185) */ 4, /* invokedynamic (186) */ 2, /* new (187) */
-    1, /* newarray (188) */ 2, /* anewarray (189) */ 0, /* arraylength (190) */
-    0, /* athrow (191) */ 2, /* checkcast (192) */ 2, /* instanceof (193) */
-    0, /* monitorenter (194) */ 0, /* monitorexit (195) */ 3, /*
-                                                               * wide (196) TODO: this requires special handling because the number of bytes can be 3 or
-                                                               * 5
-                                                               */
-    3, /* multianewarray (197) */ 2, /* ifnull (198) */ 2, /* ifnonnull (199) */
-    4, /* goto_w (200) */ 4, /* jsr_w (201) */
+        */
+    ParameterType.EMPTY, /* ireturn (172) */
+    ParameterType.EMPTY, /* lreturn (173) */
+    ParameterType.EMPTY, /* freturn (174) */
+    ParameterType.EMPTY, /* dreturn (175) */
+    ParameterType.EMPTY, /* areturn (176) */
+    ParameterType.EMPTY, /* return (177) */
+    ParameterType.SHORT, /* getstatic (178) */
+    ParameterType.SHORT, /* putstatic (179) */
+    ParameterType.SHORT, /* getfield (180) */
+    ParameterType.SHORT, /* putfield (181) */
+    ParameterType.SHORT, /* invokevirtual (182) */
+    ParameterType.SHORT, /* invokespecial (183) */
+    ParameterType.SHORT, /* invokestatic (184) */
+    ParameterType.SHORT_PLUS_TWO_BYTES, /* invokeParameterType.INTerface (185) */
+    ParameterType.SHORT_PLUS_TWO_BYTES, /* invokedynamic (186) */
+    ParameterType.SHORT, /* new (187) */
+    ParameterType.BYTE, /* newarray (188) */
+    ParameterType.SHORT, /* anewarray (189) */
+    ParameterType.EMPTY, /* arraylength (190) */
+    ParameterType.EMPTY, /* athrow (191) */
+    ParameterType.SHORT, /* checkcast (192) */
+    ParameterType.SHORT, /* instanceof (193) */
+    ParameterType.EMPTY, /* monitorenter (194) */
+    ParameterType.EMPTY, /* monitorexit (195) */
+    ParameterType.SPECIAL, /*
+        * wide (196) this requires
+        * special handling because the
+        * number of bytes can be 3 or 5
+        */
+    ParameterType.SHORT_PLUS_ONE_BYTE, /* multianewarray (197) */
+    ParameterType.SHORT, /* ifnull (198) */
+    ParameterType.SHORT, /* ifnonnull (199) */
+    ParameterType.INT, /* goto_w (200) */
+    ParameterType.INT, /* jsr_w (201) */
   };
 }

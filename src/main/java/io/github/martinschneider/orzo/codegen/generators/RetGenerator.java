@@ -19,9 +19,8 @@ import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
-import io.github.martinschneider.orzo.parser.productions.Statement;
 
-public class RetGenerator implements StatementGenerator {
+public class RetGenerator implements StatementGenerator<ReturnStatement> {
   private CGContext ctx;
 
   public RetGenerator(CGContext ctx) {
@@ -30,9 +29,8 @@ public class RetGenerator implements StatementGenerator {
 
   @Override
   public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
-    ReturnStatement returnStatement = (ReturnStatement) stmt;
-    ret(out, variables, method.type, returnStatement.retValue);
+      DynamicByteArray out, VariableMap variables, Method method, ReturnStatement retStmt) {
+    ret(out, variables, method.type, retStmt.retValue);
     return out;
   }
 

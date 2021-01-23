@@ -8,7 +8,7 @@ import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.DoStatement;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
-import io.github.martinschneider.orzo.parser.productions.Increment;
+import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
@@ -24,14 +24,14 @@ public class StatementDelegator {
 
   public void init() {
     reg.put(ParallelDeclaration.class, new DeclarationGenerator(ctx));
-    reg.put(DoStatement.class, new DoStatementGenerator(ctx));
-    reg.put(ForStatement.class, new ForStatementGenerator(ctx));
-    reg.put(IfStatement.class, new IfStatementGenerator(ctx));
+    reg.put(DoStatement.class, new DoGenerator(ctx));
+    reg.put(ForStatement.class, new ForGenerator(ctx));
+    reg.put(IfStatement.class, new IfGenerator(ctx));
     reg.put(MethodCall.class, new MethodCallGenerator(ctx));
     reg.put(Assignment.class, new AssignmentGenerator(ctx));
     reg.put(ReturnStatement.class, new RetGenerator(ctx));
-    reg.put(WhileStatement.class, new WhileStatementGenerator(ctx));
-    reg.put(Increment.class, new IncrementGenerator(ctx));
+    reg.put(WhileStatement.class, new WhileGenerator(ctx));
+    reg.put(IncrementStatement.class, new IncrementGenerator(ctx));
   }
 
   public HasOutput generate(

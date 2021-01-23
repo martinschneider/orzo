@@ -14,17 +14,16 @@ import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-public class IfStatementGenerator implements StatementGenerator {
+public class IfGenerator implements StatementGenerator<IfStatement> {
   private CGContext ctx;
 
-  public IfStatementGenerator(CGContext ctx) {
+  public IfGenerator(CGContext ctx) {
     this.ctx = ctx;
   }
 
   @Override
   public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
-    IfStatement ifStmt = (IfStatement) stmt;
+      DynamicByteArray out, VariableMap variables, Method method, IfStatement ifStmt) {
     List<DynamicByteArray> bodyOutputs = new ArrayList<>();
     List<DynamicByteArray> condOutputs = new ArrayList<>();
     for (int i = 0; i < ifStmt.ifBlks.size(); i++) {

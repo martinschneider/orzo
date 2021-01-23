@@ -1,44 +1,25 @@
 package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
-import static io.github.martinschneider.orzo.parser.TestHelper.clazz;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.varInfo;
 import static io.github.martinschneider.orzo.parser.TestHelper.varInfoArr;
-import static io.github.martinschneider.orzo.parser.TestHelper.varMap;
-import static java.util.Collections.emptyList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.codegen.generators.AssignmentGenerator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
-import io.github.martinschneider.orzo.lexer.Lexer;
-import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.Identifier;
-import io.github.martinschneider.orzo.lexer.tokens.Scope;
-import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.parser.AssignmentParser;
 import io.github.martinschneider.orzo.parser.ParserContext;
-import io.github.martinschneider.orzo.parser.productions.Clazz;
-import io.github.martinschneider.orzo.parser.productions.Method;
-import io.github.martinschneider.orzo.util.decompiler.BytecodeDecompiler;
+import io.github.martinschneider.orzo.parser.productions.Assignment;
 import java.io.IOException;
-import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 @TestInstance(Lifecycle.PER_CLASS)
-public class AssignmentGeneratorTest {
-  private AssignmentParser parser;
-  private AssignmentGenerator target;
-  private Method method;
-  private DynamicByteArray out;
+public class AssignmentGeneratorTest extends StatementGeneratorTest<Assignment> {
 
   private static Stream<Arguments> test() throws IOException {
     return stream(
@@ -133,43 +114,8 @@ public class AssignmentGeneratorTest {
 
   @BeforeAll
   public void init() {
-    Method method =
-        new Method(
-            "pkg.Clazz",
-            new Scope(Scopes.PUBLIC),
-            "void",
-            new Identifier("testMethod"),
-            emptyList(),
-            emptyList());
-    CGContext ctx = new CGContext();
-    ctx.init(
-        new CompilerErrors(),
-        0,
-        list(
-            clazz(
-                "pkg",
-                emptyList(),
-                new Scope(Scopes.PUBLIC),
-                "Clazz",
-                emptyList(),
-                Clazz.JAVA_LANG_OBJECT,
-                list(method),
-                emptyList())));
+    super.init();
     target = new AssignmentGenerator(ctx);
     parser = new AssignmentParser(ParserContext.build(new CompilerErrors()));
-  }
-
-  @BeforeEach
-  public void reset() {
-    out = new DynamicByteArray();
-  }
-
-  @ParameterizedTest
-  @MethodSource
-  public void test(String input, List<VariableInfo> varInfos, List<String> expectedLines)
-      throws IOException {
-    TokenList tokens = new Lexer().getTokens(input);
-    target.generate(out, varMap(varInfos), method, parser.parse(tokens));
-    assertEquals(String.join("\n", expectedLines), BytecodeDecompiler.decompile(out.getBytes()));
   }
 }

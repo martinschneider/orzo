@@ -8,48 +8,50 @@ import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.Break;
-import io.github.martinschneider.orzo.parser.productions.DoStatement;
+import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DoStatementGenerator implements StatementGenerator {
+public class ForGenerator implements StatementGenerator<ForStatement> {
   private CGContext ctx;
 
-  public DoStatementGenerator(CGContext ctx) {
+  public ForGenerator(CGContext ctx) {
     this.ctx = ctx;
   }
 
   @Override
   public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
-    DoStatement doStatement = (DoStatement) stmt;
+      DynamicByteArray out, VariableMap variables, Method method, ForStatement forStmt) {
+    ctx.delegator.generate(variables, out, method, forStmt.init);
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements
     List<Byte> breaks = new ArrayList<>();
-    for (Statement innerStmt : doStatement.body) {
+    for (Statement innerStmt : forStmt.body) {
       if (innerStmt instanceof Break) {
         breaks.add((byte) (bodyOut.getBytes().length + 1));
         bodyOut.write(GOTO);
-        bodyOut.write((short) 0); // placeholder
+        bodyOut.write((short) 0); // temporary placeholder
       } else {
         ctx.delegator.generate(variables, bodyOut, method, innerStmt);
       }
     }
+    ctx.delegator.generate(variables, bodyOut, method, forStmt.loopStmt);
     DynamicByteArray conditionOut = new DynamicByteArray();
-    short branchBytes = (short) -(bodyOut.getBytes().length + conditionOut.getBytes().length);
-    ctx.condGenerator.generateCondition(
-        conditionOut, variables, doStatement.cond, branchBytes, true);
+    short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
+    ctx.condGenerator.generateCondition(conditionOut, variables, forStmt.cond, branchBytes);
+    out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {
-      byte[] jmpOffset =
-          shortToByteArray((short) (bodyBytes.length - idx + 1 + conditionOut.getBytes().length));
+      byte[] jmpOffset = shortToByteArray((short) (bodyBytes.length - idx + 4));
       bodyBytes[idx] = jmpOffset[0];
       bodyBytes[idx + 1] = jmpOffset[1];
     }
     out.write(bodyBytes);
-    out.write(conditionOut.getBytes());
+    out.write(GOTO);
+    out.write(
+        shortToByteArray((short) (-(bodyOut.getBytes().length + conditionOut.getBytes().length))));
     return out;
   }
 }

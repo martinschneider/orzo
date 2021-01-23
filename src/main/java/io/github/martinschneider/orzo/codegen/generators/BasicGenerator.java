@@ -31,9 +31,9 @@ public class BasicGenerator {
   }
 
   public void convert1(DynamicByteArray out, String from, String to) {
-    addCastingErrors(from, to);
     // TODO: array casts
     if (from != null && to != null) {
+      addCastingErrors(from, to);
       out.write(castOps1.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]));
     }
     ctx.opStack.pop();
@@ -58,6 +58,19 @@ public class BasicGenerator {
     } else {
       out.write(opCode);
       out.write((byte) idx);
+    }
+  }
+
+  public void wideInc(HasOutput out, short idx, short inc, byte opCode) {
+    if (idx > Byte.MAX_VALUE && inc > Byte.MAX_VALUE) {
+      out.write(WIDE);
+      out.write(opCode);
+      out.write(idx);
+      out.write(inc);
+    } else {
+      out.write(opCode);
+      out.write((byte) idx);
+      out.write((byte) inc);
     }
   }
 

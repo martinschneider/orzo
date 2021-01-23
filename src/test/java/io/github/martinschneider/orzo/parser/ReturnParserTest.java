@@ -19,13 +19,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class ReturnParserTest {
-  private ReturnParser target = new ReturnParser(ParserContext.build(new CompilerErrors()));
+  private RetParser target = new RetParser(ParserContext.build(new CompilerErrors()));
 
   private static Stream<Arguments> test() throws IOException {
     return stream(
-        //        args("", null),
-        //        args("return a;", new ReturnStatement(expr("a"))),
-        //        args("return;", new ReturnStatement(null)),
+        // args("", null),
+        // args("return a;", new ReturnStatement(expr("a"))),
+        // args("return;", new ReturnStatement(null)),
         args("return new byte[]{1};", new ReturnStatement(arrInit("byte", 1, list(expr("1"))))));
   }
 

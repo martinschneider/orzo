@@ -21,11 +21,10 @@ import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
-import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MethodCallGenerator implements StatementGenerator {
+public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   private static final String LOGGER_NAME = "method call code generator";
   public CGContext ctx;
 
@@ -57,8 +56,7 @@ public class MethodCallGenerator implements StatementGenerator {
 
   @Override
   public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
-    MethodCall methodCall = (MethodCall) stmt;
+      DynamicByteArray out, VariableMap variables, Method method, MethodCall methodCall) {
     if ("System.out.println".equals(methodCall.name.toString())) {
       for (Expression param : methodCall.params) {
         ctx.invokeGen.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");

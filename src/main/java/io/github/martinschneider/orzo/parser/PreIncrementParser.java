@@ -10,10 +10,10 @@ import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.parser.productions.Expression;
-import io.github.martinschneider.orzo.parser.productions.Increment;
+import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
 import java.util.List;
 
-public class PreIncrementParser implements ProdParser<Increment> {
+public class PreIncrementParser implements ProdParser<IncrementStatement> {
   private ParserContext ctx;
 
   public PreIncrementParser(ParserContext ctx) {
@@ -21,7 +21,7 @@ public class PreIncrementParser implements ProdParser<Increment> {
   }
 
   @Override
-  public Increment parse(TokenList tokens) {
+  public IncrementStatement parse(TokenList tokens) {
     Identifier id;
     Operator op;
     int idx = tokens.idx();
@@ -46,7 +46,7 @@ public class PreIncrementParser implements ProdParser<Increment> {
       id = (Identifier) tokens.curr();
       tokens.next();
       id.arrSel = ctx.arraySelectorParser.parse(tokens);
-      return new Increment(new Expression(List.of(id, op)));
+      return new IncrementStatement(new Expression(List.of(id, op)));
     } else {
       tokens.setIdx(idx);
       return null;

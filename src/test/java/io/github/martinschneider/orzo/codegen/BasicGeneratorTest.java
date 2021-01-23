@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.IINC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD;
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
@@ -166,8 +167,13 @@ public class BasicGeneratorTest {
   private static Stream<Arguments> wideTest() throws IOException {
     return stream(
         args((short) 0, ILOAD, list("iload", "0")),
-        args((short) 128, ILOAD, list("wide", "iload", "0", "-128"))); // TODO: decompiler should
-    // support multi-byte values
+        args((short) 128, ILOAD, list("wide", "iload", "-128")));
+  }
+
+  private static Stream<Arguments> wideIncTest() throws IOException {
+    return stream(
+        args((short) 0, (short) 0, IINC, list("iinc", "0", "0")),
+        args((short) 128, (short) 128, IINC, list("wide", "iinc", "-128", "-128")));
   }
 
   @BeforeAll
@@ -206,6 +212,14 @@ public class BasicGeneratorTest {
   @MethodSource
   public void wideTest(short idx, byte opCode, List<String> expectedLines) throws IOException {
     target.wide(out, idx, opCode);
+    assertEquals(String.join(" ", expectedLines), BytecodeDecompiler.decompile(out.getBytes()));
+  }
+
+  @ParameterizedTest
+  @MethodSource
+  public void wideIncTest(short idx, short inc, byte opCode, List<String> expectedLines)
+      throws IOException {
+    target.wideInc(out, idx, inc, opCode);
     assertEquals(String.join(" ", expectedLines), BytecodeDecompiler.decompile(out.getBytes()));
   }
 }

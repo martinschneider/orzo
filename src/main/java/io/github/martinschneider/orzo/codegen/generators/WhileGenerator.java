@@ -14,21 +14,20 @@ import io.github.martinschneider.orzo.parser.productions.WhileStatement;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WhileStatementGenerator implements StatementGenerator {
+public class WhileGenerator implements StatementGenerator<WhileStatement> {
   private CGContext ctx;
 
-  public WhileStatementGenerator(CGContext ctx) {
+  public WhileGenerator(CGContext ctx) {
     this.ctx = ctx;
   }
 
   @Override
   public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
-    WhileStatement whileStatement = (WhileStatement) stmt;
+      DynamicByteArray out, VariableMap variables, Method method, WhileStatement whileStmt) {
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements
     List<Byte> breaks = new ArrayList<>();
-    for (Statement innerStmt : whileStatement.body) {
+    for (Statement innerStmt : whileStmt.body) {
       if (innerStmt instanceof Break) {
         breaks.add((byte) (bodyOut.getBytes().length + 1));
         bodyOut.write(GOTO);
@@ -39,7 +38,7 @@ public class WhileStatementGenerator implements StatementGenerator {
     }
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
-    ctx.condGenerator.generateCondition(conditionOut, variables, whileStatement.cond, branchBytes);
+    ctx.condGenerator.generateCondition(conditionOut, variables, whileStmt.cond, branchBytes);
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {

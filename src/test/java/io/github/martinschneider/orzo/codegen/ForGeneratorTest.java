@@ -5,11 +5,11 @@ import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.varInfo;
 
-import io.github.martinschneider.orzo.codegen.generators.MethodCallGenerator;
+import io.github.martinschneider.orzo.codegen.generators.ForGenerator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
-import io.github.martinschneider.orzo.parser.MethodCallParser;
+import io.github.martinschneider.orzo.parser.ForParser;
 import io.github.martinschneider.orzo.parser.ParserContext;
-import io.github.martinschneider.orzo.parser.productions.MethodCall;
+import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -18,16 +18,27 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.provider.Arguments;
 
 @TestInstance(Lifecycle.PER_CLASS)
-public class MethodCallGeneratorTest extends StatementGeneratorTest<MethodCall> {
+public class ForGeneratorTest extends StatementGeneratorTest<ForStatement> {
   private static Stream<Arguments> test() throws IOException {
-    // TODO: add more interesting tests
-    return stream(args("testMethod()", list(varInfo("x", "int", 2)), list("invokestatic 5")));
+    return stream(
+        args(
+            "for (x=0; x<10; x++) { x++; }",
+            list(varInfo("x", "int", 2)),
+            list(
+                "iconst_0",
+                "istore_2",
+                "iload_2",
+                "bipush 10",
+                "if_icmpge 12",
+                "iinc 2 1",
+                "iinc 2 1",
+                "goto -12")));
   }
 
   @BeforeAll
   public void init() {
     super.init();
-    target = new MethodCallGenerator(ctx);
-    parser = new MethodCallParser(ParserContext.build(new CompilerErrors()));
+    target = new ForGenerator(ctx);
+    parser = new ForParser(ParserContext.build(new CompilerErrors()));
   }
 }

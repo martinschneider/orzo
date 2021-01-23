@@ -13,10 +13,9 @@ import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
-import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.List;
 
-public class AssignmentGenerator implements StatementGenerator {
+public class AssignmentGenerator implements StatementGenerator<Assignment> {
   private CGContext ctx;
 
   public AssignmentGenerator(CGContext ctx) {
@@ -25,8 +24,7 @@ public class AssignmentGenerator implements StatementGenerator {
 
   @Override
   public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
-    Assignment assignment = (Assignment) stmt;
+      DynamicByteArray out, VariableMap variables, Method method, Assignment assignment) {
     for (int i = 0; i < assignment.left.size(); i++) {
       Identifier left = assignment.left.get(i);
       Expression right = assignment.right.get(i);

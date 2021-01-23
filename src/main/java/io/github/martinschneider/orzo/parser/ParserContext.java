@@ -24,7 +24,7 @@ public class ParserContext {
   public MethodParser methodParser;
   public PostIncrementParser postIncrementParser;
   public PreIncrementParser preIncrementParser;
-  public ReturnParser retParser;
+  public RetParser retParser;
   public ScopeParser scopeParser;
   public SqrtParser sqrtParser;
   public StatementParser stmtParser;
@@ -51,7 +51,7 @@ public class ParserContext {
     ctx.methodParser = new MethodParser(ctx);
     ctx.postIncrementParser = new PostIncrementParser(ctx);
     ctx.preIncrementParser = new PreIncrementParser(ctx);
-    ctx.retParser = new ReturnParser(ctx);
+    ctx.retParser = new RetParser(ctx);
     ctx.scopeParser = new ScopeParser();
     ctx.sqrtParser = new SqrtParser();
     ctx.stmtParser = new StatementParser(ctx);

@@ -15,10 +15,9 @@ import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
-import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.List;
 
-public class DeclarationGenerator implements StatementGenerator {
+public class DeclarationGenerator implements StatementGenerator<ParallelDeclaration> {
   private static final int ZERO = 0;
   private static final String LOG_NAME = "generate declaration code";
 
@@ -30,8 +29,7 @@ public class DeclarationGenerator implements StatementGenerator {
 
   @Override
   public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
-    ParallelDeclaration pDecl = (ParallelDeclaration) stmt;
+      DynamicByteArray out, VariableMap variables, Method method, ParallelDeclaration pDecl) {
     for (Declaration decl : pDecl.declarations) {
       if (decl.arrDim > 0) {
         return generateArray(out, variables, method, decl);

@@ -30,7 +30,7 @@ import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.IfBlock;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.Import;
-import io.github.martinschneider.orzo.parser.productions.Increment;
+import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
@@ -75,8 +75,8 @@ public class TestHelper {
     return arrInit(type, list(expr(list(integer(dim)))), list(vals));
   }
 
-  public static Increment inc(Identifier id, Operator op) throws IOException {
-    return new Increment(expr(list(id, op)));
+  public static IncrementStatement inc(Identifier id, Operator op) throws IOException {
+    return new IncrementStatement(expr(list(id, op)));
   }
 
   public static Assignment assign(Identifier left, Expression right) {

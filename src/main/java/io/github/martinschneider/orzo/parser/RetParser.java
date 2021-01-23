@@ -9,10 +9,10 @@ import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 
-public class ReturnParser implements ProdParser<ReturnStatement> {
+public class RetParser implements ProdParser<ReturnStatement> {
   private ParserContext ctx;
 
-  public ReturnParser(ParserContext ctx) {
+  public RetParser(ParserContext ctx) {
     this.ctx = ctx;
   }
 

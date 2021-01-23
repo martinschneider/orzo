@@ -19,11 +19,10 @@ import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
-import io.github.martinschneider.orzo.parser.productions.Increment;
+import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
-import io.github.martinschneider.orzo.parser.productions.Statement;
 
-public class IncrementGenerator implements StatementGenerator {
+public class IncrementGenerator implements StatementGenerator<IncrementStatement> {
   private CGContext ctx;
   private static final String LOGGER_NAME = "increment code generator";
 
@@ -33,8 +32,7 @@ public class IncrementGenerator implements StatementGenerator {
 
   @Override
   public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {
-    Increment incr = (Increment) stmt;
+      DynamicByteArray out, VariableMap variables, Method method, IncrementStatement incr) {
     if (incr.expr.tokens.size() != 2
         || !(incr.expr.tokens.get(0) instanceof Identifier)
         || !(incr.expr.tokens.get(1) instanceof Operator)) {

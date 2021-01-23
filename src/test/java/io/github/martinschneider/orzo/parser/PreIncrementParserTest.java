@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.parser.productions.Increment;
+import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
 import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,7 +41,7 @@ public class PreIncrementParserTest {
 
   @ParameterizedTest
   @MethodSource
-  public void test(String input, Increment expected) throws IOException {
+  public void test(String input, IncrementStatement expected) throws IOException {
     TokenList tokens = new Lexer().getTokens(input);
     assertEquals(expected, target.parse(tokens));
     assertTokenIdx(tokens, (expected == null));

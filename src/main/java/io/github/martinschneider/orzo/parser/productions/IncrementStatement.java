@@ -1,9 +1,9 @@
 package io.github.martinschneider.orzo.parser.productions;
 
-public class Increment implements Statement {
+public class IncrementStatement implements Statement {
   public Expression expr;
 
-  public Increment(Expression expr) {
+  public IncrementStatement(Expression expr) {
     this.expr = expr;
   }
 
@@ -26,7 +26,7 @@ public class Increment implements Statement {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    Increment other = (Increment) obj;
+    IncrementStatement other = (IncrementStatement) obj;
     if (expr == null) {
       if (other.expr != null) {
         return false;
