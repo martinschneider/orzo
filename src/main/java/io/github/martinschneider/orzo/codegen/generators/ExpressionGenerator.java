@@ -1,12 +1,31 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFEQ;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFGE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFGT;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFLE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFLT;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFNE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPEQ;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPGE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPGT;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLT;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPNE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
-import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.arithmeticOps;
+import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.ARITHMETIC_OPS;
+import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.COMPARE_TO_ZERO_OPS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.EQUAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESSEQ;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
@@ -15,10 +34,12 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMEN
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.INT_ZERO;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
@@ -29,6 +50,7 @@ import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
+import io.github.martinschneider.orzo.codegen.OperandStack;
 import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
@@ -46,15 +68,19 @@ import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 public class ExpressionGenerator {
   public CGContext ctx;
 
+  private static final List<Operators> COMPARATORS =
+      List.of(EQUAL, NOTEQUAL, GREATER, LESS, LESSEQ, GREATEREQ);
+
   public ExpressionResult eval(
       DynamicByteArray out, VariableMap variables, String type, Expression expr) {
-    return eval(out, variables, type, expr, true);
+    return eval(out, variables, type, expr, true, false);
   }
 
   public ExpressionResult eval(
@@ -62,7 +88,8 @@ public class ExpressionGenerator {
       VariableMap variables,
       String type,
       Expression expr,
-      boolean pushIfZero) {
+      boolean pushIfZero,
+      boolean reverseComp) {
     // TODO: support String concatenation
     // TODO: support different types
     // TODO: error handling, e.g. only "+" operator is valid for String
@@ -80,6 +107,10 @@ public class ExpressionGenerator {
     if (expr == null) {
       return null;
     }
+    // this stack keeps track of the operands loaded on the stack for the current expression
+    // this is used for code optimization (for example, using IFLE instead of IF_CMPLE if one of the
+    // operands is 0)
+    OperandStack exprTypeStack = new OperandStack();
     List<Token> tokens = expr.tokens;
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
@@ -91,6 +122,7 @@ public class ExpressionGenerator {
         // a different order. Therefore, we skip processing them here.
       } else if (token instanceof Identifier) {
         type = handleId(out, variables, tokens, i, token, type);
+        exprTypeStack.push(type);
       } else if (token instanceof IntLiteral) {
         BigInteger bigInt = (BigInteger) ((IntLiteral) token).val;
         Long intValue = bigInt.longValue();
@@ -100,26 +132,37 @@ public class ExpressionGenerator {
             && ((tokens.get(i + 1).eq(op(LSHIFT))
                 || (tokens.get(i + 1).eq(op(RSHIFT)))
                 || (tokens.get(i + 1).eq(op(RSHIFTU)))))) {
-          ctx.pushGen.push(out, INT, intValue.intValue());
+          ctx.pushGen.push(out, INT, BigDecimal.valueOf(intValue));
         } else if (!type.equals(INT) || intValue != 0 || pushIfZero) {
-          ctx.pushGen.push(out, type, intValue.doubleValue());
+          ctx.pushGen.push(out, type, BigDecimal.valueOf(intValue));
+        }
+        // special handling for 0 because there are different opcodes to compare to 0
+        if ((type.equals(INT) || type.equals(SHORT) || type.equals(BYTE) || type.equals(CHAR))
+            && intValue.intValue() == 0) {
+          exprTypeStack.push(INT_ZERO);
+        } else {
+          exprTypeStack.push(type);
         }
         val = bigInt;
       } else if (token instanceof BoolLiteral) {
         Boolean bool = (Boolean) ((BoolLiteral) token).val;
         ctx.pushGen.pushBool(out, bool);
         val = bool;
+        exprTypeStack.push(BOOLEAN);
       } else if (token instanceof FPLiteral) {
         BigDecimal bigDec = (BigDecimal) ((FPLiteral) token).val;
-        ctx.pushGen.push(out, type, bigDec.doubleValue());
+        ctx.pushGen.push(out, type, bigDec);
         val = bigDec;
+        exprTypeStack.push(DOUBLE);
       } else if (token instanceof Str) {
         ctx.loadGen.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
         type = STRING;
+        exprTypeStack.push(STRING);
       } else if (token instanceof Chr) {
         char chr = (char) ((Chr) token).val;
         ctx.pushGen.push(out, CHAR, chr);
         type = CHAR;
+        exprTypeStack.push(CHAR);
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
         if (List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT).contains(op)) {
@@ -150,7 +193,22 @@ public class ExpressionGenerator {
             type = LONG;
           }
         } else {
-          Byte opCode = arithmeticOps.getOrDefault(op, Collections.emptyMap()).get(type);
+          byte[] opCode = null;
+
+          if (COMPARATORS.contains(op) && exprTypeStack.oneOfTopTwoElementsIsZero()) {
+            opCode = new byte[] {COMPARE_TO_ZERO_OPS.get(op)};
+          } else {
+            opCode = ARITHMETIC_OPS.getOrDefault(op, Collections.emptyMap()).get(type);
+          }
+          if (reverseComp) {
+            if (opCode != null) {
+              // creating a copy is important, otherwise we would modify the original array
+              opCode = Arrays.copyOf(opCode, opCode.length);
+            }
+            for (int j = 0; j < opCode.length; j++) {
+              opCode[j] = reverseComp(opCode[j]);
+            }
+          }
           // there are no opcodes for arithmetic operations specific to byte and short
           // so it's important to indicate that the type changes to int to ensure that,
           // if necessary, we cast it back to byte and short later
@@ -260,5 +318,42 @@ public class ExpressionGenerator {
     } else {
       // TODO:
     }
+  }
+
+  public static boolean isZero(Object val) {
+    return (val instanceof BigInteger && val.equals(BigInteger.ZERO));
+  }
+
+  // To generate code for control structures it is often useful to get the inverse comparator. For
+  // example, for "if (x==0)" we will use the opcode 154 (IFNE) to jump beyond the code in the if
+  // block. This method performs this conversion.
+  private byte reverseComp(byte opCode) {
+    switch (opCode) {
+      case IFGT:
+        return IFLE;
+      case IFGE:
+        return IFLT;
+      case IFLT:
+        return IFGE;
+      case IFLE:
+        return IFGT;
+      case IFEQ:
+        return IFNE;
+      case IFNE:
+        return IFEQ;
+      case IF_ICMPEQ:
+        return IF_ICMPNE;
+      case IF_ICMPNE:
+        return IF_ICMPEQ;
+      case IF_ICMPLT:
+        return IF_ICMPGE;
+      case IF_ICMPGT:
+        return IF_ICMPLE;
+      case IF_ICMPLE:
+        return IF_ICMPGT;
+      case IF_ICMPGE:
+        return IF_ICMPLT;
+    }
+    return opCode;
   }
 }

@@ -2,8 +2,8 @@ package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.IINC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.WIDE;
-import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.arithmeticOps;
-import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.dupOps;
+import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.ARITHMETIC_OPS;
+import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.DUP_OPS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
@@ -64,18 +64,18 @@ public class IncrementGenerator implements StatementGenerator<IncrementStatement
     if (pre) {
       ctx.loadGen.load(out, varInfo);
       ctx.pushGen.push(out, varInfo.type, 1);
-      out.write(arithmeticOps.get(op).get(varInfo.type));
+      out.write(ARITHMETIC_OPS.get(op).get(varInfo.type));
       if (!evalOnly) {
-        out.write(dupOps.get(varInfo.type));
+        out.write(DUP_OPS.get(varInfo.type));
       }
       ctx.storeGen.store(out, varInfo);
     } else {
       ctx.loadGen.load(out, varInfo);
       if (!evalOnly) {
-        out.write(dupOps.get(varInfo.type));
+        out.write(DUP_OPS.get(varInfo.type));
       }
       ctx.pushGen.push(out, varInfo.type, 1);
-      out.write(arithmeticOps.get(op).get(varInfo.type));
+      out.write(ARITHMETIC_OPS.get(op).get(varInfo.type));
       ctx.storeGen.store(out, varInfo);
     }
     return out;

@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.lexer.tokens;
 
+// http://www.cs.bilkent.edu.tr/~guvenir/courses/CS101/op_precedence.html
 public enum Operators {
   ASSIGN(1),
   PLUS_ASSIGN(1),
@@ -18,6 +19,12 @@ public enum Operators {
   BITWISE_OR(5),
   BITWISE_XOR(6),
   BITWISE_AND(7),
+  EQUAL(8),
+  NOTEQUAL(8),
+  GREATER(9),
+  LESS(9),
+  LESSEQ(9),
+  GREATEREQ(9),
   MINUS(11),
   PLUS(11),
   TIMES(12),

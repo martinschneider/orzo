@@ -4,7 +4,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
-import static io.github.martinschneider.orzo.parser.TestHelper.cond;
 import static io.github.martinschneider.orzo.parser.TestHelper.doStmt;
 import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifBlk;
@@ -32,11 +31,11 @@ public class StatementParserTest {
   private static Stream<Arguments> test() throws IOException {
     return stream(
         args("x=5*12-3/6+12;", assign("x=5*12-3/6+12")),
-        args("if (x==1){ x=2; }", ifStmt(list(ifBlk(cond("x==1"), list(assign("x=2")))), false)),
-        args("while (x>=0){ x=x-1; }", whileStmt(cond("x>=0"), list(assign("x=x-1")))),
+        args("if (x==1){ x=2; }", ifStmt(list(ifBlk(expr("x==1"), list(assign("x=2")))), false)),
+        args("while (x>=0){ x=x-1; }", whileStmt(expr("x>=0"), list(assign("x=x-1")))),
         args(
             "do{x=y+1;y=y-1;} while(i>0)",
-            doStmt(cond("i>0"), list(assign("x=y+1"), assign("y=y-1")))),
+            doStmt(expr("i>0"), list(assign("x=y+1"), assign("y=y-1")))),
         args("int z;", pDecl(null, id("z"), "int", null)),
         args("int z=300;", pDecl(null, id("z"), "int", expr("300"))));
   }

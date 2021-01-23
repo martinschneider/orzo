@@ -38,7 +38,10 @@ public class DoGenerator implements StatementGenerator<DoStatement> {
     }
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) -(bodyOut.getBytes().length + conditionOut.getBytes().length);
-    ctx.condGenerator.generateCondition(conditionOut, variables, doStmt.cond, branchBytes, true);
+    ctx.exprGen.eval(conditionOut, variables, null, doStmt.cond, false, false);
+    branchBytes -= conditionOut.getBytes().length;
+    branchBytes++;
+    conditionOut.write(branchBytes);
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {
       byte[] jmpOffset =

@@ -7,7 +7,7 @@ public class ForStatement extends LoopStatement {
   public Statement init;
   public Statement loopStmt;
 
-  public ForStatement(Statement init, Condition cond, Statement loopStmt, List<Statement> body) {
+  public ForStatement(Statement init, Expression cond, Statement loopStmt, List<Statement> body) {
     super.body = body;
     super.cond = cond;
     this.init = init;

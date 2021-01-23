@@ -5,9 +5,9 @@ import java.util.stream.Collectors;
 
 public class IfBlock {
   public List<Statement> body;
-  public Condition cond;
+  public Expression cond;
 
-  public IfBlock(Condition cond, List<Statement> body) {
+  public IfBlock(Expression cond, List<Statement> body) {
     this.cond = cond;
     this.body = body;
   }

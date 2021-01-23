@@ -105,10 +105,6 @@ public class Token {
     return new Operator(val);
   }
 
-  public static Comparator cmp(Comparators val) {
-    return new Comparator(val);
-  }
-
   public static Keyword keyword(Keywords val) {
     return new Keyword(val);
   }

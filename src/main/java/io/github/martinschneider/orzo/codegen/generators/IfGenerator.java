@@ -38,7 +38,8 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
         if (i != ifStmt.ifBlks.size() - 1) {
           branchBytes += 3;
         }
-        ctx.condGenerator.generateCondition(conditionOut, variables, ifBlock.cond, branchBytes);
+        ctx.exprGen.eval(conditionOut, variables, null, ifBlock.cond, false, true);
+        conditionOut.write(branchBytes);
       }
       bodyOutputs.add(bodyOut);
       condOutputs.add(conditionOut);

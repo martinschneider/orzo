@@ -9,7 +9,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.parser.productions.Condition;
+import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.List;
@@ -25,7 +25,7 @@ public class ForParser implements ProdParser<ForStatement> {
   @Override
   public ForStatement parse(TokenList tokens) {
     Statement initialization;
-    Condition condition;
+    Expression condition;
     Statement loopStatement;
     List<Statement> body;
     if (tokens.curr() == null) {
@@ -44,7 +44,7 @@ public class ForParser implements ProdParser<ForStatement> {
         ctx.errors.addError(LOG_NAME, "missing initialisation");
         return null;
       }
-      condition = ctx.condParser.parse(tokens);
+      condition = ctx.exprParser.parse(tokens);
       if (condition == null) {
         tokens.next(sym(RBRACE));
         ctx.errors.addError(LOG_NAME, "missing condition");

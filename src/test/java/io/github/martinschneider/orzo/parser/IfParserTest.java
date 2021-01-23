@@ -3,7 +3,7 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
-import static io.github.martinschneider.orzo.parser.TestHelper.cond;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifBlk;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifStmt;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
@@ -26,7 +26,7 @@ public class IfParserTest {
   private static Stream<Arguments> test() throws IOException {
     return stream(
         args("", null),
-        args("if (x==9){x=8}", ifStmt(list(ifBlk(cond("x==9"), list(assign("x=8")))), false)));
+        args("if (x==9){x=8}", ifStmt(list(ifBlk(expr("x==9"), list(assign("x=8")))), false)));
   }
 
   @ParameterizedTest

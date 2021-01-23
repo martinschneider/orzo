@@ -3,8 +3,8 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
-import static io.github.martinschneider.orzo.parser.TestHelper.cond;
 import static io.github.martinschneider.orzo.parser.TestHelper.doStmt;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,7 +25,7 @@ public class DoParserTest {
   private static Stream<Arguments> test() throws IOException {
     return stream(
         args("", null),
-        args("do{x=x*3-1;}while(x>0);", doStmt(cond("x>0"), list(assign("x=x*3-1;")))));
+        args("do{x=x*3-1;}while(x>0);", doStmt(expr("x>0"), list(assign("x=x*3-1;")))));
   }
 
   @ParameterizedTest

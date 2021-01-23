@@ -1,11 +1,5 @@
 package io.github.martinschneider.orzo.lexer;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.EQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.GREATER;
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.GREATEREQ;
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.NOTEQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.SMALLER;
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.SMALLEREQ;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_AND;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_AND_ASSIGN;
@@ -15,6 +9,11 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.EQUAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESSEQ;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_AND;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_OR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
@@ -23,6 +22,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
@@ -50,7 +50,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SQRT;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.bool;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.chr;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.cmp;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.fp;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
@@ -326,7 +325,7 @@ public class Lexer {
       }
     } else if (character == '>') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(cmp(GREATEREQ).wLoc(inputReader.getLoc()));
+        tokenList.add(op(GREATEREQ).wLoc(inputReader.getLoc()));
       } else if (character == '>') {
         if ((character = (char) inputReader.read()) == '>') {
           if ((character = (char) inputReader.read()) == '=') {
@@ -342,12 +341,12 @@ public class Lexer {
           tokenList.add(op(RSHIFT).wLoc(inputReader.getLoc()));
         }
       } else {
-        tokenList.add(cmp(GREATER).wLoc(inputReader.getLoc()));
+        tokenList.add(op(GREATER).wLoc(inputReader.getLoc()));
         inputReader.unread(character);
       }
     } else if (character == '<') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(cmp(SMALLEREQ).wLoc(inputReader.getLoc()));
+        tokenList.add(op(LESSEQ).wLoc(inputReader.getLoc()));
       } else if (character == '<') {
         if ((character = (char) inputReader.read()) == '=') {
           tokenList.add(op(LSHIFT_ASSIGN).wLoc(inputReader.getLoc()));
@@ -356,19 +355,19 @@ public class Lexer {
           tokenList.add(op(LSHIFT).wLoc(inputReader.getLoc()));
         }
       } else {
-        tokenList.add(cmp(SMALLER).wLoc(inputReader.getLoc()));
+        tokenList.add(op(LESS).wLoc(inputReader.getLoc()));
         inputReader.unread(character);
       }
     } else if (character == '=') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(cmp(EQUAL).wLoc(inputReader.getLoc()));
+        tokenList.add(op(EQUAL).wLoc(inputReader.getLoc()));
       } else {
         tokenList.add(op(ASSIGN).wLoc(inputReader.getLoc()));
         inputReader.unread(character);
       }
     } else if (character == '!') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(cmp(NOTEQUAL).wLoc(inputReader.getLoc()));
+        tokenList.add(op(NOTEQUAL).wLoc(inputReader.getLoc()));
       } else {
         errors.addError("scan operator", "missing !, found " + character);
         inputReader.unread(character);

@@ -3,7 +3,6 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
-import static io.github.martinschneider.orzo.parser.TestHelper.cond;
 import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.forStmt;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
@@ -32,7 +31,7 @@ public class ForParserTest {
             "for (int i=1; i<100; i++){doSomething(i)}",
             forStmt(
                 assign("int i=1"),
-                cond("i<100"),
+                expr("i<100"),
                 assign("i++"),
                 list(methodCall("doSomething", list(expr("i")))))));
   }

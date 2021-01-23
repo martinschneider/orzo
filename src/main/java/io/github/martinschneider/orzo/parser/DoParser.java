@@ -12,8 +12,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
-import io.github.martinschneider.orzo.parser.productions.Condition;
 import io.github.martinschneider.orzo.parser.productions.DoStatement;
+import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,7 @@ public class DoParser implements ProdParser<DoStatement> {
 
   @Override
   public DoStatement parse(TokenList tokens) {
-    Condition condition;
+    Expression condition;
     List<Statement> body;
     if (tokens.curr() == null) {
       return null;
@@ -59,7 +59,7 @@ public class DoParser implements ProdParser<DoStatement> {
         ctx.errors.missingExpected(LOG_NAME, sym(LPAREN), tokens);
       }
       tokens.next();
-      condition = ctx.condParser.parse(tokens);
+      condition = ctx.exprParser.parse(tokens);
       if (condition == null) {
         tokens.prev();
         ctx.errors.addError(LOG_NAME, "missing condition");

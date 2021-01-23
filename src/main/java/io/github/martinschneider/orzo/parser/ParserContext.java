@@ -12,7 +12,6 @@ public class ParserContext {
   public AssignmentParser assignParser;
   public BreakParser breakParser;
   public CastParser castParser;
-  public ConditionParser condParser;
   public ConstructorCallParser constrCallParser;
   public DeclarationParser declParser;
   public DoParser doParser;
@@ -39,7 +38,6 @@ public class ParserContext {
     ctx.assignParser = new AssignmentParser(ctx);
     ctx.breakParser = new BreakParser();
     ctx.castParser = new CastParser();
-    ctx.condParser = new ConditionParser(ctx);
     ctx.constrCallParser = new ConstructorCallParser(ctx);
     ctx.declParser = new DeclarationParser(ctx);
     ctx.doParser = new DoParser(ctx);

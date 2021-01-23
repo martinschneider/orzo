@@ -10,7 +10,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.parser.productions.Condition;
+import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import io.github.martinschneider.orzo.parser.productions.WhileStatement;
 import java.util.ArrayList;
@@ -26,7 +26,7 @@ public class WhileParser implements ProdParser<WhileStatement> {
 
   @Override
   public WhileStatement parse(TokenList tokens) {
-    Condition condition;
+    Expression condition;
     List<Statement> body;
     if (tokens.curr() == null) {
       return null;
@@ -38,7 +38,7 @@ public class WhileParser implements ProdParser<WhileStatement> {
         ctx.errors.missingExpected(LOG_NAME, sym(LPAREN), tokens);
       }
       tokens.next();
-      condition = ctx.condParser.parse(tokens);
+      condition = ctx.exprParser.parse(tokens);
       if (condition == null) {
         tokens.bw(2);
         ctx.errors.addError(LOG_NAME, "missing condition");

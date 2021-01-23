@@ -10,7 +10,6 @@ import io.github.martinschneider.orzo.error.CompilerError;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.Comparator;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
@@ -21,7 +20,6 @@ import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.ArraySelector;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
-import io.github.martinschneider.orzo.parser.productions.Condition;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.DoStatement;
@@ -112,15 +110,6 @@ public class TestHelper {
         packageName, imports, scope, name, true, Collections.emptyList(), baseClass, body, decls);
   }
 
-  public static Condition cond(String input) throws IOException {
-    return new ConditionParser(ParserContext.build(new CompilerErrors()))
-        .parse(new Lexer().getTokens(input));
-  }
-
-  public static Condition cond(Expression left, Comparator comp, Expression right) {
-    return new Condition(left, comp, right);
-  }
-
   public static ParallelDeclaration pDecl(List<Declaration> decls) {
     return new ParallelDeclaration(decls);
   }
@@ -149,13 +138,13 @@ public class TestHelper {
         .parse(new Lexer().getTokens(input));
   }
 
-  public static DoStatement doStmt(Condition condition, List<Statement> body) {
+  public static DoStatement doStmt(Expression condition, List<Statement> body) {
     return new DoStatement(condition, body);
   }
 
   public static ForStatement forStmt(
       Statement initialization,
-      Condition condition,
+      Expression condition,
       Statement loopStatement,
       List<Statement> body) {
     return new ForStatement(initialization, condition, loopStatement, body);
@@ -187,7 +176,7 @@ public class TestHelper {
     return new IfStatement(ifBlocks, false);
   }
 
-  public static IfBlock ifBlk(Condition condition, List<Statement> body) {
+  public static IfBlock ifBlk(Expression condition, List<Statement> body) {
     return new IfBlock(condition, body);
   }
 
@@ -219,7 +208,7 @@ public class TestHelper {
     return new Assignment(left, right);
   }
 
-  public static WhileStatement whileStmt(Condition condition, List<Statement> body)
+  public static WhileStatement whileStmt(Expression condition, List<Statement> body)
       throws IOException {
     return new WhileStatement(condition, body);
   }

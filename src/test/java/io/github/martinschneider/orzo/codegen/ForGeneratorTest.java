@@ -12,7 +12,7 @@ import io.github.martinschneider.orzo.parser.ParserContext;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import java.io.IOException;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.provider.Arguments;
@@ -32,10 +32,22 @@ public class ForGeneratorTest extends StatementGeneratorTest<ForStatement> {
                 "if_icmpge 12",
                 "iinc 2 1",
                 "iinc 2 1",
+                "goto -12")),
+        args(
+            "for (x=0; x>10; x--) { x++; }",
+            list(varInfo("x", "int", 2)),
+            list(
+                "iconst_0",
+                "istore_2",
+                "iload_2",
+                "bipush 10",
+                "if_icmple 12",
+                "iinc 2 1",
+                "iinc 2 -1",
                 "goto -12")));
   }
 
-  @BeforeAll
+  @BeforeEach
   public void init() {
     super.init();
     target = new ForGenerator(ctx);

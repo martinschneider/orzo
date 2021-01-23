@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class WhileStatement extends LoopStatement {
-  public WhileStatement(Condition cond, List<Statement> body) {
+  public WhileStatement(Expression cond, List<Statement> body) {
     super.cond = cond;
     super.body = body;
   }

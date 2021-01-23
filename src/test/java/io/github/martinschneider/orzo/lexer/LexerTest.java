@@ -1,11 +1,5 @@
 package io.github.martinschneider.orzo.lexer;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.EQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.GREATER;
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.GREATEREQ;
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.NOTEQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.SMALLER;
-import static io.github.martinschneider.orzo.lexer.tokens.Comparators.SMALLEREQ;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CLASS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.DO;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.ELSE;
@@ -17,8 +11,14 @@ import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.WHILE;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.EQUAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESSEQ;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PRIVATE;
@@ -27,7 +27,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PUBLIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.cmp;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.fp;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
@@ -84,17 +83,17 @@ public class LexerTest {
             new TokenList(
                 list(
                     integer(7),
-                    cmp(SMALLER),
+                    op(LESS),
                     integer(8),
-                    cmp(SMALLEREQ),
+                    op(LESSEQ),
                     integer(9),
-                    cmp(GREATER),
+                    op(GREATER),
                     integer(10),
-                    cmp(GREATEREQ),
+                    op(GREATEREQ),
                     integer(11),
-                    cmp(NOTEQUAL),
+                    op(NOTEQUAL),
                     integer(12),
-                    cmp(EQUAL),
+                    op(EQUAL),
                     integer(13)))),
         args(".x", new TokenList(list(sym(DOT), id("x")))),
         args(

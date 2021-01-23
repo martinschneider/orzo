@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DoStatement extends LoopStatement {
-  public DoStatement(Condition condition, List<Statement> body) {
+  public DoStatement(Expression condition, List<Statement> body) {
     super.cond = condition;
     super.body = body;
   }

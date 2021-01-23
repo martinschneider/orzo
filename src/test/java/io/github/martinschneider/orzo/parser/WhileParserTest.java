@@ -3,7 +3,7 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
-import static io.github.martinschneider.orzo.parser.TestHelper.cond;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.whileStmt;
@@ -27,8 +27,8 @@ public class WhileParserTest {
     return stream(
         args("", null),
         args("while (){}", null),
-        args("while (1==1){}", whileStmt(cond("1==1"), emptyList())),
-        args("while (x==9){x=8;y=7}", whileStmt(cond("x==9"), list(assign("x=8"), assign("y=7")))));
+        args("while (1==1){}", whileStmt(expr("1==1"), emptyList())),
+        args("while (x==9){x=8;y=7}", whileStmt(expr("x==9"), list(assign("x=8"), assign("y=7")))));
   }
 
   @ParameterizedTest

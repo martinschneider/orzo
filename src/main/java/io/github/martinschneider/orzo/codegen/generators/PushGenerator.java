@@ -32,6 +32,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import java.math.BigDecimal;
 
 public class PushGenerator {
   public CGContext ctx;
@@ -41,26 +42,26 @@ public class PushGenerator {
   }
 
   public HasOutput push(DynamicByteArray out, String type, int number) {
-    return push(out, type, (double) number);
+    return push(out, type, BigDecimal.valueOf(number));
   }
 
-  public HasOutput push(DynamicByteArray out, String type, double number) {
+  public HasOutput push(DynamicByteArray out, String type, BigDecimal number) {
     ctx.opStack.push(type);
     switch (type) {
       case LONG:
-        return pushLong(out, (long) number);
+        return pushLong(out, number.longValue());
       case FLOAT:
-        return pushFloat(out, (float) number);
+        return pushFloat(out, number.floatValue());
       case DOUBLE:
-        return pushDouble(out, number);
+        return pushDouble(out, number.doubleValue());
       case INT:
-        return pushInteger(out, (int) number);
+        return pushInteger(out, number.intValue());
       case BYTE:
-        return pushInteger(out, (int) number);
+        return pushInteger(out, number.byteValue());
       case SHORT:
-        return pushInteger(out, (int) number);
+        return pushInteger(out, number.shortValue());
       case CHAR:
-        return pushInteger(out, (int) number);
+        return pushInteger(out, number.intValue());
     }
     return out;
   }

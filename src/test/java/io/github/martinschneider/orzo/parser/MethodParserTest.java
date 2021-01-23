@@ -13,8 +13,8 @@ import static io.github.martinschneider.orzo.parser.TestHelper.arg;
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
-import static io.github.martinschneider.orzo.parser.TestHelper.cond;
 import static io.github.martinschneider.orzo.parser.TestHelper.doStmt;
+import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifStmt;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.method;
@@ -54,7 +54,7 @@ public class MethodParserTest {
                 list(
                     assign("x=1"),
                     assign("y=2"),
-                    ifStmt(list(new IfBlock(cond("x==y"), list(assign("fehler=1")))), false)))),
+                    ifStmt(list(new IfBlock(expr("x==y"), list(assign("fehler=1")))), false)))),
         args(
             "void test(){x=100;while(x>0){x=x-1;}}",
             method(
@@ -62,7 +62,7 @@ public class MethodParserTest {
                 "void",
                 id("test"),
                 emptyList(),
-                list(assign("x=100"), whileStmt(cond("x>0"), list(assign("x=x-1")))))),
+                list(assign("x=100"), whileStmt(expr("x>0"), list(assign("x=x-1")))))),
         args(
             "protected int huber(){do{}while(x>0)}",
             method(
@@ -70,7 +70,7 @@ public class MethodParserTest {
                 "int",
                 id("huber"),
                 emptyList(),
-                list(doStmt(cond("x>0"), emptyList())))),
+                list(doStmt(expr("x>0"), emptyList())))),
         args(
             "private double calculateMean(){}",
             method(scope(PRIVATE), "double", id("calculateMean"), emptyList(), emptyList())),

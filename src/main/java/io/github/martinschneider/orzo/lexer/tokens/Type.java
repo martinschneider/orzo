@@ -5,6 +5,7 @@ import java.util.List;
 public class Type extends Token {
   public static final String VOID = "void";
   public static final String INT = "int";
+  public static final String INT_ZERO = "int_zero"; // special handling for 0
   public static final String LONG = "long";
   public static final String BYTE = "byte";
   public static final String SHORT = "short";

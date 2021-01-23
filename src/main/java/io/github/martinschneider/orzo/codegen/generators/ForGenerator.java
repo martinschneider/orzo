@@ -40,7 +40,8 @@ public class ForGenerator implements StatementGenerator<ForStatement> {
     ctx.delegator.generate(variables, bodyOut, method, forStmt.loopStmt);
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
-    ctx.condGenerator.generateCondition(conditionOut, variables, forStmt.cond, branchBytes);
+    ctx.exprGen.eval(conditionOut, variables, null, forStmt.cond, false, true);
+    conditionOut.write(branchBytes);
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {

@@ -96,7 +96,7 @@ public class BytecodeDecompiler {
   }
 
   // Java byte is signed (-128 to 127) but JVM op codes start from 0
-  private static short fixSign(short s) {
+  public static short fixSign(short s) {
     if (s < 0) {
       s += 256;
     }

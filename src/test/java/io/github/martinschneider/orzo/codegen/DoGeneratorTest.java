@@ -25,7 +25,19 @@ public class DoGeneratorTest extends StatementGeneratorTest<DoStatement> {
         args(
             "do { x--; } while (x>0)",
             list(varInfo("x", "int", 2)),
-            list("iinc 2 -1", "iload_2", "ifgt -4")));
+            list("iinc 2 -1", "iload_2", "ifgt -4")),
+        args(
+            "do { x++; } while (x<0)",
+            list(varInfo("x", "int", 2)),
+            list("iinc 2 1", "iload_2", "iflt -4")),
+        args(
+            "do { x--; } while (x>5)",
+            list(varInfo("x", "int", 2)),
+            list("iinc 2 -1", "iload_2", "iconst_5", "if_icmpgt -5")),
+        args(
+            "do { x++; } while (x<=5)",
+            list(varInfo("x", "int", 2)),
+            list("iinc 2 1", "iload_2", "iconst_5", "if_icmple -5")));
   }
 
   @BeforeAll

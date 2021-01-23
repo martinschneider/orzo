@@ -3,7 +3,6 @@ package io.github.martinschneider.orzo.codegen;
 import io.github.martinschneider.orzo.codegen.constants.ConstantPool;
 import io.github.martinschneider.orzo.codegen.generators.AssignmentGenerator;
 import io.github.martinschneider.orzo.codegen.generators.BasicGenerator;
-import io.github.martinschneider.orzo.codegen.generators.ConditionGenerator;
 import io.github.martinschneider.orzo.codegen.generators.ExpressionGenerator;
 import io.github.martinschneider.orzo.codegen.generators.IncrementGenerator;
 import io.github.martinschneider.orzo.codegen.generators.InvokeGenerator;
@@ -28,7 +27,6 @@ public class CGContext {
   public ExpressionGenerator exprGen;
   public IncrementGenerator incrGen;
   public MethodCallGenerator methodCallGen;
-  public ConditionGenerator condGenerator;
   public ConstantPoolProcessor constPoolProc;
   public BasicGenerator basicGen;
   public PushGenerator pushGen;
@@ -41,7 +39,6 @@ public class CGContext {
   public void init(CompilerErrors errors, int idx, List<Clazz> clazzes) {
     clazz = clazzes.get(idx);
     this.errors = errors;
-    condGenerator = new ConditionGenerator();
     constPoolProc = new ConstantPoolProcessor();
     constPool = constPoolProc.processConstantPool(clazz);
     delegator = new StatementDelegator();
@@ -56,7 +53,6 @@ public class CGContext {
     loadGen = new LoadGenerator(this);
     storeGen = new StoreGenerator(this);
     opStack = new OperandStack();
-    condGenerator.ctx = this;
     delegator.ctx = this;
     exprGen.ctx = this;
     delegator.init();

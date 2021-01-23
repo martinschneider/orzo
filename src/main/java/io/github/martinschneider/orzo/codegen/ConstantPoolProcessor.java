@@ -86,8 +86,7 @@ public class ConstantPoolProcessor {
       constPool = processExpression(constPool, ret.retValue);
     } else if (stmt instanceof LoopStatement) {
       LoopStatement loopStatement = (LoopStatement) stmt;
-      constPool = processExpression(constPool, loopStatement.cond.left);
-      constPool = processExpression(constPool, loopStatement.cond.right);
+      constPool = processExpression(constPool, loopStatement.cond);
       for (Statement innerStmt : loopStatement.body) {
         constPool = processStatement(constPool, innerStmt);
       }
@@ -98,8 +97,7 @@ public class ConstantPoolProcessor {
           constPool = processStatement(constPool, subStatement);
         }
         if (ifBlock.cond != null) { // null for else blocks
-          constPool = processExpression(constPool, null, ifBlock.cond.left);
-          constPool = processExpression(constPool, null, ifBlock.cond.right);
+          constPool = processExpression(constPool, null, ifBlock.cond);
         }
       }
     }

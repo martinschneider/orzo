@@ -38,7 +38,8 @@ public class WhileGenerator implements StatementGenerator<WhileStatement> {
     }
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
-    ctx.condGenerator.generateCondition(conditionOut, variables, whileStmt.cond, branchBytes);
+    ctx.exprGen.eval(conditionOut, variables, null, whileStmt.cond, false, true);
+    conditionOut.write(branchBytes);
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {

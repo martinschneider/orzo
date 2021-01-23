@@ -1,10 +1,17 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.EQUAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESSEQ;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_AND;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_OR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
@@ -90,7 +97,14 @@ public class ExpressionParserTest {
             "new MyType(a,b,c,d)",
             expr(list(constr("MyType", list(expr("a"), expr("b"), expr("c"), expr("d")))))),
         args("a && b", expr(list(id("a"), id("b"), op(LOGICAL_AND)))),
-        args("a || b", expr(list(id("a"), id("b"), op(LOGICAL_OR)))));
+        args("a || b", expr(list(id("a"), id("b"), op(LOGICAL_OR)))),
+        args("y=0", expr(list(id("y"), integer("0"), op(ASSIGN)))),
+        args("x==0", expr(list(id("x"), integer("0"), op(EQUAL)))),
+        args("x<1", expr(list(id("x"), integer("1"), op(LESS)))),
+        args("x<=2", expr(list(id("x"), integer("2"), op(LESSEQ)))),
+        args("x>3", expr(list(id("x"), integer("3"), op(GREATER)))),
+        args("x>=4", expr(list(id("x"), integer("4"), op(GREATEREQ)))),
+        args("x!=5", expr(list(id("x"), integer("5"), op(NOTEQUAL)))));
   }
 
   @MethodSource

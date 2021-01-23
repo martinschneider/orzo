@@ -2,8 +2,8 @@ package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.ARRAYLENGTH;
 import static io.github.martinschneider.orzo.codegen.OpCodes.WIDE;
-import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.castOps;
-import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.castOps1;
+import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.CAST_OPS;
+import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.CAST_OPS_1;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
@@ -24,7 +24,7 @@ public class BasicGenerator {
     addCastingErrors(from, to);
     // TODO: array casts
     if (from != null && to != null) {
-      out.write(castOps.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]));
+      out.write(CAST_OPS.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]));
     }
     ctx.opStack.pop();
     ctx.opStack.push(to);
@@ -34,7 +34,8 @@ public class BasicGenerator {
     // TODO: array casts
     if (from != null && to != null) {
       addCastingErrors(from, to);
-      out.write(castOps1.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]));
+      out.write(
+          CAST_OPS_1.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]));
     }
     ctx.opStack.pop();
     ctx.opStack.push(to);

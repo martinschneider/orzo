@@ -3,7 +3,6 @@ package io.github.martinschneider.orzo.codegen;
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
-import static io.github.martinschneider.orzo.parser.TestHelper.varInfo;
 
 import io.github.martinschneider.orzo.codegen.generators.MethodCallGenerator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -21,7 +20,11 @@ import org.junit.jupiter.params.provider.Arguments;
 public class MethodCallGeneratorTest extends StatementGeneratorTest<MethodCall> {
   private static Stream<Arguments> test() throws IOException {
     // TODO: add more interesting tests
-    return stream(args("testMethod()", list(varInfo("x", "int", 2)), list("invokestatic 5")));
+    return stream(
+        args("testMethod()", list(), list("invokestatic 5")),
+        args("System.out.println(0)", list(), list("getstatic 10", "iconst_0", "invokevirtual 14")),
+        args(
+            "System.out.println(1)", list(), list("getstatic 10", "iconst_1", "invokevirtual 14")));
   }
 
   @BeforeAll

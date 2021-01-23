@@ -4,5 +4,5 @@ import java.util.List;
 
 public class LoopStatement implements Statement {
   public List<Statement> body;
-  public Condition cond;
+  public Expression cond;
 }

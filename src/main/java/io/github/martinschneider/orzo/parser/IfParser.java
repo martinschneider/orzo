@@ -11,7 +11,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
-import io.github.martinschneider.orzo.parser.productions.Condition;
+import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.IfBlock;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
@@ -56,7 +56,7 @@ public class IfParser implements ProdParser<IfStatement> {
   }
 
   IfBlock parseIfBlock(TokenList tokens, Token... expectedTokens) {
-    Condition condition;
+    Expression condition;
     List<Statement> body;
     if (tokens.curr() == null) {
       return null;
@@ -72,7 +72,7 @@ public class IfParser implements ProdParser<IfStatement> {
       ctx.errors.missingExpected(IF_BLOCK_LOG_NAME, sym(LPAREN), tokens);
     }
     tokens.next();
-    condition = ctx.condParser.parse(tokens);
+    condition = ctx.exprParser.parse(tokens);
     if (condition == null) {
       tokens.prev();
       ctx.errors.addError(IF_BLOCK_LOG_NAME, "missing condition");
