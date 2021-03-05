@@ -4,6 +4,7 @@ import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.varInfo;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.generators.DoGenerator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -25,19 +26,23 @@ public class DoGeneratorTest extends StatementGeneratorTest<DoStatement> {
         args(
             "do { x--; } while (x>0)",
             list(varInfo("x", "int", 2)),
-            list("iinc 2 -1", "iload_2", "ifgt -4")),
+            emptyList(),
+            list("iinc 2 -1", "iload_2", "ifgt 252")),
         args(
             "do { x++; } while (x<0)",
             list(varInfo("x", "int", 2)),
-            list("iinc 2 1", "iload_2", "iflt -4")),
+            emptyList(),
+            list("iinc 2 1", "iload_2", "iflt 252")),
         args(
             "do { x--; } while (x>5)",
             list(varInfo("x", "int", 2)),
-            list("iinc 2 -1", "iload_2", "iconst_5", "if_icmpgt -5")),
+            emptyList(),
+            list("iinc 2 -1", "iload_2", "iconst_5", "if_icmpgt 251")),
         args(
             "do { x++; } while (x<=5)",
             list(varInfo("x", "int", 2)),
-            list("iinc 2 1", "iload_2", "iconst_5", "if_icmple -5")));
+            emptyList(),
+            list("iinc 2 1", "iload_2", "iconst_5", "if_icmple 251")));
   }
 
   @BeforeAll

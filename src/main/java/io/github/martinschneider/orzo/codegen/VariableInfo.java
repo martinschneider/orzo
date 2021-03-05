@@ -4,7 +4,7 @@ public class VariableInfo {
   public String name;
   public String type;
   public boolean isField;
-  public String arrType; // for arrays, type is reference and subtype is the type of elements in
+  public String arrType; // for arrays, type is reference and arrtype is the type of elements in
   // the array
   public short idx;
 
@@ -22,6 +22,6 @@ public class VariableInfo {
 
   @Override
   public String toString() {
-    return "VAR[name=" + name + ", type=" + type + ", subtype=" + arrType + ", idx=" + idx + "]";
+    return "VAR[name=" + name + ", type=" + type + ", arrtype=" + arrType + ", idx=" + idx + "]";
   }
 }

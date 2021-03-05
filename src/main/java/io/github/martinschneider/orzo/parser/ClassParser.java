@@ -217,6 +217,6 @@ public class ClassParser implements ProdParser<Clazz> {
       tokens.next();
       return packageName.toString();
     }
-    return null;
+    return "";
   }
 }

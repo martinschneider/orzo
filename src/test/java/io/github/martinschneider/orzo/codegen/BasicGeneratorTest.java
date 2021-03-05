@@ -167,13 +167,13 @@ public class BasicGeneratorTest {
   private static Stream<Arguments> wideTest() throws IOException {
     return stream(
         args((short) 0, ILOAD, list("iload", "0")),
-        args((short) 128, ILOAD, list("wide", "iload", "-128")));
+        args((short) 128, ILOAD, list("wide", "iload", "128")));
   }
 
   private static Stream<Arguments> wideIncTest() throws IOException {
     return stream(
         args((short) 0, (short) 0, IINC, list("iinc", "0", "0")),
-        args((short) 128, (short) 128, IINC, list("wide", "iinc", "-128", "-128")));
+        args((short) 128, (short) 128, IINC, list("wide", "iinc", "128", "128")));
   }
 
   @BeforeAll

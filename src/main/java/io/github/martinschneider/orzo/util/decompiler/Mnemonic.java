@@ -209,8 +209,10 @@ public class Mnemonic {
   public enum ParameterType {
     EMPTY,
     BYTE,
+    UNSIGNED_BYTE,
     TWO_BYTES,
     SHORT,
+    UNSIGNED_SHORT,
     SHORT_PLUS_ONE_BYTE,
     SHORT_PLUS_TWO_BYTES,
     TWO_SHORTS,
@@ -374,21 +376,21 @@ public class Mnemonic {
     ParameterType.EMPTY, /* fcmpg (150) */
     ParameterType.EMPTY, /* dcmpl (151) */
     ParameterType.EMPTY, /* dcmpg (152) */
-    ParameterType.SHORT, /* ifeq (153) */
-    ParameterType.SHORT, /* ifne (154) */
-    ParameterType.SHORT, /* iflt (155) */
-    ParameterType.SHORT, /* ifge (156) */
-    ParameterType.SHORT, /* ifgt (157) */
-    ParameterType.SHORT, /* ifle (158) */
-    ParameterType.SHORT, /* if_icmpeq (159) */
-    ParameterType.SHORT, /* if_icmpne (160) */
-    ParameterType.SHORT, /* if_icmplt (161) */
-    ParameterType.SHORT, /* if_icmpge (162) */
-    ParameterType.SHORT, /* if_icmpgt (163) */
-    ParameterType.SHORT, /* if_icmple (164) */
-    ParameterType.SHORT, /* if_acmpeq (165) */
-    ParameterType.SHORT, /* if_acmpne (166) */
-    ParameterType.SHORT, /* goto (167) */
+    ParameterType.UNSIGNED_SHORT, /* ifeq (153) */
+    ParameterType.UNSIGNED_SHORT, /* ifne (154) */
+    ParameterType.UNSIGNED_SHORT, /* iflt (155) */
+    ParameterType.UNSIGNED_SHORT, /* ifge (156) */
+    ParameterType.UNSIGNED_SHORT, /* ifgt (157) */
+    ParameterType.UNSIGNED_SHORT, /* ifle (158) */
+    ParameterType.UNSIGNED_SHORT, /* if_icmpeq (159) */
+    ParameterType.UNSIGNED_SHORT, /* if_icmpne (160) */
+    ParameterType.UNSIGNED_SHORT, /* if_icmplt (161) */
+    ParameterType.UNSIGNED_SHORT, /* if_icmpge (162) */
+    ParameterType.UNSIGNED_SHORT, /* if_icmpgt (163) */
+    ParameterType.UNSIGNED_SHORT, /* if_icmple (164) */
+    ParameterType.UNSIGNED_SHORT, /* if_acmpeq (165) */
+    ParameterType.UNSIGNED_SHORT, /* if_acmpne (166) */
+    ParameterType.UNSIGNED_SHORT, /* goto (167) */
     ParameterType.SHORT, /* jsr (168) */
     ParameterType.BYTE, /* ret (169) */
     ParameterType.SPECIAL, /*
@@ -416,13 +418,13 @@ public class Mnemonic {
     ParameterType.EMPTY, /* dreturn (175) */
     ParameterType.EMPTY, /* areturn (176) */
     ParameterType.EMPTY, /* return (177) */
-    ParameterType.SHORT, /* getstatic (178) */
-    ParameterType.SHORT, /* putstatic (179) */
-    ParameterType.SHORT, /* getfield (180) */
-    ParameterType.SHORT, /* putfield (181) */
-    ParameterType.SHORT, /* invokevirtual (182) */
-    ParameterType.SHORT, /* invokespecial (183) */
-    ParameterType.SHORT, /* invokestatic (184) */
+    ParameterType.UNSIGNED_SHORT, /* getstatic (178) */
+    ParameterType.UNSIGNED_SHORT, /* putstatic (179) */
+    ParameterType.UNSIGNED_SHORT, /* getfield (180) */
+    ParameterType.UNSIGNED_SHORT, /* putfield (181) */
+    ParameterType.UNSIGNED_SHORT, /* invokevirtual (182) */
+    ParameterType.UNSIGNED_SHORT, /* invokespecial (183) */
+    ParameterType.UNSIGNED_SHORT, /* invokestatic (184) */
     ParameterType.SHORT_PLUS_TWO_BYTES, /* invokeParameterType.INTerface (185) */
     ParameterType.SHORT_PLUS_TWO_BYTES, /* invokedynamic (186) */
     ParameterType.SHORT, /* new (187) */

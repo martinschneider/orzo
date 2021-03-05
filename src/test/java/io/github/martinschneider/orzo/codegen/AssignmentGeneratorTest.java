@@ -5,6 +5,7 @@ import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.varInfo;
 import static io.github.martinschneider.orzo.parser.TestHelper.varInfoArr;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.generators.AssignmentGenerator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -23,12 +24,13 @@ public class AssignmentGeneratorTest extends StatementGeneratorTest<Assignment> 
 
   private static Stream<Arguments> test() throws IOException {
     return stream(
-        args("x=5", list(varInfo("x", "int", 2)), list("iconst_5", "istore_2")),
-        args("x=true", list(varInfo("x", "boolean", 1)), list("iconst_1", "istore_1")),
-        args("x=false", list(varInfo("x", "int", 12)), list("iconst_0", "istore 12")),
+        args("x=5", list(varInfo("x", "int", 2)), emptyList(), list("iconst_5", "istore_2")),
+        args("x=true", list(varInfo("x", "boolean", 1)), emptyList(), list("iconst_1", "istore_1")),
+        args("x=false", list(varInfo("x", "int", 12)), emptyList(), list("iconst_0", "istore 12")),
         args(
             "x=5*12-3/6+12%4",
             list(varInfo("x", "int", 2)),
+            emptyList(),
             list(
                 "iconst_5",
                 "bipush 12",
@@ -45,10 +47,12 @@ public class AssignmentGeneratorTest extends StatementGeneratorTest<Assignment> 
         args(
             "x[1]=3",
             list(varInfoArr("x", "int", 2)),
+            emptyList(),
             list("aload_2", "iconst_1", "iconst_3", "iastore")),
         args(
             "a[1],b=b,c",
             list(varInfoArr("a", "int", 2), varInfo("b", "int", 1), varInfo("c", "int", 0)),
+            emptyList(),
             list("aload_2", "iconst_1", "iload_1", "iastore", "iload_0", "istore_1")),
         args(
             "a,c=b[1],d",
@@ -57,6 +61,7 @@ public class AssignmentGeneratorTest extends StatementGeneratorTest<Assignment> 
                 varInfoArr("b", "int", 7),
                 varInfo("c", "int", 10),
                 varInfo("d", "int", 3)),
+            emptyList(),
             list("aload 7", "iconst_1", "iaload", "istore_2", "iload_3", "istore 10")),
         args(
             "array[left],array[right]=array[right],array[left]",
@@ -64,6 +69,7 @@ public class AssignmentGeneratorTest extends StatementGeneratorTest<Assignment> 
                 varInfo("left", "int", 0),
                 varInfo("right", "int", 1),
                 varInfoArr("array", "int", 2)),
+            emptyList(),
             list(
                 "aload_2",
                 "iload_0",
@@ -82,6 +88,7 @@ public class AssignmentGeneratorTest extends StatementGeneratorTest<Assignment> 
         args(
             "a,b=b+1,a+1",
             list(varInfo("a", "int", 0), varInfo("b", "int", 1)),
+            emptyList(),
             list(
                 "iload_0",
                 "istore_0",
@@ -102,6 +109,7 @@ public class AssignmentGeneratorTest extends StatementGeneratorTest<Assignment> 
                 varInfo("d", "int", 4),
                 varInfo("e", "int", 5),
                 varInfo("f", "int", 6)),
+            emptyList(),
             list("iload 4", "istore_1", "iload 5", "istore_2", "iload 6", "istore_3"))
         // TODO: assert method call code generation
         // args("a,b=test(b),a", list(varInfo("a", "int", 1), varInfo("b", "int", 2)),

@@ -26,10 +26,21 @@ import java.math.BigInteger;
 import java.util.List;
 
 public class ConstantPoolProcessor {
+
+  private CGContext ctx;
+
+  public ConstantPoolProcessor(CGContext ctx) {
+    this.ctx = ctx;
+  }
+
   public ConstantPool processConstantPool(Clazz clazz) {
-    ConstantPool constPool = new ConstantPool();
+    ConstantPool constPool = new ConstantPool(ctx);
     constPool.addClass(clazz.fqn('/'));
     constPool.addClass("java/lang/Object");
+    for (String interfaceName : clazz.interfaces) {
+      // TODO: support interfaces from other packages
+      constPool.addClass((clazz.packageName + "." + interfaceName).replace('.', '/'));
+    }
     for (Method method : clazz.methods) {
       if (clazz.isInterface) {
         constPool.addUtf8(method.name.val.toString());
@@ -46,7 +57,7 @@ public class ConstantPoolProcessor {
     for (ParallelDeclaration pDecl : clazz.fields) {
       for (Declaration decl : pDecl.declarations) {
         constPool.addFieldRef(
-            clazz.fqn('/'), decl.name.id().toString(), TypeUtils.descr(decl.type));
+            clazz.fqn('/'), decl.name.id().toString(), TypeUtils.descr(decl.type, decl.arrDim));
       }
     }
     return constPool;

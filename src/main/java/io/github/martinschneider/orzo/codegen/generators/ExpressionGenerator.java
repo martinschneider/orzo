@@ -73,6 +73,8 @@ import java.util.Collections;
 import java.util.List;
 
 public class ExpressionGenerator {
+  private static final String LOGGER_NAME = "expression code generator";
+
   public CGContext ctx;
 
   private static final List<Operators> COMPARATORS =
@@ -257,8 +259,13 @@ public class ExpressionGenerator {
           ctx.basicGen.arrayLength(out);
           type = INT;
         } else {
-          String varType = variables.get(curr).type;
-          String arrType = variables.get(curr).arrType;
+          VariableInfo varInfo = variables.get(curr);
+          if (varInfo == null) {
+            ctx.errors.addError(LOGGER_NAME, String.format("Unknown variable: %s", curr));
+            return type;
+          }
+          String varType = varInfo.type;
+          String arrType = varInfo.arrType;
           // look ahead for ++ or -- operators because in that case we do not push the
           // value to the
           // stack
@@ -267,7 +274,6 @@ public class ExpressionGenerator {
                   && !tokens.get(i + 1).eq(op(POST_INCREMENT))
                   && !tokens.get(i + 1).eq(op(PRE_INCREMENT))
                   && !tokens.get(i + 1).eq(op(PRE_DECREMENT)))) {
-            VariableInfo varInfo = variables.get(curr);
             if (curr.arrSel != null) {
               // array
               ctx.loadGen.loadValueFromArray(out, variables, curr.arrSel.exprs, varInfo);

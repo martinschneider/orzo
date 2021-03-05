@@ -103,7 +103,7 @@ public class LoadGenerator {
   public HasOutput ldc2_w(DynamicByteArray out, byte type, Object key) {
     ctx.opStack.push(mapConstantPoolType(type));
     out.write(LDC2_W);
-    short idx = ctx.constPool.indexOf(type, key);
+    short idx = ctx.constPool.indexOf(type, key, true);
     if (idx == -1) {
       if (type == CONSTANT_LONG) {
         ctx.opStack.push(LONG);

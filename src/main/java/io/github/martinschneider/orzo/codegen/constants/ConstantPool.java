@@ -10,6 +10,7 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 
+import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +18,10 @@ import java.util.List;
 import java.util.Map;
 
 public class ConstantPool {
+
+  private static final String LOGGER_NAME = "constant pool";
+
+  protected CGContext ctx;
   private List<Constant> entries;
   private Map<String, Integer> classMap;
   private Map<Integer, Integer> integerMap;
@@ -29,7 +34,8 @@ public class ConstantPool {
   private Map<String, Integer> fieldRefMap;
   private Map<String, Integer> nameAndTypesMap;
 
-  public ConstantPool() {
+  public ConstantPool(CGContext ctx) {
+    this.ctx = ctx;
     entries = new ArrayList<>();
     classMap = new HashMap<>();
     stringMap = new HashMap<>();
@@ -71,14 +77,14 @@ public class ConstantPool {
     return size;
   }
 
-  public short indexOf(byte entryType, String classKey, String name, String type) {
-    String compositeKey = classKey + "_" + name + "_" + type;
+  public short indexOf(byte entryType, String classKey, String key, String type) {
+    String compositeKey = classKey + "_" + key + "_" + type;
     switch (entryType) {
       case CONSTANT_METHODREF:
         {
           Integer id = methodRefMap.get(compositeKey);
           if (id == null) {
-            addMethodRef(classKey, name, type);
+            addMethodRef(classKey, key, type);
           }
           return methodRefMap.get(compositeKey).shortValue();
         }
@@ -86,16 +92,24 @@ public class ConstantPool {
         {
           Integer id = fieldRefMap.get(compositeKey);
           if (id == null) {
-            addFieldRef(classKey, name, type);
+            addFieldRef(classKey, key, type);
           }
           return fieldRefMap.get(compositeKey).shortValue();
         }
       default:
+        ctx.errors.addError(
+            LOGGER_NAME,
+            String.format(
+                "expected key %s of type %s not found in constant pool", compositeKey, entryType));
         return -1;
     }
   }
 
   public short indexOf(byte type, Object key) {
+    return indexOf(type, key, false);
+  }
+
+  public short indexOf(byte type, Object key, boolean allowMissing) {
     switch (type) {
       case CONSTANT_CLASS:
         {
@@ -147,6 +161,11 @@ public class ConstantPool {
           }
         }
       default:
+        if (!allowMissing) {
+          ctx.errors.addError(
+              LOGGER_NAME,
+              String.format("expected key %s of type %s not found in constant pool", key, type));
+        }
         return -1;
     }
   }

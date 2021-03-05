@@ -4,6 +4,7 @@ import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.varInfo;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.generators.IfGenerator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -25,18 +26,22 @@ public class IfGeneratorTest extends StatementGeneratorTest<IfStatement> {
         args(
             "if (x==0) { x=1; }",
             list(varInfo("x", "int", 2)),
+            emptyList(),
             list("iload_2", "ifne 5", "iconst_1", "istore_2")),
         args(
             "if (0==x) { x=1; }",
             list(varInfo("x", "int", 2)),
+            emptyList(),
             list("iload_2", "ifne 5", "iconst_1", "istore_2")),
         args(
             "if (x==0) { x=1; } else { x=2; }",
             list(varInfo("x", "int", 2)),
+            emptyList(),
             list("iload_2", "ifne 8", "iconst_1", "istore_2", "goto 5", "iconst_2", "istore_2")),
         args(
             "if (x==0) { x=1; } else if (x==1) { x=2; }",
             list(varInfo("x", "int", 2)),
+            emptyList(),
             list(
                 "iload_2",
                 "ifne 8",
@@ -51,6 +56,7 @@ public class IfGeneratorTest extends StatementGeneratorTest<IfStatement> {
         args(
             "if (x==0) { x=1; } else if (x==1) { x=2; } else { x=3; }",
             list(varInfo("x", "int", 2)),
+            emptyList(),
             list(
                 "iload_2",
                 "ifne 8",
@@ -68,14 +74,17 @@ public class IfGeneratorTest extends StatementGeneratorTest<IfStatement> {
         args(
             "if (x!=0) { x=1; }",
             list(varInfo("x", "int", 2)),
+            emptyList(),
             list("iload_2", "ifeq 5", "iconst_1", "istore_2")),
         args(
             "if (x>0) { x=1; } else { x=2; }",
             list(varInfo("x", "int", 2)),
+            emptyList(),
             list("iload_2", "ifle 8", "iconst_1", "istore_2", "goto 5", "iconst_2", "istore_2")),
         args(
             "if (x!=1) { x=1; } else { x=2; }",
             list(varInfo("x", "int", 2)),
+            emptyList(),
             list(
                 "iload_2",
                 "iconst_1",
@@ -88,6 +97,7 @@ public class IfGeneratorTest extends StatementGeneratorTest<IfStatement> {
         args(
             "if (x==0) { x=1; } else if (x>=1) { x=2; }",
             list(varInfo("x", "int", 2)),
+            emptyList(),
             list(
                 "iload_2",
                 "ifne 8",
@@ -102,6 +112,7 @@ public class IfGeneratorTest extends StatementGeneratorTest<IfStatement> {
         args(
             "if (x==0) { x=1; } else if (x<1) { x=2; } else { x=3; }",
             list(varInfo("x", "int", 2)),
+            emptyList(),
             list(
                 "iload_2",
                 "ifne 8",

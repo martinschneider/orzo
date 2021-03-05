@@ -1,8 +1,5 @@
 package io.github.martinschneider.orzo.codegen;
 
-import static io.github.martinschneider.orzo.codegen.ByteUtils.intToByteArray;
-import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
-
 // dynamically resizing byte array
 public class DynamicByteArray implements HasOutput {
   private int size = 128;
@@ -44,7 +41,9 @@ public class DynamicByteArray implements HasOutput {
   }
 
   public byte[] flush() {
-    byte[] retValue = getBytes();
+    byte[] retValue;
+    // TODO: variable declaration with a method call doesn't work
+    retValue = getBytes();
     size = 2;
     pointer = 0;
     array = new byte[size];
@@ -68,5 +67,18 @@ public class DynamicByteArray implements HasOutput {
   @Override
   public void write(int val) {
     write(intToByteArray(val));
+  }
+
+  public static byte[] shortToByteArray(short val) {
+    return new byte[] {(byte) ((val >> 8) & 255), (byte) (val & 255)};
+  }
+
+  public static byte[] intToByteArray(int val) {
+    return new byte[] {
+      (byte) ((val >> 24) & 255),
+      (byte) ((val >> 16) & 255),
+      (byte) ((val >> 8) & 255),
+      (byte) (val & 255)
+    };
   }
 }

@@ -39,7 +39,7 @@ public class CGContext {
   public void init(CompilerErrors errors, int idx, List<Clazz> clazzes) {
     clazz = clazzes.get(idx);
     this.errors = errors;
-    constPoolProc = new ConstantPoolProcessor();
+    constPoolProc = new ConstantPoolProcessor(this);
     constPool = constPoolProc.processConstantPool(clazz);
     delegator = new StatementDelegator();
     exprGen = new ExpressionGenerator();

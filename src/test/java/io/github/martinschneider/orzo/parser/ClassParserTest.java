@@ -35,7 +35,7 @@ public class ClassParserTest {
         args(
             "public class Martin{public void test(){x=0;}}",
             clazz(
-                null,
+                "",
                 emptyList(),
                 scope(PUBLIC),
                 "Martin",
@@ -52,7 +52,7 @@ public class ClassParserTest {
         args(
             "private class Laura{}",
             clazz(
-                null,
+                "",
                 emptyList(),
                 scope(PRIVATE),
                 "Laura",
@@ -63,7 +63,7 @@ public class ClassParserTest {
         args(
             "class Empty{}",
             clazz(
-                null,
+                "",
                 emptyList(),
                 null,
                 "Empty",
@@ -74,7 +74,7 @@ public class ClassParserTest {
         args(
             "class Empty implements Interface1{}",
             clazz(
-                null,
+                "",
                 emptyList(),
                 null,
                 "Empty",
@@ -85,7 +85,7 @@ public class ClassParserTest {
         args(
             "class Empty implements Interface1, Interface2{}",
             clazz(
-                null,
+                "",
                 emptyList(),
                 null,
                 "Empty",
@@ -96,7 +96,7 @@ public class ClassParserTest {
         args(
             "class Empty implements Interface1, Interface2 extends BaseClass{}",
             clazz(
-                null,
+                "",
                 emptyList(),
                 null,
                 "Empty",
@@ -107,7 +107,7 @@ public class ClassParserTest {
         args(
             "class Empty extends BaseClass implements Interface1, Interface2{}",
             clazz(
-                null,
+                "",
                 emptyList(),
                 null,
                 "Empty",

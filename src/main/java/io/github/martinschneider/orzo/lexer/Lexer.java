@@ -105,35 +105,39 @@ public class Lexer {
     while ((c = fileReader.read()) != -1) {
       character = (char) c;
       tokenCount = tokenList.size();
-      // parentheses
+      // parenthesis
       scanParen();
-      // identifiers & keywords
+      // identifier/keyword
       if (tokenList.size() == tokenCount) {
         scanId();
       }
-      // symbols
+      // symbol
       if (tokenList.size() == tokenCount) {
         scanSym();
       }
-      // operators
+      // operator
       if (tokenList.size() == tokenCount) {
         scanOps();
       }
-      // Character
+      // character
       if (tokenList.size() == tokenCount) {
         scanChr();
       }
-      // Strings
+      // string
       if (tokenList.size() == tokenCount) {
         scanStr();
       }
-      // numbers
+      // number
       if (tokenList.size() == tokenCount) {
         scanNum();
       }
-      // comments
+      // comment
       if (tokenList.size() == tokenCount) {
         scanComment();
+      }
+      // annotation
+      if (tokenList.size() == tokenCount) {
+        scanAnnotation();
       }
     }
     return new TokenList(tokenList);
@@ -146,6 +150,17 @@ public class Lexer {
       } else if (character == '/') {
         scanComment2();
       }
+    }
+  }
+
+  private void scanAnnotation() throws IOException {
+    if ((character == '@')) {
+      // we do not support annotation -> ignore
+      int c;
+      do {
+        c = inputReader.read();
+      } while (c != 10 && c != 13 && c != -1);
+      inputReader.unread(c);
     }
   }
 

@@ -28,6 +28,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
@@ -42,6 +43,21 @@ import java.util.stream.Collectors;
 
 public class TypeUtils {
   public static String descr(String type) {
+    return descr(type, 0);
+  }
+
+  public static String descr(VariableInfo varInfo) {
+    if (varInfo.type.equals(REF)) {
+      // TODO: multi-arrays
+      return descr(varInfo.arrType, 1);
+    }
+    return descr(varInfo.type);
+  }
+
+  public static String descr(String type, int arrDim) {
+    for (int i = 0; i < arrDim; i++) {
+      type = '[' + type;
+    }
     // TODO: general handling of reference types and arrays
     if (type.startsWith("L") && type.endsWith(";")) {
       return type;

@@ -68,9 +68,14 @@ public abstract class StatementGeneratorTest<T extends Statement> {
 
   @ParameterizedTest
   @MethodSource
-  public void test(String input, List<VariableInfo> varInfos, List<String> expectedLines)
+  public void test(
+      String input,
+      List<VariableInfo> varInfos,
+      List<Constant> constants,
+      List<String> expectedLines)
       throws IOException {
     TokenList tokens = new Lexer().getTokens(input);
+    ctx.constPool = new MockConstantPool(ctx, constants);
     target.generate(out, varMap(varInfos), method, parser.parse(tokens));
     assertEquals(String.join("\n", expectedLines), BytecodeDecompiler.decompile(out.getBytes()));
   }

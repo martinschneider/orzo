@@ -107,13 +107,14 @@ public class CodeGenerator {
             decl.name,
             new VariableInfo(
                 decl.name.id().toString(),
-                decl.type,
+                (decl.arrDim > 0) ? REF : decl.type,
+                (decl.arrDim > 0) ? decl.type : null,
                 true,
                 ctx.constPool.indexOf(
                     CONSTANT_FIELDREF,
                     ctx.clazz.fqn('/'),
                     decl.name.id().toString(),
-                    TypeUtils.descr(decl.type))));
+                    TypeUtils.descr(decl.type, decl.arrDim))));
       }
     }
   }
@@ -131,6 +132,13 @@ public class CodeGenerator {
 
   private void interfaces(Clazz clazz) {
     out.write((short) clazz.interfaces.size());
+    for (String interfaceName : clazz.interfaces) {
+      // TODO: support interfaces from different packages
+      out.write(
+          (short)
+              ctx.constPool.indexOf(
+                  CONSTANT_CLASS, (clazz.packageName + "." + interfaceName).replace('.', '/')));
+    }
   }
 
   private HasOutput methods(HasOutput out, Clazz clazz) {
@@ -150,7 +158,7 @@ public class CodeGenerator {
   private void writeField(HasOutput out, VariableInfo varInfo) {
     out.write((short) 9); // public static
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, varInfo.name));
-    out.write(ctx.constPool.indexOf(CONSTANT_UTF8, TypeUtils.descr(varInfo.type)));
+    out.write(ctx.constPool.indexOf(CONSTANT_UTF8, TypeUtils.descr(varInfo)));
     out.write((short) 0); // attribute size
   }
 

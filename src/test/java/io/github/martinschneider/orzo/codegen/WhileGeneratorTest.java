@@ -4,6 +4,7 @@ import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.varInfo;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.generators.WhileGenerator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -25,7 +26,8 @@ public class WhileGeneratorTest extends StatementGeneratorTest<WhileStatement> {
         args(
             "while (x>0) { x--; }",
             list(varInfo("x", "int", 2)),
-            list("iload_2", "ifle 9", "iinc 2 -1", "goto -7")));
+            emptyList(),
+            list("iload_2", "ifle 9", "iinc 2 -1", "goto 249")));
   }
 
   @BeforeAll

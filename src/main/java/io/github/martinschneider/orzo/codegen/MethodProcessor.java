@@ -32,7 +32,7 @@ public class MethodProcessor {
     List<Import> imports = currentClazz.imports;
     List<String> importStrings = imports.stream().map(x -> x.id).collect(Collectors.toList());
     for (Clazz clazz : clazzes) {
-      if (currentClazz != clazz
+      if (!currentClazz.equals(clazz)
           && (currentClazz.packageName.equals(clazz.packageName)
               || importStrings.contains(clazz.fqn()))) {
         for (Method method : clazz.methods) {
