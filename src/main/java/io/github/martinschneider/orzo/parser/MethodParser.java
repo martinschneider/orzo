@@ -2,7 +2,6 @@ package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
-import static io.github.martinschneider.orzo.lexer.tokens.Scopes.DEFAULT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
@@ -12,21 +11,25 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_FINAL;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_STATIC;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
+import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MethodParser implements ProdParser<Method> {
-  private ParserContext ctx;
+  public ParserContext ctx;
   private static final String LOG_NAME = "parse method";
 
   public MethodParser(ParserContext ctx) {
@@ -40,21 +43,23 @@ public class MethodParser implements ProdParser<Method> {
 
   public Method parse(TokenList tokens, boolean isInterface) {
     int idx = tokens.idx();
-    Scope scope = scope(DEFAULT);
+    List<AccessFlag> accFlags = new ArrayList<>();
+    Scope scope = null;
     Type type = null;
     Identifier name;
     List<Argument> arguments = new ArrayList<>();
     List<Statement> body;
     if (tokens.curr() instanceof Scope) {
       scope = (Scope) tokens.curr();
+      accFlags.add(((Scopes) scope.val).accFlag);
       tokens.next();
     }
     if (tokens.curr().eq(keyword(STATIC))) {
-      // TODO: handle static (for now we just ignore it)
+      accFlags.add(ACC_STATIC);
       tokens.next();
     }
     if (tokens.curr().eq(keyword(FINAL))) {
-      // TODO: handle final (for now we just ignore it)
+      accFlags.add(ACC_FINAL);
       tokens.next();
     }
     if (tokens.curr() instanceof Type) {
@@ -100,12 +105,16 @@ public class MethodParser implements ProdParser<Method> {
     if (tokens.curr().eq(sym(SEMICOLON))) {
       tokens.next();
     }
-    if (type != null && name != null && body != null) {
+    if (name != null && body != null) {
       if (arguments == null) {
         arguments = new ArrayList<>();
       }
       String fqn = (ctx.currClazz == null) ? null : ctx.currClazz.fqn();
-      return new Method(fqn, scope, type.descr(), name, arguments, body);
+      if (type == null) {
+        return new Constructor(fqn, accFlags, ctx.currClazz.fqn(), name, arguments, body);
+      } else {
+        return new Method(fqn, accFlags, type.descr(), name, arguments, body);
+      }
     }
     return null;
   }

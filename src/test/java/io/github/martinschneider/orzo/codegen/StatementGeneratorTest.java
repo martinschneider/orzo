@@ -3,8 +3,11 @@ package io.github.martinschneider.orzo.codegen;
 import static io.github.martinschneider.orzo.parser.TestHelper.clazz;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.varMap;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
+import static io.github.martinschneider.orzo.util.decompiler.BytecodeDecompiler.decompile;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import io.github.martinschneider.orzo.codegen.generators.StatementGenerator;
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -17,7 +20,6 @@ import io.github.martinschneider.orzo.parser.ProdParser;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.Statement;
-import io.github.martinschneider.orzo.util.decompiler.BytecodeDecompiler;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -40,7 +42,7 @@ public abstract class StatementGeneratorTest<T extends Statement> {
     method =
         new Method(
             "pkg.Clazz",
-            new Scope(Scopes.PUBLIC),
+            list(ACC_PUBLIC),
             "void",
             new Identifier("testMethod"),
             emptyList(),
@@ -77,6 +79,7 @@ public abstract class StatementGeneratorTest<T extends Statement> {
     TokenList tokens = new Lexer().getTokens(input);
     ctx.constPool = new MockConstantPool(ctx, constants);
     target.generate(out, varMap(varInfos), method, parser.parse(tokens));
-    assertEquals(String.join("\n", expectedLines), BytecodeDecompiler.decompile(out.getBytes()));
+    assertEquals(String.join("\n", expectedLines), decompile(out.getBytes()));
+    assertFalse(ctx.errors.count() > 0, "Compilation errors " + ctx.errors);
   }
 }

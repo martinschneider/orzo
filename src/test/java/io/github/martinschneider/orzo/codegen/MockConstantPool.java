@@ -15,6 +15,13 @@ public class MockConstantPool extends ConstantPool {
     }
   }
 
+  public MockConstantPool(CGContext ctx, List<Constant> constants, VariableMap fields) {
+    this(ctx, constants);
+    for (VariableInfo var : fields.getVariables().values()) {
+      lookup.put(var.name, var.idx);
+    }
+  }
+
   public short indexOf(byte entryType, String classKey, String key, String type) {
     return indexOf((byte) 0, key);
   }

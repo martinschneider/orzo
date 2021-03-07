@@ -13,13 +13,16 @@ import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.ArraySelector;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.DoStatement;
@@ -181,18 +184,27 @@ public class TestHelper {
   }
 
   public static Method method(
-      Scope scope, String type, Identifier name, List<Argument> arguments, List<Statement> body) {
-    return new Method(null, scope, type, name, arguments, body);
-  }
-
-  public static Method method(
-      String fqClassName,
-      Scope scope,
+      List<AccessFlag> accFlags,
       String type,
       Identifier name,
       List<Argument> arguments,
       List<Statement> body) {
-    return new Method(fqClassName, scope, type, name, arguments, body);
+    return new Method(null, accFlags, type, name, arguments, body);
+  }
+
+  public static Constructor constr(
+      Scope scope, String type, Identifier name, List<Argument> arguments, List<Statement> body) {
+    return new Constructor(null, list(((Scopes) scope.val).accFlag), type, name, arguments, body);
+  }
+
+  public static Method method(
+      String fqClassName,
+      List<AccessFlag> accFlags,
+      String type,
+      Identifier name,
+      List<Argument> arguments,
+      List<Statement> body) {
+    return new Method(fqClassName, accFlags, type, name, arguments, body);
   }
 
   public static MethodCall methodCall(String name, List<Expression> parameters) {

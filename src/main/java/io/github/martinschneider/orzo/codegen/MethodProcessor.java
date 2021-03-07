@@ -1,9 +1,9 @@
 package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
+import static java.util.List.of;
 
-import io.github.martinschneider.orzo.lexer.tokens.Scopes;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Import;
@@ -60,7 +60,8 @@ public class MethodProcessor {
           Method method =
               new Method(
                   clazz.getName(),
-                  scope(Scopes.PUBLIC),
+                  // TODO: process all flags
+                  of(AccessFlag.ACC_PUBLIC, AccessFlag.ACC_STATIC),
                   m.getReturnType().getTypeName(),
                   id(m.getName()),
                   args,

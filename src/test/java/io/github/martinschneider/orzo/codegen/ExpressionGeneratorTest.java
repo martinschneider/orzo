@@ -10,6 +10,7 @@ import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.varInfo;
 import static io.github.martinschneider.orzo.parser.TestHelper.varMap;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -185,7 +186,7 @@ public class ExpressionGeneratorTest {
     method =
         new Method(
             "pkg.Clazz",
-            new Scope(Scopes.PUBLIC),
+            list(ACC_PUBLIC),
             "void",
             new Identifier("testMethod"),
             emptyList(),

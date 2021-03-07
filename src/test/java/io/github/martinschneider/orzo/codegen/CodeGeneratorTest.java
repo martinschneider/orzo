@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen;
 
+import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.clazz;
 import static io.github.martinschneider.orzo.parser.TestHelper.interf;
@@ -49,6 +50,6 @@ public class CodeGeneratorTest {
   @MethodSource
   public void testAccessModifiers(Clazz clazz, short expectedModifiers) {
     target.accessModifiers(clazz);
-    assertArrayEquals(target.out.getBytes(), ByteUtils.shortToByteArray(expectedModifiers));
+    assertArrayEquals(target.out.getBytes(), shortToByteArray(expectedModifiers));
   }
 }

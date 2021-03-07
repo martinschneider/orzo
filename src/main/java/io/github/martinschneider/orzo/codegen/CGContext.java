@@ -8,6 +8,7 @@ import io.github.martinschneider.orzo.codegen.generators.IncrementGenerator;
 import io.github.martinschneider.orzo.codegen.generators.InvokeGenerator;
 import io.github.martinschneider.orzo.codegen.generators.LoadGenerator;
 import io.github.martinschneider.orzo.codegen.generators.MethodCallGenerator;
+import io.github.martinschneider.orzo.codegen.generators.MethodGenerator;
 import io.github.martinschneider.orzo.codegen.generators.PushGenerator;
 import io.github.martinschneider.orzo.codegen.generators.StatementDelegator;
 import io.github.martinschneider.orzo.codegen.generators.StoreGenerator;
@@ -26,6 +27,7 @@ public class CGContext {
   public AssignmentGenerator assignGen;
   public ExpressionGenerator exprGen;
   public IncrementGenerator incrGen;
+  public MethodGenerator methodGen;
   public MethodCallGenerator methodCallGen;
   public ConstantPoolProcessor constPoolProc;
   public BasicGenerator basicGen;
@@ -44,6 +46,7 @@ public class CGContext {
     delegator = new StatementDelegator();
     exprGen = new ExpressionGenerator();
     incrGen = new IncrementGenerator(this);
+    methodGen = new MethodGenerator(this);
     methodCallGen = new MethodCallGenerator(this);
     methodMap = new MethodProcessor().getMethodMap(clazz, clazzes);
     assignGen = new AssignmentGenerator(this);

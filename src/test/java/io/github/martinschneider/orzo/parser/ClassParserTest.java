@@ -13,6 +13,7 @@ import static io.github.martinschneider.orzo.parser.TestHelper.clazz;
 import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.method;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -43,7 +44,7 @@ public class ClassParserTest {
                 Clazz.JAVA_LANG_OBJECT,
                 list(
                     method(
-                        scope(PUBLIC),
+                        list(ACC_PUBLIC),
                         type(VOID).toString(),
                         id("test"),
                         emptyList(),

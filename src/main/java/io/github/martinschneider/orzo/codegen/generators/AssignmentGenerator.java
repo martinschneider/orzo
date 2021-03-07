@@ -18,6 +18,8 @@ import java.util.List;
 public class AssignmentGenerator implements StatementGenerator<Assignment> {
   private CGContext ctx;
 
+  private static final String LOG_NAME = "assignment generator";
+
   public AssignmentGenerator(CGContext ctx) {
     this.ctx = ctx;
   }
@@ -29,30 +31,35 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       Identifier left = assignment.left.get(i);
       Expression right = assignment.right.get(i);
       VariableInfo varInfo = variables.get(left);
-      String type = varInfo.type;
-      // if the current left side variable appears anywhere on the right side
-      // we store its value in a tmp variable
-      if (i < assignment.left.size() - 1
-          && replaceIds(assignment.right, left, variables.tmpCount)) {
-        if (left.arrSel != null) {
-          type = varInfo.arrType;
-        }
-        Identifier id = id("tmp_" + variables.tmpCount);
-        variables.put(id, new VariableInfo(id.val.toString(), type, false, (short) variables.size));
-        VariableInfo tmpInfo = variables.get(id);
-        if (left.arrSel == null) {
-          ctx.loadGen.load(out, varInfo);
-        } else {
-          ctx.loadGen.loadValueFromArray(out, variables, left.arrSel.exprs, varInfo);
-        }
-        ctx.storeGen.store(out, tmpInfo);
-        variables.tmpCount++;
-      }
-      if (left.arrSel == null) {
-        ctx.exprGen.eval(out, variables, type, right);
-        ctx.storeGen.store(out, varInfo);
+      if (varInfo == null) {
+        ctx.errors.addError(LOG_NAME, String.format("Unknown variable %s", left));
       } else {
-        assignInArray(out, variables, left, right);
+        String type = varInfo.type;
+        // if the current left side variable appears anywhere on the right side
+        // we store its value in a tmp variable
+        if (i < assignment.left.size() - 1
+            && replaceIds(assignment.right, left, variables.tmpCount)) {
+          if (left.arrSel != null) {
+            type = varInfo.arrType;
+          }
+          Identifier id = id("tmp_" + variables.tmpCount);
+          variables.put(
+              id, new VariableInfo(id.val.toString(), type, false, (short) variables.size));
+          VariableInfo tmpInfo = variables.get(id);
+          if (left.arrSel == null) {
+            ctx.loadGen.load(out, varInfo);
+          } else {
+            ctx.loadGen.loadValueFromArray(out, variables, left.arrSel.exprs, varInfo);
+          }
+          ctx.storeGen.store(out, tmpInfo);
+          variables.tmpCount++;
+        }
+        if (left.arrSel == null) {
+          ctx.exprGen.eval(out, variables, type, right);
+          ctx.storeGen.store(out, varInfo);
+        } else {
+          assignInArray(out, variables, left, right);
+        }
       }
     }
     return out;

@@ -1,8 +1,5 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Scopes.DEFAULT;
-import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PRIVATE;
-import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PROTECTED;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PUBLIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
@@ -13,6 +10,8 @@ import static io.github.martinschneider.orzo.parser.TestHelper.arg;
 import static io.github.martinschneider.orzo.parser.TestHelper.args;
 import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.parser.TestHelper.assign;
+import static io.github.martinschneider.orzo.parser.TestHelper.clazz;
+import static io.github.martinschneider.orzo.parser.TestHelper.constr;
 import static io.github.martinschneider.orzo.parser.TestHelper.doStmt;
 import static io.github.martinschneider.orzo.parser.TestHelper.expr;
 import static io.github.martinschneider.orzo.parser.TestHelper.ifStmt;
@@ -20,6 +19,10 @@ import static io.github.martinschneider.orzo.parser.TestHelper.list;
 import static io.github.martinschneider.orzo.parser.TestHelper.method;
 import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.TestHelper.whileStmt;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PRIVATE;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PROTECTED;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_STATIC;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,6 +30,7 @@ import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.parser.productions.Argument;
+import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.IfBlock;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.io.IOException;
@@ -38,6 +42,16 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class MethodParserTest {
   private MethodParser target = new MethodParser(ParserContext.build(new CompilerErrors()));
+  private static final Clazz clazz =
+      clazz(
+          "",
+          emptyList(),
+          scope(PUBLIC),
+          "Martin",
+          emptyList(),
+          Clazz.JAVA_LANG_OBJECT,
+          emptyList(),
+          emptyList());
 
   private static Stream<Arguments> test() throws IOException {
     return stream(
@@ -47,7 +61,7 @@ public class MethodParserTest {
         args(
             "public void test(){x=1;y=2;if(x==y){fehler=1;}}",
             method(
-                scope(PUBLIC),
+                list(ACC_PUBLIC),
                 "void",
                 id("test"),
                 emptyList(),
@@ -58,7 +72,7 @@ public class MethodParserTest {
         args(
             "void test(){x=100;while(x>0){x=x-1;}}",
             method(
-                scope(DEFAULT),
+                emptyList(),
                 "void",
                 id("test"),
                 emptyList(),
@@ -66,22 +80,34 @@ public class MethodParserTest {
         args(
             "protected int huber(){do{}while(x>0)}",
             method(
-                scope(PROTECTED),
+                list(ACC_PROTECTED),
                 "int",
                 id("huber"),
                 emptyList(),
                 list(doStmt(expr("x>0"), emptyList())))),
         args(
             "private double calculateMean(){}",
-            method(scope(PRIVATE), "double", id("calculateMean"), emptyList(), emptyList())),
+            method(list(ACC_PRIVATE), "double", id("calculateMean"), emptyList(), emptyList())),
         args(
             "public byte[] test(){}",
-            method(scope(PUBLIC), "[byte", id("test"), emptyList(), emptyList())));
+            method(list(ACC_PUBLIC), "[byte", id("test"), emptyList(), emptyList())),
+        args(
+            "public static byte[] test(){}",
+            method(list(ACC_PUBLIC, ACC_STATIC), "[byte", id("test"), emptyList(), emptyList())),
+        args(
+            "public Martin(){x=1;y=2;}",
+            constr(
+                scope(PUBLIC),
+                clazz.fqn(),
+                id("Martin"),
+                emptyList(),
+                list(assign("x=1"), assign("y=2")))));
   }
 
   @MethodSource
   @ParameterizedTest
   public void test(String input, Method expected) throws IOException {
+    target.ctx.currClazz = clazz;
     TokenList tokens = new Lexer().getTokens(input);
     assertEquals(expected, target.parse(tokens));
     assertTokenIdx(tokens, (expected == null));
