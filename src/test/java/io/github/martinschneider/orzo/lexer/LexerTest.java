@@ -10,18 +10,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Keywords.PACKAGE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.RETURN;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.WHILE;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.EQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESSEQ;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PRIVATE;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PROTECTED;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PUBLIC;
@@ -127,6 +116,7 @@ public class LexerTest {
         args("/* abc//123\"\"\\$@ */ /*und noch einer*/\n//x=y+1;\n", new TokenList(emptyList())),
         args("// test", new TokenList(emptyList())),
         args("/* /* /* test */ */ */", new TokenList(emptyList())),
+        args("!x", new TokenList(list(op(NEGATE), id("x")))),
         args(
             "System.out.println",
             new TokenList(list(id("System"), sym(DOT), id("out"), sym(DOT), id("println")))));

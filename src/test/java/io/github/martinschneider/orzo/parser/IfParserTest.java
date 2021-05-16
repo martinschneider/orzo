@@ -21,7 +21,10 @@ public class IfParserTest {
   private static Stream<Arguments> test() throws IOException {
     return stream(
         args("", null),
-        args("if (x==9){x=8}", ifStmt(list(ifBlk(expr("x==9"), list(assign("x=8")))), false)));
+        args("if (x==9){x=8}", ifStmt(list(ifBlk(expr("x==9"), list(assign("x=8")))), false)),
+        args(
+            "unless (x==9){x=8}",
+            ifStmt(list(ifBlk(expr("!(x==9)"), list(assign("x=8")))), false)));
   }
 
   @ParameterizedTest

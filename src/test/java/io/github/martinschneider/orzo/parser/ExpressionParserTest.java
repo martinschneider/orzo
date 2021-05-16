@@ -84,7 +84,8 @@ public class ExpressionParserTest {
         args("x<=2", expr(list(id("x"), integer("2"), op(LESSEQ)))),
         args("x>3", expr(list(id("x"), integer("3"), op(GREATER)))),
         args("x>=4", expr(list(id("x"), integer("4"), op(GREATEREQ)))),
-        args("x!=5", expr(list(id("x"), integer("5"), op(NOTEQUAL)))));
+        args("x!=5", expr(list(id("x"), integer("5"), op(NOTEQUAL)))),
+        args("!a", expr(list(id("a"), op(NEGATE)))));
   }
 
   @MethodSource

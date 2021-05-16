@@ -2,9 +2,7 @@ package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
 import static io.github.martinschneider.orzo.codegen.MockConstantPool.constant;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.*;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
 import static io.github.martinschneider.orzo.util.FactoryHelper.clazz;
 import static io.github.martinschneider.orzo.util.FactoryHelper.list;
@@ -178,7 +176,34 @@ public class ExpressionGeneratorTest {
             DOUBLE,
             list(varInfo("x", "int", 100)),
             list(constant("java/lang/Math", 1), constant("sqrt", 2)),
-            list("iload 100", "i2d", "invokestatic 2")));
+            list("iload 100", "i2d", "invokestatic 2")),
+        args("true", BOOLEAN, emptyList(), emptyList(), list("iconst_1")),
+        args("false", BOOLEAN, emptyList(), emptyList(), list("iconst_0")),
+        args("a", BOOLEAN, list(varInfo("a", "boolean", 100)), emptyList(), list("iload 100")),
+        args(
+            "!a",
+            BOOLEAN,
+            list(varInfo("a", "boolean", 100)),
+            emptyList(),
+            list("iload 100", "iconst_1", "ixor")),
+        args(
+            "a && b",
+            BOOLEAN,
+            list(varInfo("a", "boolean", 100), varInfo("b", "boolean", 101)),
+            emptyList(),
+            list("iload 100", "iload 101", "iand")),
+        args(
+            "a || b",
+            BOOLEAN,
+            list(varInfo("a", "boolean", 100), varInfo("b", "boolean", 101)),
+            emptyList(),
+            list("iload 100", "iload 101", "ior")),
+        args(
+            "!(a || b)",
+            BOOLEAN,
+            list(varInfo("a", "boolean", 100), varInfo("b", "boolean", 101)),
+            emptyList(),
+            list("iload 100", "iload 101", "ior", "iconst_1", "ixor")));
   }
 
   @BeforeAll

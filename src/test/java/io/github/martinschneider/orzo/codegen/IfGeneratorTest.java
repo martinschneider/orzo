@@ -28,6 +28,16 @@ public class IfGeneratorTest extends StatementGeneratorTest<IfStatement> {
             list(varInfo("x", "int", 2)),
             emptyList(),
             list("iload_2", "ifne 5", "iconst_1", "istore_2")),
+        //            args(
+        //                    "if (x==0 || x==1) { x=2; }",
+        //                    list(varInfo("x", "int", 2)),
+        //                    emptyList(),
+        //                    list("iload_2", "ifne 5", "iconst_1", "istore_2")),
+        //            args(
+        //                    "unless (x==0) { x=1; }",
+        //                    list(varInfo("x", "int", 2)),
+        //                    emptyList(),
+        //                    list("iload_2", "ifeq 5", "iconst_1", "istore_2")),
         args(
             "if (0==x) { x=1; }",
             list(varInfo("x", "int", 2)),

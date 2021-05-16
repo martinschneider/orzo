@@ -196,9 +196,9 @@ public class ExpressionGenerator {
           }
         } else {
           byte[] opCode = null;
-
           if (COMPARATORS.contains(op) && exprTypeStack.oneOfTopTwoElementsIsZero()) {
             opCode = new byte[] {COMPARE_TO_ZERO_OPS.get(op)};
+            type = BOOLEAN;
           } else {
             opCode = ARITHMETIC_OPS.getOrDefault(op, Collections.emptyMap()).get(type);
           }

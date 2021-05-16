@@ -1,84 +1,7 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
-import static io.github.martinschneider.orzo.codegen.OpCodes.D2F;
-import static io.github.martinschneider.orzo.codegen.OpCodes.D2I;
-import static io.github.martinschneider.orzo.codegen.OpCodes.D2L;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DDIV;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DMUL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DREM;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DSUB;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2;
-import static io.github.martinschneider.orzo.codegen.OpCodes.F2D;
-import static io.github.martinschneider.orzo.codegen.OpCodes.F2I;
-import static io.github.martinschneider.orzo.codegen.OpCodes.F2L;
-import static io.github.martinschneider.orzo.codegen.OpCodes.FADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.FDIV;
-import static io.github.martinschneider.orzo.codegen.OpCodes.FMUL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.FREM;
-import static io.github.martinschneider.orzo.codegen.OpCodes.FSUB;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2B;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2C;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2D;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2F;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2L;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2S;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IAND;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IDIV;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IFEQ;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IFGE;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IFGT;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IFLE;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IFLT;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IFNE;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPEQ;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPGE;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPGT;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLE;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLT;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPNE;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IMUL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IOR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IREM;
-import static io.github.martinschneider.orzo.codegen.OpCodes.ISHL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.ISHR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.ISUB;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IUSHR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IXOR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.L2D;
-import static io.github.martinschneider.orzo.codegen.OpCodes.L2F;
-import static io.github.martinschneider.orzo.codegen.OpCodes.L2I;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LADD;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LAND;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LCMP;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LDIV;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LMUL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LOR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LREM;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LSHL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LSHR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LSUB;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LUSHR;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LXOR;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_AND;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_OR;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.EQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESSEQ;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
+import static io.github.martinschneider.orzo.codegen.OpCodes.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
@@ -330,7 +253,10 @@ public class OperatorMaps {
                   CHAR,
                   new byte[] {IF_ICMPEQ},
                   LONG,
-                  new byte[] {LCMP, IFLE})));
+                  new byte[] {LCMP, IFLE})),
+          entry(NEGATE, Map.of(BOOLEAN, new byte[] {ICONST_1, IXOR})),
+          entry(LOGICAL_AND, Map.of(BOOLEAN, new byte[] {IAND})),
+          entry(LOGICAL_OR, Map.of(BOOLEAN, new byte[] {IOR})));
 
   public static final Map<Operators, Byte> COMPARE_TO_ZERO_OPS =
       Map.of(EQUAL, IFEQ, NOTEQUAL, IFNE, GREATER, IFGT, GREATEREQ, IFGE, LESS, IFLT, LESSEQ, IFLE);

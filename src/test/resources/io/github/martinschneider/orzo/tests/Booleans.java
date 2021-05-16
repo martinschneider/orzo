@@ -8,5 +8,8 @@ public class Booleans {
     System.out.println(b);
     System.out.println(true);
     System.out.println(false);
+    System.out.println(!a);
+    System.out.println(!b);
+    System.out.println(a || b && !(a && b)); // true
   }
 }

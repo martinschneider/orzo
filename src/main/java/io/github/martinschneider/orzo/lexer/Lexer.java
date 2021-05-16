@@ -324,8 +324,8 @@ public class Lexer {
       if ((character = (char) inputReader.read()) == '=') {
         tokenList.add(op(NOTEQUAL).wLoc(inputReader.getLoc()));
       } else {
-        errors.addError("scan operator", "missing !, found " + character);
         inputReader.unread(character);
+        tokenList.add(op(NEGATE));
       }
     } else if (character == '&') {
       if ((character = (char) inputReader.read()) == '=') {
