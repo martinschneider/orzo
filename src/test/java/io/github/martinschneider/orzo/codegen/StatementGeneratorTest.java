@@ -1,9 +1,9 @@
 package io.github.martinschneider.orzo.codegen;
 
-import static io.github.martinschneider.orzo.parser.TestHelper.clazz;
-import static io.github.martinschneider.orzo.parser.TestHelper.list;
-import static io.github.martinschneider.orzo.parser.TestHelper.varMap;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
+import static io.github.martinschneider.orzo.util.FactoryHelper.clazz;
+import static io.github.martinschneider.orzo.util.FactoryHelper.list;
+import static io.github.martinschneider.orzo.util.FactoryHelper.varMap;
 import static io.github.martinschneider.orzo.util.decompiler.BytecodeDecompiler.decompile;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;

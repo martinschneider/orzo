@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.lexer;
 
+import static io.github.martinschneider.orzo.TestHelper.args;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CLASS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.DO;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.ELSE;
@@ -36,9 +37,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.str;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.type;
-import static io.github.martinschneider.orzo.parser.TestHelper.args;
-import static io.github.martinschneider.orzo.parser.TestHelper.list;
-import static io.github.martinschneider.orzo.parser.TestHelper.stream;
+import static io.github.martinschneider.orzo.util.FactoryHelper.list;
+import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -107,7 +107,7 @@ public class Clazz {
     if (isInterface) {
       strBuilder.append("interface ");
     } else {
-      strBuilder.append("class");
+      strBuilder.append("class ");
     }
     if (packageName != null && !packageName.isEmpty()) {
       strBuilder.append(packageName);

@@ -1,12 +1,8 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.parser.TestHelper.args;
-import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.parser.TestHelper.assign;
-import static io.github.martinschneider.orzo.parser.TestHelper.expr;
-import static io.github.martinschneider.orzo.parser.TestHelper.list;
-import static io.github.martinschneider.orzo.parser.TestHelper.stream;
-import static io.github.martinschneider.orzo.parser.TestHelper.whileStmt;
+import static io.github.martinschneider.orzo.TestHelper.args;
+import static io.github.martinschneider.orzo.TestHelper.assertTokenIdx;
+import static io.github.martinschneider.orzo.util.FactoryHelper.*;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

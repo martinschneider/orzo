@@ -1,7 +1,6 @@
 package io.github.martinschneider.orzo.tests;
 
 import static io.github.martinschneider.orzo.examples.MathUtils.pi;
-import static io.github.martinschneider.orzo.examples.MathUtils.times;
 import io.github.martinschneider.orzo.examples.MathUtils;
 
 public class Circles {

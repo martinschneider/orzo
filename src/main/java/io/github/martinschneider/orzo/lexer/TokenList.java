@@ -4,6 +4,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.eof;
 
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class TokenList {
   private List<Token> tokens;
@@ -134,5 +135,9 @@ public class TokenList {
       return false;
     }
     return true;
+  }
+
+  public String toString() {
+    return tokens.stream().map(x -> x.toString()).collect(Collectors.joining(", "));
   }
 }

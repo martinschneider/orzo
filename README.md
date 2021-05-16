@@ -24,6 +24,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 ## Operators
 - [X] assignment `=`
 - [X] [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment) ✨
+- [X] [repeat](https://aroberge.github.io/ideas/docs/html/repeat.html) ✨
 - [X] arithmetic `+`, `-`, `*`, `/`, `%`
 - [X] `**` power operator ✨, e.g. `int b = a ** 5`
 - [X] `√` sqrt operator ✨, e.g. `double x = √n + √(n+1)`
@@ -66,7 +67,7 @@ Calculating π using the [Gauss-Legendre algorithm](https://en.wikipedia.org/wik
 ```
 public static double pi(int n) {
   double a, b, t, p, x = 1, 1/√2, 1/4, 1;
-  for (int i=0; i<n; i++)
+  repeat n
   {
     x, a, b  =  a, (a + b) / 2, √(x*b);
     t, p     =  t - p * ((x-a) ** 2), 2 * p;

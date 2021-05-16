@@ -16,5 +16,6 @@ public enum Keywords {
   NEW,
   FINAL,
   IMPLEMENTS,
-  EXTENDS;
+  EXTENDS,
+  REPEAT;
 }

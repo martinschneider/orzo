@@ -1,32 +1,12 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.EQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESSEQ;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_AND;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_OR;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.fp;
+import static io.github.martinschneider.orzo.TestHelper.args;
+import static io.github.martinschneider.orzo.TestHelper.assertTokenIdx;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
-import static io.github.martinschneider.orzo.parser.TestHelper.args;
-import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.parser.TestHelper.constr;
-import static io.github.martinschneider.orzo.parser.TestHelper.expr;
-import static io.github.martinschneider.orzo.parser.TestHelper.id;
-import static io.github.martinschneider.orzo.parser.TestHelper.list;
-import static io.github.martinschneider.orzo.parser.TestHelper.methodCall;
-import static io.github.martinschneider.orzo.parser.TestHelper.stream;
+import static io.github.martinschneider.orzo.util.FactoryHelper.*;
+import static io.github.martinschneider.orzo.util.FactoryHelper.id;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

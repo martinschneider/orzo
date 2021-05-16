@@ -36,7 +36,7 @@ public class MathUtils {
   // Calculate pi using Gauss-Legendre algorithm
   public static double pi3(int n) {
     double a, b, t, p, x = 1, 1/√2, 1/4, 1;
-    for (int i=0; i<n; i++)
+    repeat n
     {
       x, a, b  =  a, (a + b) / 2, √(x*b);
       t, p     =  t - p * ((x-a) ** 2), 2 * p;

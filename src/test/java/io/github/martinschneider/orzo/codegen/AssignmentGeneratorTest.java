@@ -1,10 +1,10 @@
 package io.github.martinschneider.orzo.codegen;
 
-import static io.github.martinschneider.orzo.parser.TestHelper.args;
-import static io.github.martinschneider.orzo.parser.TestHelper.list;
-import static io.github.martinschneider.orzo.parser.TestHelper.stream;
-import static io.github.martinschneider.orzo.parser.TestHelper.varInfo;
-import static io.github.martinschneider.orzo.parser.TestHelper.varInfoArr;
+import static io.github.martinschneider.orzo.TestHelper.args;
+import static io.github.martinschneider.orzo.util.FactoryHelper.list;
+import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
+import static io.github.martinschneider.orzo.util.FactoryHelper.varInfo;
+import static io.github.martinschneider.orzo.util.FactoryHelper.varInfoArr;
 import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.generators.AssignmentGenerator;

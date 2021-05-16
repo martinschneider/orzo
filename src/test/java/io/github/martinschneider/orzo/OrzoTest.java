@@ -1,8 +1,8 @@
 package io.github.martinschneider.orzo;
 
-import static io.github.martinschneider.orzo.parser.TestHelper.args;
-import static io.github.martinschneider.orzo.parser.TestHelper.list;
-import static io.github.martinschneider.orzo.parser.TestHelper.stream;
+import static io.github.martinschneider.orzo.TestHelper.args;
+import static io.github.martinschneider.orzo.util.FactoryHelper.list;
+import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -126,6 +126,8 @@ public class OrzoTest {
         args(list("tests/BasicTypeCasts")),
         args(list("tests/GlobalVariables")),
         args(list("tests/ArrayLength")),
+        // TODO: support infinite loops
+        // args(list("tests/InfiniteRepeat")),
         args(list("tests/ArrayReturnType")));
   }
 

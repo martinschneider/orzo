@@ -16,10 +16,6 @@ public class CompilerErrors {
     errors.add(new CompilerError(String.format("%s: %s", loggerName, message)));
   }
 
-  public void addError(String loggerName, String message, TokenList tokens) {
-    errors.add(new CompilerError(message));
-  }
-
   public void missingExpected(String loggerName, Token expected, TokenList tokens) {
     errors.add(
         new CompilerError(

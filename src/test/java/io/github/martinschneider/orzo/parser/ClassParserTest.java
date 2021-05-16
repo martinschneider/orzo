@@ -1,19 +1,14 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.TestHelper.args;
+import static io.github.martinschneider.orzo.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PRIVATE;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PUBLIC;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.type;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
-import static io.github.martinschneider.orzo.parser.TestHelper.args;
-import static io.github.martinschneider.orzo.parser.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.parser.TestHelper.assign;
-import static io.github.martinschneider.orzo.parser.TestHelper.clazz;
-import static io.github.martinschneider.orzo.parser.TestHelper.list;
-import static io.github.martinschneider.orzo.parser.TestHelper.method;
-import static io.github.martinschneider.orzo.parser.TestHelper.stream;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
+import static io.github.martinschneider.orzo.util.FactoryHelper.*;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

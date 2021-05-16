@@ -1,21 +1,23 @@
-package io.github.martinschneider.orzo.parser;
+package io.github.martinschneider.orzo.util;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.str;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.error.CompilerError;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
-import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
+import io.github.martinschneider.orzo.parser.AssignmentParser;
+import io.github.martinschneider.orzo.parser.DeclarationParser;
+import io.github.martinschneider.orzo.parser.ExpressionParser;
+import io.github.martinschneider.orzo.parser.ParserContext;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
@@ -43,9 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.jupiter.params.provider.Arguments;
 
-public class TestHelper {
+public class FactoryHelper {
   public static Expression expr(String input) throws IOException {
     return new ExpressionParser(ParserContext.build(new CompilerErrors()))
         .parse(new Lexer().getTokens(input));
@@ -225,23 +226,6 @@ public class TestHelper {
     return new WhileStatement(condition, body);
   }
 
-  /** @see io.github.martinschneider.orzo.parser.ProdParser * */
-  public static void assertTokenIdx(TokenList tokens, CompilerErrors errors, boolean resetIdx) {
-    if (!errors.getErrors().isEmpty()) {
-      // TODO: define and test error scenarios
-      return;
-    }
-    assertTokenIdx(tokens, resetIdx);
-  }
-
-  public static void assertTokenIdx(TokenList tokens, boolean resetIdx) {
-    if (resetIdx) {
-      assertEquals(0, tokens.idx());
-    } else {
-      assertEquals(tokens.size(), tokens.idx());
-    }
-  }
-
   public static VariableInfo varInfo(String name, String type, int idx) {
     return new VariableInfo(name, type, false, (short) idx);
   }
@@ -266,11 +250,6 @@ public class TestHelper {
   @SafeVarargs
   public static <T> Stream<T> stream(T... t) {
     return Stream.of(t);
-  }
-
-  @SafeVarargs
-  public static Arguments args(Object... e) {
-    return Arguments.of(e);
   }
 
   // TODO this is currently unused

@@ -1,14 +1,14 @@
 package io.github.martinschneider.orzo.codegen;
 
+import static io.github.martinschneider.orzo.TestHelper.args;
 import static io.github.martinschneider.orzo.codegen.MockConstantPool.constant;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PUBLIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
-import static io.github.martinschneider.orzo.parser.TestHelper.args;
-import static io.github.martinschneider.orzo.parser.TestHelper.clazz;
-import static io.github.martinschneider.orzo.parser.TestHelper.list;
-import static io.github.martinschneider.orzo.parser.TestHelper.stream;
-import static io.github.martinschneider.orzo.parser.TestHelper.varInfo;
-import static io.github.martinschneider.orzo.parser.TestHelper.varMap;
+import static io.github.martinschneider.orzo.util.FactoryHelper.clazz;
+import static io.github.martinschneider.orzo.util.FactoryHelper.list;
+import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
+import static io.github.martinschneider.orzo.util.FactoryHelper.varInfo;
+import static io.github.martinschneider.orzo.util.FactoryHelper.varMap;
 import static io.github.martinschneider.orzo.util.decompiler.BytecodeDecompiler.decompile;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;

@@ -28,6 +28,7 @@ public class ParserContext {
   public SqrtParser sqrtParser;
   public StatementParser stmtParser;
   public WhileParser whileParser;
+  public RepeatParser repeatParser;
 
   public static ParserContext build(CompilerErrors errors) {
     ParserContext ctx = new ParserContext();
@@ -54,6 +55,7 @@ public class ParserContext {
     ctx.sqrtParser = new SqrtParser();
     ctx.stmtParser = new StatementParser(ctx);
     ctx.whileParser = new WhileParser(ctx);
+    ctx.repeatParser = new RepeatParser(ctx);
     return ctx;
   }
 }
