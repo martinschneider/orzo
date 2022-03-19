@@ -58,37 +58,36 @@ public class TypeUtils {
     for (int i = 0; i < arrDim; i++) {
       type = '[' + type;
     }
-    // TODO: general handling of reference types and arrays
     if (type.startsWith("L") && type.endsWith(";")) {
       return type;
     }
-    if (type.contains("java.lang.String")) {
-      type = type.replaceAll("java.lang.String", "Ljava/lang/String;");
-    } else if (type.contains(STRING)) {
-      type = type.replaceAll(STRING, "Ljava/lang/String;");
+    // TODO: use a single check
+    else if (type.contains(STRING) && !type.contains("java.lang.String")) {
+      return type.replaceAll(STRING, "Ljava/lang/String;");
     } else if (type.contains(BYTE)) {
-      type = type.replaceAll(BYTE, "B");
+      return type.replaceAll(BYTE, "B");
     } else if (type.contains(CHAR)) {
-      type = type.replaceAll(CHAR, "C");
+      return type.replaceAll(CHAR, "C");
     } else if (type.contains(DOUBLE)) {
-      type = type.replaceAll(DOUBLE, "D");
+      return type.replaceAll(DOUBLE, "D");
     } else if (type.contains(FLOAT)) {
-      type = type.replaceAll(FLOAT, "F");
+      return type.replaceAll(FLOAT, "F");
     } else if (type.contains(INT)) {
-      type = type.replaceAll(INT, "I");
+      return type.replaceAll(INT, "I");
     } else if (type.contains(LONG)) {
-      type = type.replaceAll(LONG, "J");
+      return type.replaceAll(LONG, "J");
     } else if (type.contains(SHORT)) {
-      type = type.replaceAll(SHORT, "S");
+      return type.replaceAll(SHORT, "S");
     } else if (type.contains(VOID)) {
-      type = type.replaceAll(VOID, "V");
+      return type.replaceAll(VOID, "V");
     } else if (type.contains(BOOLEAN)) {
-      type = type.replaceAll(BOOLEAN, "Z");
+      return type.replaceAll(BOOLEAN, "Z");
+    } else {
+      return "L" + type.replaceAll("\\.", "/") + ";";
     }
-    return type;
   }
 
-  public static String fromDesr(String type) {
+  public static String fromDescr(String type) {
     switch (type) {
       case "I":
         return INT;

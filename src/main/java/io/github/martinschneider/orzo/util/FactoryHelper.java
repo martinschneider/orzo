@@ -99,10 +99,11 @@ public class FactoryHelper {
       String baseClass,
       List<Method> body,
       List<ParallelDeclaration> decls) {
-    return new Clazz(packageName, imports, scope, name, false, interfaces, baseClass, body, decls);
+    return new Clazz(
+        packageName, imports, scope, name, false, false, interfaces, baseClass, body, decls);
   }
 
-  public static Clazz interf(
+  public static Clazz iface(
       String packageName,
       List<Import> imports,
       Scope scope,
@@ -111,7 +112,36 @@ public class FactoryHelper {
       List<Method> body,
       List<ParallelDeclaration> decls) {
     return new Clazz(
-        packageName, imports, scope, name, true, Collections.emptyList(), baseClass, body, decls);
+        packageName,
+        imports,
+        scope,
+        name,
+        true,
+        false,
+        Collections.emptyList(),
+        baseClass,
+        body,
+        decls);
+  }
+
+  public static Clazz enumm(
+      String packageName,
+      List<Import> imports,
+      Scope scope,
+      String name,
+      List<Method> body,
+      List<ParallelDeclaration> decls) {
+    return new Clazz(
+        packageName,
+        imports,
+        scope,
+        name,
+        false,
+        true,
+        Collections.emptyList(),
+        "java.lang.Enum",
+        body,
+        decls);
   }
 
   public static ParallelDeclaration pDecl(List<Declaration> decls) {
@@ -195,7 +225,7 @@ public class FactoryHelper {
 
   public static Constructor constr(
       Scope scope, String type, Identifier name, List<Argument> arguments, List<Statement> body) {
-    return new Constructor(null, list(((Scopes) scope.val).accFlag), type, name, arguments, body);
+    return new Constructor(null, list(((Scopes) scope.val).accFlag), name, arguments, body);
   }
 
   public static Method method(

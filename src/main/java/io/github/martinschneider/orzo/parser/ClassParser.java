@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CLASS;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.ENUM;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.EXTENDS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IMPLEMENTS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IMPORT;
@@ -14,6 +15,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
+import static io.github.martinschneider.orzo.parser.productions.Clazz.JAVA_LANG_ENUM;
+import static io.github.martinschneider.orzo.parser.productions.Clazz.JAVA_LANG_OBJECT;
 import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
@@ -43,18 +46,21 @@ public class ClassParser implements ProdParser<Clazz> {
     String name;
     List<Method> methods;
     List<ParallelDeclaration> decls;
-    List<ClassMember> members;
+    List<ClassMember> members = new ArrayList<>();
     String packageDeclaration = parsePackageDeclaration(tokens);
     List<Import> imports = parseImports(tokens);
     List<String> interfaces = new ArrayList<>();
-    String baseClass = Clazz.JAVA_LANG_OBJECT;
+    String baseClass = JAVA_LANG_OBJECT;
     Scope scope = ctx.scopeParser.parse(tokens);
     boolean isInterface = false;
+    boolean isEnum = false;
     if (tokens.curr() instanceof Keyword) {
       if (tokens.curr().eq(keyword(INTERFACE))) {
         isInterface = true;
+      } else if (tokens.curr().eq(keyword(ENUM))) {
+        isEnum = true;
       }
-      if (tokens.curr().eq(keyword(CLASS)) || isInterface) {
+      if (tokens.curr().eq(keyword(CLASS)) || isInterface || isEnum) {
         tokens.next();
         if (tokens.curr() instanceof Identifier) {
           name = tokens.curr().val.toString();
@@ -64,7 +70,7 @@ public class ClassParser implements ProdParser<Clazz> {
         }
         tokens.next();
         parseInterfaces(tokens, interfaces);
-        baseClass = parseBaseClass(tokens);
+        baseClass = parseBaseClass(tokens, isEnum);
         if (interfaces.isEmpty()) {
           parseInterfaces(tokens, interfaces);
         }
@@ -80,11 +86,17 @@ public class ClassParser implements ProdParser<Clazz> {
                 scope,
                 name,
                 isInterface,
+                isEnum,
                 interfaces,
                 baseClass,
                 null,
                 null);
-        members = parseClassBody(tokens, isInterface);
+        if (isEnum) {
+          ctx.enumParser.fqn = ctx.currClazz.fqn();
+          members.add(ctx.enumParser.parse(tokens));
+        } else {
+          members = parseClassBody(tokens, isInterface);
+        }
         if (members == null) {
           ctx.errors.addError(LOG_NAME, "missing class body");
         }
@@ -110,7 +122,7 @@ public class ClassParser implements ProdParser<Clazz> {
     return null;
   }
 
-  private String parseBaseClass(TokenList tokens) {
+  private String parseBaseClass(TokenList tokens, boolean isEnum) {
     if (tokens.curr().eq(keyword(EXTENDS))) {
       tokens.next();
       if (tokens.curr() instanceof Identifier) {
@@ -119,7 +131,7 @@ public class ClassParser implements ProdParser<Clazz> {
         return baseClass;
       }
     }
-    return Clazz.JAVA_LANG_OBJECT;
+    return isEnum ? JAVA_LANG_ENUM : JAVA_LANG_OBJECT;
   }
 
   List<String> parseInterfaces(TokenList tokens, List<String> interfaces) {

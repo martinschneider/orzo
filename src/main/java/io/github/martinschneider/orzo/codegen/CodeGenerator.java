@@ -46,6 +46,9 @@ public class CodeGenerator {
     if (clazz.isInterface) {
       // ACC_INTERFACE, ACC_ABSTRACT, ACC_PUBLIC
       modifiers = ((short) 0x0601);
+    } else if (clazz.isEnum) {
+      // ACC_PUBLIC, ACC_FINAL, ACC_SUPER, ACC_ENUM
+      modifiers = ((short) 0x4031);
     }
     out.write(modifiers);
   }

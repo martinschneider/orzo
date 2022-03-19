@@ -29,6 +29,10 @@ public class DeclarationParserTest {
         args("boolean b=true;", pDecl(null, id("b"), "boolean", expr("true"))),
         args("boolean bool=false;", pDecl(null, id("bool"), "boolean", expr("false"))),
         args("String martin", pDecl(null, id("martin"), "String", null)),
+        // args("Demo martin", pDecl(null, id("martin"), "Demo", null)),
+        // args("Demo martin = new Demo(1);", pDecl(null, id("martin"), "Demo", expr("new
+        // Demo(1)"))),
+        // args("com.test.Demo martin", pDecl(null, id("martin"), "com.test.Demo", null)),
         args("double d=1.23", pDecl(null, id("d"), "double", expr("1.23"))),
         args("int i=fac(100)", pDecl(null, id("i"), INT, expr("fac(100)"))),
         args(

@@ -10,10 +10,12 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_FINAL;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_STATIC;
+import static io.github.martinschneider.orzo.parser.productions.Method.CONSTRUCTOR_NAME;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
@@ -47,6 +49,7 @@ public class MethodParser implements ProdParser<Method> {
     Scope scope = null;
     Type type = null;
     Identifier name;
+    boolean isConstr = false;
     List<Argument> arguments = new ArrayList<>();
     List<Statement> body;
     if (tokens.curr() instanceof Scope) {
@@ -66,14 +69,18 @@ public class MethodParser implements ProdParser<Method> {
       type = ((Type) tokens.curr());
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
+    } else if (tokens.curr() instanceof Identifier) {
+      type = new Type(((Identifier) tokens.curr()).val.toString());
+      tokens.next();
+      type.arr = ctx.arrayDefParser.parse(tokens);
     }
     if (tokens.curr() instanceof Identifier) {
       name = (Identifier) tokens.curr();
+      tokens.next();
     } else {
-      tokens.setIdx(idx);
-      return null;
+      isConstr = true;
+      name = id(CONSTRUCTOR_NAME);
     }
-    tokens.next();
     if (!tokens.curr().eq(sym(LPAREN))) {
       tokens.setIdx(idx);
       return null;
@@ -110,8 +117,8 @@ public class MethodParser implements ProdParser<Method> {
         arguments = new ArrayList<>();
       }
       String fqn = (ctx.currClazz == null) ? null : ctx.currClazz.fqn();
-      if (type == null) {
-        return new Constructor(fqn, accFlags, ctx.currClazz.fqn(), name, arguments, body);
+      if (isConstr) {
+        return new Constructor(fqn, accFlags, name, arguments, body);
       } else {
         return new Method(fqn, accFlags, type.descr(), name, arguments, body);
       }

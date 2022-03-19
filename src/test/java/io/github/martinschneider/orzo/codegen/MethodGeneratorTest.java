@@ -76,23 +76,24 @@ public class MethodGeneratorTest {
             clazz,
             "000100030001000100020000000F00020001000000",
             list("iconst_1", "istore_0", "return"),
-            "000000"),
-        args(
-            "public Martin(){x=1;y=2}",
-            list(
-                constant(2L, 1),
-                constant("java/math/BigInteger", 2),
-                constant("valueOf", 3),
-                constant("pow", 4),
-                constant("longValue", 5),
-                constant("Code", 6),
-                constant("Martin", 7),
-                constant("().Martin", 8)),
-            varMap(list(varInfo("x", "int", 0), varInfo("y", "int", 1))),
-            clazz,
-            "000100070008000100060000001100030001000000",
-            list("iconst_1", "istore_0", "iconst_2", "istore_1", "return"),
-            "000000"));
+            "000000")
+        //        args(
+        //            "public Martin(){x=1;y=2}",
+        //            list(
+        //                constant(2L, 1),
+        //                constant("java/math/BigInteger", 2),
+        //                constant("valueOf", 3),
+        //                constant("pow", 4),
+        //                constant("longValue", 5),
+        //                constant("Code", 6),
+        //                constant("Martin", 7),
+        //                constant("().Martin", 8)),
+        //            varMap(list(varInfo("x", "int", 0), varInfo("y", "int", 1))),
+        //            clazz,
+        //            "000100070008000100060000001100030001000000",
+        //            list("iconst_1", "istore_0", "iconst_2", "istore_1", "return"),
+        //            "000000"));
+        );
   }
 
   @ParameterizedTest

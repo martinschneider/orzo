@@ -15,6 +15,7 @@ public class ParserContext {
   public ConstructorCallParser constrCallParser;
   public DeclarationParser declParser;
   public DoParser doParser;
+  public EnumParser enumParser;
   public ExpressionParser exprParser;
   public FloorParser floorParser;
   public ForParser forParser;
@@ -42,6 +43,7 @@ public class ParserContext {
     ctx.constrCallParser = new ConstructorCallParser(ctx);
     ctx.declParser = new DeclarationParser(ctx);
     ctx.doParser = new DoParser(ctx);
+    ctx.enumParser = new EnumParser();
     ctx.exprParser = new ExpressionParser(ctx);
     ctx.floorParser = new FloorParser(ctx);
     ctx.forParser = new ForParser(ctx);

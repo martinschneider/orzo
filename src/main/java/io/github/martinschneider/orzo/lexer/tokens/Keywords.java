@@ -10,6 +10,7 @@ public enum Keywords {
   STATIC,
   CLASS,
   INTERFACE,
+  ENUM,
   PACKAGE,
   IMPORT,
   BREAK,

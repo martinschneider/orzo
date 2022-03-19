@@ -16,6 +16,7 @@ import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import java.io.IOException;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -110,7 +111,16 @@ public class ClassParserTest {
                 list("Interface1", "Interface2"),
                 "BaseClass",
                 emptyList(),
-                emptyList())));
+                emptyList())),
+        args(
+            "enum Types{}",
+            enumm(
+                "",
+                emptyList(),
+                null,
+                "Types",
+                emptyList(),
+                list(new ParallelDeclaration(emptyList())))));
   }
 
   @ParameterizedTest

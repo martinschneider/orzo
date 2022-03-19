@@ -6,7 +6,9 @@ import java.util.stream.Collectors;
 
 public class Clazz {
   public static final String JAVA_LANG_OBJECT = "java.lang.Object";
+  public static final String JAVA_LANG_ENUM = "java.lang.Enum";
   public boolean isInterface;
+  public boolean isEnum;
   public List<Method> methods;
   public List<Import> imports;
   public List<ParallelDeclaration> fields;
@@ -22,6 +24,7 @@ public class Clazz {
       Scope scope,
       String name,
       boolean isInterface,
+      boolean isEnum,
       List<String> interfaces,
       String baseClass,
       List<Method> methods,
@@ -35,6 +38,7 @@ public class Clazz {
     this.interfaces = interfaces;
     this.baseClass = baseClass;
     this.isInterface = isInterface;
+    this.isEnum = isEnum;
   }
 
   @Override
@@ -45,6 +49,7 @@ public class Clazz {
     result = prime * result + ((fields == null) ? 0 : fields.hashCode());
     result = prime * result + ((imports == null) ? 0 : imports.hashCode());
     result = prime * result + ((interfaces == null) ? 0 : interfaces.hashCode());
+    result = prime * result + (isEnum ? 1231 : 1237);
     result = prime * result + (isInterface ? 1231 : 1237);
     result = prime * result + ((methods == null) ? 0 : methods.hashCode());
     result = prime * result + ((name == null) ? 0 : name.hashCode());
@@ -71,6 +76,7 @@ public class Clazz {
     if (interfaces == null) {
       if (other.interfaces != null) return false;
     } else if (!interfaces.equals(other.interfaces)) return false;
+    if (isEnum != other.isEnum) return false;
     if (isInterface != other.isInterface) return false;
     if (methods == null) {
       if (other.methods != null) return false;
@@ -93,7 +99,7 @@ public class Clazz {
 
   public String fqn(char sep) {
     StringBuilder strBuilder = new StringBuilder();
-    if (packageName != null) {
+    if (packageName != null && !packageName.isEmpty()) {
       strBuilder.append(packageName.replace('.', sep));
       strBuilder.append(sep);
     }
@@ -106,6 +112,8 @@ public class Clazz {
     StringBuilder strBuilder = new StringBuilder();
     if (isInterface) {
       strBuilder.append("interface ");
+    } else if (isEnum) {
+      strBuilder.append("enum ");
     } else {
       strBuilder.append("class ");
     }

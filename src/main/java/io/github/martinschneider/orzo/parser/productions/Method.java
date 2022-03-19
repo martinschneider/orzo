@@ -13,6 +13,7 @@ public class Method implements ClassMember {
   public List<AccessFlag> accFlags;
   public String type;
   public String fqClassName;
+  public static final String CONSTRUCTOR_NAME = "<init>";
 
   public Method(
       String fqClassName,

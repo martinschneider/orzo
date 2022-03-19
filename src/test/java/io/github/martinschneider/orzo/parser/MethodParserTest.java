@@ -7,6 +7,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.*;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.*;
+import static io.github.martinschneider.orzo.parser.productions.Method.CONSTRUCTOR_NAME;
 import static io.github.martinschneider.orzo.util.FactoryHelper.*;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -83,8 +84,8 @@ public class MethodParserTest {
             "public Martin(){x=1;y=2;}",
             constr(
                 scope(PUBLIC),
-                clazz.fqn(),
-                id("Martin"),
+                VOID,
+                id(CONSTRUCTOR_NAME),
                 emptyList(),
                 list(assign("x=1"), assign("y=2")))));
   }
