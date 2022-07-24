@@ -200,7 +200,7 @@ public class LoadGenerator {
     return out;
   }
 
-  private HasOutput loadReference(DynamicByteArray out, short idx) {
+  public HasOutput loadReference(HasOutput out, short idx) {
     if (idx == 0) {
       out.write(ALOAD_0);
     } else if (idx == 1) {

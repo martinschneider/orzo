@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKESPECIAL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKESTATIC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKEVIRTUAL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEW;
@@ -31,6 +32,19 @@ public class InvokeGenerator {
 
   public HasOutput invokeVirtual(DynamicByteArray out, Method method) {
     out.write(INVOKEVIRTUAL);
+    out.write(
+        ctx.constPool.indexOf(
+            CONSTANT_METHODREF,
+            method.fqClassName,
+            method.name.id(),
+            TypeUtils.methodDescr(method)));
+    ctx.opStack.pop(1 + method.args.size());
+    ctx.opStack.push(method.type);
+    return out;
+  }
+
+  public HasOutput invokeSpecial(HasOutput out, Method method) {
+    out.write(INVOKESPECIAL);
     out.write(
         ctx.constPool.indexOf(
             CONSTANT_METHODREF,

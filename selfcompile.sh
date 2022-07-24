@@ -5,16 +5,16 @@
 # After Orzo is able to compile a large enough percentage of itself, we can move from a whitelist to a blacklist approach. 
 
 # TODO: this is platform-dependent. Ideally, we should use Java or a Groovy script instead of Bash  
-done=$(cat whitelist.txt | wc -l | xargs)
+done=$(grep -v '^#' whitelist.txt | wc -l | xargs)
 total=$(find ./src/main/java -name "*.java" | wc -l | xargs)
-while read -r file ; do ((doneLOC+=$(cat $file | wc -l))); done < <(cat whitelist.txt)
+while read -r file ; do ((doneLOC+=$(cat $file | wc -l))); done < <(grep -v '^#' whitelist.txt)
 while read -r file ; do ((totalLOC+=$(cat $file | wc -l))); done < <(find ./src/main/java -name "*.java")
 percentage=$(printf %0.2f $(echo "100* $done/$total" | bc -l))
 percentageLOC=$(printf %0.2f $(echo "100* $doneLOC/$totalLOC" | bc -l))
 javacSize=$(du -sb target/classes | awk '{print $1}')
 echo "Recompiling $done/$total files with Orzo ($percentage% of files, $percentageLOC% of LOC):"
-cat whitelist.txt
-java -jar target/orzo-0.0.1-SNAPSHOT.jar $(cat whitelist.txt | tr '\n' ' ') -d target/classes
+grep -v '^#' whitelist.txt
+java -jar target/orzo-0.0.1-SNAPSHOT.jar $(grep -v '^#' whitelist.txt | tr '\n' ' ') -d target/classes
 jar cfe target/orzo-0.0.1-SNAPSHOT.jar io.github.martinschneider.orzo.Orzo -C target/classes .
 orzoSize=$(du -sb target/classes | awk '{print $1}')
 percentage=$(printf %0.2f $(echo "100* $orzoSize/$javacSize" | bc -l))

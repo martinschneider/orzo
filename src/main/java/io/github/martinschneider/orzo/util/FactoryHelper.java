@@ -1,7 +1,9 @@
 package io.github.martinschneider.orzo.util;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.str;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
@@ -221,6 +223,15 @@ public class FactoryHelper {
       List<Argument> arguments,
       List<Statement> body) {
     return new Method(null, accFlags, type, name, arguments, body);
+  }
+
+  public static Constructor defaultConstr(String fqn) {
+    return new Constructor(
+        fqn,
+        List.of(AccessFlag.ACC_PUBLIC),
+        id(Method.CONSTRUCTOR_NAME),
+        emptyList(),
+        list(new MethodCall("super", emptyList())));
   }
 
   public static Constructor constr(

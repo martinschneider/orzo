@@ -12,9 +12,12 @@ import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import java.util.List;
 
 public class MethodGenerator {
 
@@ -46,6 +49,9 @@ public class MethodGenerator {
       out.write((short) 1); // attribute size
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Code"));
       boolean returned = false;
+      if (method instanceof Constructor && !startsWithCallToSuper(method.body)) {
+        ctx.methodCallGen.callSuperConstr(methodOut);
+      }
       for (Statement stmt : method.body) {
         generateCode(methodOut, variables, method, stmt);
         if (stmt instanceof ReturnStatement) {
@@ -69,6 +75,14 @@ public class MethodGenerator {
     }
     ctx.opStack.reset();
     return out;
+  }
+
+  private boolean startsWithCallToSuper(List<Statement> body) {
+    if (body.isEmpty() || !(body.get(0) instanceof MethodCall)) {
+      return false;
+    }
+    MethodCall call = (MethodCall) body.get(0);
+    return "super".equals(call.name);
   }
 
   private void generateCode(

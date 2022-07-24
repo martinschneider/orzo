@@ -9,6 +9,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
 import static io.github.martinschneider.orzo.util.FactoryHelper.*;
+import static io.github.martinschneider.orzo.util.FactoryHelper.defaultConstr;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -44,7 +45,8 @@ public class ClassParserTest {
                         type(VOID).toString(),
                         id("test"),
                         emptyList(),
-                        list(assign("x=0")))),
+                        list(assign("x=0"))),
+                    defaultConstr("Martin")),
                 emptyList())),
         args(
             "private class Laura{}",
@@ -55,7 +57,7 @@ public class ClassParserTest {
                 "Laura",
                 emptyList(),
                 Clazz.JAVA_LANG_OBJECT,
-                emptyList(),
+                list(defaultConstr("Laura")),
                 emptyList())),
         args(
             "class Empty{}",
@@ -66,7 +68,7 @@ public class ClassParserTest {
                 "Empty",
                 emptyList(),
                 Clazz.JAVA_LANG_OBJECT,
-                emptyList(),
+                list(defaultConstr("Empty")),
                 emptyList())),
         args(
             "class Empty implements Interface1{}",
@@ -77,7 +79,7 @@ public class ClassParserTest {
                 "Empty",
                 list("Interface1"),
                 Clazz.JAVA_LANG_OBJECT,
-                emptyList(),
+                list(defaultConstr("Empty")),
                 emptyList())),
         args(
             "class Empty implements Interface1, Interface2{}",
@@ -88,7 +90,7 @@ public class ClassParserTest {
                 "Empty",
                 list("Interface1", "Interface2"),
                 Clazz.JAVA_LANG_OBJECT,
-                emptyList(),
+                list(defaultConstr("Empty")),
                 emptyList())),
         args(
             "class Empty implements Interface1, Interface2 extends BaseClass{}",
@@ -99,7 +101,7 @@ public class ClassParserTest {
                 "Empty",
                 list("Interface1", "Interface2"),
                 "BaseClass",
-                emptyList(),
+                list(defaultConstr("Empty")),
                 emptyList())),
         args(
             "class Empty extends BaseClass implements Interface1, Interface2{}",
@@ -110,7 +112,7 @@ public class ClassParserTest {
                 "Empty",
                 list("Interface1", "Interface2"),
                 "BaseClass",
-                emptyList(),
+                list(defaultConstr("Empty")),
                 emptyList())),
         args(
             "enum Types{}",
@@ -119,7 +121,7 @@ public class ClassParserTest {
                 emptyList(),
                 null,
                 "Types",
-                emptyList(),
+                list(defaultConstr("Types")),
                 list(new ParallelDeclaration(emptyList())))));
   }
 

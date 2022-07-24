@@ -17,6 +17,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import static io.github.martinschneider.orzo.parser.productions.Clazz.JAVA_LANG_ENUM;
 import static io.github.martinschneider.orzo.parser.productions.Clazz.JAVA_LANG_OBJECT;
+import static io.github.martinschneider.orzo.util.FactoryHelper.defaultConstr;
 import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
@@ -26,6 +27,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Keyword;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.parser.productions.ClassMember;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -102,13 +104,20 @@ public class ClassParser implements ProdParser<Clazz> {
         }
         methods = new ArrayList<>();
         decls = new ArrayList<>();
+        boolean hasConstr = false;
         for (ClassMember member : members) {
           if (member instanceof Method) {
-            methods.add((Method) member);
+            Method method = (Method) member;
+            hasConstr = hasConstr || method instanceof Constructor;
+            methods.add(method);
           } else if (member instanceof ParallelDeclaration) {
             decls.add((ParallelDeclaration) member);
           }
         }
+        if (!isInterface && !hasConstr) {
+          methods.add(defaultConstr(ctx.currClazz.fqn()));
+        }
+
         if (!tokens.curr().eq(sym(RBRACE))) {
           ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
         }

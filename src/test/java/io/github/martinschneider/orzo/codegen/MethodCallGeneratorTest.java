@@ -33,7 +33,12 @@ public class MethodCallGeneratorTest extends StatementGeneratorTest<MethodCall> 
             "System.out.println(1)",
             emptyList(),
             list(constant("out", 1), constant("println", 2)),
-            list("getstatic 1", "iconst_1", "invokevirtual 2")));
+            list("getstatic 1", "iconst_1", "invokevirtual 2")),
+        args(
+            "super()",
+            emptyList(),
+            list(constant("<init>", 3)),
+            list("aload_0", "invokespecial 3")));
   }
 
   @BeforeAll

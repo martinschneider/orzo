@@ -19,5 +19,6 @@ public enum Keywords {
   IMPLEMENTS,
   EXTENDS,
   REPEAT,
-  UNLESS;
+  UNLESS,
+  THIS;
 }

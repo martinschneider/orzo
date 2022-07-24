@@ -6,7 +6,7 @@ import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 
-public class DoNothingGenerator implements StatementGenerator {
+public class DoNothingGenerator implements StatementGenerator<Statement> {
   @Override
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, Statement stmt) {

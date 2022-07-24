@@ -10,6 +10,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
+import static io.github.martinschneider.orzo.util.FactoryHelper.defaultConstr;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -57,7 +58,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   @Override
   public HasOutput generate(
       DynamicByteArray out, VariableMap variables, Method method, MethodCall methodCall) {
-    if ("System.out.println".equals(methodCall.name.toString())) {
+    if ("super".equals(methodCall.name.toString())) {
+      callSuperConstr(out);
+    } else if ("System.out.println".equals(methodCall.name.toString())) {
       for (Expression param : methodCall.params) {
         ctx.invokeGen.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
         ExpressionResult result = ctx.exprGen.eval(out, variables, null, param);
@@ -71,6 +74,13 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     } else {
       generate(out, variables, methodCall);
     }
+    return out;
+  }
+
+  public HasOutput callSuperConstr(HasOutput out) {
+    ctx.loadGen.loadReference(out, (short) 0);
+    ctx.opStack.push(SHORT);
+    ctx.invokeGen.invokeSpecial(out, defaultConstr("java/lang/Object"));
     return out;
   }
 
