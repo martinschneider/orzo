@@ -1,28 +1,28 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
-import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import java.util.List;
+import java.util.Objects;
 
 public class Declaration {
-  public Scope scope;
-  public boolean isStatic;
-  public boolean isFinal;
+  public List<AccessFlag> accFlags;
   public boolean isField;
   public Identifier name;
   public int arrDim;
   public String type;
   public Expression val;
 
-  public Declaration(Scope scope, String type, int arrDim, Identifier name, Expression val) {
-    this.scope = scope;
+  public Declaration(
+      List<AccessFlag> accFlags, String type, int arrDim, Identifier name, Expression val) {
+    this.accFlags = accFlags;
     this.type = type;
     this.arrDim = arrDim;
     this.name = name;
     this.val = val;
   }
 
-  public Declaration(Scope scope, String type, Identifier name, Expression val) {
-    this(scope, type, 0, name, val);
+  public Declaration(List<AccessFlag> accFlags, String type, Identifier name, Expression val) {
+    this(accFlags, type, 0, name, val);
   }
 
   @Override
@@ -40,51 +40,20 @@ public class Declaration {
 
   @Override
   public int hashCode() {
-    int prime = 31;
-    int result = 1;
-    result = prime * result + arrDim;
-    result = prime * result + ((name == null) ? 0 : name.hashCode());
-    result = prime * result + ((type == null) ? 0 : type.hashCode());
-    result = prime * result + ((val == null) ? 0 : val.hashCode());
-    return result;
+    return Objects.hash(accFlags, arrDim, isField, name, type, val);
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
     Declaration other = (Declaration) obj;
-    if (arrDim != other.arrDim) {
-      return false;
-    }
-    if (name == null) {
-      if (other.name != null) {
-        return false;
-      }
-    } else if (!name.equals(other.name)) {
-      return false;
-    }
-    if (type == null) {
-      if (other.type != null) {
-        return false;
-      }
-    } else if (!type.equals(other.type)) {
-      return false;
-    }
-    if (val == null) {
-      if (other.val != null) {
-        return false;
-      }
-    } else if (!val.equals(other.val)) {
-      return false;
-    }
-    return true;
+    return Objects.equals(accFlags, other.accFlags)
+        && arrDim == other.arrDim
+        && isField == other.isField
+        && Objects.equals(name, other.name)
+        && Objects.equals(type, other.type)
+        && Objects.equals(val, other.val);
   }
 }

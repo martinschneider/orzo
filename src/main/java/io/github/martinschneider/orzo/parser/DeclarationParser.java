@@ -12,7 +12,9 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
@@ -32,17 +34,18 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
     List<Identifier> names = new ArrayList<>();
     List<Byte> arrDims = new ArrayList<>();
     List<Expression> values = new ArrayList<>();
-    Scope scope = null;
+    List<AccessFlag> accFlags = new ArrayList<>();
     if (tokens.curr() instanceof Scope) {
-      scope = (Scope) tokens.curr();
+      // OMG!
+      accFlags.add(((Scopes) ((Scope) tokens.curr()).val).accFlag);
       tokens.next();
     }
     if (tokens.curr().eq(keyword(STATIC))) {
-      // TODO: handle static (for now we just ignore it)
+      accFlags.add(AccessFlag.ACC_STATIC);
       tokens.next();
     }
     if (tokens.curr().eq(keyword(FINAL))) {
-      // TODO: handle final (for now we just ignore it)
+      accFlags.add(AccessFlag.ACC_FINAL);
       tokens.next();
     }
     // TODO: this will not work for non-basic types :-(
@@ -86,7 +89,7 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       for (int i = 0; i < names.size(); i++) {
         Expression val = (values.size() <= i) ? null : values.get(i);
         byte arrDim = (arrDims.size() <= i) ? 0 : arrDims.get(i);
-        declarations.add(new Declaration(scope, type.name, arrDim, names.get(i), val));
+        declarations.add(new Declaration(accFlags, type.name, arrDim, names.get(i), val));
       }
       return new ParallelDeclaration(declarations);
     }

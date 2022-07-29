@@ -9,7 +9,9 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -35,6 +37,10 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
         return generateArray(out, variables, method, decl);
       }
       if (decl.val != null) {
+        VariableInfo varInfo = variables.get(decl.name);
+        if (decl.isField && !varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
+          ctx.loadGen.loadReference(out, variables.get(decl.name).objectRef);
+        }
         ctx.exprGen.eval(out, variables, decl.type, decl.val);
       } else {
         ctx.pushGen.push(out, decl.type, ZERO);

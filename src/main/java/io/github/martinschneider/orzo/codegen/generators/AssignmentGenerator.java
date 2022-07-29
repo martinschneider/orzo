@@ -3,6 +3,7 @@ package io.github.martinschneider.orzo.codegen.generators;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -44,7 +45,9 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
           }
           Identifier id = id("tmp_" + variables.tmpCount);
           variables.put(
-              id, new VariableInfo(id.val.toString(), type, false, (short) variables.size));
+              id,
+              new VariableInfo(
+                  id.val.toString(), type, emptyList(), false, (short) variables.size));
           VariableInfo tmpInfo = variables.get(id);
           if (left.arrSel == null) {
             ctx.loadGen.load(out, varInfo);
@@ -67,7 +70,9 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
 
   public HasOutput assign(DynamicByteArray out, VariableMap variables, String type, Identifier id) {
     if (!variables.containsKey(id)) {
-      variables.put(id, new VariableInfo(id.val.toString(), type, false, (short) variables.size));
+      variables.put(
+          id,
+          new VariableInfo(id.val.toString(), type, emptyList(), false, (short) variables.size));
     }
     return ctx.storeGen.store(out, variables.get(id));
   }
@@ -75,7 +80,8 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
   public HasOutput assignInArray(
       DynamicByteArray out, VariableMap variables, Identifier id, Expression val) {
     if (!variables.containsKey(id)) {
-      variables.put(id, new VariableInfo(id.val.toString(), REF, false, (short) variables.size));
+      variables.put(
+          id, new VariableInfo(id.val.toString(), REF, emptyList(), false, (short) variables.size));
     }
     VariableInfo varInfo = variables.get(id);
     String type = varInfo.arrType;
@@ -92,7 +98,9 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       DynamicByteArray out, VariableMap variables, String type, int arrDim, Identifier id) {
     if (!variables.containsKey(id)) {
       variables.put(
-          id, new VariableInfo(id.val.toString(), REF, type, false, (short) variables.size));
+          id,
+          new VariableInfo(
+              id.val.toString(), REF, type, emptyList(), false, (short) variables.size));
     }
     return ctx.storeGen.store(out, variables.get(id));
   }

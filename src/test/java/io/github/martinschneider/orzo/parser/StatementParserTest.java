@@ -4,6 +4,7 @@ import static io.github.martinschneider.orzo.TestHelper.args;
 import static io.github.martinschneider.orzo.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.util.FactoryHelper.*;
+import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -28,8 +29,8 @@ public class StatementParserTest {
         args(
             "do{x=y+1;y=y-1;} while(i>0)",
             doStmt(expr("i>0"), list(assign("x=y+1"), assign("y=y-1")))),
-        args("int z;", pDecl(null, id("z"), "int", null)),
-        args("int z=300;", pDecl(null, id("z"), "int", expr("300"))));
+        args("int z;", pDecl(emptyList(), id("z"), "int", null)),
+        args("int z=300;", pDecl(emptyList(), id("z"), "int", expr("300"))));
   }
 
   @ParameterizedTest

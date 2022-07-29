@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -25,34 +26,49 @@ public class DeclarationParserTest {
 
   private static Stream<Arguments> test() throws IOException {
     return stream(
-        args("int x=100;", pDecl(null, id("x"), INT, expr("100"))),
-        args("boolean b=true;", pDecl(null, id("b"), "boolean", expr("true"))),
-        args("boolean bool=false;", pDecl(null, id("bool"), "boolean", expr("false"))),
-        args("String martin", pDecl(null, id("martin"), "String", null)),
+        args("int x=100;", pDecl(emptyList(), id("x"), INT, expr("100"))),
+        args(
+            "static boolean b=true;",
+            pDecl(list(AccessFlag.ACC_STATIC), id("b"), "boolean", expr("true"))),
+        args(
+            "final boolean bool=false;",
+            pDecl(list(AccessFlag.ACC_FINAL), id("bool"), "boolean", expr("false"))),
+        args(
+            "private String martin",
+            pDecl(list(AccessFlag.ACC_PRIVATE), id("martin"), "String", null)),
         // args("Demo martin", pDecl(null, id("martin"), "Demo", null)),
         // args("Demo martin = new Demo(1);", pDecl(null, id("martin"), "Demo", expr("new
         // Demo(1)"))),
         // args("com.test.Demo martin", pDecl(null, id("martin"), "com.test.Demo", null)),
-        args("double d=1.23", pDecl(null, id("d"), "double", expr("1.23"))),
-        args("int i=fac(100)", pDecl(null, id("i"), INT, expr("fac(100)"))),
+        args(
+            "protected double d=1.23",
+            pDecl(list(AccessFlag.ACC_PROTECTED), id("d"), "double", expr("1.23"))),
+        args("int i=fac(100)", pDecl(emptyList(), id("i"), INT, expr("fac(100)"))),
         args(
             "int[] a = new int[] {1, 2, 3};",
-            pDecl(null, id("a"), INT, 1, arrInit(INT, 3, list(expr("1"), expr("2"), expr("3"))))),
-        args("int[] a = new int[5];", pDecl(null, id("a"), INT, 1, arrInit(INT, 5, emptyList()))),
+            pDecl(
+                emptyList(),
+                id("a"),
+                INT,
+                1,
+                arrInit(INT, 3, list(expr("1"), expr("2"), expr("3"))))),
+        args(
+            "int[] a = new int[5];",
+            pDecl(emptyList(), id("a"), INT, 1, arrInit(INT, 5, emptyList()))),
         args(
             "int a,b,c=1,2,3;",
             pDecl(
                 list(
-                    decl(null, id("a"), INT, expr("1")),
-                    decl(null, id("b"), INT, expr("2")),
-                    decl(null, id("c"), INT, expr("3"))))),
+                    decl(emptyList(), id("a"), INT, expr("1")),
+                    decl(emptyList(), id("b"), INT, expr("2")),
+                    decl(emptyList(), id("c"), INT, expr("3"))))),
         args(
             "double a,b,c=1,2;",
             pDecl(
                 list(
-                    decl(null, id("a"), DOUBLE, expr("1")),
-                    decl(null, id("b"), DOUBLE, expr("2")),
-                    decl(null, id("c"), DOUBLE, null)))));
+                    decl(emptyList(), id("a"), DOUBLE, expr("1")),
+                    decl(emptyList(), id("b"), DOUBLE, expr("2")),
+                    decl(emptyList(), id("c"), DOUBLE, null)))));
   }
 
   @MethodSource

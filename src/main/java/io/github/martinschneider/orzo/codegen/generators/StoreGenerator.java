@@ -31,6 +31,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.PUTFIELD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.PUTSTATIC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SASTORE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
@@ -47,6 +48,7 @@ import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.VariableInfo;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 
 public class StoreGenerator {
   public CGContext ctx;
@@ -183,14 +185,25 @@ public class StoreGenerator {
   }
 
   private HasOutput putStatic(DynamicByteArray out, short idx) {
+
     out.write(PUTSTATIC);
+    out.write(idx);
+    return out;
+  }
+
+  private HasOutput putField(DynamicByteArray out, short idx) {
+    out.write(PUTFIELD);
     out.write(idx);
     return out;
   }
 
   public HasOutput store(DynamicByteArray out, VariableInfo variableInfo) {
     if (variableInfo.isField) {
-      return putStatic(out, variableInfo.idx);
+      if (variableInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
+        return putStatic(out, variableInfo.idx);
+      } else {
+        return putField(out, variableInfo.idx);
+      }
     }
     return store(out, variableInfo.type, variableInfo.idx);
   }

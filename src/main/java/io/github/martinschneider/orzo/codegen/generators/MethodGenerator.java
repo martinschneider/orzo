@@ -3,6 +3,7 @@ package io.github.martinschneider.orzo.codegen.generators;
 import static io.github.martinschneider.orzo.codegen.OpCodes.RETURN;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -39,7 +40,8 @@ public class MethodGenerator {
       }
       variables.put(
           arg.name,
-          new VariableInfo(arg.name.val.toString(), type, arrayType, false, (byte) variables.size));
+          new VariableInfo(
+              arg.name.val.toString(), type, arrayType, emptyList(), false, (byte) variables.size));
     }
     out.write(method.accessFlags(clazz.isInterface));
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.name.val));
@@ -77,7 +79,7 @@ public class MethodGenerator {
     return out;
   }
 
-  private boolean startsWithCallToSuper(List<Statement> body) {
+  public boolean startsWithCallToSuper(List<Statement> body) {
     if (body.isEmpty() || !(body.get(0) instanceof MethodCall)) {
       return false;
     }

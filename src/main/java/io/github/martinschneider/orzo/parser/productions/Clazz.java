@@ -1,5 +1,7 @@
 package io.github.martinschneider.orzo.parser.productions;
 
+import static io.github.martinschneider.orzo.parser.productions.Method.CONSTRUCTOR_NAME;
+
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -135,5 +137,14 @@ public class Clazz {
     strBuilder.append("], fields[");
     strBuilder.append(fields.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
     return strBuilder.toString();
+  }
+
+  public Method getDefaultConstructor() {
+    for (Method method : methods) {
+      if (method.name.eq(CONSTRUCTOR_NAME) && method.args.isEmpty()) {
+        return method;
+      }
+    }
+    return null;
   }
 }

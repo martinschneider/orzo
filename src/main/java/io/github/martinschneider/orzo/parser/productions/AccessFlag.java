@@ -15,7 +15,7 @@ public enum AccessFlag {
   ACC_STRICT(0x0800),
   ACC_SYNTHETIC(0x1000);
 
-  int val;
+  public int val;
 
   private AccessFlag(int val) {
     this.val = val;

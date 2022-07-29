@@ -150,23 +150,24 @@ public class FactoryHelper {
     return new ParallelDeclaration(decls);
   }
 
-  public static Declaration decl(Scope scope, Identifier name, String type, Expression val) {
-    return new Declaration(scope, type, 0, name, val);
+  public static Declaration decl(
+      List<AccessFlag> accFlags, Identifier name, String type, Expression val) {
+    return new Declaration(accFlags, type, 0, name, val);
   }
 
   public static Declaration decl(
-      Scope scope, Identifier name, String type, int array, Expression val) {
-    return new Declaration(scope, type, array, name, val);
+      List<AccessFlag> accFlags, Identifier name, String type, int array, Expression val) {
+    return new Declaration(accFlags, type, array, name, val);
   }
 
   public static ParallelDeclaration pDecl(
-      Scope scope, Identifier name, String type, Expression val) {
-    return new ParallelDeclaration(list(new Declaration(scope, type, 0, name, val)));
+      List<AccessFlag> accFlags, Identifier name, String type, Expression val) {
+    return new ParallelDeclaration(list(new Declaration(accFlags, type, 0, name, val)));
   }
 
   public static ParallelDeclaration pDecl(
-      Scope scope, Identifier name, String type, int array, Expression val) {
-    return new ParallelDeclaration(list(new Declaration(scope, type, array, name, val)));
+      List<AccessFlag> accFlags, Identifier name, String type, int array, Expression val) {
+    return new ParallelDeclaration(list(new Declaration(accFlags, type, array, name, val)));
   }
 
   public static ParallelDeclaration pDecl(String input) throws IOException {
@@ -268,11 +269,11 @@ public class FactoryHelper {
   }
 
   public static VariableInfo varInfo(String name, String type, int idx) {
-    return new VariableInfo(name, type, false, (short) idx);
+    return new VariableInfo(name, type, emptyList(), false, (short) idx);
   }
 
   public static VariableInfo varInfoArr(String name, String type, int idx) {
-    return new VariableInfo(name, "reference", type, false, (short) idx);
+    return new VariableInfo(name, "reference", type, emptyList(), false, (short) idx);
   }
 
   public static VariableMap varMap(List<VariableInfo> varInfos) {

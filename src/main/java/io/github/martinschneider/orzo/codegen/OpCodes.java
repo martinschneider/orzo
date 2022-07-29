@@ -159,6 +159,8 @@ public class OpCodes {
   public static final byte RETURN = (byte) 177;
   public static final byte GETSTATIC = (byte) 178;
   public static final byte PUTSTATIC = (byte) 179;
+  public static final byte GETFIELD = (byte) 180;
+  public static final byte PUTFIELD = (byte) 181;
   public static final byte INVOKEVIRTUAL = (byte) 182;
   public static final byte INVOKESPECIAL = (byte) 183;
   public static final byte INVOKESTATIC = (byte) 184;

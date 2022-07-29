@@ -15,6 +15,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.GETFIELD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.I2B;
 import static io.github.martinschneider.orzo.codegen.OpCodes.I2C;
@@ -51,6 +52,7 @@ import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.VariableInfo;
 import io.github.martinschneider.orzo.codegen.VariableMap;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.util.List;
 
@@ -136,6 +138,12 @@ public class LoadGenerator {
 
   public HasOutput getStatic(DynamicByteArray out, short idx) {
     out.write(GETSTATIC);
+    out.write(idx);
+    return out;
+  }
+
+  public HasOutput getField(DynamicByteArray out, short idx) {
+    out.write(GETFIELD);
     out.write(idx);
     return out;
   }
@@ -232,7 +240,12 @@ public class LoadGenerator {
 
   public void load(DynamicByteArray out, VariableInfo varInfo) {
     if (varInfo.isField) {
-      getStatic(out, varInfo.idx);
+      if (varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
+        getStatic(out, varInfo.idx);
+      } else {
+        ctx.loadGen.loadReference(out, varInfo.objectRef);
+        getField(out, varInfo.idx);
+      }
     } else {
       load(out, varInfo.type, varInfo.idx);
     }

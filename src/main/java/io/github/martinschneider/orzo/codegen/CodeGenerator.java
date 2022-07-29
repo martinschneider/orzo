@@ -109,6 +109,7 @@ public class CodeGenerator {
                 decl.name.id().toString(),
                 (decl.arrDim > 0) ? REF : decl.type,
                 (decl.arrDim > 0) ? decl.type : null,
+                decl.accFlags,
                 true,
                 ctx.constPool.indexOf(
                     CONSTANT_FIELDREF,
@@ -151,42 +152,71 @@ public class CodeGenerator {
   }
 
   private void writeField(HasOutput out, VariableInfo varInfo) {
-    out.write((short) 9); // public static
+    short accFlags = 0;
+    for (AccessFlag accFlag : varInfo.accFlags) {
+      accFlags += accFlag.val;
+    }
+    out.write(accFlags);
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, varInfo.name));
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, TypeUtils.descr(varInfo)));
     out.write((short) 0); // attribute size
   }
 
   private void addClInit(List<Method> methods) {
-    boolean init = false;
+    List<ParallelDeclaration> staticInits = new ArrayList<>();
+    List<ParallelDeclaration> constrInits = new ArrayList<>();
     if (ctx.clazz.fields == null) {
       return;
     }
     for (ParallelDeclaration pDecl : ctx.clazz.fields) {
-      if (init) {
+      if (!staticInits.isEmpty() && !constrInits.isEmpty()) {
         break;
       }
       for (Declaration decl : pDecl.declarations) {
         if (decl.val != null) {
-          init = true;
+          if (decl.accFlags.contains(AccessFlag.ACC_STATIC)) {
+            staticInits.add(pDecl);
+          } else {
+            constrInits.add(pDecl);
+          }
           break;
         }
       }
     }
-    // for now, a static initialiser is only necessary if there is at least one public field with a
+    // for now, a static initialiser is only necessary if there is at least one
+    // public field with a
     // non-default value (because its value must be set in the initialiser)
-    // TODO: support explicit use of static initialiser blocks, e.g. support static { ... } in the
+    // TODO: support explicit use of static initialiser blocks, e.g. support static
+    // { ... } in the
     // source code
-    if (init) {
+    if (!staticInits.isEmpty()) {
       Method clInit =
           new Method(
               "", of(AccessFlag.ACC_STATIC), "void", id("<clinit>"), emptyList(), emptyList());
       ctx.constPool.addUtf8(clInit.name.val.toString());
       ctx.constPool.addUtf8(TypeUtils.methodDescr(clInit));
       List<Statement> statements = new ArrayList<>();
-      statements.addAll(ctx.clazz.fields);
+      statements.addAll(staticInits);
       clInit.body = statements;
       methods.add(clInit);
+    }
+    if (!constrInits.isEmpty()) {
+      Method defaultConstr = ctx.clazz.getDefaultConstructor();
+      if (defaultConstr == null) {
+        ctx.errors.addError("codegen", "Missing default constructor");
+      }
+      // add initializer calls after super();
+      List<Statement> body = new ArrayList<>();
+      boolean startsWithSuper = ctx.methodGen.startsWithCallToSuper(defaultConstr.body);
+      if (startsWithSuper) {
+        body.add(defaultConstr.body.get(0));
+      }
+      body.addAll(constrInits);
+      int idx = startsWithSuper ? 1 : 0;
+      for (int i = idx; i < defaultConstr.body.size(); i++) {
+        body.add(defaultConstr.body.get(i));
+      }
+      defaultConstr.body = body;
     }
   }
 
