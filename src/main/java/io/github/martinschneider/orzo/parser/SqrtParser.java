@@ -12,6 +12,12 @@ import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 
 public class SqrtParser {
+  private ParserContext ctx;
+
+  public SqrtParser(ParserContext ctx) {
+    this.ctx = ctx;
+  }
+
   public void parse(TokenList tokens) {
     int idx = tokens.idx();
     if (tokens.curr().eq(sym(SQRT))) {
@@ -30,6 +36,7 @@ public class SqrtParser {
         tokens.replace(idx, new Identifier("Math.sqrt"));
       }
     }
+    ctx.errors.tokenIdx = tokens.idx();
     tokens.setIdx(idx);
   }
 }

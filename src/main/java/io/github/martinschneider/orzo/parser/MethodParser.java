@@ -82,12 +82,14 @@ public class MethodParser implements ProdParser<Method> {
       name = id(CONSTRUCTOR_NAME);
     }
     if (!tokens.curr().eq(sym(LPAREN))) {
+      ctx.errors.tokenIdx = tokens.idx();
       tokens.setIdx(idx);
       return null;
     }
     tokens.next();
     arguments = parseArgs(tokens);
     if (!tokens.curr().eq(sym(RPAREN))) {
+      ctx.errors.tokenIdx = tokens.idx();
       tokens.setIdx(idx);
       return null;
     }
@@ -95,12 +97,14 @@ public class MethodParser implements ProdParser<Method> {
     if (!isInterface) {
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
+        ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
       }
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (!tokens.curr().eq(sym(RBRACE))) {
+        ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
       }

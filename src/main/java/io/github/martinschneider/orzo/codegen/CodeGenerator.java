@@ -41,14 +41,20 @@ public class CodeGenerator {
   }
 
   void accessModifiers(Clazz clazz) {
-    // ACC_SUPER, ACC_PUBLIC
-    short modifiers = ((short) 0x0021);
+    short modifiers = (short) (AccessFlag.ACC_SUPER.val + AccessFlag.ACC_PUBLIC.val);
     if (clazz.isInterface) {
-      // ACC_INTERFACE, ACC_ABSTRACT, ACC_PUBLIC
-      modifiers = ((short) 0x0601);
+      modifiers =
+          (short)
+              (AccessFlag.ACC_INTERFACE.val
+                  + AccessFlag.ACC_ABSTRACT.val
+                  + AccessFlag.ACC_PUBLIC.val);
     } else if (clazz.isEnum) {
-      // ACC_PUBLIC, ACC_FINAL, ACC_SUPER, ACC_ENUM
-      modifiers = ((short) 0x4031);
+      modifiers =
+          (short)
+              (AccessFlag.ACC_PUBLIC.val
+                  + AccessFlag.ACC_FINAL.val
+                  + AccessFlag.ACC_SUPER.val
+                  + AccessFlag.ACC_ENUM.val);
     }
     out.write(modifiers);
   }
@@ -201,22 +207,24 @@ public class CodeGenerator {
       methods.add(clInit);
     }
     if (!constrInits.isEmpty()) {
-      Method defaultConstr = ctx.clazz.getDefaultConstructor();
-      if (defaultConstr == null) {
+      List<Method> constructors = ctx.clazz.getConstructors();
+      if (constructors.isEmpty()) {
         ctx.errors.addError("codegen", "Missing default constructor");
       }
       // add initializer calls after super();
-      List<Statement> body = new ArrayList<>();
-      boolean startsWithSuper = ctx.methodGen.startsWithCallToSuper(defaultConstr.body);
-      if (startsWithSuper) {
-        body.add(defaultConstr.body.get(0));
+      for (Method constr : constructors) {
+        List<Statement> body = new ArrayList<>();
+        boolean startsWithSuper = ctx.methodGen.startsWithCallToSuper(constr.body);
+        if (startsWithSuper) {
+          body.add(constr.body.get(0));
+        }
+        body.addAll(constrInits);
+        int idx = startsWithSuper ? 1 : 0;
+        for (int i = idx; i < constr.body.size(); i++) {
+          body.add(constr.body.get(i));
+        }
+        constr.body = body;
       }
-      body.addAll(constrInits);
-      int idx = startsWithSuper ? 1 : 0;
-      for (int i = idx; i < defaultConstr.body.size(); i++) {
-        body.add(defaultConstr.body.get(i));
-      }
-      defaultConstr.body = body;
     }
   }
 

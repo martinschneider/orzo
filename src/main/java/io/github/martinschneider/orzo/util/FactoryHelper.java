@@ -284,6 +284,10 @@ public class FactoryHelper {
     return new VariableMap(map);
   }
 
+  public static CompilerError error(String msg) {
+    return new CompilerError(msg);
+  }
+
   @SafeVarargs
   public static <E> List<E> list(E... e) {
     return List.of(e);

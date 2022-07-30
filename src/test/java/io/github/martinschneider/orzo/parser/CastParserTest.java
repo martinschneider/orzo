@@ -17,7 +17,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class CastParserTest {
-  private CastParser target = new CastParser();
+  private CastParser target = new CastParser(null);
 
   private static Stream<Arguments> test() throws IOException {
     return stream(args("", null), args("(int)", type(INT)));

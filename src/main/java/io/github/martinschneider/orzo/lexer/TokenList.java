@@ -31,6 +31,13 @@ public class TokenList {
     return curr();
   }
 
+  public Token peekNext() {
+    idx++;
+    Token ret = curr();
+    idx--;
+    return ret;
+  }
+
   public Token next(Token token) {
     do {
       idx++;

@@ -3,6 +3,7 @@ package io.github.martinschneider.orzo.parser.productions;
 import static io.github.martinschneider.orzo.parser.productions.Method.CONSTRUCTOR_NAME;
 
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -139,12 +140,13 @@ public class Clazz {
     return strBuilder.toString();
   }
 
-  public Method getDefaultConstructor() {
+  public List<Method> getConstructors() {
+    List<Method> constructors = new ArrayList<>();
     for (Method method : methods) {
-      if (method.name.eq(CONSTRUCTOR_NAME) && method.args.isEmpty()) {
-        return method;
+      if (method.name.eq(CONSTRUCTOR_NAME)) { // && method.args.isEmpty()) {
+        constructors.add(method);
       }
     }
-    return null;
+    return constructors;
   }
 }

@@ -31,6 +31,7 @@ public class FloorParser implements ProdParser<MethodCall> {
       if (tokens.curr().eq(sym(RFLOOR))) {
         tokens.replace(sym(RPAREN));
         tokens.insert(sym(RPAREN));
+        ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
       } else {

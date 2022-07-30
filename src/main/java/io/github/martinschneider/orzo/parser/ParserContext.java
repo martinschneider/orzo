@@ -39,7 +39,7 @@ public class ParserContext {
     ctx.arraySelectorParser = new ArraySelectorParser(ctx);
     ctx.assignParser = new AssignmentParser(ctx);
     ctx.breakParser = new BreakParser();
-    ctx.castParser = new CastParser();
+    ctx.castParser = new CastParser(ctx);
     ctx.constrCallParser = new ConstructorCallParser(ctx);
     ctx.declParser = new DeclarationParser(ctx);
     ctx.doParser = new DoParser(ctx);
@@ -54,7 +54,7 @@ public class ParserContext {
     ctx.preIncrementParser = new PreIncrementParser(ctx);
     ctx.retParser = new RetParser(ctx);
     ctx.scopeParser = new ScopeParser();
-    ctx.sqrtParser = new SqrtParser();
+    ctx.sqrtParser = new SqrtParser(ctx);
     ctx.stmtParser = new StatementParser(ctx);
     ctx.whileParser = new WhileParser(ctx);
     ctx.repeatParser = new RepeatParser(ctx);

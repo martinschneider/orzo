@@ -81,6 +81,7 @@ public class MethodCallParser implements ProdParser<MethodCall> {
         tokens.next();
       }
       if (parameters == null) {
+        ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
       }

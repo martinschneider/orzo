@@ -231,16 +231,17 @@ public class ExpressionGeneratorTest {
                 list(method),
                 emptyList())));
     target.ctx = ctx;
-    ParserContext parserCtx = new ParserContext();
-    parserCtx.arrayInitParser = new ArrayInitParser(parserCtx);
-    parserCtx.arraySelectorParser = new ArraySelectorParser(parserCtx);
-    parserCtx.castParser = new CastParser();
-    parserCtx.methodCallParser = new MethodCallParser(parserCtx);
-    parserCtx.floorParser = new FloorParser(parserCtx);
-    parserCtx.sqrtParser = new SqrtParser();
-    parserCtx.constrCallParser = new ConstructorCallParser(parserCtx);
-    parserCtx.exprParser = new ExpressionParser(parserCtx);
-    parser = new ExpressionParser(parserCtx);
+    ParserContext ctx = new ParserContext();
+    ctx.arrayInitParser = new ArrayInitParser(ctx);
+    ctx.arraySelectorParser = new ArraySelectorParser(ctx);
+    ctx.castParser = new CastParser(ctx);
+    ctx.methodCallParser = new MethodCallParser(ctx);
+    ctx.floorParser = new FloorParser(ctx);
+    ctx.sqrtParser = new SqrtParser(ctx);
+    ctx.constrCallParser = new ConstructorCallParser(ctx);
+    ctx.exprParser = new ExpressionParser(ctx);
+    ctx.errors = new CompilerErrors();
+    parser = new ExpressionParser(ctx);
   }
 
   @BeforeEach

@@ -30,7 +30,8 @@ public class StatementParserTest {
             "do{x=y+1;y=y-1;} while(i>0)",
             doStmt(expr("i>0"), list(assign("x=y+1"), assign("y=y-1")))),
         args("int z;", pDecl(emptyList(), id("z"), "int", null)),
-        args("int z=300;", pDecl(emptyList(), id("z"), "int", expr("300"))));
+        args("int z=300;", pDecl(emptyList(), id("z"), "int", expr("300"))),
+        args("this.a=a;", assign("this.a=a")));
   }
 
   @ParameterizedTest

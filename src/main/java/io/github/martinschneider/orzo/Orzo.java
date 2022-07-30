@@ -110,9 +110,9 @@ public class Orzo {
     }
     CodeGenerator codeGen = new CodeGenerator(clazzes, outputs, ctx.errors);
     codeGen.generate();
-    if (!codeGen.getErrors().getErrors().isEmpty()) {
+    if (!codeGen.getErrors().errors.isEmpty()) {
       StringBuilder errors = new StringBuilder("\n");
-      int errCount = codeGen.getErrors().getErrors().size();
+      int errCount = codeGen.getErrors().errors.size();
       errors.append(errCount);
       errors.append(" error");
       if (errCount > 1) {

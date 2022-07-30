@@ -36,7 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ClassParser implements ProdParser<Clazz> {
-  private ParserContext ctx;
+  public ParserContext ctx;
   private static final String LOG_NAME = "parse class";
 
   public ClassParser(ParserContext ctx) {
@@ -77,7 +77,9 @@ public class ClassParser implements ProdParser<Clazz> {
           parseInterfaces(tokens, interfaces);
         }
         if (!tokens.curr().eq(sym(LBRACE))) {
+          ctx.errors.tokenIdx = tokens.idx();
           ctx.errors.missingExpected(LOG_NAME, sym(LBRACE), tokens);
+          return null;
         }
         tokens.next();
         // set temporary clazz object for the method parser's use
@@ -119,6 +121,7 @@ public class ClassParser implements ProdParser<Clazz> {
         }
 
         if (!tokens.curr().eq(sym(RBRACE))) {
+          ctx.errors.tokenIdx = tokens.idx();
           ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
         }
         ctx.currClazz.methods = methods;

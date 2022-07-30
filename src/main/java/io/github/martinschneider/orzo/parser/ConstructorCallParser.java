@@ -38,6 +38,7 @@ public class ConstructorCallParser implements ProdParser<ConstructorCall> {
       if (args != null) {
         return new ConstructorCall(type.id(), args);
       } else {
+        ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
       }
