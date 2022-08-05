@@ -19,6 +19,10 @@ import java.util.Map;
 
 public class ConstantPool {
 
+  // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.2-300-C.1
+  public static final List<String> INT_CONSTANT_TYPES =
+      List.of("int", "byte", "short", "char", "boolean");
+
   private static final String LOGGER_NAME = "constant pool";
 
   protected CGContext ctx;
@@ -69,12 +73,14 @@ public class ConstantPool {
     } else {
       if (entry instanceof ConstantLong || entry instanceof ConstantDouble) {
         size += 2;
+        entries.add(entry);
+        return size; // TODO: shouldn't this be size-1?
       } else {
         size++;
+        entries.add(entry);
+        return size;
       }
-      entries.add(entry);
     }
-    return size;
   }
 
   public short indexOf(byte entryType, String classKey, String key, String type) {
@@ -155,6 +161,9 @@ public class ConstantPool {
         }
       case CONSTANT_LONG:
         {
+          if (key instanceof Integer) {
+            key = Long.valueOf((Integer) (key)).longValue();
+          }
           Integer id = longMap.get(key);
           if (id != null) {
             return id.shortValue();
@@ -164,7 +173,9 @@ public class ConstantPool {
         if (!allowMissing) {
           ctx.errors.addError(
               LOGGER_NAME,
-              String.format("expected key %s of type %s not found in constant pool", key, type));
+              String.format(
+                  "expected key %s of type %s not found in constant pool %s",
+                  key, type, new RuntimeException().getStackTrace()[2]));
         }
         return -1;
     }
@@ -223,5 +234,41 @@ public class ConstantPool {
 
   public void addFloat(Float val) {
     floatMap.put(val, add(new ConstantFloat(val)));
+  }
+
+  public void addByType(String type, Object val) {
+    if (INT_CONSTANT_TYPES.contains(type)) {
+      ctx.constPool.addInteger((Integer) val);
+    } else if ("long".equals(type)) {
+      if (val instanceof Integer) {
+        val = Long.valueOf(((Integer) val).longValue());
+      }
+      ctx.constPool.addLong((Long) val);
+    } else if ("float".equals(type)) {
+      ctx.constPool.addFloat((Float) val);
+    } else if ("double".equals(type)) {
+      if (val instanceof Float) {
+        val = Double.valueOf(((Float) val).doubleValue());
+      }
+      ctx.constPool.addDouble((Double) val);
+    } else if ("String".equals(type)) {
+      ctx.constPool.addString((String) val);
+    }
+  }
+
+  public byte getTypeByte(String type) {
+    if (INT_CONSTANT_TYPES.contains(type)) {
+      return CONSTANT_INTEGER;
+    } else if ("long".equals(type)) {
+      return CONSTANT_LONG;
+    } else if ("double".equals(type)) {
+      return CONSTANT_DOUBLE;
+    } else if ("float".equals(type)) {
+      return CONSTANT_FLOAT;
+    } else if ("String".equals(type)) {
+      return CONSTANT_STRING;
+    }
+    ctx.errors.addError(LOGGER_NAME, String.format("Unknown type: %s", type));
+    return -1;
   }
 }

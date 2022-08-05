@@ -15,7 +15,7 @@ public class Str extends Token {
     return "STR(" + val + ")";
   }
 
-  public Object strValue() {
+  public String strValue() {
     return val.toString();
   }
 }

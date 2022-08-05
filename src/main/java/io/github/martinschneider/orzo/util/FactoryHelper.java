@@ -1,6 +1,5 @@
 package io.github.martinschneider.orzo.util;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.str;
 import static java.util.Collections.emptyList;
@@ -268,12 +267,20 @@ public class FactoryHelper {
     return new WhileStatement(condition, body);
   }
 
+  public static VariableInfo varInfo(String name, String type, int idx, Expression value) {
+    return new VariableInfo(name, type, emptyList(), false, (short) idx, value);
+  }
+
+  public static VariableInfo varInfoArr(String name, String type, int idx, Expression value) {
+    return new VariableInfo(name, "reference", type, emptyList(), false, (short) idx, value);
+  }
+
   public static VariableInfo varInfo(String name, String type, int idx) {
-    return new VariableInfo(name, type, emptyList(), false, (short) idx);
+    return new VariableInfo(name, type, emptyList(), false, (short) idx, null);
   }
 
   public static VariableInfo varInfoArr(String name, String type, int idx) {
-    return new VariableInfo(name, "reference", type, emptyList(), false, (short) idx);
+    return new VariableInfo(name, "reference", type, emptyList(), false, (short) idx, null);
   }
 
   public static VariableMap varMap(List<VariableInfo> varInfos) {

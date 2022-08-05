@@ -41,7 +41,13 @@ public class MethodGenerator {
       variables.put(
           arg.name,
           new VariableInfo(
-              arg.name.val.toString(), type, arrayType, emptyList(), false, (byte) variables.size));
+              arg.name.val.toString(),
+              type,
+              arrayType,
+              emptyList(),
+              false,
+              (byte) variables.size,
+              null));
     }
     out.write(method.accessFlags(clazz.isInterface));
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.name.val));

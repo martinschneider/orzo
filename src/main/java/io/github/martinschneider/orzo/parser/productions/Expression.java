@@ -1,5 +1,11 @@
 package io.github.martinschneider.orzo.parser.productions;
 
+import static java.lang.Math.toIntExact;
+
+import io.github.martinschneider.orzo.codegen.constants.ConstantPool;
+import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import java.util.ArrayList;
@@ -32,6 +38,28 @@ public class Expression {
 
   public int size() {
     return tokens.size();
+  }
+
+  public Object getConstantValue(String type) {
+    if (tokens.size() == 1) {
+      Token token = tokens.get(0);
+      if (token instanceof IntLiteral) {
+        if (ConstantPool.INT_CONSTANT_TYPES.contains(type)) {
+          return toIntExact(((IntLiteral) token).intValue());
+        } else if ("long".equals(type)) {
+          return ((IntLiteral) token).intValue();
+        }
+      } else if (token instanceof FPLiteral) {
+        if ("float".equals(type)) {
+          return Float.valueOf((float) ((FPLiteral) token).doubleVal());
+        } else if ("double".equals(type)) {
+          return ((FPLiteral) token).doubleVal();
+        }
+      } else if (token instanceof Str) {
+        return ((Str) token).strValue();
+      }
+    }
+    return null;
   }
 
   @Override

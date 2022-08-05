@@ -47,7 +47,7 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
           variables.put(
               id,
               new VariableInfo(
-                  id.val.toString(), type, emptyList(), false, (short) variables.size));
+                  id.val.toString(), type, emptyList(), false, (short) variables.size, null));
           VariableInfo tmpInfo = variables.get(id);
           if (left.arrSel == null) {
             ctx.loadGen.load(out, varInfo);
@@ -72,7 +72,8 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
     if (!variables.containsKey(id)) {
       variables.put(
           id,
-          new VariableInfo(id.val.toString(), type, emptyList(), false, (short) variables.size));
+          new VariableInfo(
+              id.val.toString(), type, emptyList(), false, (short) variables.size, null));
     }
     return ctx.storeGen.store(out, variables.get(id));
   }
@@ -81,7 +82,9 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       DynamicByteArray out, VariableMap variables, Identifier id, Expression val) {
     if (!variables.containsKey(id)) {
       variables.put(
-          id, new VariableInfo(id.val.toString(), REF, emptyList(), false, (short) variables.size));
+          id,
+          new VariableInfo(
+              id.val.toString(), REF, emptyList(), false, (short) variables.size, null));
     }
     VariableInfo varInfo = variables.get(id);
     String type = varInfo.arrType;
@@ -100,7 +103,7 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       variables.put(
           id,
           new VariableInfo(
-              id.val.toString(), REF, type, emptyList(), false, (short) variables.size));
+              id.val.toString(), REF, type, emptyList(), false, (short) variables.size, null));
     }
     return ctx.storeGen.store(out, variables.get(id));
   }

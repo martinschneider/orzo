@@ -121,7 +121,12 @@ public class CodeGenerator {
                     CONSTANT_FIELDREF,
                     ctx.clazz.fqn('/'),
                     decl.name.id().toString(),
-                    TypeUtils.descr(decl.type, decl.arrDim))));
+                    TypeUtils.descr(decl.type, decl.arrDim)),
+                decl.val));
+        if (decl.accFlags.contains(AccessFlag.ACC_FINAL)) {
+          ctx.constPool.addUtf8("ConstantValue");
+          ctx.constPool.addByType(decl.type, decl.val.getConstantValue(decl.type));
+        }
       }
     }
   }
@@ -165,7 +170,18 @@ public class CodeGenerator {
     out.write(accFlags);
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, varInfo.name));
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, TypeUtils.descr(varInfo)));
-    out.write((short) 0); // attribute size
+    // TODO: for some reason this still breaks for long and double
+    if (varInfo.accFlags.contains(AccessFlag.ACC_FINAL)) {
+      out.write((short) 1); // attribute size
+      // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.2
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "ConstantValue"));
+      out.write(2);
+      out.write(
+          ctx.constPool.indexOf(
+              ctx.constPool.getTypeByte(varInfo.type), varInfo.val.getConstantValue(varInfo.type)));
+    } else {
+      out.write((short) 0); // attribute size
+    }
   }
 
   private void addClInit(List<Method> methods) {
@@ -179,7 +195,8 @@ public class CodeGenerator {
         break;
       }
       for (Declaration decl : pDecl.declarations) {
-        if (decl.val != null) {
+        // the values of final fields are set with the ConstantValue Attribute
+        if (decl.val != null && !decl.accFlags.contains(AccessFlag.ACC_FINAL)) {
           if (decl.accFlags.contains(AccessFlag.ACC_STATIC)) {
             staticInits.add(pDecl);
           } else {
@@ -190,8 +207,7 @@ public class CodeGenerator {
       }
     }
     // for now, a static initialiser is only necessary if there is at least one
-    // public field with a
-    // non-default value (because its value must be set in the initialiser)
+    // public field with a non-default value (because its value must be set in the initialiser)
     // TODO: support explicit use of static initialiser blocks, e.g. support static
     // { ... } in the
     // source code
@@ -233,6 +249,7 @@ public class CodeGenerator {
   }
 
   private void supportPrint(Clazz clazz) {
+    // TODO: only add when needed
     if (!clazz.isInterface) {
       // hard-coded support for print
       ctx.constPool.addClass("java/lang/System");
