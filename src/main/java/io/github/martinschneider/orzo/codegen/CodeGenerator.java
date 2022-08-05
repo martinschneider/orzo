@@ -195,11 +195,12 @@ public class CodeGenerator {
         break;
       }
       for (Declaration decl : pDecl.declarations) {
-        // the values of final fields are set with the ConstantValue Attribute
-        if (decl.val != null && !decl.accFlags.contains(AccessFlag.ACC_FINAL)) {
-          if (decl.accFlags.contains(AccessFlag.ACC_STATIC)) {
+        if (decl.val != null) {
+          // the values of final static fields are set with the ConstantValue attribute
+          if (decl.accFlags.contains(AccessFlag.ACC_STATIC)
+              && !decl.accFlags.contains(AccessFlag.ACC_FINAL)) {
             staticInits.add(pDecl);
-          } else {
+          } else if (!decl.accFlags.contains(AccessFlag.ACC_STATIC)) {
             constrInits.add(pDecl);
           }
           break;
