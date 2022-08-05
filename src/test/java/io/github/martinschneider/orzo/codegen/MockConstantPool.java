@@ -30,7 +30,9 @@ public class MockConstantPool extends ConstantPool {
     short id = lookup.getOrDefault(key, Short.valueOf((short) -1));
     if (id == -1) {
       ctx.errors.addError(
-          "mock constant pool", String.format("constant for key %s undefined", key));
+          "mock constant pool",
+          String.format("constant for key %s undefined", key),
+          new RuntimeException().getStackTrace());
     }
     return id;
   }

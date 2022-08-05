@@ -7,20 +7,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CompilerErrors {
+  // this will be removed from the call trace output
+  public static final String PKG_PREFIX = "io.github.martinschneider.orzo.";
+
   public List<CompilerError> errors = new ArrayList<>();
   public int tokenIdx;
 
-  public void addError(String loggerName, String message) {
-    errors.add(new CompilerError(String.format("%s: %s", loggerName, message)));
+  public void addError(String loggerName, String message, StackTraceElement[] trace) {
+    errors.add(new CompilerError(String.format("%s: %s", loggerName, message), trace));
   }
 
-  public void missingExpected(String loggerName, Token expected, TokenList tokens) {
+  public void missingExpected(
+      String loggerName, Token expected, TokenList tokens, StackTraceElement[] trace) {
     Location loc = tokens.get(tokenIdx).loc;
     errors.add(
         new CompilerError(
             String.format(
                 "%s %s: expected %s but found %s",
-                (loc != null) ? loc : "EOF", loggerName, expected, tokens.get(tokenIdx))));
+                (loc != null) ? loc : "EOF", loggerName, expected, tokens.get(tokenIdx)),
+            trace));
   }
 
   public int count() {
@@ -29,12 +34,30 @@ public class CompilerErrors {
 
   @Override
   public String toString() {
-    StringBuffer stringBuffer = new StringBuffer();
-    for (CompilerError error : errors) {
-      stringBuffer.append("- ");
-      stringBuffer.append(error.msg);
-      stringBuffer.append("\n");
+    return toString(0);
+  }
+
+  public String toString(int verbose) {
+    StringBuilder errorMsg = new StringBuilder();
+    int errCount = errors.size();
+    errorMsg.append(errCount);
+    errorMsg.append(" error");
+    if (errCount > 1) {
+      errorMsg.append("s");
     }
-    return stringBuffer.toString();
+    errorMsg.append("\n");
+    for (CompilerError error : errors) {
+      errorMsg.append(error);
+      if (verbose > 0) {
+        errorMsg.append(". call trace: ");
+        for (int j = 0; j < verbose && j < error.trace.length; j++) {
+          errorMsg.append(error.trace[j].toString().replaceAll(PKG_PREFIX, ""));
+          if (j < verbose - 1 && j < error.trace.length - 1) {
+            errorMsg.append(" <- ");
+          }
+        }
+      }
+    }
+    return errorMsg.toString();
   }
 }

@@ -38,7 +38,8 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
         tokens.next();
       } else {
         ctx.errors.tokenIdx = tokens.idx();
-        ctx.errors.addError(LOG_NAME, "missing type in array initialiser");
+        ctx.errors.addError(
+            LOG_NAME, "missing type in array initialiser", new RuntimeException().getStackTrace());
         tokens.setIdx(idx);
         return null;
       }
@@ -52,7 +53,8 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
           dimensions.add(null); // placeholder
         }
         if (!tokens.curr().eq(sym(RBRAK))) {
-          ctx.errors.missingExpected(LOG_NAME, sym(RBRAK), tokens);
+          ctx.errors.missingExpected(
+              LOG_NAME, sym(RBRAK), tokens, new RuntimeException().getStackTrace());
           return null;
         }
         tokens.next();
@@ -62,7 +64,8 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
         if (dimensions.size() > 1) {
           ctx.errors.addError(
               LOG_NAME,
-              "direct array initialisation not (yet) supported for multi-dimensional arrays");
+              "direct array initialisation not (yet) supported for multi-dimensional arrays",
+              new RuntimeException().getStackTrace());
           tokens.next(sym(SEMICOLON));
         } else {
           vals.add(new ArrayList<>());
@@ -75,7 +78,8 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
             }
           }
           if (!tokens.curr().eq(sym(RBRACE))) {
-            ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
+            ctx.errors.missingExpected(
+                LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
           }
           tokens.next();
         }
@@ -100,7 +104,8 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
               && vals.get(i).size() != 0) {
             ctx.errors.addError(
                 LOG_NAME,
-                "array initializer size mismatch " + dimensions.get(i) + "!=" + vals.get(i).size());
+                "array initializer size mismatch " + dimensions.get(i) + "!=" + vals.get(i).size(),
+                new RuntimeException().getStackTrace());
           }
         }
       }

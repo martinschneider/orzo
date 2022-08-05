@@ -36,7 +36,10 @@ public class IncrementGenerator implements StatementGenerator<IncrementStatement
     if (incr.expr.tokens.size() != 2
         || !(incr.expr.tokens.get(0) instanceof Identifier)
         || !(incr.expr.tokens.get(1) instanceof Operator)) {
-      ctx.errors.addError(LOGGER_NAME, "invalid unary increment expression");
+      ctx.errors.addError(
+          LOGGER_NAME,
+          "invalid unary increment expression",
+          new RuntimeException().getStackTrace());
       return out;
     }
     Identifier id = (Identifier) incr.expr.tokens.get(0);

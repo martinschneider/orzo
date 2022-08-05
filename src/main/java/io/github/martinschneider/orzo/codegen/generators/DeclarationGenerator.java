@@ -54,7 +54,10 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
       DynamicByteArray out, VariableMap variables, Method method, Declaration decl) {
     // TODO: handle method calls in array declaration
     if (decl.val == null || !(decl.val instanceof ArrayInit)) {
-      ctx.errors.addError(LOG_NAME, "invalid array initialiser " + decl.val);
+      ctx.errors.addError(
+          LOG_NAME,
+          "invalid array initialiser " + decl.val,
+          new RuntimeException().getStackTrace());
       return out;
     }
     String type = decl.type;

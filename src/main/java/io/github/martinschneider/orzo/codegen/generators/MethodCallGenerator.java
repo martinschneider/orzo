@@ -43,7 +43,8 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     if (method == null) {
       ctx.errors.addError(
           LOGGER_NAME,
-          methodCall.loc.toString() + " missing method declaration \"" + methodName + types + "\"");
+          methodCall.loc.toString() + " missing method declaration \"" + methodName + types + "\"",
+          new RuntimeException().getStackTrace());
       return "";
     }
     for (int i = 0; i < types.size(); i++) {
@@ -67,7 +68,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         if (result != null) {
           print(out, result.type);
         } else {
-          ctx.errors.addError(LOGGER_NAME, "error evaluating expression " + param);
+          ctx.errors.addError(
+              LOGGER_NAME,
+              String.format("error evaluating expression %s", param),
+              new RuntimeException().getStackTrace());
           return null;
         }
       }

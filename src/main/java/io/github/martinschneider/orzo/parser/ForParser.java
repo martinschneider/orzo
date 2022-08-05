@@ -35,45 +35,51 @@ public class ForParser implements ProdParser<ForStatement> {
       tokens.next();
       if (!tokens.curr().eq(sym(LPAREN))) {
         tokens.next(sym(RBRACE));
-        ctx.errors.missingExpected(LOG_NAME, sym(LPAREN), tokens);
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(LPAREN), tokens, new RuntimeException().getStackTrace());
       }
       tokens.next();
       initialization = ctx.stmtParser.parse(tokens);
       if (initialization == null) {
         tokens.next(sym(RBRACE));
-        ctx.errors.addError(LOG_NAME, "missing initialisation");
+        ctx.errors.addError(
+            LOG_NAME, "missing initialisation", new RuntimeException().getStackTrace());
         return null;
       }
       condition = ctx.exprParser.parse(tokens);
       if (condition == null) {
         tokens.next(sym(RBRACE));
-        ctx.errors.addError(LOG_NAME, "missing condition");
+        ctx.errors.addError(LOG_NAME, "missing condition", new RuntimeException().getStackTrace());
       }
       tokens.next();
       // TODO: support stmtSequence
       loopStatement = ctx.stmtParser.parse(tokens);
       if (loopStatement == null) {
         tokens.next(sym(RBRACE));
-        ctx.errors.addError(LOG_NAME, "missing loop statement");
+        ctx.errors.addError(
+            LOG_NAME, "missing loop statement", new RuntimeException().getStackTrace());
       }
       if (!tokens.curr().eq(sym(RPAREN))) {
         tokens.next(sym(RBRACE));
-        ctx.errors.missingExpected(LOG_NAME, sym(RPAREN), tokens);
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
       }
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
         tokens.next(sym(RBRACE));
-        ctx.errors.missingExpected(LOG_NAME, sym(LBRACE), tokens);
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
       }
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (body == null) {
         tokens.next(sym(RBRACE));
-        ctx.errors.addError(LOG_NAME, "missing body");
+        ctx.errors.addError(LOG_NAME, "missing body", new RuntimeException().getStackTrace());
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
         tokens.next(sym(RBRACE));
-        ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
       } else {
         tokens.next();
       }

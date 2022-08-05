@@ -32,7 +32,8 @@ public class ArraySelectorParser implements ProdParser<ArraySelector> {
       if ((expr = ctx.exprParser.parse(tokens)) != null) {
         expressions.add(expr);
         if (!tokens.curr().eq(sym(RBRAK))) {
-          ctx.errors.missingExpected(LOG_NAME, sym(RBRAK), tokens);
+          ctx.errors.missingExpected(
+              LOG_NAME, sym(RBRAK), tokens, new RuntimeException().getStackTrace());
         }
         tokens.next();
       } else {

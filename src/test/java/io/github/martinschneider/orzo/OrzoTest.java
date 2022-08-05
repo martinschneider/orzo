@@ -151,7 +151,7 @@ public class OrzoTest {
       outputs.add(new Output(ps));
       streams.add(baos);
     }
-    Orzo orzo = new Orzo(inputs, null, false);
+    Orzo orzo = new Orzo(inputs, null, 0);
     orzo.compile(outputs);
     for (Clazz clazz : orzo.clazzes) {
       classNames.add(clazz.fqn());
@@ -204,7 +204,7 @@ public class OrzoTest {
       outputs.add(new Output(ps));
       streams.add(baos);
     }
-    Orzo orzo = new Orzo(inputs, null, false);
+    Orzo orzo = new Orzo(inputs, null, 0);
     orzo.compile(outputs);
     for (int i = 0; i < streams.size(); i++) {
       assertArrayEquals(Files.readAllBytes(expectedClasses.get(i)), streams.get(i).toByteArray());

@@ -1,7 +1,7 @@
 package io.github.martinschneider.orzo.error;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
-import static io.github.martinschneider.orzo.util.FactoryHelper.error;
+import static io.github.martinschneider.orzo.util.FactoryHelper.err;
 import static io.github.martinschneider.orzo.util.FactoryHelper.list;
 import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,11 +22,10 @@ public class ParserErrorTest {
 
   private static Stream<Arguments> testClass() throws IOException {
     return stream(
-        args(
-            "public class Martin {", list(error("EOF parse class: expected RBRACE but found EOF"))),
+        args("public class Martin {", list(err("EOF parse class: expected RBRACE but found EOF"))),
         args(
             "public class Martin }",
-            list(error("L1:21 parse class: expected LBRACE but found RBRACE"))));
+            list(err("L1:21 parse class: expected LBRACE but found RBRACE"))));
   }
 
   @ParameterizedTest

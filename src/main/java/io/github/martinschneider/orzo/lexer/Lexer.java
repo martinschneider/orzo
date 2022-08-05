@@ -122,7 +122,7 @@ public class Lexer {
       }
     }
     if (c == -1) {
-      errors.addError("scan comment", "missing */");
+      errors.addError("scan comment", "missing */", new RuntimeException().getStackTrace());
     }
   }
 
@@ -384,7 +384,7 @@ public class Lexer {
         tokenList.add(chr((char) c).wLoc(inputReader.getLoc()));
       }
       if ((c = (char) inputReader.read()) != '\'') {
-        errors.addError("scan character", "missing '");
+        errors.addError("scan character", "missing '", new RuntimeException().getStackTrace());
         inputReader.unread(c);
       }
     }
@@ -401,7 +401,8 @@ public class Lexer {
         buffer.append(character);
       }
       if (c == -1) {
-        errors.addError("scan string", "missing \" in string");
+        errors.addError(
+            "scan string", "missing \" in string", new RuntimeException().getStackTrace());
       } else {
         tokenList.add(str(buffer.toString()).wLoc(inputReader.getLoc()));
       }

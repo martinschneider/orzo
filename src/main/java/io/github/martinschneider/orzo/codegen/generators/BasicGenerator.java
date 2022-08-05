@@ -45,9 +45,15 @@ public class BasicGenerator {
     // I have considered allowing these casts by mapping 0 to false and everything else to true.
     // However, I decided to stick with standard Java behaviour and raise an error instead.
     if (from.equals(BOOLEAN)) {
-      ctx.errors.addError(LOG_NAME, String.format("cannot cast boolean type to %s", to));
+      ctx.errors.addError(
+          LOG_NAME,
+          String.format("cannot cast boolean type to %s", to),
+          new RuntimeException().getStackTrace());
     } else if (to.equals(BOOLEAN)) {
-      ctx.errors.addError(LOG_NAME, String.format("cannot cast %s type to boolean", from));
+      ctx.errors.addError(
+          LOG_NAME,
+          String.format("cannot cast %s type to boolean", from),
+          new RuntimeException().getStackTrace());
     }
   }
 

@@ -35,7 +35,7 @@ public class FloorParser implements ProdParser<MethodCall> {
         tokens.setIdx(idx);
         return null;
       } else {
-        ctx.errors.addError(LOG_NAME, "missing closing ⌋");
+        ctx.errors.addError(LOG_NAME, "missing closing ⌋", new RuntimeException().getStackTrace());
       }
     }
     return null;

@@ -33,7 +33,10 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       Expression right = assignment.right.get(i);
       VariableInfo varInfo = variables.get(left);
       if (varInfo == null) {
-        ctx.errors.addError(LOG_NAME, String.format("Unknown variable %s", left));
+        ctx.errors.addError(
+            LOG_NAME,
+            String.format("Unknown variable %s", left),
+            new RuntimeException().getStackTrace());
       } else {
         String type = varInfo.type;
         // if the current left side variable appears anywhere on the right side

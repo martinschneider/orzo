@@ -31,18 +31,20 @@ public class RepeatParser implements ProdParser<LoopStatement> {
       count = ctx.exprParser.parse(tokens);
       if (!tokens.curr().eq(sym(LBRACE))) {
         tokens.next(sym(RBRACE));
-        ctx.errors.missingExpected(LOG_NAME, sym(LBRACE), tokens);
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
         return null;
       }
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (body == null) {
         tokens.next(sym(RBRACE));
-        ctx.errors.addError(LOG_NAME, "missing body");
+        ctx.errors.addError(LOG_NAME, "missing body", new RuntimeException().getStackTrace());
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
         tokens.next(sym(RBRACE));
-        ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
         return null;
       } else {
         tokens.next();
@@ -61,7 +63,11 @@ public class RepeatParser implements ProdParser<LoopStatement> {
             ctx.stmtParser.parse(lexer.getTokens("i++")),
             body);
       } catch (IOException e) {
-        ctx.errors.addError(LOG_NAME, "unexpected error creating loop statement " + e.getMessage());
+        // TODO: is this needed?
+        ctx.errors.addError(
+            LOG_NAME,
+            String.format("unexpected error creating loop statement %s", e.getMessage()),
+            new RuntimeException().getStackTrace());
         return null;
       }
     } else {

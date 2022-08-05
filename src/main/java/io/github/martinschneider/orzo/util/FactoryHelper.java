@@ -186,8 +186,12 @@ public class FactoryHelper {
     return new ForStatement(initialization, condition, loopStatement, body);
   }
 
+  public static CompilerError err(String msg, StackTraceElement[] trace) {
+    return new CompilerError(msg, trace);
+  }
+
   public static CompilerError err(String msg) {
-    return new CompilerError(msg);
+    return new CompilerError(msg, null);
   }
 
   public static Identifier id(String val, ArraySelector selector) {
@@ -289,10 +293,6 @@ public class FactoryHelper {
       map.put(varInfo.name, varInfo);
     }
     return new VariableMap(map);
-  }
-
-  public static CompilerError error(String msg) {
-    return new CompilerError(msg);
   }
 
   @SafeVarargs

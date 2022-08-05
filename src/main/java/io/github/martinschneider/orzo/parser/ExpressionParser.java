@@ -166,7 +166,8 @@ public class ExpressionParser implements ProdParser<Expression> {
             LOG_NAME,
             "unexpected symbol "
                 + tokens.curr()
-                + " after starting \"-\" in expression (expected number literal or identifier)");
+                + " after starting \"-\" in expression (expected number literal or identifier)",
+            new RuntimeException().getStackTrace());
       }
     }
     return false;

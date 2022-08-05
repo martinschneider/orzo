@@ -28,7 +28,8 @@ public class ConstructorCallParser implements ProdParser<ConstructorCall> {
     tokens.next();
     Identifier type = null;
     if (!(tokens.curr() instanceof Identifier)) {
-      ctx.errors.addError(LOG_NAME, "identifier expected after \"new\"");
+      ctx.errors.addError(
+          LOG_NAME, "identifier expected after \"new\"", new RuntimeException().getStackTrace());
       tokens.prev();
       return null;
     } else {

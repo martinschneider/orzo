@@ -106,7 +106,8 @@ public class ConstantPool {
         ctx.errors.addError(
             LOGGER_NAME,
             String.format(
-                "expected key %s of type %s not found in constant pool", compositeKey, entryType));
+                "expected key %s of type %s not found in constant pool", compositeKey, entryType),
+            new RuntimeException().getStackTrace());
         return -1;
     }
   }
@@ -173,9 +174,8 @@ public class ConstantPool {
         if (!allowMissing) {
           ctx.errors.addError(
               LOGGER_NAME,
-              String.format(
-                  "expected key %s of type %s not found in constant pool %s",
-                  key, type, new RuntimeException().getStackTrace()[2]));
+              String.format("expected key %s of type %s not found in constant pool %s", key, type),
+              new RuntimeException().getStackTrace());
         }
         return -1;
     }
@@ -268,7 +268,10 @@ public class ConstantPool {
     } else if ("String".equals(type)) {
       return CONSTANT_STRING;
     }
-    ctx.errors.addError(LOGGER_NAME, String.format("Unknown type: %s", type));
+    ctx.errors.addError(
+        LOGGER_NAME,
+        String.format("Unknown type: %s", type),
+        new RuntimeException().getStackTrace());
     return -1;
   }
 }

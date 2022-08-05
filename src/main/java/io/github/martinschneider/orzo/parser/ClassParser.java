@@ -68,7 +68,8 @@ public class ClassParser implements ProdParser<Clazz> {
           name = tokens.curr().val.toString();
         } else {
           name = null;
-          ctx.errors.addError(LOG_NAME, "missing identifier");
+          ctx.errors.addError(
+              LOG_NAME, "missing identifier", new RuntimeException().getStackTrace());
         }
         tokens.next();
         parseInterfaces(tokens, interfaces);
@@ -78,7 +79,8 @@ public class ClassParser implements ProdParser<Clazz> {
         }
         if (!tokens.curr().eq(sym(LBRACE))) {
           ctx.errors.tokenIdx = tokens.idx();
-          ctx.errors.missingExpected(LOG_NAME, sym(LBRACE), tokens);
+          ctx.errors.missingExpected(
+              LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
           return null;
         }
         tokens.next();
@@ -102,7 +104,8 @@ public class ClassParser implements ProdParser<Clazz> {
           members = parseClassBody(tokens, isInterface);
         }
         if (members == null) {
-          ctx.errors.addError(LOG_NAME, "missing class body");
+          ctx.errors.addError(
+              LOG_NAME, "missing class body", new RuntimeException().getStackTrace());
         }
         methods = new ArrayList<>();
         decls = new ArrayList<>();
@@ -122,7 +125,8 @@ public class ClassParser implements ProdParser<Clazz> {
 
         if (!tokens.curr().eq(sym(RBRACE))) {
           ctx.errors.tokenIdx = tokens.idx();
-          ctx.errors.missingExpected(LOG_NAME, sym(RBRACE), tokens);
+          ctx.errors.missingExpected(
+              LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
         }
         ctx.currClazz.methods = methods;
         ctx.currClazz.fields = decls;
@@ -211,7 +215,10 @@ public class ClassParser implements ProdParser<Clazz> {
         } else if (tokens.curr() instanceof Identifier) {
           identifier.append(tokens.curr().val);
         } else {
-          ctx.errors.addError(LOG_NAME, "invalid token " + tokens.curr() + " in import");
+          ctx.errors.addError(
+              LOG_NAME,
+              "invalid token " + tokens.curr() + " in import",
+              new RuntimeException().getStackTrace());
           return new Import(identifier.toString(), isStatic);
         }
         tokens.next();
@@ -233,7 +240,9 @@ public class ClassParser implements ProdParser<Clazz> {
           packageName.append(tokens.curr().val);
         } else {
           ctx.errors.addError(
-              LOG_NAME, "invalid token " + tokens.curr() + " in package declaration");
+              LOG_NAME,
+              "invalid token " + tokens.curr() + " in package declaration",
+              new RuntimeException().getStackTrace());
           return packageName.toString();
         }
         tokens.next();

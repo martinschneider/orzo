@@ -34,7 +34,7 @@ public class Orzo {
   }
 
   public static void main(String args[]) throws IOException {
-    boolean verbose = false;
+    int verbose = 0;
     if (args.length == 0) {
       System.err.println("Syntax: orzo inputFiles -d outputPath");
     } else {
@@ -42,7 +42,12 @@ public class Orzo {
       String outputPath = null;
       for (int i = 0; i < args.length; i++) {
         if (args[i].equals("-v")) {
-          verbose = true;
+          if (args.length >= i + 2) {
+            verbose = Integer.parseInt(args[i + 1]);
+            i++;
+          } else {
+            verbose = 1;
+          }
         } else if (!args[i].equals("-d")) {
           inputs.add(new File(args[i]));
         } else {
@@ -60,11 +65,11 @@ public class Orzo {
 
   private List<File> inputs;
   private String outputPath;
-  private boolean verbose;
+  private int verbose;
   // package private for unit test
   List<Clazz> clazzes = new ArrayList<>();
 
-  public Orzo(List<File> inputs, String outputPath, boolean verbose) {
+  public Orzo(List<File> inputs, String outputPath, int verbose) {
     this.inputs = inputs;
     this.outputPath = outputPath;
     this.verbose = verbose;
@@ -78,19 +83,19 @@ public class Orzo {
     clazzes = new ArrayList<>();
     ParserContext ctx = null;
     for (int i = 0; i < inputs.size(); i++) {
-      if (verbose) {
+      if (verbose > 0) {
         System.out.println("Reading from: " + inputs.get(i).getAbsolutePath());
       }
       Lexer scanner = new Lexer();
       TokenList tokens = scanner.getTokens(inputs.get(i));
-      if (verbose) {
+      if (verbose > 0) {
         System.out.println(
             "Scanner output: "
                 + tokens.list().stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
       }
       Parser parser = new Parser(scanner.getErrors());
       Clazz clazz = parser.parse(tokens);
-      if (verbose) {
+      if (verbose > 0) {
         System.out.println("Parser output: " + clazz);
       }
       Output output = null;
@@ -99,7 +104,7 @@ public class Orzo {
       }
       if (output == null) {
         File outputFile = new File(classPath(outputPath, clazz));
-        if (verbose) {
+        if (verbose > 0) {
           System.out.println("Writing to: " + outputFile.getAbsolutePath());
         }
         output = fileOutput(outputFile);
@@ -111,19 +116,7 @@ public class Orzo {
     CodeGenerator codeGen = new CodeGenerator(clazzes, outputs, ctx.errors);
     codeGen.generate();
     if (!codeGen.getErrors().errors.isEmpty()) {
-      StringBuilder errors = new StringBuilder("\n");
-      int errCount = codeGen.getErrors().errors.size();
-      errors.append(errCount);
-      errors.append(" error");
-      if (errCount > 1) {
-        errors.append("s");
-      }
-      errors.append("\n");
-      errors.append(codeGen.getErrors());
-      System.out.println(errors.toString());
-    }
-    if (verbose) {
-      System.out.println("Ok bye!\n");
+      System.out.println(codeGen.getErrors().toString(verbose));
     }
   }
 

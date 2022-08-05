@@ -225,7 +225,8 @@ public class CodeGenerator {
     if (!constrInits.isEmpty()) {
       List<Method> constructors = ctx.clazz.getConstructors();
       if (constructors.isEmpty()) {
-        ctx.errors.addError("codegen", "Missing default constructor");
+        ctx.errors.addError(
+            "codegen", "missing default constructor", new RuntimeException().getStackTrace());
       }
       // add initializer calls after super();
       for (Method constr : constructors) {

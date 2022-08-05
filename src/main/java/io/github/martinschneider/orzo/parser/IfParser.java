@@ -77,7 +77,8 @@ public class IfParser implements ProdParser<IfStatement> {
     }
     if (!tokens.curr().eq(sym(LPAREN))) {
       tokens.prev();
-      ctx.errors.missingExpected(IF_BLOCK_LOG_NAME, sym(LPAREN), tokens);
+      ctx.errors.missingExpected(
+          IF_BLOCK_LOG_NAME, sym(LPAREN), tokens, new RuntimeException().getStackTrace());
     }
     tokens.next();
     condition = ctx.exprParser.parse(tokens);
@@ -86,25 +87,30 @@ public class IfParser implements ProdParser<IfStatement> {
     }
     if (condition == null) {
       tokens.prev();
-      ctx.errors.addError(IF_BLOCK_LOG_NAME, "missing condition");
+      ctx.errors.addError(
+          IF_BLOCK_LOG_NAME, "missing condition", new RuntimeException().getStackTrace());
     }
     if (!tokens.curr().eq(sym(RPAREN))) {
       tokens.prev();
-      ctx.errors.missingExpected(LOG_NAME, sym(RPAREN), tokens);
+      ctx.errors.missingExpected(
+          LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
     }
     tokens.next();
     if (!tokens.curr().eq(sym(LBRACE))) {
       tokens.prev();
-      ctx.errors.missingExpected(IF_BLOCK_LOG_NAME, sym(LBRACE), tokens);
+      ctx.errors.missingExpected(
+          IF_BLOCK_LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
     }
     tokens.next();
     body = ctx.stmtParser.parseStmtSeq(tokens);
     if (body == null) {
-      ctx.errors.addError(IF_BLOCK_LOG_NAME, "missing body");
+      ctx.errors.addError(
+          IF_BLOCK_LOG_NAME, "missing body", new RuntimeException().getStackTrace());
     }
     if (!tokens.curr().eq(sym(RBRACE))) {
       tokens.prev();
-      ctx.errors.missingExpected(IF_BLOCK_LOG_NAME, sym(RBRACE), tokens);
+      ctx.errors.missingExpected(
+          IF_BLOCK_LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
     } else {
       tokens.next();
     }
@@ -122,16 +128,18 @@ public class IfParser implements ProdParser<IfStatement> {
     tokens.next();
     if (!tokens.curr().eq(sym(LBRACE))) {
       tokens.prev();
-      ctx.errors.missingExpected(ELSE_BLOCK_LOG_NAME, sym(LBRACE), tokens);
+      ctx.errors.missingExpected(
+          ELSE_BLOCK_LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
     }
     tokens.next();
     body = ctx.stmtParser.parseStmtSeq(tokens);
     if (body == null) {
-      ctx.errors.addError(LOG_NAME, "missing body");
+      ctx.errors.addError(LOG_NAME, "missing body", new RuntimeException().getStackTrace());
     }
     if (!tokens.curr().eq(sym(RBRACE))) {
       tokens.prev();
-      ctx.errors.missingExpected(ELSE_BLOCK_LOG_NAME, sym(RBRACE), tokens);
+      ctx.errors.missingExpected(
+          ELSE_BLOCK_LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
     } else {
       tokens.next();
     }

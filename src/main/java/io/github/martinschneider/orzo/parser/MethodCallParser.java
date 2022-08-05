@@ -47,7 +47,8 @@ public class MethodCallParser implements ProdParser<MethodCall> {
       }
       if (!tokens.curr().eq(sym(RPAREN))) {
         tokens.next(sym(RBRACE));
-        ctx.errors.missingExpected(LOG_NAME, sym(RPAREN), tokens);
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
         return null;
       }
       tokens.next();

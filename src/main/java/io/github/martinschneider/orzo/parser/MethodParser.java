@@ -143,7 +143,8 @@ public class MethodParser implements ProdParser<Method> {
         if (tokens.next().eq(sym(RBRAK))) {
           type = "[" + type;
         } else {
-          ctx.errors.missingExpected(LOG_NAME, sym(RBRAK), tokens);
+          ctx.errors.missingExpected(
+              LOG_NAME, sym(RBRAK), tokens, new RuntimeException().getStackTrace());
           tokens.next();
           break;
         }

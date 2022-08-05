@@ -261,7 +261,10 @@ public class ExpressionGenerator {
         } else {
           VariableInfo varInfo = variables.get(curr);
           if (varInfo == null) {
-            ctx.errors.addError(LOGGER_NAME, String.format("Unknown variable: %s", curr));
+            ctx.errors.addError(
+                LOGGER_NAME,
+                String.format("Unknown variable: %s", curr),
+                new RuntimeException().getStackTrace());
             return type;
           }
           String varType = varInfo.type;
