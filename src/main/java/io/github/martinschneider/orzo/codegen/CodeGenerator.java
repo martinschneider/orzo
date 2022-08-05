@@ -82,6 +82,8 @@ public class CodeGenerator {
   private void init(int idx) {
     out = outputs.get(idx);
     ctx.init(errors, idx, clazzes);
+    ctx.constPool.addUtf8("SourceFile");
+    ctx.constPool.addUtf8("Test.java");
   }
 
   public void generate() {
@@ -195,12 +197,11 @@ public class CodeGenerator {
         break;
       }
       for (Declaration decl : pDecl.declarations) {
-        if (decl.val != null) {
-          // the values of final static fields are set with the ConstantValue attribute
-          if (decl.accFlags.contains(AccessFlag.ACC_STATIC)
-              && !decl.accFlags.contains(AccessFlag.ACC_FINAL)) {
+        // the values of final fields are set with the ConstantValue Attribute
+        if (decl.val != null && !decl.accFlags.contains(AccessFlag.ACC_FINAL)) {
+          if (decl.accFlags.contains(AccessFlag.ACC_STATIC)) {
             staticInits.add(pDecl);
-          } else if (!decl.accFlags.contains(AccessFlag.ACC_STATIC)) {
+          } else {
             constrInits.add(pDecl);
           }
           break;
@@ -208,7 +209,8 @@ public class CodeGenerator {
       }
     }
     // for now, a static initialiser is only necessary if there is at least one
-    // public field with a non-default value (because its value must be set in the initialiser)
+    // public field with a non-default value (because its value must be set in the
+    // initialiser)
     // TODO: support explicit use of static initialiser blocks, e.g. support static
     // { ... } in the
     // source code
