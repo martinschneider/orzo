@@ -5,6 +5,7 @@ import static io.github.martinschneider.orzo.parser.productions.Method.CONSTRUCT
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Clazz {
@@ -20,6 +21,7 @@ public class Clazz {
   public String name;
   public String packageName;
   public Scope scope;
+  public String sourceFile;
 
   public Clazz(
       String packageName,
@@ -31,7 +33,8 @@ public class Clazz {
       List<String> interfaces,
       String baseClass,
       List<Method> methods,
-      List<ParallelDeclaration> fields) {
+      List<ParallelDeclaration> fields,
+      String sourceFile) {
     this.packageName = packageName;
     this.imports = imports;
     this.scope = scope;
@@ -42,23 +45,23 @@ public class Clazz {
     this.baseClass = baseClass;
     this.isInterface = isInterface;
     this.isEnum = isEnum;
+    this.sourceFile = sourceFile;
   }
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((baseClass == null) ? 0 : baseClass.hashCode());
-    result = prime * result + ((fields == null) ? 0 : fields.hashCode());
-    result = prime * result + ((imports == null) ? 0 : imports.hashCode());
-    result = prime * result + ((interfaces == null) ? 0 : interfaces.hashCode());
-    result = prime * result + (isEnum ? 1231 : 1237);
-    result = prime * result + (isInterface ? 1231 : 1237);
-    result = prime * result + ((methods == null) ? 0 : methods.hashCode());
-    result = prime * result + ((name == null) ? 0 : name.hashCode());
-    result = prime * result + ((packageName == null) ? 0 : packageName.hashCode());
-    result = prime * result + ((scope == null) ? 0 : scope.hashCode());
-    return result;
+    return Objects.hash(
+        baseClass,
+        fields,
+        imports,
+        interfaces,
+        isEnum,
+        isInterface,
+        methods,
+        name,
+        packageName,
+        scope,
+        sourceFile);
   }
 
   @Override
@@ -67,33 +70,17 @@ public class Clazz {
     if (obj == null) return false;
     if (getClass() != obj.getClass()) return false;
     Clazz other = (Clazz) obj;
-    if (baseClass == null) {
-      if (other.baseClass != null) return false;
-    } else if (!baseClass.equals(other.baseClass)) return false;
-    if (fields == null) {
-      if (other.fields != null) return false;
-    } else if (!fields.equals(other.fields)) return false;
-    if (imports == null) {
-      if (other.imports != null) return false;
-    } else if (!imports.equals(other.imports)) return false;
-    if (interfaces == null) {
-      if (other.interfaces != null) return false;
-    } else if (!interfaces.equals(other.interfaces)) return false;
-    if (isEnum != other.isEnum) return false;
-    if (isInterface != other.isInterface) return false;
-    if (methods == null) {
-      if (other.methods != null) return false;
-    } else if (!methods.equals(other.methods)) return false;
-    if (name == null) {
-      if (other.name != null) return false;
-    } else if (!name.equals(other.name)) return false;
-    if (packageName == null) {
-      if (other.packageName != null) return false;
-    } else if (!packageName.equals(other.packageName)) return false;
-    if (scope == null) {
-      if (other.scope != null) return false;
-    } else if (!scope.equals(other.scope)) return false;
-    return true;
+    return Objects.equals(baseClass, other.baseClass)
+        && Objects.equals(fields, other.fields)
+        && Objects.equals(imports, other.imports)
+        && Objects.equals(interfaces, other.interfaces)
+        && isEnum == other.isEnum
+        && isInterface == other.isInterface
+        && Objects.equals(methods, other.methods)
+        && Objects.equals(name, other.name)
+        && Objects.equals(packageName, other.packageName)
+        && Objects.equals(scope, other.scope)
+        && Objects.equals(sourceFile, other.sourceFile);
   }
 
   public String fqn() {

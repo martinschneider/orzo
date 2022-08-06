@@ -1,19 +1,12 @@
 package io.github.martinschneider.orzo.util;
 
-public class Pair<S, T> {
-  S left;
-  T right;
+// don't use generics to allow compilation with Orzo
+public class Pair {
+  public Object _left;
+  public Object _right;
 
-  public Pair(S left, T right) {
-    this.left = left;
-    this.right = right;
-  }
-
-  public S getLeft() {
-    return left;
-  }
-
-  public T getRight() {
-    return right;
+  public Pair(Object left, Object right) {
+    this._left = left;
+    this._right = right;
   }
 }

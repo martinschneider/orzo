@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class TokenList {
-  private List<Token> tokens;
+  public List<Token> tokens;
   private int idx;
 
   public TokenList(List<Token> tokens) {
@@ -98,10 +98,6 @@ public class TokenList {
 
   public int idx() {
     return idx;
-  }
-
-  public int size() {
-    return tokens.size();
   }
 
   public List<Token> list() {

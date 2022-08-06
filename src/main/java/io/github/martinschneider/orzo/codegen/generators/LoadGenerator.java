@@ -50,8 +50,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
-import io.github.martinschneider.orzo.codegen.VariableInfo;
-import io.github.martinschneider.orzo.codegen.VariableMap;
+import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.util.List;
@@ -90,8 +90,9 @@ public class LoadGenerator {
         return out;
       case INT:
         return loadInteger(out, idx);
+      default:
+        return loadReference(out, idx);
     }
-    return out;
   }
 
   public HasOutput ldc(DynamicByteArray out, byte type, Object key) {
@@ -121,16 +122,19 @@ public class LoadGenerator {
   }
 
   public HasOutput loadValueFromArray(
-      DynamicByteArray out, VariableMap variables, List<Expression> indices, VariableInfo varInfo) {
+      DynamicByteArray out,
+      GlobalIdentifierMap classIdMap,
+      List<Expression> indices,
+      VariableInfo varInfo) {
     load(out, varInfo);
-    loadValueFromArrayOnStack(out, variables, indices, varInfo.arrType);
+    loadValueFromArrayOnStack(out, classIdMap, indices, varInfo.arrType);
     return out;
   }
 
   public HasOutput loadValueFromArrayOnStack(
-      DynamicByteArray out, VariableMap variables, List<Expression> indices, String type) {
+      DynamicByteArray out, GlobalIdentifierMap classIdMap, List<Expression> indices, String type) {
     for (Expression arrIdx : indices) {
-      ctx.exprGen.eval(out, variables, INT, arrIdx);
+      ctx.exprGen.eval(out, INT, arrIdx);
     }
     out.write(getLoadOpCode(type.replaceAll("\\[", "")));
     return out;

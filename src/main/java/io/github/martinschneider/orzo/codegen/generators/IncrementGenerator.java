@@ -14,8 +14,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
-import io.github.martinschneider.orzo.codegen.VariableInfo;
-import io.github.martinschneider.orzo.codegen.VariableMap;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
@@ -31,8 +30,7 @@ public class IncrementGenerator implements StatementGenerator<IncrementStatement
   }
 
   @Override
-  public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, IncrementStatement incr) {
+  public HasOutput generate(DynamicByteArray out, Method method, IncrementStatement incr) {
     if (incr.expr.tokens.size() != 2
         || !(incr.expr.tokens.get(0) instanceof Identifier)
         || !(incr.expr.tokens.get(1) instanceof Operator)) {
@@ -44,7 +42,7 @@ public class IncrementGenerator implements StatementGenerator<IncrementStatement
     }
     Identifier id = (Identifier) incr.expr.tokens.get(0);
     Operators op = ((Operator) incr.expr.tokens.get(1)).opValue();
-    VariableInfo varInfo = variables.get(id);
+    VariableInfo varInfo = ctx.classIdMap.variables.get(id);
     inc(out, varInfo, op, true);
     return out;
   }

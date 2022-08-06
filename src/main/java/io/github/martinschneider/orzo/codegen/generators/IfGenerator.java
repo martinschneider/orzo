@@ -6,7 +6,6 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
-import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.IfBlock;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -22,15 +21,14 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
   }
 
   @Override
-  public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, IfStatement ifStmt) {
+  public HasOutput generate(DynamicByteArray out, Method method, IfStatement ifStmt) {
     List<DynamicByteArray> bodyOutputs = new ArrayList<>();
     List<DynamicByteArray> condOutputs = new ArrayList<>();
     for (int i = 0; i < ifStmt.ifBlks.size(); i++) {
       IfBlock ifBlock = ifStmt.ifBlks.get(i);
       DynamicByteArray bodyOut = new DynamicByteArray();
       for (Statement innerStmt : ifBlock.body) {
-        ctx.delegator.generate(variables, bodyOut, method, innerStmt);
+        ctx.delegator.generate(bodyOut, method, innerStmt);
       }
       DynamicByteArray conditionOut = new DynamicByteArray();
       if (ifBlock.cond != null) { // null for else blocks
@@ -38,7 +36,7 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
         if (i != ifStmt.ifBlks.size() - 1) {
           branchBytes += 3;
         }
-        ctx.exprGen.eval(conditionOut, variables, null, ifBlock.cond, false, true);
+        ctx.exprGen.eval(conditionOut, null, ifBlock.cond, false, true);
         conditionOut.write(branchBytes);
       }
       bodyOutputs.add(bodyOut);

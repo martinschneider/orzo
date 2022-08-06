@@ -1,7 +1,6 @@
 #/bin/bash
 # Helper script to show the bytecode diff between a source file compiled with Orzo and javac
 # TODO: support classes in non-default packages
-# This sends all shell output to /dev/null. Change as needed.
 
 TMP_DIR="/tmp"
 DIFF_CMD="meld"
@@ -20,11 +19,11 @@ sort_constant_pool () {
   done 3<$1 > $2
 } 
 
-java -jar ./target/orzo-0.0.1-SNAPSHOT.jar $1 -d $TMP_DIR >> /dev/null
+java -jar ./target/orzo.jar $1 -d $TMP_DIR  -v 5
 JAVAC_CLASS=$TMP_DIR/$(basename $1 .java).class
 ORZO_CLASS=$TMP_DIR/$(basename $1 .java)_orzo.class
 mv $JAVAC_CLASS $ORZO_CLASS
-javac -source 7 $1 -d $TMP_DIR >> /dev/null 2>/dev/null
+javac -source 7 -target 7 -Xlint:-options $1 -d $TMP_DIR >> /dev/null
 javap -v $JAVAC_CLASS >> $TMP_DIR/javacbytes
 javap -v $ORZO_CLASS >> $TMP_DIR/orzobytes
 sort_constant_pool $TMP_DIR/javacbytes $TMP_DIR/javacbytes_sorted

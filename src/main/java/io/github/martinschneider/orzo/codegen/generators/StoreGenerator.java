@@ -47,7 +47,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
-import io.github.martinschneider.orzo.codegen.VariableInfo;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 
 public class StoreGenerator {
@@ -184,14 +184,13 @@ public class StoreGenerator {
     return out;
   }
 
-  private HasOutput putStatic(DynamicByteArray out, short idx) {
-
+  public HasOutput putStatic(DynamicByteArray out, short idx) {
     out.write(PUTSTATIC);
     out.write(idx);
     return out;
   }
 
-  private HasOutput putField(DynamicByteArray out, short idx) {
+  public HasOutput putField(DynamicByteArray out, short idx) {
     out.write(PUTFIELD);
     out.write(idx);
     return out;

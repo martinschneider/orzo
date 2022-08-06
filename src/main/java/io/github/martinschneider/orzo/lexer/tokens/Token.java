@@ -45,10 +45,6 @@ public class Token {
     return val.toString();
   }
 
-  public static Token of(Object val) {
-    return new Token(val);
-  }
-
   public static Chr chr(char val) {
     return new Chr(val);
   }
@@ -57,20 +53,8 @@ public class Token {
     return new Str(val);
   }
 
-  public static IntLiteral integer(Long val) {
-    return new IntLiteral(BigInteger.valueOf(val), true);
-  }
-
   public static IntLiteral integer(Integer val) {
     return new IntLiteral(BigInteger.valueOf(val), false);
-  }
-
-  public static IntLiteral integer(BigInteger val, boolean isLong) {
-    return new IntLiteral(val, isLong);
-  }
-
-  public static IntLiteral integer(BigInteger val) {
-    return new IntLiteral(val, false);
   }
 
   public static IntLiteral integer(String val) {

@@ -47,6 +47,7 @@ public class MethodCallParserTest {
                     arrInit("int", 2, list(expr("1"), expr("2"))),
                     arrInit("int", 2, list(expr("3"), expr("4")))))),
         args("doSomething()[0]", methodCall("doSomething", emptyList(), arrSel(list(expr("0"))))),
+        args("System.out.println()", methodCall("System.out.println", emptyList())),
         args("someMethod(", null),
         args("someMethod(a", null));
     // args(

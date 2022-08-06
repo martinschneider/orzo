@@ -51,8 +51,8 @@ import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.OperandStack;
-import io.github.martinschneider.orzo.codegen.VariableInfo;
-import io.github.martinschneider.orzo.codegen.VariableMap;
+import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Chr;
 import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
@@ -80,18 +80,12 @@ public class ExpressionGenerator {
   private static final List<Operators> COMPARATORS =
       List.of(EQUAL, NOTEQUAL, GREATER, LESS, LESSEQ, GREATEREQ);
 
-  public ExpressionResult eval(
-      DynamicByteArray out, VariableMap variables, String type, Expression expr) {
-    return eval(out, variables, type, expr, true, false);
+  public ExpressionResult eval(DynamicByteArray out, String type, Expression expr) {
+    return eval(out, type, expr, true, false);
   }
 
   public ExpressionResult eval(
-      DynamicByteArray out,
-      VariableMap variables,
-      String type,
-      Expression expr,
-      boolean pushIfZero,
-      boolean reverseComp) {
+      DynamicByteArray out, String type, Expression expr, boolean pushIfZero, boolean reverseComp) {
     // TODO: support String concatenation
     // TODO: support different types
     // TODO: error handling, e.g. only "+" operator is valid for String
@@ -99,11 +93,11 @@ public class ExpressionGenerator {
     // valid for doubles etc.
     if (expr instanceof ArrayInit) {
       ArrayInit arrInit = (ArrayInit) expr;
-      generateArray(out, variables, arrInit);
+      generateArray(out, ctx.classIdMap, arrInit);
       return new ExpressionResult(arrInit.type, null);
     }
     if (type == null) {
-      type = new NumExprTypeDecider(ctx).getType(variables, expr);
+      type = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, expr);
     }
     Object val = null;
     if (expr == null) {
@@ -123,7 +117,7 @@ public class ExpressionGenerator {
         // operands in
         // a different order. Therefore, we skip processing them here.
       } else if (token instanceof Identifier) {
-        type = handleId(out, variables, tokens, i, token, type);
+        type = handleId(out, ctx.classIdMap, tokens, i, token, type);
         exprTypeStack.push(type);
       } else if (token instanceof IntLiteral) {
         BigInteger bigInt = (BigInteger) ((IntLiteral) token).val;
@@ -168,7 +162,7 @@ public class ExpressionGenerator {
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
         if (List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT).contains(op)) {
-          VariableInfo varInfo = variables.get(tokens.get(i - 1));
+          VariableInfo varInfo = ctx.classIdMap.variables.get(tokens.get(i - 1));
           ctx.incrGen.inc(out, varInfo, op, false);
         } else if (op.equals(POW)) {
           if (type.equals(DOUBLE)) {
@@ -176,7 +170,7 @@ public class ExpressionGenerator {
             ctx.invokeGen.invokeStatic(
                 out, new Method("java.lang.Math", "pow", DOUBLE, List.of(DOUBLE, DOUBLE)));
           } else {
-            eval(out, variables, LONG, new Expression(List.of(tokens.get(i - 1))));
+            eval(out, LONG, new Expression(List.of(tokens.get(i - 1))));
             ctx.constPool.addClass("java/math/BigInteger");
             ctx.constPool.addMethodRef(
                 "java/math/BigInteger", "valueOf", "(J)Ljava/math/BigInteger;");
@@ -186,7 +180,7 @@ public class ExpressionGenerator {
                 out,
                 new Method(
                     "java.math.BigInteger", "valueOf", "Ljava/math/BigInteger;", List.of(LONG)));
-            eval(out, variables, INT, new Expression(List.of(tokens.get(i - 2))));
+            eval(out, INT, new Expression(List.of(tokens.get(i - 2))));
             ctx.invokeGen.invokeVirtual(
                 out,
                 new Method("java/math/BigInteger", "pow", "Ljava/math/BigInteger;", List.of(INT)));
@@ -236,7 +230,7 @@ public class ExpressionGenerator {
 
   private String handleId(
       DynamicByteArray out,
-      VariableMap variables,
+      GlobalIdentifierMap classIdMap,
       List<Token> tokens,
       int i,
       Token token,
@@ -246,20 +240,20 @@ public class ExpressionGenerator {
     do {
       if (token instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) token;
-        type = ctx.methodCallGen.generate(out, variables, methodCall);
+        type = ctx.methodCallGen.generate(out, classIdMap, methodCall);
         if (curr.arrSel != null) {
-          ctx.loadGen.loadValueFromArrayOnStack(out, variables, curr.arrSel.exprs, type);
+          ctx.loadGen.loadValueFromArrayOnStack(out, classIdMap, curr.arrSel.exprs, type);
           if (!type.isEmpty()) {
             // remove leading '[' from type
             type = type.substring(methodCall.arrSel.exprs.size());
           }
         }
       } else {
-        if (prev != null && variables.get(prev).arrType != null) {
+        if (prev != null && ctx.classIdMap.variables.get(prev).arrType != null) {
           ctx.basicGen.arrayLength(out);
           type = INT;
         } else {
-          VariableInfo varInfo = variables.get(curr);
+          VariableInfo varInfo = ctx.classIdMap.variables.get(curr);
           if (varInfo == null) {
             ctx.errors.addError(
                 LOGGER_NAME,
@@ -279,7 +273,7 @@ public class ExpressionGenerator {
                   && !tokens.get(i + 1).eq(op(PRE_DECREMENT)))) {
             if (curr.arrSel != null) {
               // array
-              ctx.loadGen.loadValueFromArray(out, variables, curr.arrSel.exprs, varInfo);
+              ctx.loadGen.loadValueFromArray(out, classIdMap, curr.arrSel.exprs, varInfo);
               type = varInfo.arrType;
             } else {
               ctx.loadGen.load(out, varInfo);
@@ -296,11 +290,12 @@ public class ExpressionGenerator {
     return type;
   }
 
-  public HasOutput generateArray(DynamicByteArray out, VariableMap variables, ArrayInit arrInit) {
+  public HasOutput generateArray(
+      DynamicByteArray out, GlobalIdentifierMap classIdMap, ArrayInit arrInit) {
     String type = arrInit.type;
     byte arrayType = getArrayType(type);
     byte storeOpCode = getStoreOpCode(type);
-    createArray(out, variables, arrayType, arrInit.dims);
+    createArray(out, classIdMap, arrayType, arrInit.dims);
     // multi-dim array
     if (arrInit.vals.size() >= 2) {
       // TODO
@@ -310,7 +305,7 @@ public class ExpressionGenerator {
       for (int i = 0; i < arrInit.vals.get(0).size(); i++) {
         out.write(DUP);
         ctx.pushGen.push(out, INT, i);
-        ctx.exprGen.eval(out, variables, type, arrInit.vals.get(0).get(i));
+        ctx.exprGen.eval(out, type, arrInit.vals.get(0).get(i));
         out.write(storeOpCode);
       }
     }
@@ -319,18 +314,14 @@ public class ExpressionGenerator {
   }
 
   private void createArray(
-      DynamicByteArray out, VariableMap variables, byte arrayType, List<Expression> dims) {
+      DynamicByteArray out, GlobalIdentifierMap classIdMap, byte arrayType, List<Expression> dims) {
     if (dims.size() == 1) {
-      ctx.exprGen.eval(out, variables, INT, dims.get(0));
+      ctx.exprGen.eval(out, INT, dims.get(0));
       out.write(NEWARRAY);
       out.write(arrayType);
     } else {
       // TODO:
     }
-  }
-
-  public static boolean isZero(Object val) {
-    return (val instanceof BigInteger && val.equals(BigInteger.ZERO));
   }
 
   // To generate code for control structures it is often useful to get the inverse comparator. For

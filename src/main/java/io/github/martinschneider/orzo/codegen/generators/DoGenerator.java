@@ -6,7 +6,6 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
-import io.github.martinschneider.orzo.codegen.VariableMap;
 import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.DoStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -22,8 +21,7 @@ public class DoGenerator implements StatementGenerator<DoStatement> {
   }
 
   @Override
-  public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, DoStatement doStmt) {
+  public HasOutput generate(DynamicByteArray out, Method method, DoStatement doStmt) {
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements
     List<Byte> breaks = new ArrayList<>();
@@ -33,12 +31,12 @@ public class DoGenerator implements StatementGenerator<DoStatement> {
         bodyOut.write(GOTO);
         bodyOut.write((short) 0); // placeholder
       } else {
-        ctx.delegator.generate(variables, bodyOut, method, innerStmt);
+        ctx.delegator.generate(bodyOut, method, innerStmt);
       }
     }
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) -(bodyOut.getBytes().length + conditionOut.getBytes().length);
-    ctx.exprGen.eval(conditionOut, variables, null, doStmt.cond, false, false);
+    ctx.exprGen.eval(conditionOut, null, doStmt.cond, false, false);
     branchBytes -= conditionOut.getBytes().length;
     branchBytes++;
     conditionOut.write(branchBytes);

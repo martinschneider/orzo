@@ -33,6 +33,9 @@ public class AssignmentParserTest {
         args("x=false", assign(id("x"), expr("false"))),
         args("x=5*12-3/6+12%4", assign(id("x"), expr("5*12-3/6+12%4"))),
         args("x[1]=3", assign(id("x", arrSel(list(expr("1")))), expr("3"))),
+        args("this.a=1", assign(list(id("this", "a")), list(expr("1")))),
+        args("this.a=a", assign(list(id("this", "a")), list(expr("a")))),
+        args("this.a=b[1]", assign(list(id("this", "a")), list(expr("b[1]")))),
         args(
             "a[1],b=b,c",
             assign(list(id("a", arrSel(list(expr("1")))), id("b")), list(expr("b"), expr("c")))),

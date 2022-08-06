@@ -4,8 +4,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.str;
 import static java.util.Collections.emptyList;
 
-import io.github.martinschneider.orzo.codegen.VariableInfo;
-import io.github.martinschneider.orzo.codegen.VariableMap;
+import io.github.martinschneider.orzo.codegen.identifier.IdentifierMap;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.error.CompilerError;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
@@ -101,7 +101,7 @@ public class FactoryHelper {
       List<Method> body,
       List<ParallelDeclaration> decls) {
     return new Clazz(
-        packageName, imports, scope, name, false, false, interfaces, baseClass, body, decls);
+        packageName, imports, scope, name, false, false, interfaces, baseClass, body, decls, null);
   }
 
   public static Clazz iface(
@@ -122,7 +122,8 @@ public class FactoryHelper {
         Collections.emptyList(),
         baseClass,
         body,
-        decls);
+        decls,
+        null);
   }
 
   public static Clazz enumm(
@@ -142,7 +143,8 @@ public class FactoryHelper {
         Collections.emptyList(),
         "java.lang.Enum",
         body,
-        decls);
+        decls,
+        null);
   }
 
   public static ParallelDeclaration pDecl(List<Declaration> decls) {
@@ -152,11 +154,6 @@ public class FactoryHelper {
   public static Declaration decl(
       List<AccessFlag> accFlags, Identifier name, String type, Expression val) {
     return new Declaration(accFlags, type, 0, name, val);
-  }
-
-  public static Declaration decl(
-      List<AccessFlag> accFlags, Identifier name, String type, int array, Expression val) {
-    return new Declaration(accFlags, type, array, name, val);
   }
 
   public static ParallelDeclaration pDecl(
@@ -184,10 +181,6 @@ public class FactoryHelper {
       Statement loopStatement,
       List<Statement> body) {
     return new ForStatement(initialization, condition, loopStatement, body);
-  }
-
-  public static CompilerError err(String msg, StackTraceElement[] trace) {
-    return new CompilerError(msg, trace);
   }
 
   public static CompilerError err(String msg) {
@@ -243,16 +236,6 @@ public class FactoryHelper {
     return new Constructor(null, list(((Scopes) scope.val).accFlag), name, arguments, body);
   }
 
-  public static Method method(
-      String fqClassName,
-      List<AccessFlag> accFlags,
-      String type,
-      Identifier name,
-      List<Argument> arguments,
-      List<Statement> body) {
-    return new Method(fqClassName, accFlags, type, name, arguments, body);
-  }
-
   public static MethodCall methodCall(String name, List<Expression> parameters) {
     return new MethodCall(name, parameters);
   }
@@ -271,14 +254,6 @@ public class FactoryHelper {
     return new WhileStatement(condition, body);
   }
 
-  public static VariableInfo varInfo(String name, String type, int idx, Expression value) {
-    return new VariableInfo(name, type, emptyList(), false, (short) idx, value);
-  }
-
-  public static VariableInfo varInfoArr(String name, String type, int idx, Expression value) {
-    return new VariableInfo(name, "reference", type, emptyList(), false, (short) idx, value);
-  }
-
   public static VariableInfo varInfo(String name, String type, int idx) {
     return new VariableInfo(name, type, emptyList(), false, (short) idx, null);
   }
@@ -287,12 +262,14 @@ public class FactoryHelper {
     return new VariableInfo(name, "reference", type, emptyList(), false, (short) idx, null);
   }
 
-  public static VariableMap varMap(List<VariableInfo> varInfos) {
+  public static IdentifierMap varMap(List<VariableInfo> varInfos) {
     Map<String, VariableInfo> map = new HashMap<>();
     for (VariableInfo varInfo : varInfos) {
       map.put(varInfo.name, varInfo);
     }
-    return new VariableMap(map);
+    IdentifierMap idMap = new IdentifierMap();
+    idMap.localMap = map;
+    return idMap;
   }
 
   @SafeVarargs
@@ -307,8 +284,4 @@ public class FactoryHelper {
 
   // TODO this is currently unused
   private static final Token[] TOKENS = new Token[] {str("test")};
-
-  public static Token randomToken() {
-    return TOKENS[(int) (Math.random() * TOKENS.length)];
-  }
 }

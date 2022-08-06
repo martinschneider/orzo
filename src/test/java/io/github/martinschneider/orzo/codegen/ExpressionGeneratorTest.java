@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import io.github.martinschneider.orzo.codegen.generators.ExpressionGenerator;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
@@ -219,6 +220,7 @@ public class ExpressionGeneratorTest {
     ctx = new CGContext();
     ctx.init(
         new CompilerErrors(),
+        null,
         0,
         list(
             clazz(
@@ -260,8 +262,9 @@ public class ExpressionGeneratorTest {
       throws IOException {
     TokenList tokens = new Lexer().getTokens(input);
     ctx.constPool = new MockConstantPool(ctx, constants);
-    target.eval(out, varMap(varInfos), type, parser.parse(tokens));
-    assertFalse(ctx.errors.count() > 0, "Compilation errors " + ctx.errors);
+    ctx.classIdMap.variables = varMap(varInfos);
+    target.eval(out, type, parser.parse(tokens));
+    assertFalse(ctx.errors.errors.size() > 0, "Compilation errors " + ctx.errors);
     assertEquals(String.join("\n", expectedLines), BytecodeDecompiler.decompile(out.getBytes()));
   }
 }

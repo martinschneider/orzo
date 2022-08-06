@@ -9,8 +9,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
-import io.github.martinschneider.orzo.codegen.VariableInfo;
-import io.github.martinschneider.orzo.codegen.VariableMap;
+import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
@@ -30,28 +30,27 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
   private CGContext ctx;
 
   @Override
-  public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, ParallelDeclaration pDecl) {
+  public HasOutput generate(DynamicByteArray out, Method method, ParallelDeclaration pDecl) {
     for (Declaration decl : pDecl.declarations) {
       if (decl.arrDim > 0) {
-        return generateArray(out, variables, method, decl);
+        return generateArray(out, ctx.classIdMap, method, decl);
       }
       if (decl.val != null) {
-        VariableInfo varInfo = variables.get(decl.name);
+        VariableInfo varInfo = ctx.classIdMap.variables.get(decl.name);
         if (decl.isField && !varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
-          ctx.loadGen.loadReference(out, variables.get(decl.name).objectRef);
+          ctx.loadGen.loadReference(out, ctx.classIdMap.variables.get(decl.name).objectRef);
         }
-        ctx.exprGen.eval(out, variables, decl.type, decl.val);
+        ctx.exprGen.eval(out, decl.type, decl.val);
       } else {
         ctx.pushGen.push(out, decl.type, ZERO);
       }
-      ctx.assignGen.assign(out, variables, decl.type, decl.name);
+      ctx.assignGen.assign(out, ctx.classIdMap.variables, decl.type, decl.name);
     }
     return out;
   }
 
   public HasOutput generateArray(
-      DynamicByteArray out, VariableMap variables, Method method, Declaration decl) {
+      DynamicByteArray out, GlobalIdentifierMap classIdMap, Method method, Declaration decl) {
     // TODO: handle method calls in array declaration
     if (decl.val == null || !(decl.val instanceof ArrayInit)) {
       ctx.errors.addError(
@@ -64,7 +63,7 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
     byte arrayType = getArrayType(type);
     byte storeOpCode = getStoreOpCode(type);
     ArrayInit arrInit = (ArrayInit) decl.val;
-    createArray(out, variables, arrayType, arrInit.dims);
+    createArray(out, classIdMap, arrayType, arrInit.dims);
     // multi-dim array
     if (arrInit.vals.size() >= 2) {
       // TODO
@@ -74,18 +73,18 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
       for (int i = 0; i < arrInit.vals.get(0).size(); i++) {
         out.write(DUP);
         ctx.pushGen.push(out, INT, i);
-        ctx.exprGen.eval(out, variables, type, arrInit.vals.get(0).get(i));
+        ctx.exprGen.eval(out, type, arrInit.vals.get(0).get(i));
         out.write(storeOpCode);
       }
     }
-    ctx.assignGen.assignArray(out, variables, type, decl.arrDim, decl.name);
+    ctx.assignGen.assignArray(out, classIdMap, type, decl.arrDim, decl.name);
     return out;
   }
 
   private void createArray(
-      DynamicByteArray out, VariableMap variables, byte arrayType, List<Expression> dims) {
+      DynamicByteArray out, GlobalIdentifierMap classIdMap, byte arrayType, List<Expression> dims) {
     if (dims.size() == 1) {
-      ctx.exprGen.eval(out, variables, INT, dims.get(0));
+      ctx.exprGen.eval(out, INT, dims.get(0));
       out.write(NEWARRAY);
       out.write(arrayType);
     } else {

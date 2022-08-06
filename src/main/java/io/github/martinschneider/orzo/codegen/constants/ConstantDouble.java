@@ -3,19 +3,20 @@ package io.github.martinschneider.orzo.codegen.constants;
 import static io.github.martinschneider.orzo.codegen.ByteUtils2.longToByteArray;
 
 public class ConstantDouble implements Constant {
-  private double val;
+  private double _val;
 
   public ConstantDouble(double val) {
-    this.val = val;
+    this._val = val;
   }
 
   @Override
   public byte[] info() {
-    return longToByteArray(Double.doubleToLongBits(val));
+    return longToByteArray(Double.doubleToLongBits(_val));
   }
 
   @Override
   public byte tag() {
-    return ConstantTypes.CONSTANT_DOUBLE;
+    return 6;
+    // return ConstantTypes.CONSTANT_DOUBLE;
   }
 }

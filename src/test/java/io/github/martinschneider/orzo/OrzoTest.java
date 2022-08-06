@@ -124,7 +124,7 @@ public class OrzoTest {
         args(list("tests/PreDecrementChar")),
         args(list("examples/Fibonacci2", "examples/MathUtils")),
         args(list("tests/BasicTypeCasts")),
-        args(list("tests/GlobalVariables")),
+        args(list("tests/Fields")),
         args(list("tests/ArrayLength")),
         // TODO: support infinite loops
         // args(list("tests/InfiniteRepeat")),

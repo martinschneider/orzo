@@ -153,7 +153,7 @@ public class Lexer {
 
   /** Scans for identifiers, primitive types and keywords */
   private void scanId() throws IOException {
-    if (Character.isLetter(character)) {
+    if (Character.isLetter(character) || character == '_') {
       buffer.append(character);
       while (isAlphanumeric(character = (char) inputReader.read())) {
         buffer.append(character);

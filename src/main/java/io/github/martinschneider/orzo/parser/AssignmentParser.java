@@ -26,6 +26,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT_ASSIG
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
@@ -53,16 +54,21 @@ public class AssignmentParser implements ProdParser<Assignment> {
     while (tokens.curr() instanceof Identifier || tokens.curr().eq(sym(COMMA))) {
       if (tokens.curr() instanceof Identifier) {
         Identifier id = (Identifier) tokens.curr();
-        //        if (tokens.peekNext().eq(sym(DOT)))
-        //        {
-        //        	tokens.next();
-        //        	if (tokens.peekNext() instanceof Identifier)
-        //        	{
-        //        		Identifier next = (Identifier) tokens.next();
-        //        		id.next = next;
-        //        	}
-        //        }
+        Identifier root = id;
+        while (tokens.peekNext().eq(sym(DOT))) {
+          tokens.next();
+          if (tokens.peekNext() instanceof Identifier) {
+            Identifier next = (Identifier) tokens.next();
+            id.next = next;
+            id = id.next;
+            tokens.remove(tokens.idx());
+            tokens.remove(tokens.idx() - 1);
+            tokens.prev();
+            tokens.prev();
+          }
+        }
         tokens.next();
+        id = root;
         id.arrSel = ctx.arraySelectorParser.parse(tokens);
         left.add(id);
       } else {

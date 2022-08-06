@@ -36,10 +36,6 @@ public class Expression {
     return tokens.get(tokens.size() - 1);
   }
 
-  public int size() {
-    return tokens.size();
-  }
-
   public Object getConstantValue(String type) {
     if (tokens.size() == 1) {
       Token token = tokens.get(0);

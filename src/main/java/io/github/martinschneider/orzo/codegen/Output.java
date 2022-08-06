@@ -2,7 +2,6 @@ package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.codegen.ByteUtils.intToByteArray;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
-import static io.github.martinschneider.orzo.codegen.ByteUtils2.longToByteArray;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -14,12 +13,6 @@ public class Output implements HasOutput {
 
   public Output(PrintStream... outputs) {
     this.outputs = outputs;
-  }
-
-  public void close() {
-    for (PrintStream out : outputs) {
-      out.close();
-    }
   }
 
   public void flush() {
@@ -49,10 +42,6 @@ public class Output implements HasOutput {
 
   public void write(int output) {
     write(intToByteArray(output));
-  }
-
-  public void write(long output) {
-    write(longToByteArray(output));
   }
 
   public void write(short output) {

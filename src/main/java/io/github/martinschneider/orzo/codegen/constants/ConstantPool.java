@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class ConstantPool {
 
-  // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.2-300-C.1
+  // https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.2-300-C.1
   public static final List<String> INT_CONSTANT_TYPES =
       List.of("int", "byte", "short", "char", "boolean");
 
@@ -174,7 +174,7 @@ public class ConstantPool {
         if (!allowMissing) {
           ctx.errors.addError(
               LOGGER_NAME,
-              String.format("expected key %s of type %s not found in constant pool %s", key, type),
+              String.format("expected key %s of type %s not found in constant pool", key, type),
               new RuntimeException().getStackTrace());
         }
         return -1;

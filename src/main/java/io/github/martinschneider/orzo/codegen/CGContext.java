@@ -12,6 +12,9 @@ import io.github.martinschneider.orzo.codegen.generators.MethodGenerator;
 import io.github.martinschneider.orzo.codegen.generators.PushGenerator;
 import io.github.martinschneider.orzo.codegen.generators.StatementDelegator;
 import io.github.martinschneider.orzo.codegen.generators.StoreGenerator;
+import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
+import io.github.martinschneider.orzo.codegen.identifier.IdentifierMap;
+import io.github.martinschneider.orzo.codegen.identifier.MemberProcessor;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -20,7 +23,6 @@ import java.util.Map;
 
 public class CGContext {
   public Clazz clazz;
-  public int currentIdx;
   public ConstantPool constPool;
   public Map<String, Method> methodMap;
   public StatementDelegator delegator;
@@ -37,8 +39,11 @@ public class CGContext {
   public InvokeGenerator invokeGen;
   public OperandStack opStack;
   public CompilerErrors errors;
+  public CodeGenerator codeGen;
+  public MemberProcessor memberProc;
+  public GlobalIdentifierMap classIdMap;
 
-  public void init(CompilerErrors errors, int idx, List<Clazz> clazzes) {
+  public void init(CompilerErrors errors, CodeGenerator codeGen, int idx, List<Clazz> clazzes) {
     clazz = clazzes.get(idx);
     this.errors = errors;
     constPoolProc = new ConstantPoolProcessor(this);
@@ -56,6 +61,10 @@ public class CGContext {
     loadGen = new LoadGenerator(this);
     storeGen = new StoreGenerator(this);
     opStack = new OperandStack();
+    this.codeGen = codeGen;
+    memberProc = new MemberProcessor(this);
+    classIdMap = new GlobalIdentifierMap();
+    classIdMap.variables = new IdentifierMap();
     delegator.ctx = this;
     exprGen.ctx = this;
     delegator.init();

@@ -32,9 +32,7 @@ public class MethodProcessor {
     List<Import> imports = currentClazz.imports;
     List<String> importStrings = imports.stream().map(x -> x.id).collect(Collectors.toList());
     for (Clazz clazz : clazzes) {
-      if (!currentClazz.equals(clazz)
-          && (currentClazz.packageName.equals(clazz.packageName)
-              || importStrings.contains(clazz.fqn()))) {
+      if (!currentClazz.equals(clazz)) {
         for (Method method : clazz.methods) {
           methodMap.put(clazz.name + '.' + getKey(method), method);
           methodMap.put(clazz.fqn() + '.' + getKey(method), method);
@@ -46,14 +44,16 @@ public class MethodProcessor {
     return methodMap;
   }
 
-  // Java specs Chapter 7: Code in a compilation unit automatically has access to all types declared
-  // in its package and also automatically imports all of the public types declared in the
-  // predefined package java.lang.
+  // Java specs Chapter 7 (https://docs.oracle.com/javase/specs/jls/se18/html/jls-7.html):
+  // Code in a compilation unit automatically has access to all types declared in its package
+  // and also automatically imports all of the public types declared in the predefined package
+  // java.lang.
   private Map<String, Method> addJavaLang(Map<String, Method> methodMap, Clazz currentClazz) {
     // TODO: Decide which classes to include. For simplicity, we limit this to what's actually used
     // in the samples.
     for (Class<?> clazz :
-        List.of(Math.class, Double.class, Character.class, Integer.class, Long.class)) {
+        List.of(
+            Math.class, Double.class, Float.class, Character.class, Integer.class, Long.class)) {
       for (java.lang.reflect.Method m : clazz.getMethods()) {
         if (Modifier.isPublic(m.getModifiers()) && Modifier.isStatic(m.getModifiers())) {
           List<Argument> args = mapArgs(m.getParameters());

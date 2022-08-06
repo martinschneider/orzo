@@ -36,8 +36,7 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
     List<Expression> values = new ArrayList<>();
     List<AccessFlag> accFlags = new ArrayList<>();
     if (tokens.curr() instanceof Scope) {
-      // OMG!
-      accFlags.add(((Scopes) ((Scope) tokens.curr()).val).accFlag);
+      accFlags.add(((Scopes) ((Scope) tokens.curr()).val).accFlag); // OMG!
       tokens.next();
     }
     if (tokens.curr().eq(keyword(STATIC))) {
@@ -48,15 +47,12 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       accFlags.add(AccessFlag.ACC_FINAL);
       tokens.next();
     }
-    // TODO: this will not work for non-basic types :-(
     if (tokens.curr() instanceof Type && !tokens.curr().eq("VOID")) {
       type = (Type) tokens.curr();
+    } else if (tokens.curr() instanceof Identifier
+        && ctx.typeMap.TYPES.containsKey(tokens.curr().toString())) {
+      type = ctx.typeMap.TYPES.get(tokens.curr().toString());
     }
-    //    else if (tokens.curr() instanceof Identifier &&
-    // isType(((Identifier)tokens.curr()).val.toString()))
-    //    {
-    //      type = new Type(((Identifier)tokens.curr()).val.toString());
-    //    }
     if (type != null) {
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
@@ -94,10 +90,6 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       return new ParallelDeclaration(declarations);
     }
     return null;
-  }
-
-  private boolean isType(String id) {
-    return Character.isUpperCase(id.charAt(0)) && !id.contains(".");
   }
 
   Expression parseExpOrArrInit(TokenList tokens) {

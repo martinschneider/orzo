@@ -15,6 +15,19 @@ public class ByteUtils {
     };
   }
 
+  public static byte[] longToByteArray(long val) {
+    return new byte[] {
+      (byte) ((val >> 56) & 255),
+      (byte) ((val >> 48) & 255),
+      (byte) ((val >> 40) & 255),
+      (byte) ((val >> 32) & 255),
+      (byte) ((val >> 24) & 255),
+      (byte) ((val >> 16) & 255),
+      (byte) ((val >> 8) & 255),
+      (byte) (val & 255)
+    };
+  }
+
   public static byte[] combine(byte left, byte right) {
     return combine(new byte[] {left}, new byte[] {right});
   }

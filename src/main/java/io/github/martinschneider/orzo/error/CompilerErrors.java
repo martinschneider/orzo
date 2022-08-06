@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CompilerErrors {
-  // this will be removed from the call trace output
-  public static final String PKG_PREFIX = "io.github.martinschneider.orzo.";
 
   public List<CompilerError> errors = new ArrayList<>();
   public int tokenIdx;
@@ -26,10 +24,6 @@ public class CompilerErrors {
                 "%s %s: expected %s but found %s",
                 (loc != null) ? loc : "EOF", loggerName, expected, tokens.get(tokenIdx)),
             trace));
-  }
-
-  public int count() {
-    return errors.size();
   }
 
   @Override
@@ -51,12 +45,13 @@ public class CompilerErrors {
       if (verbose > 0) {
         errorMsg.append(". call trace: ");
         for (int j = 0; j < verbose && j < error.trace.length; j++) {
-          errorMsg.append(error.trace[j].toString().replaceAll(PKG_PREFIX, ""));
+          errorMsg.append(error.trace[j]);
           if (j < verbose - 1 && j < error.trace.length - 1) {
             errorMsg.append(" <- ");
           }
         }
       }
+      errorMsg.append("\n");
     }
     return errorMsg.toString();
   }

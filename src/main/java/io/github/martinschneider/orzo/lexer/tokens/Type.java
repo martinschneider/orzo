@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo.lexer.tokens;
 
 import java.util.List;
 
+// TODO: replace this with a simple string
 public class Type extends Token {
   public static final String VOID = "void";
   public static final String INT = "int";

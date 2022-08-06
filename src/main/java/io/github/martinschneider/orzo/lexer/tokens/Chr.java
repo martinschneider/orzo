@@ -14,8 +14,4 @@ public class Chr extends Token {
   public String toString() {
     return "CHR(" + val + ")";
   }
-
-  public Object strValue() {
-    return val.toString();
-  }
 }

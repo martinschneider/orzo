@@ -10,6 +10,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 
+import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
@@ -33,7 +35,7 @@ public class NumExprTypeDecider {
     this.ctx = ctx;
   }
 
-  public String getType(VariableMap variables, Expression expr) {
+  public String getType(GlobalIdentifierMap classIdMap, Expression expr) {
     Set<String> types = new HashSet<>();
     if (expr instanceof ArrayInit) {
       types.add(((ArrayInit) expr).typeDescr());
@@ -56,7 +58,7 @@ public class NumExprTypeDecider {
         MethodCall methodCall = (MethodCall) token;
         List<String> argTypes = new ArrayList<>();
         for (Expression exp : methodCall.params) {
-          argTypes.add(new NumExprTypeDecider(ctx).getType(variables, exp));
+          argTypes.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
         }
         Method method = ctx.methodCallGen.findMatchingMethod(methodCall.name.toString(), argTypes);
         if (method != null) {
@@ -68,7 +70,7 @@ public class NumExprTypeDecider {
         }
       } else if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
-        VariableInfo var = variables.get(token);
+        VariableInfo var = ctx.classIdMap.variables.get(token);
         if (var != null) {
           if (id.arrSel != null) {
             types.add(var.arrType);

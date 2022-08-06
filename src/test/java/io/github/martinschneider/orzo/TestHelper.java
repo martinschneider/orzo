@@ -10,7 +10,7 @@ public class TestHelper {
     if (resetIdx) {
       Assertions.assertEquals(0, tokens.idx());
     } else {
-      Assertions.assertEquals(tokens.size(), tokens.idx());
+      Assertions.assertEquals(tokens.tokens.size(), tokens.idx());
     }
   }
 

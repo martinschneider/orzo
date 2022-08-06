@@ -1,32 +1,25 @@
 package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
-import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_UTF8;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
-import static java.util.Collections.emptyList;
-import static java.util.List.of;
 
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
-import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Method;
-import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
-import io.github.martinschneider.orzo.parser.productions.Statement;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class CodeGenerator {
-  private static final short JAVA_CLASS_MAJOR_VERSION = 49;
+  // for higher versions the JVM enforces stricter bytecode verification
+  // TODO: implement StackMapTable attribute:
+  // https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4
+  private static final short JAVA_CLASS_MAJOR_VERSION = 50;
   private static final short JAVA_CLASS_MINOR_VERSION = 0;
   private CGContext ctx;
   private List<Output> outputs;
   private List<Clazz> clazzes;
   private CompilerErrors errors;
-  private VariableMap fields;
   Output out;
 
   public CodeGenerator(List<Clazz> clazzes, List<Output> outputs, CompilerErrors errors) {
@@ -60,7 +53,10 @@ public class CodeGenerator {
   }
 
   private void attributes() {
-    out.write((short) 0);
+    out.write((short) 1);
+    out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "SourceFile"));
+    out.write(2);
+    out.write(ctx.constPool.indexOf(CONSTANT_UTF8, ctx.clazz.sourceFile));
   }
 
   private void classIndex() {
@@ -73,26 +69,28 @@ public class CodeGenerator {
   }
 
   private void fields() {
-    out.write((short) fields.size);
-    for (VariableInfo varInfo : fields.getVariables().values()) {
+    out.write((short) ctx.classIdMap.variables.fieldSize);
+    for (VariableInfo varInfo : ctx.classIdMap.variables.fieldMap.values()) {
       writeField(out, varInfo);
     }
   }
 
   private void init(int idx) {
     out = outputs.get(idx);
-    ctx.init(errors, idx, clazzes);
+    ctx.init(errors, this, idx, clazzes);
     ctx.constPool.addUtf8("SourceFile");
-    ctx.constPool.addUtf8("Test.java");
+    ctx.constPool.addUtf8(ctx.clazz.sourceFile);
   }
 
   public void generate() {
     for (int i = 0; i < clazzes.size(); i++) {
       Clazz clazz = clazzes.get(i);
       init(i);
+      ctx.classIdMap.variables.fieldMap.clear();
+      ctx.classIdMap.variables.localMap.clear();
       header();
       supportPrint(clazz);
-      processFields();
+      ctx.memberProc.processFields();
       HasOutput methods = methods(new DynamicByteArray(), clazz);
       HasOutput constPool = constPool(new DynamicByteArray());
       out.write(constPool.getBytes());
@@ -104,32 +102,6 @@ public class CodeGenerator {
       out.write(methods.getBytes());
       attributes();
       out.flush();
-    }
-  }
-
-  private void processFields() {
-    fields = new VariableMap(new HashMap<>());
-    for (ParallelDeclaration pDecl : ctx.clazz.fields) {
-      for (Declaration decl : pDecl.declarations) {
-        fields.put(
-            decl.name,
-            new VariableInfo(
-                decl.name.id().toString(),
-                (decl.arrDim > 0) ? REF : decl.type,
-                (decl.arrDim > 0) ? decl.type : null,
-                decl.accFlags,
-                true,
-                ctx.constPool.indexOf(
-                    CONSTANT_FIELDREF,
-                    ctx.clazz.fqn('/'),
-                    decl.name.id().toString(),
-                    TypeUtils.descr(decl.type, decl.arrDim)),
-                decl.val));
-        if (decl.accFlags.contains(AccessFlag.ACC_FINAL)) {
-          ctx.constPool.addUtf8("ConstantValue");
-          ctx.constPool.addByType(decl.type, decl.val.getConstantValue(decl.type));
-        }
-      }
     }
   }
 
@@ -155,11 +127,20 @@ public class CodeGenerator {
     List<Method> methods = ctx.clazz.methods;
     if (!clazz.isInterface) {
       ctx.constPool.addUtf8("Code");
-      addClInit(methods);
+      ctx.memberProc.addClInit(methods);
     }
     out.write((short) methods.size());
     for (Method method : methods) {
-      ctx.methodGen.generate(out, method, fields, clazz);
+      ctx.classIdMap.variables.localMap.clear();
+      ctx.classIdMap.variables.localSize = 0;
+      // keep idx 0 for "this" reference for super constructor call
+      // TODO: is there a better way?
+      if (Method.CONSTRUCTOR_NAME.equals(method.name.toString())) {
+        ctx.classIdMap.variables.localSize = 1;
+      }
+      ctx.memberProc.processMethodArgs(method);
+      ctx.memberProc.processLocalVars(method);
+      ctx.methodGen.generate(out, method, clazz);
     }
     return out;
   }
@@ -175,7 +156,7 @@ public class CodeGenerator {
     // TODO: for some reason this still breaks for long and double
     if (varInfo.accFlags.contains(AccessFlag.ACC_FINAL)) {
       out.write((short) 1); // attribute size
-      // https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.2
+      // https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.2
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "ConstantValue"));
       out.write(2);
       out.write(
@@ -183,68 +164,6 @@ public class CodeGenerator {
               ctx.constPool.getTypeByte(varInfo.type), varInfo.val.getConstantValue(varInfo.type)));
     } else {
       out.write((short) 0); // attribute size
-    }
-  }
-
-  private void addClInit(List<Method> methods) {
-    List<ParallelDeclaration> staticInits = new ArrayList<>();
-    List<ParallelDeclaration> constrInits = new ArrayList<>();
-    if (ctx.clazz.fields == null) {
-      return;
-    }
-    for (ParallelDeclaration pDecl : ctx.clazz.fields) {
-      if (!staticInits.isEmpty() && !constrInits.isEmpty()) {
-        break;
-      }
-      for (Declaration decl : pDecl.declarations) {
-        // the values of final fields are set with the ConstantValue Attribute
-        if (decl.val != null && !decl.accFlags.contains(AccessFlag.ACC_FINAL)) {
-          if (decl.accFlags.contains(AccessFlag.ACC_STATIC)) {
-            staticInits.add(pDecl);
-          } else {
-            constrInits.add(pDecl);
-          }
-          break;
-        }
-      }
-    }
-    // for now, a static initialiser is only necessary if there is at least one
-    // public field with a non-default value (because its value must be set in the
-    // initialiser)
-    // TODO: support explicit use of static initialiser blocks, e.g. support static
-    // { ... } in the
-    // source code
-    if (!staticInits.isEmpty()) {
-      Method clInit =
-          new Method(
-              "", of(AccessFlag.ACC_STATIC), "void", id("<clinit>"), emptyList(), emptyList());
-      ctx.constPool.addUtf8(clInit.name.val.toString());
-      ctx.constPool.addUtf8(TypeUtils.methodDescr(clInit));
-      List<Statement> statements = new ArrayList<>();
-      statements.addAll(staticInits);
-      clInit.body = statements;
-      methods.add(clInit);
-    }
-    if (!constrInits.isEmpty()) {
-      List<Method> constructors = ctx.clazz.getConstructors();
-      if (constructors.isEmpty()) {
-        ctx.errors.addError(
-            "codegen", "missing default constructor", new RuntimeException().getStackTrace());
-      }
-      // add initializer calls after super();
-      for (Method constr : constructors) {
-        List<Statement> body = new ArrayList<>();
-        boolean startsWithSuper = ctx.methodGen.startsWithCallToSuper(constr.body);
-        if (startsWithSuper) {
-          body.add(constr.body.get(0));
-        }
-        body.addAll(constrInits);
-        int idx = startsWithSuper ? 1 : 0;
-        for (int i = idx; i < constr.body.size(); i++) {
-          body.add(constr.body.get(i));
-        }
-        constr.body = body;
-      }
     }
   }
 

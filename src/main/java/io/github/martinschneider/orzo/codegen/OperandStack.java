@@ -53,13 +53,6 @@ public class OperandStack {
     return types.peek();
   }
 
-  public String type2() {
-    String tmp = types.pop();
-    String ret = types.peek();
-    types.push(tmp);
-    return ret;
-  }
-
   public int maxSize() {
     return maxSize;
   }

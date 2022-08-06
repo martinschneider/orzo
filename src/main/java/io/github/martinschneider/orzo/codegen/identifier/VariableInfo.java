@@ -1,10 +1,10 @@
-package io.github.martinschneider.orzo.codegen;
+package io.github.martinschneider.orzo.codegen.identifier;
 
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.util.List;
 
-public class VariableInfo {
+public class VariableInfo implements IdentifierInfo {
   public String name;
   public String type;
   public boolean isField;

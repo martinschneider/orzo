@@ -1,6 +1,6 @@
 package io.github.martinschneider.orzo.tests;
 
-public class GlobalVariables {
+public class Fields {
   public static int var = 1;
 
   public static void main(String[] args) {

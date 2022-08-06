@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import io.github.martinschneider.orzo.codegen.generators.StatementGenerator;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
@@ -50,6 +51,7 @@ public abstract class StatementGeneratorTest<T extends Statement> {
     ctx = new CGContext();
     ctx.init(
         new CompilerErrors(),
+        null,
         0,
         list(
             clazz(
@@ -78,8 +80,9 @@ public abstract class StatementGeneratorTest<T extends Statement> {
       throws IOException {
     TokenList tokens = new Lexer().getTokens(input);
     ctx.constPool = new MockConstantPool(ctx, constants);
-    target.generate(out, varMap(varInfos), method, parser.parse(tokens));
+    ctx.classIdMap.variables = varMap(varInfos);
+    target.generate(out, method, parser.parse(tokens));
     assertEquals(String.join("\n", expectedLines), decompile(out.getBytes()));
-    assertFalse(ctx.errors.count() > 0, "Compilation errors " + ctx.errors);
+    assertFalse(ctx.errors.errors.size() > 0, "Compilation errors " + ctx.errors);
   }
 }

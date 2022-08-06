@@ -1,12 +1,34 @@
 src/main/java/io/github/martinschneider/orzo/codegen/ArrayTypes.java
 src/main/java/io/github/martinschneider/orzo/codegen/ByteUtils.java
-#src/main/java/io/github/martinschneider/orzo/codegen/DynamicByteArray.java
-src/main/java/io/github/martinschneider/orzo/codegen/HasOutput.java
-src/main/java/io/github/martinschneider/orzo/codegen/OpCodes.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/Constant.java
-#src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantClass.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantClass.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantFieldref.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantFloat.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantInteger.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantInterfaceMethodref.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantMethodref.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantNameAndType.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantString.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantTypes.java
+src/main/java/io/github/martinschneider/orzo/codegen/HasOutput.java
+src/main/java/io/github/martinschneider/orzo/codegen/identifier/IdentifierInfo.java
+src/main/java/io/github/martinschneider/orzo/codegen/OpCodes.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/ClassMember.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/EmptyStatement.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/Statement.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/Selector.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/Statement.java
+src/main/java/io/github/martinschneider/orzo/util/Pair.java
+
+# java.lang.OutOfMemoryError: Java heap space
+#src/main/java/io/github/martinschneider/orzo/codegen/ByteUtils2.java
+#src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantDouble.java
+#src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantLong.java
+
+# java.lang.VerifyError: Operand stack underflow
+#src/main/java/io/github/martinschneider/orzo/codegen/DynamicByteArray.java
+
+# requires support to call super in another class than java.lang.Object
+#src/main/java/io/github/martinschneider/orzo/lexer/tokens/EOF.java
+
+# require better Object supportR
+# src/main/java/io/github/martinschneider/orzo/parser/productions/*.java

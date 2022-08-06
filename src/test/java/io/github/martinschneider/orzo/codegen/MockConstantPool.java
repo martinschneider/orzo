@@ -1,6 +1,8 @@
 package io.github.martinschneider.orzo.codegen;
 
 import io.github.martinschneider.orzo.codegen.constants.ConstantPool;
+import io.github.martinschneider.orzo.codegen.identifier.IdentifierMap;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,9 +17,9 @@ public class MockConstantPool extends ConstantPool {
     }
   }
 
-  public MockConstantPool(CGContext ctx, List<Constant> constants, VariableMap fields) {
+  public MockConstantPool(CGContext ctx, List<Constant> constants, IdentifierMap identifierMap) {
     this(ctx, constants);
-    for (VariableInfo var : fields.getVariables().values()) {
+    for (VariableInfo var : identifierMap.fieldMap.values()) {
       lookup.put(var.name, var.idx);
     }
   }

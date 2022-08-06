@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import io.github.martinschneider.orzo.codegen.generators.MethodGenerator;
+import io.github.martinschneider.orzo.codegen.identifier.IdentifierMap;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.parser.MethodParser;
@@ -96,16 +97,17 @@ public class MethodGeneratorTest {
   public void test(
       String input,
       List<Constant> constants,
-      VariableMap fields,
+      IdentifierMap fields,
       Clazz clazz,
       String expectedHeadStr,
       List<String> expectedLines,
       String expectedFootStr)
       throws IOException {
-    target.ctx.init(new CompilerErrors(), 0, list(clazz));
+    target.ctx.init(new CompilerErrors(), null, 0, list(clazz));
     target.ctx.constPool = new MockConstantPool(target.ctx, constants, fields);
     parser.parse(lexer.getTokens(input));
-    target.generate(out, parser.parse(lexer.getTokens(input)), fields, clazz);
+    target.ctx.classIdMap.variables = fields;
+    target.generate(out, parser.parse(lexer.getTokens(input)), clazz);
     byte[] expectedHead = hexStringToByteArray(expectedHeadStr);
     byte[] actualHead = Arrays.copyOfRange(out.getBytes(), 0, expectedHead.length);
     byte[] expectedFoot = hexStringToByteArray(expectedFootStr);
@@ -125,7 +127,7 @@ public class MethodGeneratorTest {
     assertEquals(String.join("\n", expectedLines), decompile(code));
     assertEquals(expectedFootStr, actualFootStr);
     assertArrayEquals(expectedFoot, actualFoot);
-    assertFalse(target.ctx.errors.count() > 0, "Compilation errors " + target.ctx.errors);
+    assertFalse(target.ctx.errors.errors.size() > 0, "Compilation errors " + target.ctx.errors);
   }
 
   private static final byte[] HEX_ARRAY = "0123456789ABCDEF".getBytes(StandardCharsets.US_ASCII);

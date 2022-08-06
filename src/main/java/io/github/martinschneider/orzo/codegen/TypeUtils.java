@@ -34,6 +34,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
 import static java.util.Collections.emptyList;
 
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.ArrayList;
@@ -85,16 +86,6 @@ public class TypeUtils {
     } else {
       return "L" + type.replaceAll("\\.", "/") + ";";
     }
-  }
-
-  public static String fromDescr(String type) {
-    switch (type) {
-      case "I":
-        return INT;
-      case "D":
-        return DOUBLE;
-    }
-    return null;
   }
 
   public static String methodDescr(Method method) {

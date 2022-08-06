@@ -5,8 +5,8 @@ public class Sym extends Token {
     super(val);
   }
 
-  public Sym wLoc(Location loc) {
-    this.loc = loc;
+  public Sym wLoc(Location locArg) {
+    this.loc = locArg;
     return this;
   }
 }

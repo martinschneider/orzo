@@ -196,7 +196,7 @@ public class BasicGeneratorTest {
       throws IOException {
     target.convert(out, from, to);
     assertEquals(String.join("\n", expectedLines), BytecodeDecompiler.decompile(out.getBytes()));
-    assertEquals(expectedErrors, ctx.errors.count());
+    assertEquals(expectedErrors, ctx.errors.errors.size());
   }
 
   @ParameterizedTest
@@ -205,7 +205,7 @@ public class BasicGeneratorTest {
       throws IOException {
     target.convert1(out, from, to);
     assertEquals(String.join("\n", expectedLines), BytecodeDecompiler.decompile(out.getBytes()));
-    assertEquals(expectedErrors, ctx.errors.count());
+    assertEquals(expectedErrors, ctx.errors.errors.size());
   }
 
   @ParameterizedTest

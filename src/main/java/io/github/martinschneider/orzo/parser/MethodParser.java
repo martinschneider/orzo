@@ -69,10 +69,17 @@ public class MethodParser implements ProdParser<Method> {
       type = ((Type) tokens.curr());
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
-    } else if (tokens.curr() instanceof Identifier) {
-      type = new Type(((Identifier) tokens.curr()).val.toString());
+      // TODO: add current class name to the map instead of having a spearate condition
+    } else if (tokens.curr() instanceof Identifier
+        && (ctx.typeMap.TYPES.containsKey(tokens.curr().toString())
+            || ctx.currClazz.name.equals(tokens.curr().toString()))) {
+      String id = tokens.curr().toString();
+      type = ctx.typeMap.TYPES.getOrDefault(id, new Type(id));
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
+    } else {
+      tokens.setIdx(idx);
+      return null;
     }
     if (tokens.curr() instanceof Identifier) {
       name = (Identifier) tokens.curr();
@@ -135,10 +142,14 @@ public class MethodParser implements ProdParser<Method> {
     while (!tokens.curr().eq(sym(RPAREN))) {
       String type = null;
       Identifier name = null;
-      if (!(tokens.curr() instanceof Type)) {
+      if (tokens.curr() instanceof Type && !tokens.curr().eq("VOID")) {
+        type = tokens.curr().toString();
+      } else if (tokens.curr() instanceof Identifier
+          && ctx.typeMap.TYPES.containsKey(tokens.curr().toString())) {
+        type = ctx.typeMap.TYPES.get(tokens.curr().toString()).toString();
+      } else {
         break;
       }
-      type = ((Type) tokens.curr()).name;
       if (tokens.next().eq(sym(LBRAK))) {
         if (tokens.next().eq(sym(RBRAK))) {
           type = "[" + type;

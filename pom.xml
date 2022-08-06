@@ -28,12 +28,15 @@
     </dependency>
   </dependencies>
   <build>
+    <finalName>${project.artifactId}</finalName>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.1</version>
         <configuration>
-          <release>11</release>
+          <!-- TODO: Orzo compiles for Java 6. Either support newer JVM versions or reduce the source version too -->
+          <source>8</source>
+          <target>8</target>
         </configuration>
       </plugin>
       <plugin>
@@ -112,7 +115,7 @@
             <version>2.22.0</version>
             <configuration>
               <includes>
-                <include>**/OrzoTest</include>
+                <include>**/**Test</include>
               </includes>
             </configuration>
             <executions>

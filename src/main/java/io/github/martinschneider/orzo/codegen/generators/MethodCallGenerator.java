@@ -18,7 +18,7 @@ import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
-import io.github.martinschneider.orzo.codegen.VariableMap;
+import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
@@ -33,10 +33,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     this.ctx = ctx;
   }
 
-  public String generate(DynamicByteArray out, VariableMap variables, MethodCall methodCall) {
+  public String generate(
+      DynamicByteArray out, GlobalIdentifierMap classIdMap, MethodCall methodCall) {
     List<String> types = new ArrayList<>();
     for (Expression exp : methodCall.params) {
-      types.add(new NumExprTypeDecider(ctx).getType(variables, exp));
+      types.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
     }
     String methodName = methodCall.name.toString();
     Method method = findMatchingMethod(methodName, types);
@@ -49,7 +50,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     }
     for (int i = 0; i < types.size(); i++) {
       ExpressionResult exprResult =
-          ctx.exprGen.eval(out, variables, method.args.get(i).type, methodCall.params.get(i));
+          ctx.exprGen.eval(out, method.args.get(i).type, methodCall.params.get(i));
       ctx.basicGen.convert1(out, exprResult.type, method.args.get(i).type);
     }
     ctx.invokeGen.invokeStatic(out, method);
@@ -57,14 +58,13 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   }
 
   @Override
-  public HasOutput generate(
-      DynamicByteArray out, VariableMap variables, Method method, MethodCall methodCall) {
+  public HasOutput generate(DynamicByteArray out, Method method, MethodCall methodCall) {
     if ("super".equals(methodCall.name.toString())) {
       callSuperConstr(out);
     } else if ("System.out.println".equals(methodCall.name.toString())) {
       for (Expression param : methodCall.params) {
         ctx.invokeGen.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
-        ExpressionResult result = ctx.exprGen.eval(out, variables, null, param);
+        ExpressionResult result = ctx.exprGen.eval(out, null, param);
         if (result != null) {
           print(out, result.type);
         } else {
@@ -76,7 +76,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         }
       }
     } else {
-      generate(out, variables, methodCall);
+      generate(out, ctx.classIdMap, methodCall);
     }
     return out;
   }

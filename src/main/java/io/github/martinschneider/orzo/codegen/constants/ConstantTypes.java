@@ -1,6 +1,6 @@
 package io.github.martinschneider.orzo.codegen.constants;
 
-// https://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.4-140
+// https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.4-140
 public class ConstantTypes {
   public static final byte CONSTANT_CLASS = 7;
   public static final byte CONSTANT_FIELDREF = 9;

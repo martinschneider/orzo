@@ -96,6 +96,7 @@ public class ClassParser implements ProdParser<Clazz> {
                 interfaces,
                 baseClass,
                 null,
+                null,
                 null);
         if (isEnum) {
           ctx.enumParser.fqn = ctx.currClazz.fqn();
@@ -175,22 +176,28 @@ public class ClassParser implements ProdParser<Clazz> {
   List<ClassMember> parseClassBody(TokenList tokens, boolean isInterface) {
     List<ClassMember> classBody = new ArrayList<>();
     ClassMember member = null;
-    do {
-      if ((member = ctx.methodParser.parse(tokens, isInterface)) != null) {
-        classBody.add(member);
-      } else if ((member = ctx.declParser.parse(tokens)) != null) {
-        ParallelDeclaration pDecl = (ParallelDeclaration) member;
-        for (Declaration decl : pDecl.declarations) {
-          decl.isField = true;
-        }
-        classBody.add(pDecl);
-      }
-    } while (member != null);
+    while ((member = parserClassMember(tokens, isInterface)) != null) {
+      classBody.add(member);
+    }
     if (!classBody.isEmpty()) {
       return classBody;
     } else {
       return emptyList();
     }
+  }
+
+  private ClassMember parserClassMember(TokenList tokens, boolean isInterface) {
+    ClassMember member = null;
+    if ((member = ctx.methodParser.parse(tokens, isInterface)) != null) {
+      return member;
+    } else if ((member = ctx.declParser.parse(tokens)) != null) {
+      ParallelDeclaration pDecl = (ParallelDeclaration) member;
+      for (Declaration decl : pDecl.declarations) {
+        decl.isField = true;
+      }
+      return pDecl;
+    }
+    return null;
   }
 
   List<Import> parseImports(TokenList tokens) {

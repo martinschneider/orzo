@@ -109,6 +109,7 @@ public class Orzo {
         }
         output = fileOutput(outputFile);
       }
+      clazz.sourceFile = inputs.get(i).getName();
       clazzes.add(clazz);
       outputs.add(output);
       ctx = parser.ctx;
@@ -116,7 +117,7 @@ public class Orzo {
     CodeGenerator codeGen = new CodeGenerator(clazzes, outputs, ctx.errors);
     codeGen.generate();
     if (!codeGen.getErrors().errors.isEmpty()) {
-      System.out.println(codeGen.getErrors().toString(verbose));
+      System.err.println(String.format("%s", codeGen.getErrors().toString(verbose)));
     }
   }
 
