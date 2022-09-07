@@ -80,45 +80,54 @@ public class ExpressionGenerator {
   private static final List<Operators> COMPARATORS =
       List.of(EQUAL, NOTEQUAL, GREATER, LESS, LESSEQ, GREATEREQ);
 
+  private static final List<String> INT_TYPES = List.of(INT, SHORT, BYTE, CHAR, BOOLEAN);
+
   public ExpressionResult eval(DynamicByteArray out, String type, Expression expr) {
     return eval(out, type, expr, true, false);
   }
 
   public ExpressionResult eval(
-      DynamicByteArray out, String type, Expression expr, boolean pushIfZero, boolean reverseComp) {
+      DynamicByteArray out,
+      String targetType,
+      Expression expr,
+      boolean pushIfZero,
+      boolean reverseComp) {
     // TODO: support String concatenation
     // TODO: support different types
     // TODO: error handling, e.g. only "+" operator is valid for String
     // concatenation, "%" is not
     // valid for doubles etc.
+    NumExprTypeDecider typeDecider = new NumExprTypeDecider(ctx);
     if (expr instanceof ArrayInit) {
       ArrayInit arrInit = (ArrayInit) expr;
       generateArray(out, ctx.classIdMap, arrInit);
       return new ExpressionResult(arrInit.type, null);
     }
-    if (type == null) {
-      type = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, expr);
+    if (targetType == null) {
+      targetType = typeDecider.getType(ctx.classIdMap, expr);
     }
     Object val = null;
     if (expr == null) {
       return null;
     }
-    // this stack keeps track of the operands loaded on the stack for the current expression
-    // this is used for code optimization (for example, using IFLE instead of IF_CMPLE if one of the
+    // this stack keeps track of the operands loaded on the stack for the current
+    // expression
+    // this is used for code optimization (for example, using IFLE instead of
+    // IF_CMPLE if one of the
     // operands is 0)
     OperandStack exprTypeStack = new OperandStack();
     List<Token> tokens = expr.tokens;
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
-      if (!type.equals(DOUBLE)
+      if (!targetType.equals(DOUBLE)
           && ((i + 2 < tokens.size() && tokens.get(i + 2).eq(op(POW)))
               || (i + 1 < tokens.size() && tokens.get(i + 1).eq(op(POW))))) {
         // Calculating powers for integer types uses BigInteger and requires loading the
         // operands in
         // a different order. Therefore, we skip processing them here.
       } else if (token instanceof Identifier) {
-        type = handleId(out, ctx.classIdMap, tokens, i, token, type);
-        exprTypeStack.push(type);
+        targetType = handleId(out, ctx.classIdMap, tokens, i, token, targetType);
+        exprTypeStack.push(targetType);
       } else if (token instanceof IntLiteral) {
         BigInteger bigInt = (BigInteger) ((IntLiteral) token).val;
         Long intValue = bigInt.longValue();
@@ -129,15 +138,14 @@ public class ExpressionGenerator {
                 || (tokens.get(i + 1).eq(op(RSHIFT)))
                 || (tokens.get(i + 1).eq(op(RSHIFTU)))))) {
           ctx.pushGen.push(out, INT, BigDecimal.valueOf(intValue));
-        } else if (!type.equals(INT) || intValue != 0 || pushIfZero) {
-          ctx.pushGen.push(out, type, BigDecimal.valueOf(intValue));
+        } else if (!targetType.equals(INT) || intValue != 0 || pushIfZero) {
+          ctx.pushGen.push(out, targetType, BigDecimal.valueOf(intValue));
         }
         // special handling for 0 because there are different opcodes to compare to 0
-        if ((type.equals(INT) || type.equals(SHORT) || type.equals(BYTE) || type.equals(CHAR))
-            && intValue.intValue() == 0) {
+        if (INT_TYPES.contains(targetType) && intValue.intValue() == 0) {
           exprTypeStack.push(INT_ZERO);
         } else {
-          exprTypeStack.push(type);
+          exprTypeStack.push(targetType);
         }
         val = bigInt;
       } else if (token instanceof BoolLiteral) {
@@ -147,17 +155,15 @@ public class ExpressionGenerator {
         exprTypeStack.push(BOOLEAN);
       } else if (token instanceof FPLiteral) {
         BigDecimal bigDec = (BigDecimal) ((FPLiteral) token).val;
-        ctx.pushGen.push(out, type, bigDec);
+        ctx.pushGen.push(out, targetType, bigDec);
         val = bigDec;
         exprTypeStack.push(DOUBLE);
       } else if (token instanceof Str) {
         ctx.loadGen.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
-        type = STRING;
         exprTypeStack.push(STRING);
       } else if (token instanceof Chr) {
         char chr = (char) ((Chr) token).val;
         ctx.pushGen.push(out, CHAR, chr);
-        type = CHAR;
         exprTypeStack.push(CHAR);
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
@@ -165,7 +171,7 @@ public class ExpressionGenerator {
           VariableInfo varInfo = ctx.classIdMap.variables.get(tokens.get(i - 1));
           ctx.incrGen.inc(out, varInfo, op, false);
         } else if (op.equals(POW)) {
-          if (type.equals(DOUBLE)) {
+          if (targetType.equals(DOUBLE)) {
             ctx.constPool.addClass("java/lang/Math");
             ctx.invokeGen.invokeStatic(
                 out, new Method("java.lang.Math", "pow", DOUBLE, List.of(DOUBLE, DOUBLE)));
@@ -186,15 +192,17 @@ public class ExpressionGenerator {
                 new Method("java/math/BigInteger", "pow", "Ljava/math/BigInteger;", List.of(INT)));
             ctx.invokeGen.invokeVirtual(
                 out, new Method("java/math/BigInteger", "longValue", LONG, emptyList()));
-            type = LONG;
           }
         } else {
           byte[] opCode = null;
           if (COMPARATORS.contains(op) && exprTypeStack.oneOfTopTwoElementsIsZero()) {
             opCode = new byte[] {COMPARE_TO_ZERO_OPS.get(op)};
-            type = BOOLEAN;
           } else {
-            opCode = ARITHMETIC_OPS.getOrDefault(op, Collections.emptyMap()).get(type);
+            opCode =
+                ARITHMETIC_OPS
+                    .getOrDefault(op, Collections.emptyMap())
+                    .get(targetType); // TODO: this should not be the target type but rather the
+            // suitable one based on the values on the stack
           }
           if (reverseComp) {
             if (opCode != null) {
@@ -208,24 +216,30 @@ public class ExpressionGenerator {
           // there are no opcodes for arithmetic operations specific to byte and short
           // so it's important to indicate that the type changes to int to ensure that,
           // if necessary, we cast it back to byte and short later
-          if (type.equals(BYTE) || type.equals(SHORT)) {
-            type = INT;
+          if (targetType.equals(BYTE) || targetType.equals(SHORT)) {
+            targetType = INT;
           }
           if (opCode != null) {
             ctx.opStack.pop2();
-            ctx.opStack.push(type);
+            ctx.opStack.push(targetType);
             out.write(opCode);
           }
         }
       }
     }
+    // explicit cast
+    String currType;
     if (expr.cast != null) {
-      String currType = ctx.opStack.pop();
+      currType = ctx.opStack.pop();
       ctx.basicGen.convert(out, currType, expr.cast.name);
-      type = expr.cast.name;
-      ctx.opStack.push(type);
+      ctx.opStack.push(expr.cast.name);
     }
-    return new ExpressionResult(type, val);
+    // implicit cast
+    else if ((currType = ctx.opStack.peek()) != null && !currType.equals(targetType)) {
+      ctx.basicGen.convert(out, currType, targetType);
+      ctx.opStack.push(targetType);
+    }
+    return new ExpressionResult(ctx.opStack.peek(), val);
   }
 
   private String handleId(
@@ -324,8 +338,10 @@ public class ExpressionGenerator {
     }
   }
 
-  // To generate code for control structures it is often useful to get the inverse comparator. For
-  // example, for "if (x==0)" we will use the opcode 154 (IFNE) to jump beyond the code in the if
+  // To generate code for control structures it is often useful to get the inverse
+  // comparator. For
+  // example, for "if (x==0)" we will use the opcode 154 (IFNE) to jump beyond the
+  // code in the if
   // block. This method performs this conversion.
   private byte reverseComp(byte opCode) {
     switch (opCode) {

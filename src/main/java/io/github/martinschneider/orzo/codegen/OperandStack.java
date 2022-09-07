@@ -13,6 +13,10 @@ public class OperandStack {
   private int size;
   private Deque<String> types = new LinkedList<>();
 
+  public boolean isEmpty() {
+    return size == 0;
+  }
+
   public void push(String type) {
     if (!type.equals(VOID)) {
       types.push(type);
@@ -49,8 +53,15 @@ public class OperandStack {
     }
   }
 
-  public String type() {
+  public String peek() {
     return types.peek();
+  }
+
+  public String peek2() {
+    String tmp = types.pop();
+    String ret = types.peek();
+    types.push(tmp);
+    return ret;
   }
 
   public int maxSize() {

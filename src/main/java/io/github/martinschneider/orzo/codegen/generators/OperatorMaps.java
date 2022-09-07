@@ -379,21 +379,7 @@ public class OperatorMaps {
           entry(
               INT,
               Map.of(LONG, new byte[] {I2L}, DOUBLE, new byte[] {I2D}, FLOAT, new byte[] {I2F})),
-          entry(
-              LONG,
-              Map.of(
-                  INT,
-                  new byte[] {L2I},
-                  BYTE,
-                  new byte[] {L2I},
-                  SHORT,
-                  new byte[] {L2I},
-                  DOUBLE,
-                  new byte[] {L2D},
-                  FLOAT,
-                  new byte[] {L2F},
-                  CHAR,
-                  new byte[] {L2I})),
+          entry(LONG, Map.of(DOUBLE, new byte[] {L2D}, FLOAT, new byte[] {L2F})),
           entry(
               FLOAT,
               Map.of(

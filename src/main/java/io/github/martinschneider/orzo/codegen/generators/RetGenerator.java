@@ -38,7 +38,7 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
 
   private HasOutput ret(DynamicByteArray out, String type, Expression retValue) {
     ctx.exprGen.eval(out, type, retValue);
-    ctx.basicGen.convert1(out, ctx.opStack.type(), type);
+    ctx.basicGen.convert1(out, ctx.opStack.peek(), type);
     switch (type) {
       case INT:
         out.write(IRETURN);

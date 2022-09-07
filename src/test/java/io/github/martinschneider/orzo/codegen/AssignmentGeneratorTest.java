@@ -26,7 +26,7 @@ public class AssignmentGeneratorTest extends StatementGeneratorTest<Assignment> 
     return stream(
         args("x=5", list(varInfo("x", "int", 2)), emptyList(), list("iconst_5", "istore_2")),
         args("x=true", list(varInfo("x", "boolean", 1)), emptyList(), list("iconst_1", "istore_1")),
-        args("x=false", list(varInfo("x", "int", 12)), emptyList(), list("iconst_0", "istore 12")),
+        args("x=0", list(varInfo("x", "int", 12)), emptyList(), list("iconst_0", "istore 12")),
         args(
             "x=5*12-3/6+12%4",
             list(varInfo("x", "int", 2)),

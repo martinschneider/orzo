@@ -112,6 +112,33 @@ public class NumExprTypeDecider {
     return INT;
   }
 
+  public String getLargestType(Set<String> types) {
+    String arrayType = getArrayType(types);
+    if (arrayType != null) {
+      return arrayType;
+    }
+    if (types.contains(STRING)) {
+      return STRING;
+    } else if (types.contains(BYTE)) {
+      return BYTE;
+    } else if (types.contains(SHORT)) {
+      return SHORT;
+    } else if (types.contains(INT)) {
+      return INT;
+    } else if (types.contains(LONG)) {
+      return LONG;
+    } else if (types.contains(FLOAT)) {
+      return FLOAT;
+    } else if (types.contains(DOUBLE)) {
+      return DOUBLE;
+    } else if (types.contains(BOOLEAN)) {
+      return BOOLEAN;
+    } else if (types.contains(CHAR)) {
+      return CHAR;
+    }
+    return INT;
+  }
+
   private String getArrayType(Set<String> types) {
     for (String type : types) {
       if (type.contains("[")) {

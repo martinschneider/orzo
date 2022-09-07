@@ -17,9 +17,6 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_3;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GETFIELD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2B;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2C;
-import static io.github.martinschneider.orzo.codegen.OpCodes.I2S;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD_1;
@@ -78,15 +75,12 @@ public class LoadGenerator {
         return loadInteger(out, idx);
       case SHORT:
         loadInteger(out, idx);
-        out.write(I2S);
         return out;
       case BYTE:
         loadInteger(out, idx);
-        out.write(I2B);
         return out;
       case CHAR:
         loadInteger(out, idx);
-        out.write(I2C);
         return out;
       case INT:
         return loadInteger(out, idx);
@@ -135,6 +129,7 @@ public class LoadGenerator {
       DynamicByteArray out, GlobalIdentifierMap classIdMap, List<Expression> indices, String type) {
     for (Expression arrIdx : indices) {
       ctx.exprGen.eval(out, INT, arrIdx);
+      ctx.opStack.pop();
     }
     out.write(getLoadOpCode(type.replaceAll("\\[", "")));
     return out;

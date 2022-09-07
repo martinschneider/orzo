@@ -1,6 +1,6 @@
 package io.github.martinschneider.orzo.codegen.constants;
 
-import static io.github.martinschneider.orzo.codegen.ByteUtils2.longToByteArray;
+import static io.github.martinschneider.orzo.codegen.ByteUtils.longToByteArray;
 
 public class ConstantLong implements Constant {
   private long _val;
