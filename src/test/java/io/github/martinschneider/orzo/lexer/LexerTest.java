@@ -1,33 +1,12 @@
 package io.github.martinschneider.orzo.lexer;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CLASS;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.DO;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.ELSE;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FOR;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IF;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.PACKAGE;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.RETURN;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.WHILE;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.*;
-import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PRIVATE;
-import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PROTECTED;
-import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PUBLIC;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.fp;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.str;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.type;
-import static io.github.martinschneider.orzo.util.FactoryHelper.list;
-import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
+import static io.github.martinschneider.orzo.lexer.tokens.Scopes.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.*;
+import static io.github.martinschneider.orzo.util.FactoryHelper.*;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -48,43 +27,43 @@ public class LexerTest {
         args("_ _test", new TokenList(list(id("_"), id("_test")))),
         args(
             "12  13 15 17",
-            new TokenList(list(integer(12), integer(13), integer(15), integer(17)))),
-        args("0.9", new TokenList(list(fp(0.9)))),
-        args(".87", new TokenList(list(fp(0.87)))),
+            new TokenList(list(int32("12"), int32("13"), int32("15"), int32("17")))),
+        args("0.9", new TokenList(list(float64("0.9")))),
+        args(".87f", new TokenList(list(float32(".87")))),
         args(
             "1+2-3*4/5%6=7",
             new TokenList(
                 list(
-                    integer(1),
+                    int32("1"),
                     op(PLUS),
-                    integer(2),
+                    int32("2"),
                     op(MINUS),
-                    integer(3),
+                    int32("3"),
                     op(TIMES),
-                    integer(4),
+                    int32("4"),
                     op(DIV),
-                    integer(5),
+                    int32("5"),
                     op(MOD),
-                    integer(6),
+                    int32("6"),
                     op(ASSIGN),
-                    integer(7)))),
+                    int32("7")))),
         args(
             "7<8<=9>10>=11!=12==13",
             new TokenList(
                 list(
-                    integer(7),
+                    int32("7"),
                     op(LESS),
-                    integer(8),
+                    int32("8"),
                     op(LESSEQ),
-                    integer(9),
+                    int32("9"),
                     op(GREATER),
-                    integer(10),
+                    int32("10"),
                     op(GREATEREQ),
-                    integer(11),
+                    int32("11"),
                     op(NOTEQUAL),
-                    integer(12),
+                    int32("12"),
                     op(EQUAL),
-                    integer(13)))),
+                    int32("13")))),
         args(".x", new TokenList(list(sym(DOT), id("x")))),
         args(
             "noch.ein,test;",

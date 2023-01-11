@@ -1,127 +1,103 @@
 package io.github.martinschneider.orzo.lexer.tokens;
 
-import java.math.BigInteger;
+import java.util.Objects;
 
 public class Token {
-  public Object val;
-  public Location loc;
+	public String type;
+	public String val;
+	public Location loc;
 
-  public Token(Object val) {
-    this.val = val;
-  }
+	public static Token of(String type, String val) {
+		Token t = new Token();
+		t.type = type;
+		t.val = val;
+		return t;
+	}
 
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    Token other = (Token) obj;
-    if (val == null) {
-      if (other.val != null) {
-        return false;
-      }
-    } else if (!val.equals(other.val)) {
-      return false;
-    }
-    return true;
-  }
+	public Token wLoc(Location loc) {
+		this.loc = loc;
+		return this;
+	}
 
-  @Override
-  public int hashCode() {
-    int prime = 31;
-    int result = 1;
-    result = prime * result + ((val == null) ? 0 : val.hashCode());
-    return result;
-  }
+	public static Token chr(char val) {
+		return Token.of("chr", Character.toString(val));
+	}
 
-  @Override
-  public String toString() {
-    return val.toString();
-  }
+	public static Token str(String val) {
+		return Token.of("str", val);
+	}
 
-  public static Chr chr(char val) {
-    return new Chr(val);
-  }
+	public static Token int32(String val) {
+		return Token.of("int32", val);
+	}
 
-  public static Str str(String val) {
-    return new Str(val);
-  }
+	public static Token int64(String val) {
+		return Token.of("int64", val);
+	}
 
-  public static IntLiteral integer(Integer val) {
-    return new IntLiteral(BigInteger.valueOf(val), false);
-  }
+	public static Token float32(String val) {
+		return Token.of("float32", val);
+	}
 
-  public static IntLiteral integer(String val) {
-    return new IntLiteral(new BigInteger(val), false);
-  }
+	public static Token float64(String val) {
+		return Token.of("float64", val);
+	}
 
-  public static IntLiteral integer(String val, boolean isLong) {
-    return new IntLiteral(new BigInteger(val), isLong);
-  }
+	public static Token id(String val) {
+		return Token.of("id", val);
+	}
 
-  public static FPLiteral fp(double val, boolean isFloat) {
-    return new FPLiteral(val, isFloat);
-  }
+	public static Token op(Operators val) {
+		return Token.of("op", val.name());
+	}
 
-  public static FPLiteral fp(String val, boolean isFloat) {
-    return new FPLiteral(Double.valueOf(val), isFloat);
-  }
+	public static Token keyword(Keywords val) {
+		return Token.of("keyword", val.name());
+	}
 
-  public static FPLiteral fp(double val) {
-    return new FPLiteral(val, false);
-  }
+	public static Token scope(Scopes val) {
+		return Token.of("scope", val.name());
+	}
 
-  public static FPLiteral fp(String val) {
-    return new FPLiteral(Double.valueOf(val), false);
-  }
+	@Override
+	public String toString() {
+		return "Token [type=" + type + ", val=" + val + "]";
+	}
 
-  public static Identifier id(String val) {
-    return new Identifier(val);
-  }
+	@Override
+	public int hashCode() {
+		return Objects.hash(type, val);
+	}
 
-  public static Operator op(Operators val) {
-    return new Operator(val);
-  }
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Token other = (Token) obj;
+		return Objects.equals(type, other.type) && Objects.equals(val, other.val);
+	}
 
-  public static Keyword keyword(Keywords val) {
-    return new Keyword(val);
-  }
+	public static Token sym(Symbols val) {
+		return Token.of("sym", val.name());
+	}
 
-  public static Keyword keyword(String val) {
-    return new Keyword(Keywords.valueOf(val.toUpperCase()));
-  }
+	public static Token type(String val) {
+		return Token.of("type", val);
+	}
 
-  public static Scope scope(Scopes val) {
-    return new Scope(val);
-  }
+	public static Token bool(String val) {
+		return Token.of("id", val);
+	}
 
-  public static Sym sym(Symbols val) {
-    return new Sym(val);
-  }
+	public static Token eof() {
+		return Token.of("eof", null);
+	}
 
-  public static Type type(String val) {
-    return new Type(val);
-  }
-
-  public static BoolLiteral bool(String val) {
-    return new BoolLiteral(Boolean.parseBoolean(val));
-  }
-
-  public static Token eof() {
-    return new EOF();
-  }
-
-  public <T extends Token> boolean eq(T val) {
-    return equals(val);
-  }
-
-  public <T extends Token> boolean eq(String val) {
-    return this.val.equals(val);
-  }
+	public boolean eq(Token val) {
+		return equals(val);
+	}
 }

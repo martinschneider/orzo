@@ -6,13 +6,14 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BASIC_TYPES;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
-import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Keywords;
 import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+
+import static io.github.martinschneider.orzo.lexer.tokens.Types.*;
 
 public class Lexer {
   private StringBuffer buffer;
@@ -147,7 +148,8 @@ public class Lexer {
     } else {
       inputReader.unread(character);
     }
-    tokenList.add(fp(buffer.toString(), isFloat).wLoc(inputReader.getLoc()));
+    String type = isFloat ? FLOAT32 : FLOAT64;
+    tokenList.add(Token.of(type, buffer.toString()).wLoc(inputReader.getLoc()));
     buffer.setLength(0);
   }
 
@@ -164,14 +166,14 @@ public class Lexer {
       for (Keywords keyword : Keywords.values()) {
         // TODO: specify case-sensitive keywords (instead of assuming they are all lowercase)
         if (str.equals(keyword.name().toLowerCase())) {
-          tokenList.add(keyword(str).wLoc(inputReader.getLoc()));
+          tokenList.add(keyword(keyword).wLoc(inputReader.getLoc()));
           buffer.setLength(0);
         }
       }
       // scopes
       for (Scopes scope : Scopes.values()) {
         if (str.equals(scope.name().toLowerCase())) {
-          tokenList.add(scope(Scopes.valueOf(str.toUpperCase())).wLoc(inputReader.getLoc()));
+          tokenList.add(scope(scope).wLoc(inputReader.getLoc()));
           buffer.setLength(0);
         }
       }
@@ -212,7 +214,8 @@ public class Lexer {
       } else {
         inputReader.unread(character);
       }
-      tokenList.add(integer(buffer.toString(), isLong).wLoc(inputReader.getLoc()));
+      String type = isLong ? INT64 : INT32;
+      tokenList.add(Token.of(type, buffer.toString()).wLoc(inputReader.getLoc()));
       buffer.setLength(0);
     }
   }
@@ -221,7 +224,7 @@ public class Lexer {
     if (character == '-') {
       if ((character = (char) inputReader.read()) == '-') {
         if (tokenList.size() > 0
-            && (tokenList.get(tokenList.size() - 1) instanceof Identifier
+            && (tokenList.get(tokenList.size() - 1).type.equals(ID)
                 || tokenList.get(tokenList.size() - 1).equals(sym(RBRAK)))) {
           tokenList.add(op(POST_DECREMENT).wLoc(inputReader.getLoc()));
         } else {
@@ -266,7 +269,7 @@ public class Lexer {
       char character;
       if ((character = (char) inputReader.read()) == '+') {
         if ((tokenList.size() > 0)
-            && (tokenList.get(tokenList.size() - 1) instanceof Identifier
+            && (tokenList.get(tokenList.size() - 1).type.equals(ID)
                 || tokenList.get(tokenList.size() - 1).equals(sym(RBRAK)))) {
           tokenList.add(op(POST_INCREMENT).wLoc(inputReader.getLoc()));
         } else {
