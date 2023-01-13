@@ -1,7 +1,7 @@
 package io.github.martinschneider.orzo.lexer.tokens;
 
 // http://www.cs.bilkent.edu.tr/~guvenir/courses/CS101/op_precedence.html
-public enum Operators {
+public enum Operator {
   ASSIGN(1),
   PLUS_ASSIGN(1),
   MINUS_ASSIGN(1),
@@ -42,7 +42,7 @@ public enum Operators {
 
   int precedence;
 
-  private Operators(int precedence) {
+  private Operator(int precedence) {
     this.precedence = precedence;
   }
 

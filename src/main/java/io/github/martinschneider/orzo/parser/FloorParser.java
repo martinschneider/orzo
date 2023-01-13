@@ -1,9 +1,9 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LFLOOR;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RFLOOR;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LFLOOR;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RFLOOR;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 

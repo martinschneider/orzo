@@ -1,43 +1,45 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_AND;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_AND_ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_OR;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_OR_ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR_ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV_ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT_ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS_ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD_ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS_ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU_ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT_ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES_ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_AND;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_AND_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_OR;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_OR_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_XOR;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_XOR_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.DIV;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.DIV_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.LSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.LSHIFT_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.MINUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.MINUS_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.MOD;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.MOD_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PLUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PLUS_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.POST_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.POST_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.RSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.RSHIFTU;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.RSHIFTU_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.RSHIFT_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.TIMES;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.TIMES_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.COMMA;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.DOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.*;
 
-import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.Identifier;
-import io.github.martinschneider.orzo.lexer.tokens.Operator;
-import io.github.martinschneider.orzo.parser.productions.Assignment;
-import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.parser.productions.Assignment;
+import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.Identifier;
 
 public class AssignmentParser implements ProdParser<Assignment> {
   private ParserContext ctx;
@@ -51,14 +53,14 @@ public class AssignmentParser implements ProdParser<Assignment> {
     List<Identifier> left = new ArrayList<>();
     List<Expression> right = new ArrayList<>();
     int idx = tokens.idx();
-    while (tokens.curr() instanceof Identifier || tokens.curr().eq(sym(COMMA))) {
-      if (tokens.curr() instanceof Identifier) {
-        Identifier id = (Identifier) tokens.curr();
+    while (tokens.curr().isId() || tokens.curr().eq(sym(COMMA))) {
+      if (tokens.curr().isId()) {
+        Identifier id = Identifier.of(tokens.curr().val);
         Identifier root = id;
         while (tokens.peekNext().eq(sym(DOT))) {
           tokens.next();
-          if (tokens.peekNext() instanceof Identifier) {
-            Identifier next = (Identifier) tokens.next();
+          if (tokens.peekNext().isId()) {
+            Identifier next = Identifier.of(tokens.next().val);
             id.next = next;
             id = id.next;
             tokens.remove(tokens.idx());
@@ -75,7 +77,7 @@ public class AssignmentParser implements ProdParser<Assignment> {
         tokens.next();
       }
     }
-    if (tokens.curr() instanceof Operator) {
+    if (tokens.curr().isOp()) {
       if (tokens.curr().eq(op(ASSIGN))) {
         tokens.next();
       } else if (tokens.curr().eq(op(POST_INCREMENT)) || tokens.curr().eq(op(POST_DECREMENT))) {
@@ -85,57 +87,57 @@ public class AssignmentParser implements ProdParser<Assignment> {
         return null;
       } else if (tokens.curr().eq(op(PLUS_ASSIGN))) {
         tokens.insert(op(PLUS));
-        tokens.insert(left.get(0));
+        tokens.insert(Token.of(ID, left.get(0).name));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(MINUS_ASSIGN))) {
         tokens.insert(op(MINUS));
-        tokens.insert(left.get(0));
+        tokens.insert(Token.of(ID, left.get(0).name));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(TIMES_ASSIGN))) {
         tokens.insert(op(TIMES));
-        tokens.insert(left.get(0));
+        tokens.insert(Token.of(ID, left.get(0).name));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(DIV_ASSIGN))) {
         tokens.insert(op(DIV));
-        tokens.insert(left.get(0));
+        tokens.insert(Token.of(ID, left.get(0).name));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(MOD_ASSIGN))) {
         tokens.insert(op(MOD));
-        tokens.insert(left.get(0));
+        tokens.insert(Token.of(ID, left.get(0).name));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(LSHIFT_ASSIGN))) {
         tokens.insert(op(LSHIFT));
-        tokens.insert(left.get(0));
+        tokens.insert(Token.of(ID, left.get(0).name));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(RSHIFT_ASSIGN))) {
         tokens.insert(op(RSHIFT));
-        tokens.insert(left.get(0));
+        tokens.insert(Token.of(ID, left.get(0).name));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(RSHIFTU_ASSIGN))) {
         tokens.insert(op(RSHIFTU));
-        tokens.insert(left.get(0));
+        tokens.insert(Token.of(ID, left.get(0).name));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(BITWISE_AND_ASSIGN))) {
         tokens.insert(op(BITWISE_AND));
-        tokens.insert(left.get(0));
+        tokens.insert(Token.of(ID, left.get(0).name));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(BITWISE_OR_ASSIGN))) {
         tokens.insert(op(BITWISE_OR));
-        tokens.insert(left.get(0));
+        tokens.insert(Token.of(ID, left.get(0).name));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else if (tokens.curr().eq(op(BITWISE_XOR_ASSIGN))) {
         tokens.insert(op(BITWISE_XOR));
-        tokens.insert(left.get(0));
+        tokens.insert(Token.of(ID, left.get(0).name));
         tokens.insert(op(ASSIGN));
         tokens.next();
       } else {

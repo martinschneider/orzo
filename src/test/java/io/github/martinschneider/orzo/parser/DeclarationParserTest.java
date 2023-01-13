@@ -5,7 +5,7 @@ import static io.github.martinschneider.orzo.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
-import static io.github.martinschneider.orzo.util.FactoryHelper.*;
+import static io.github.martinschneider.orzo.util.Factory.*;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -2,13 +2,13 @@ package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
 import static io.github.martinschneider.orzo.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PUBLIC;
+import static io.github.martinschneider.orzo.lexer.tokens.Scope.PUBLIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.*;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.*;
 import static io.github.martinschneider.orzo.parser.productions.Method.CONSTRUCTOR_NAME;
-import static io.github.martinschneider.orzo.util.FactoryHelper.*;
+import static io.github.martinschneider.orzo.util.Factory.*;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

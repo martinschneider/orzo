@@ -1,12 +1,12 @@
 package io.github.martinschneider.orzo.lexer;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.*;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.*;
-import static io.github.martinschneider.orzo.lexer.tokens.Scopes.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Keyword.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Scope.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.*;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.*;
-import static io.github.martinschneider.orzo.util.FactoryHelper.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.*;
+import static io.github.martinschneider.orzo.util.Factory.*;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,43 +27,43 @@ public class LexerTest {
         args("_ _test", new TokenList(list(id("_"), id("_test")))),
         args(
             "12  13 15 17",
-            new TokenList(list(int32("12"), int32("13"), int32("15"), int32("17")))),
-        args("0.9", new TokenList(list(float64("0.9")))),
-        args(".87f", new TokenList(list(float32(".87")))),
+            new TokenList(list(intLit("12"), intLit("13"), intLit("15"), intLit("17")))),
+        args("0.9", new TokenList(list(doubleLit("0.9")))),
+        args(".87f", new TokenList(list(floatLit(".87")))),
         args(
             "1+2-3*4/5%6=7",
             new TokenList(
                 list(
-                    int32("1"),
+                    intLit("1"),
                     op(PLUS),
-                    int32("2"),
+                    intLit("2"),
                     op(MINUS),
-                    int32("3"),
+                    intLit("3"),
                     op(TIMES),
-                    int32("4"),
+                    intLit("4"),
                     op(DIV),
-                    int32("5"),
+                    intLit("5"),
                     op(MOD),
-                    int32("6"),
+                    intLit("6"),
                     op(ASSIGN),
-                    int32("7")))),
+                    intLit("7")))),
         args(
             "7<8<=9>10>=11!=12==13",
             new TokenList(
                 list(
-                    int32("7"),
+                    intLit("7"),
                     op(LESS),
-                    int32("8"),
+                    intLit("8"),
                     op(LESSEQ),
-                    int32("9"),
+                    intLit("9"),
                     op(GREATER),
-                    int32("10"),
+                    intLit("10"),
                     op(GREATEREQ),
-                    int32("11"),
+                    intLit("11"),
                     op(NOTEQUAL),
-                    int32("12"),
+                    intLit("12"),
                     op(EQUAL),
-                    int32("13")))),
+                    intLit("13")))),
         args(".x", new TokenList(list(sym(DOT), id("x")))),
         args(
             "noch.ein,test;",
@@ -71,7 +71,7 @@ public class LexerTest {
                 list(id("noch"), sym(DOT), id("ein"), sym(COMMA), id("test"), sym(SEMICOLON)))),
         args(
             "String x = \"Halleluja!\"",
-            new TokenList(list(type("String"), id("x"), op(ASSIGN), str("Halleluja!")))),
+            new TokenList(list(type("String"), id("x"), op(ASSIGN), strLit("Halleluja!")))),
         args(
             "void int double String",
             new TokenList(list(type("void"), type("int"), type("double"), type("String")))),

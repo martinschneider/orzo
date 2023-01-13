@@ -4,11 +4,11 @@ import static io.github.martinschneider.orzo.TestHelper.args;
 import static io.github.martinschneider.orzo.codegen.MockConstantPool.constant;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.*;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
-import static io.github.martinschneider.orzo.util.FactoryHelper.clazz;
-import static io.github.martinschneider.orzo.util.FactoryHelper.list;
-import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
-import static io.github.martinschneider.orzo.util.FactoryHelper.varInfo;
-import static io.github.martinschneider.orzo.util.FactoryHelper.varMap;
+import static io.github.martinschneider.orzo.util.Factory.clazz;
+import static io.github.martinschneider.orzo.util.Factory.list;
+import static io.github.martinschneider.orzo.util.Factory.stream;
+import static io.github.martinschneider.orzo.util.Factory.varInfo;
+import static io.github.martinschneider.orzo.util.Factory.varMap;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,7 +20,7 @@ import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
-import io.github.martinschneider.orzo.lexer.tokens.Scopes;
+import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.parser.ArrayInitParser;
 import io.github.martinschneider.orzo.parser.ArraySelectorParser;
 import io.github.martinschneider.orzo.parser.CastParser;
@@ -226,7 +226,7 @@ public class ExpressionGeneratorTest {
             clazz(
                 "pkg",
                 emptyList(),
-                new Scope(Scopes.PUBLIC),
+                new Scope(Scope.PUBLIC),
                 "Clazz",
                 emptyList(),
                 Clazz.JAVA_LANG_OBJECT,

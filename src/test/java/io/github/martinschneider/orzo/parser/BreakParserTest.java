@@ -2,7 +2,7 @@ package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
 import static io.github.martinschneider.orzo.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
+import static io.github.martinschneider.orzo.util.Factory.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.lexer.Lexer;

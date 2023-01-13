@@ -5,8 +5,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
-import static io.github.martinschneider.orzo.util.FactoryHelper.list;
-import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
+import static io.github.martinschneider.orzo.util.Factory.list;
+import static io.github.martinschneider.orzo.util.Factory.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;

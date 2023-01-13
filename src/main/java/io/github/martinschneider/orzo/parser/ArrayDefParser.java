@@ -1,8 +1,8 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.SYMBOL;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 
@@ -10,9 +10,9 @@ public class ArrayDefParser {
 
   public byte parse(TokenList tokens) {
     byte array = 0;
-    while (tokens.curr().eq(sym(LBRAK))) {
+    while (tokens.curr().eq(SYMBOL, LBRAK)) {
       tokens.next();
-      if (tokens.curr().eq(sym(RBRAK))) {
+      if (tokens.curr().eq(SYMBOL, RBRAK)) {
         array++;
       } else {
         return 0;

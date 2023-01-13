@@ -1,9 +1,9 @@
 package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
-import static io.github.martinschneider.orzo.util.FactoryHelper.clazz;
-import static io.github.martinschneider.orzo.util.FactoryHelper.list;
-import static io.github.martinschneider.orzo.util.FactoryHelper.varMap;
+import static io.github.martinschneider.orzo.util.Factory.clazz;
+import static io.github.martinschneider.orzo.util.Factory.list;
+import static io.github.martinschneider.orzo.util.Factory.varMap;
 import static io.github.martinschneider.orzo.util.decompiler.BytecodeDecompiler.decompile;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -16,7 +16,7 @@ import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
-import io.github.martinschneider.orzo.lexer.tokens.Scopes;
+import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.parser.ProdParser;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -57,7 +57,7 @@ public abstract class StatementGeneratorTest<T extends Statement> {
             clazz(
                 "pkg",
                 emptyList(),
-                new Scope(Scopes.PUBLIC),
+                new Scope(Scope.PUBLIC),
                 "Clazz",
                 emptyList(),
                 Clazz.JAVA_LANG_OBJECT,

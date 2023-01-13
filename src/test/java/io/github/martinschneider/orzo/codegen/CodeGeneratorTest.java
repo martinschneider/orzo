@@ -2,10 +2,10 @@ package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
-import static io.github.martinschneider.orzo.util.FactoryHelper.clazz;
-import static io.github.martinschneider.orzo.util.FactoryHelper.enumm;
-import static io.github.martinschneider.orzo.util.FactoryHelper.iface;
-import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
+import static io.github.martinschneider.orzo.util.Factory.clazz;
+import static io.github.martinschneider.orzo.util.Factory.enumm;
+import static io.github.martinschneider.orzo.util.Factory.iface;
+import static io.github.martinschneider.orzo.util.Factory.stream;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 

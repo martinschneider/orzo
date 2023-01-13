@@ -1,12 +1,13 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.*;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.NEGATE;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Keyword.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.NEGATE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.*;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.*;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
@@ -30,11 +31,11 @@ public class IfParser implements ProdParser<IfStatement> {
 
   @Override
   public IfStatement parse(TokenList tokens) {
-    IfStatement stmt = parse(tokens, keyword(IF), false);
+    IfStatement stmt = parse(tokens, IF, false);
     if (stmt != null) {
       return stmt;
     }
-    return parse(tokens, keyword(UNLESS), true);
+    return parse(tokens, UNLESS, true);
   }
 
   public IfStatement parse(TokenList tokens, Keyword keyword, boolean negate) {
@@ -46,7 +47,7 @@ public class IfParser implements ProdParser<IfStatement> {
       IfBlock elseIfBlock;
       int idx1 = tokens.idx();
       int idx2 = idx1;
-      while ((elseIfBlock = parseIfBlock(tokens, false, keyword(ELSE), keyword(IF))) != null) {
+      while ((elseIfBlock = parseIfBlock(tokens, false, ELSE, IF)) != null) {
         ifBlocks.add(elseIfBlock);
         idx2 = tokens.idx();
       }
@@ -63,14 +64,14 @@ public class IfParser implements ProdParser<IfStatement> {
     return null;
   }
 
-  IfBlock parseIfBlock(TokenList tokens, boolean negate, Token... expectedTokens) {
+  IfBlock parseIfBlock(TokenList tokens, boolean negate, Keyword... expectedKeywords) {
     Expression condition;
     List<Statement> body;
     if (tokens.curr() == null) {
       return null;
     }
-    for (Token expectedToken : expectedTokens) {
-      if (!tokens.curr().eq(expectedToken)) {
+    for (Keyword expectedKeyword : expectedKeywords) {
+      if (!tokens.curr().eq(KEYWORD, expectedKeyword)) {
         return null;
       }
       tokens.next();

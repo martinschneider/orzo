@@ -1,8 +1,9 @@
 package io.github.martinschneider.orzo.parser;
 
-import io.github.martinschneider.orzo.lexer.tokens.Type;
 import java.util.Map;
 
+import io.github.martinschneider.orzo.parser.productions.Type;
+
 public class TypeMap {
-  public final Map<String, Type> TYPES = Map.of("Object", new Type("java/lang/Object"));
+  public final Map<String, Type> TYPES = Map.of("Object", Type.of("java/lang/Object"));
 }

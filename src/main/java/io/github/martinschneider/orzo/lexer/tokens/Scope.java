@@ -7,7 +7,7 @@ import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_P
 
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 
-public enum Scopes {
+public enum Scope {
   PUBLIC(ACC_PUBLIC),
   PRIVATE(ACC_PRIVATE),
   PROTECTED(ACC_PROTECTED),
@@ -15,7 +15,7 @@ public enum Scopes {
 
   public AccessFlag accFlag;
 
-  private Scopes(AccessFlag accFlag) {
+  private Scope(AccessFlag accFlag) {
     this.accFlag = accFlag;
   }
 }

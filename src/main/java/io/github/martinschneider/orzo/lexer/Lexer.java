@@ -1,19 +1,83 @@
 package io.github.martinschneider.orzo.lexer;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.*;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.*;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.*;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.BASIC_TYPES;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_AND;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_AND_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_OR;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_OR_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_XOR;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.BITWISE_XOR_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.DIV;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.DIV_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.EQUAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.GREATER;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.GREATEREQ;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.LESS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.LESSEQ;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.LOGICAL_AND;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.LOGICAL_OR;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.LSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.LSHIFT_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.MINUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.MINUS_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.MOD;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.MOD_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.NEGATE;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.NOTEQUAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PLUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PLUS_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.POST_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.POST_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.POW;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PRE_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PRE_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.RSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.RSHIFTU;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.RSHIFTU_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.RSHIFT_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.TIMES;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.TIMES_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.COMMA;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.DOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LFLOOR;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RFLOOR;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.SQRT;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.boolLit;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.type;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.CHAR_LITERAL;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.DOUBLE_LITERAL;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.FLOAT_LITERAL;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.ID;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.INT_LITERAL;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.LONG_LITERAL;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.STRING_LITERAL;
 
-import io.github.martinschneider.orzo.error.CompilerErrors;
-import io.github.martinschneider.orzo.lexer.tokens.Keywords;
-import io.github.martinschneider.orzo.lexer.tokens.Scopes;
-import io.github.martinschneider.orzo.lexer.tokens.Token;
-import java.io.*;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PushbackReader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Types.*;
+import io.github.martinschneider.orzo.error.CompilerErrors;
+import io.github.martinschneider.orzo.lexer.tokens.BasicType;
+import io.github.martinschneider.orzo.lexer.tokens.Keyword;
+import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.lexer.tokens.TokenType;
 
 public class Lexer {
   private StringBuffer buffer;
@@ -148,8 +212,8 @@ public class Lexer {
     } else {
       inputReader.unread(character);
     }
-    String type = isFloat ? FLOAT32 : FLOAT64;
-    tokenList.add(Token.of(type, buffer.toString()).wLoc(inputReader.getLoc()));
+    TokenType literalType = isFloat ? FLOAT_LITERAL : DOUBLE_LITERAL;
+    tokenList.add(Token.of(literalType, buffer.toString()).wLoc(inputReader.getLoc()));
     buffer.setLength(0);
   }
 
@@ -163,7 +227,7 @@ public class Lexer {
       inputReader.unread(character);
       String str = buffer.toString();
       // keywords
-      for (Keywords keyword : Keywords.values()) {
+      for (Keyword keyword : Keyword.values()) {
         // TODO: specify case-sensitive keywords (instead of assuming they are all lowercase)
         if (str.equals(keyword.name().toLowerCase())) {
           tokenList.add(keyword(keyword).wLoc(inputReader.getLoc()));
@@ -171,7 +235,7 @@ public class Lexer {
         }
       }
       // scopes
-      for (Scopes scope : Scopes.values()) {
+      for (Scope scope : Scope.values()) {
         if (str.equals(scope.name().toLowerCase())) {
           tokenList.add(scope(scope).wLoc(inputReader.getLoc()));
           buffer.setLength(0);
@@ -179,11 +243,11 @@ public class Lexer {
       }
       // bool literal
       if (str.equals("true") || str.equals("false")) {
-        tokenList.add(bool(str));
+        tokenList.add(boolLit(str));
         buffer.setLength(0);
       }
       // basic types
-      if (BASIC_TYPES.contains(str)) {
+      if (BasicType.isBasicType(str)) {
         tokenList.add(type(str));
         buffer.setLength(0);
       }
@@ -214,7 +278,7 @@ public class Lexer {
       } else {
         inputReader.unread(character);
       }
-      String type = isLong ? INT64 : INT32;
+      TokenType type = isLong ? LONG_LITERAL : INT_LITERAL;
       tokenList.add(Token.of(type, buffer.toString()).wLoc(inputReader.getLoc()));
       buffer.setLength(0);
     }
@@ -384,7 +448,7 @@ public class Lexer {
     if ((character == '\'')) {
       int c;
       if ((c = inputReader.read()) != -1) {
-        tokenList.add(chr((char) c).wLoc(inputReader.getLoc()));
+        tokenList.add(Token.of(CHAR_LITERAL, Character.toString(c)).wLoc(inputReader.getLoc()));
       }
       if ((c = (char) inputReader.read()) != '\'') {
         errors.addError("scan character", "missing '", new RuntimeException().getStackTrace());
@@ -407,7 +471,7 @@ public class Lexer {
         errors.addError(
             "scan string", "missing \" in string", new RuntimeException().getStackTrace());
       } else {
-        tokenList.add(str(buffer.toString()).wLoc(inputReader.getLoc()));
+        tokenList.add(Token.of(STRING_LITERAL,buffer.toString()).wLoc(inputReader.getLoc()));
       }
     }
     buffer.setLength(0);

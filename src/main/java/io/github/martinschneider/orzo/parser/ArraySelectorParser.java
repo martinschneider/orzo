@@ -1,7 +1,7 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;

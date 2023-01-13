@@ -1,21 +1,22 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.COMMA;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.DOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.eof;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
-import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.Identifier;
-import io.github.martinschneider.orzo.parser.productions.ArraySelector;
-import io.github.martinschneider.orzo.parser.productions.Expression;
-import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.parser.productions.ArraySelector;
+import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.Identifier;
+import io.github.martinschneider.orzo.parser.productions.MethodCall;
 
 public class MethodCallParser implements ProdParser<MethodCall> {
   private ParserContext ctx;
@@ -67,8 +68,8 @@ public class MethodCallParser implements ProdParser<MethodCall> {
     ctx.sqrtParser.parse(tokens);
     List<Expression> parameters;
     StringBuilder name = new StringBuilder();
-    if (tokens.curr() instanceof Identifier) {
-      Identifier idToken = (Identifier) tokens.curr();
+    if (tokens.curr().isId()) {
+      Identifier idToken = Identifier.of(tokens.curr().val);
       int idx = tokens.idx();
       do {
         name.append(tokens.curr());
@@ -86,7 +87,7 @@ public class MethodCallParser implements ProdParser<MethodCall> {
         tokens.setIdx(idx);
         return null;
       }
-      return new MethodCall(name.toString(), parameters, arrSel).wLoc(idToken.loc);
+      return new MethodCall(name.toString(), parameters, arrSel);//.wLoc(idToken.loc);
     }
     return null;
   }

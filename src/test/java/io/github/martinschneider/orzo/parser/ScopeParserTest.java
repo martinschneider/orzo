@@ -2,9 +2,9 @@ package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
 import static io.github.martinschneider.orzo.TestHelper.assertTokenIdx;
-import static io.github.martinschneider.orzo.lexer.tokens.Scopes.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Scope.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
-import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
+import static io.github.martinschneider.orzo.util.Factory.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.lexer.Lexer;
@@ -23,9 +23,9 @@ public class ScopeParserTest {
   private static Stream<Arguments> test() {
     return stream(
         args("", null),
-        args("public", scope(PUBLIC)),
-        args("private", scope(PRIVATE)),
-        args("protected", scope(PROTECTED)),
+        args("public", PUBLIC),
+        args("private", PRIVATE),
+        args("protected", PROTECTED),
         args("Public", null));
   }
 

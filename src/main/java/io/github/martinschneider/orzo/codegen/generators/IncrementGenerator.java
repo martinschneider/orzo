@@ -4,11 +4,11 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.IINC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.WIDE;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.ARITHMETIC_OPS;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.DUP_OPS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_DECREMENT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.MINUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PLUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.POST_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PRE_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PRE_INCREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
@@ -17,7 +17,7 @@ import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
-import io.github.martinschneider.orzo.lexer.tokens.Operators;
+import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 
@@ -41,7 +41,7 @@ public class IncrementGenerator implements StatementGenerator<IncrementStatement
       return out;
     }
     Identifier id = (Identifier) incr.expr.tokens.get(0);
-    Operators op = ((Operator) incr.expr.tokens.get(1)).opValue();
+    Operator op = ((Operator) incr.expr.tokens.get(1)).opValue();
     VariableInfo varInfo = ctx.classIdMap.variables.get(id);
     inc(out, varInfo, op, true);
     return out;
@@ -49,9 +49,9 @@ public class IncrementGenerator implements StatementGenerator<IncrementStatement
 
   // if evalOnly==true the variable value will be changed but not put/left on the stack
   public HasOutput inc(
-      DynamicByteArray out, VariableInfo varInfo, Operators incrOp, boolean evalOnly) {
+      DynamicByteArray out, VariableInfo varInfo, Operator incrOp, boolean evalOnly) {
     boolean pre = false;
-    Operators op = PLUS;
+    Operator op = PLUS;
     if (incrOp.equals(PRE_DECREMENT) || incrOp.equals(PRE_INCREMENT)) {
       pre = true;
     }

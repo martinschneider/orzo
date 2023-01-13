@@ -1,25 +1,26 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Keyword.FINAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Keyword.STATIC;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.COMMA;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.TYPE;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.Identifier;
-import io.github.martinschneider.orzo.lexer.tokens.Scope;
-import io.github.martinschneider.orzo.lexer.tokens.Scopes;
-import io.github.martinschneider.orzo.lexer.tokens.Type;
+import io.github.martinschneider.orzo.lexer.tokens.BasicType;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.Identifier;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
-import java.util.ArrayList;
-import java.util.List;
+import io.github.martinschneider.orzo.parser.productions.Type;
 
 public class DeclarationParser implements ProdParser<ParallelDeclaration> {
   private ParserContext ctx;
@@ -35,8 +36,8 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
     List<Byte> arrDims = new ArrayList<>();
     List<Expression> values = new ArrayList<>();
     List<AccessFlag> accFlags = new ArrayList<>();
-    if (tokens.curr() instanceof Scope) {
-      accFlags.add(((Scopes) ((Scope) tokens.curr()).val).accFlag); // OMG!
+    if (tokens.curr().isScope()) {
+      accFlags.add(tokens.curr().scopeVal().accFlag); // OMG!
       tokens.next();
     }
     if (tokens.curr().eq(keyword(STATIC))) {
@@ -47,18 +48,18 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       accFlags.add(AccessFlag.ACC_FINAL);
       tokens.next();
     }
-    if (tokens.curr() instanceof Type && !tokens.curr().eq("VOID")) {
-      type = (Type) tokens.curr();
-    } else if (tokens.curr() instanceof Identifier
+    if (tokens.curr().eq(TYPE, BasicType.VOID)) {
+      type = Type.of(tokens.curr().val);
+    } else if (tokens.curr().isId()
         && ctx.typeMap.TYPES.containsKey(tokens.curr().toString())) {
       type = ctx.typeMap.TYPES.get(tokens.curr().toString());
     }
     if (type != null) {
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
-      while (tokens.curr() instanceof Identifier || tokens.curr().eq(sym(COMMA))) {
-        if (tokens.curr() instanceof Identifier) {
-          Identifier id = (Identifier) tokens.curr();
+      while (tokens.curr().isId() || tokens.curr().eq(sym(COMMA))) {
+        if (tokens.curr().isId()) {
+          Identifier id = Identifier.of(tokens.curr().val);
           tokens.next();
           id.arrSel = ctx.arraySelectorParser.parse(tokens);
           names.add(id);

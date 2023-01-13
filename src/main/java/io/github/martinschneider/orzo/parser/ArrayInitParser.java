@@ -1,22 +1,23 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.NEW;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Keyword.NEW;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.COMMA;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.*;
 
-import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
-import io.github.martinschneider.orzo.lexer.tokens.Type;
-import io.github.martinschneider.orzo.parser.productions.ArrayInit;
-import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.parser.productions.ArrayInit;
+import io.github.martinschneider.orzo.parser.productions.Expression;
 
 public class ArrayInitParser implements ProdParser<ArrayInit> {
   private ParserContext ctx;
@@ -33,8 +34,8 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
       String type = null;
       List<List<Expression>> vals = new ArrayList<>();
       tokens.next();
-      if (tokens.curr() instanceof Type) {
-        type = ((Type) tokens.curr()).name;
+      if (tokens.curr().isType()) {
+        type = tokens.curr().val;
         tokens.next();
       } else {
         ctx.errors.tokenIdx = tokens.idx();
@@ -88,7 +89,7 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
       }
       for (int i = 0; i < vals.size(); i++) {
         if (dimensions.get(i) == null) {
-          dimensions.set(i, new Expression(List.of(new IntLiteral(vals.get(i).size(), false))));
+        	dimensions.set(i, new Expression(List.of(Token.of(INT_LITERAL,String.valueOf(vals.get(i).size())))));
         } else {
           // this is different from the Java spec which doesn't allow specifying array
           // dimension and
@@ -99,8 +100,8 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
           //
           // if dim is a literal and it doesn't match the number of values found
           if (dimensions.get(i).tokens.size() == 1
-              && dimensions.get(i).tokens.get(0) instanceof IntLiteral
-              && ((IntLiteral) dimensions.get(i).tokens.get(0)).intValue() != vals.get(i).size()
+              && dimensions.get(i).tokens.get(0).isIntLit()
+              && dimensions.get(i).tokens.get(0).intVal() != vals.get(i).size()
               && vals.get(i).size() != 0) {
             ctx.errors.addError(
                 LOG_NAME,

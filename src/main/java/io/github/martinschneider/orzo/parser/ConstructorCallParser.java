@@ -1,13 +1,15 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.KEYWORD;
+
+import java.util.List;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
-import java.util.List;
+import io.github.martinschneider.orzo.parser.productions.Identifier;
+import io.github.martinschneider.orzo.parser.productions.Type;
 
 public class ConstructorCallParser implements ProdParser<ConstructorCall> {
 
@@ -22,22 +24,22 @@ public class ConstructorCallParser implements ProdParser<ConstructorCall> {
   @Override
   public ConstructorCall parse(TokenList tokens) {
     int idx = tokens.idx();
-    if (!(tokens.curr() instanceof Keyword && ((Keyword) tokens.curr()).eq(keyword("new")))) {
+    if (!(tokens.curr().eq(KEYWORD, Keyword.NEW))) {
       return null;
     }
     tokens.next();
-    Identifier type = null;
-    if (!(tokens.curr() instanceof Identifier)) {
+    Type type = null;
+    if (!(tokens.curr().isId())) {
       ctx.errors.addError(
           LOG_NAME, "identifier expected after \"new\"", new RuntimeException().getStackTrace());
       tokens.prev();
       return null;
     } else {
-      type = (Identifier) tokens.curr();
+      type = Type.of(tokens.curr().val);
       tokens.next();
       List<Expression> args = ctx.methodCallParser.parseArgs(tokens);
       if (args != null) {
-        return new ConstructorCall(type.id(), args);
+        return new ConstructorCall(type.name, args);
       } else {
         ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);

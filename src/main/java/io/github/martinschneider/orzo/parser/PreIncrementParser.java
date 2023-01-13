@@ -1,17 +1,18 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_DECREMENT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMENT;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PRE_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PRE_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
+import java.util.List;
+
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.Identifier;
 import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
-import java.util.List;
 
 public class PreIncrementParser implements ProdParser<IncrementStatement> {
   private ParserContext ctx;
@@ -23,14 +24,14 @@ public class PreIncrementParser implements ProdParser<IncrementStatement> {
   @Override
   public IncrementStatement parse(TokenList tokens) {
     Identifier id;
-    Operator op;
+    ExprOperator op;
     int idx = tokens.idx();
-    if (tokens.curr() instanceof Operator) {
+    if (tokens.curr().isOp()) {
       if (tokens.curr().eq(op(PRE_INCREMENT))) {
-        op = op(PRE_INCREMENT);
+        op = ExprOperator.of(PRE_INCREMENT);
         tokens.next();
       } else if (tokens.curr().eq(op(PRE_DECREMENT))) {
-        op = op(PRE_DECREMENT);
+        op = ExprOperator.of(PRE_DECREMENT);
         tokens.next();
       } else {
         tokens.prev();
@@ -42,8 +43,8 @@ public class PreIncrementParser implements ProdParser<IncrementStatement> {
     } else {
       return null;
     }
-    if (tokens.curr() instanceof Identifier) {
-      id = (Identifier) tokens.curr();
+    if (tokens.curr().isId()) {
+      id = Identifier.of(tokens.curr().val);
       tokens.next();
       id.arrSel = ctx.arraySelectorParser.parse(tokens);
       return new IncrementStatement(new Expression(List.of(id, op)));

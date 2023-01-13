@@ -1,15 +1,22 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.REPEAT;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Keyword.REPEAT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.*;
+
+import java.io.IOException;
+import java.util.List;
 
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.Operators;
-import io.github.martinschneider.orzo.parser.productions.*;
-import java.io.IOException;
-import java.util.List;
+import io.github.martinschneider.orzo.lexer.tokens.Operator;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.ForStatement;
+import io.github.martinschneider.orzo.parser.productions.LoopStatement;
+import io.github.martinschneider.orzo.parser.productions.Statement;
+import io.github.martinschneider.orzo.parser.productions.WhileStatement;
 
 public class RepeatParser implements ProdParser<LoopStatement> {
   private static final String LOG_NAME = "parse repeat";
@@ -51,12 +58,12 @@ public class RepeatParser implements ProdParser<LoopStatement> {
       }
       if (count == null) {
         // infinite loop
-        return new WhileStatement(new Expression(List.of(bool("true"))), body);
+        return new WhileStatement(new Expression(List.of(Token.boolLit("true"))), body);
       }
       try {
         Lexer lexer = new Lexer();
         count.tokens.add(0, id("i"));
-        count.tokens.add(op(Operators.LESS));
+        count.tokens.add(op(Operator.LESS));
         return new ForStatement(
             ctx.stmtParser.parse(lexer.getTokens("int i=0")),
             count,

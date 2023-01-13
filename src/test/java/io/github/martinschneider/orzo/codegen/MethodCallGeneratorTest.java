@@ -2,8 +2,8 @@ package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
 import static io.github.martinschneider.orzo.codegen.MockConstantPool.constant;
-import static io.github.martinschneider.orzo.util.FactoryHelper.list;
-import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
+import static io.github.martinschneider.orzo.util.Factory.list;
+import static io.github.martinschneider.orzo.util.Factory.stream;
 import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.generators.MethodCallGenerator;

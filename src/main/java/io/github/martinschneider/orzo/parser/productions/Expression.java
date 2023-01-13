@@ -1,16 +1,11 @@
 package io.github.martinschneider.orzo.parser.productions;
 
-import static java.lang.Math.toIntExact;
-
-import io.github.martinschneider.orzo.codegen.constants.ConstantPool;
-import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
-import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
-import io.github.martinschneider.orzo.lexer.tokens.Str;
-import io.github.martinschneider.orzo.lexer.tokens.Token;
-import io.github.martinschneider.orzo.lexer.tokens.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import io.github.martinschneider.orzo.codegen.constants.ConstantPool;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 
 public class Expression {
   public List<Token> tokens = new ArrayList<>();
@@ -38,22 +33,18 @@ public class Expression {
 
   public Object getConstantValue(String type) {
     if (tokens.size() == 1) {
-      Token token = tokens.get(0);
-      if (token instanceof IntLiteral) {
-        if (ConstantPool.INT_CONSTANT_TYPES.contains(type)) {
-          return toIntExact(((IntLiteral) token).intValue());
-        } else if ("long".equals(type)) {
-          return ((IntLiteral) token).intValue();
+    	Token token = tokens.get(0);
+      if (ConstantPool.INT_CONSTANT_TYPES.contains(type) && token.isIntLit()) {
+          return token.intVal();
+        } else if (token.isLongLit()) {
+          return token.longVal();
         }
-      } else if (token instanceof FPLiteral) {
-        if ("float".equals(type)) {
-          return Float.valueOf((float) ((FPLiteral) token).doubleVal());
-        } else if ("double".equals(type)) {
-          return ((FPLiteral) token).doubleVal();
+        else if (token.isFloatLit()) {
+        	return token.floatVal();
         }
-      } else if (token instanceof Str) {
-        return ((Str) token).strValue();
-      }
+        else if (token.isDoubleLit()) {
+        	return token.doubleVal();
+        }
     }
     return null;
   }

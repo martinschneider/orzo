@@ -1,14 +1,15 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.DO;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.WHILE;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
-import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Keyword.DO;
+import static io.github.martinschneider.orzo.lexer.tokens.Keyword.WHILE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.RPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbol.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
+import static io.github.martinschneider.orzo.lexer.tokens.TokenType.*;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
@@ -33,7 +34,7 @@ public class DoParser implements ProdParser<DoStatement> {
     if (tokens.curr() == null) {
       return null;
     }
-    if (tokens.curr() instanceof Keyword && tokens.curr().eq(keyword(DO))) {
+    if (tokens.curr().eq(KEYWORD,DO)) {
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
         tokens.prev();

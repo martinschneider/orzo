@@ -1,7 +1,7 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.*;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
@@ -12,14 +12,14 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static java.util.Map.entry;
 
-import io.github.martinschneider.orzo.lexer.tokens.Operators;
+import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import java.util.Map;
 
 public class OperatorMaps {
   // mapping operator and types to the corresponding JVM opcodes, e.g. LSHIFT and LONG should return
   // LSHL
   // I prefer the static map over using switch expressions
-  public static final Map<Operators, Map<String, byte[]>> ARITHMETIC_OPS =
+  public static final Map<Operator, Map<String, byte[]>> ARITHMETIC_OPS =
       Map.ofEntries(
           entry(
               PLUS,
@@ -258,7 +258,7 @@ public class OperatorMaps {
           entry(LOGICAL_AND, Map.of(BOOLEAN, new byte[] {IAND})),
           entry(LOGICAL_OR, Map.of(BOOLEAN, new byte[] {IOR})));
 
-  public static final Map<Operators, Byte> COMPARE_TO_ZERO_OPS =
+  public static final Map<Operator, Byte> COMPARE_TO_ZERO_OPS =
       Map.of(EQUAL, IFEQ, NOTEQUAL, IFNE, GREATER, IFGT, GREATEREQ, IFGE, LESS, IFLT, LESSEQ, IFLE);
 
   public static final Map<String, Byte> DUP_OPS =

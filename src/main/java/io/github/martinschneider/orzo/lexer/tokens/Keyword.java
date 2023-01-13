@@ -1,6 +1,6 @@
 package io.github.martinschneider.orzo.lexer.tokens;
 
-public enum Keywords {
+public enum Keyword {
   IF,
   ELSE,
   DO,

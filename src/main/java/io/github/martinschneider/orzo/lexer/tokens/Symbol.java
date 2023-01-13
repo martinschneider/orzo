@@ -1,6 +1,6 @@
 package io.github.martinschneider.orzo.lexer.tokens;
 
-public enum Symbols {
+public enum Symbol {
   LPAREN,
   RPAREN,
   LBRACE,

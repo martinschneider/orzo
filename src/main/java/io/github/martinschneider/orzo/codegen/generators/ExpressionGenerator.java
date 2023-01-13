@@ -19,20 +19,20 @@ import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.ARITHMETIC_OPS;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.COMPARE_TO_ZERO_OPS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.EQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESSEQ;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_DECREMENT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMENT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.EQUAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.GREATER;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.GREATEREQ;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.LESS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.LESSEQ;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.LSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.NOTEQUAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.POST_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.POST_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.POW;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PRE_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.PRE_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.RSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operator.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
@@ -59,7 +59,7 @@ import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
-import io.github.martinschneider.orzo.lexer.tokens.Operators;
+import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
@@ -77,7 +77,7 @@ public class ExpressionGenerator {
 
   public CGContext ctx;
 
-  private static final List<Operators> COMPARATORS =
+  private static final List<Operator> COMPARATORS =
       List.of(EQUAL, NOTEQUAL, GREATER, LESS, LESSEQ, GREATEREQ);
 
   public ExpressionResult eval(DynamicByteArray out, String type, Expression expr) {
@@ -160,7 +160,7 @@ public class ExpressionGenerator {
         type = CHAR;
         exprTypeStack.push(CHAR);
       } else if (token instanceof Operator) {
-        Operators op = ((Operator) token).opValue();
+        Operator op = ((Operator) token).opValue();
         if (List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT).contains(op)) {
           VariableInfo varInfo = ctx.classIdMap.variables.get(tokens.get(i - 1));
           ctx.incrGen.inc(out, varInfo, op, false);

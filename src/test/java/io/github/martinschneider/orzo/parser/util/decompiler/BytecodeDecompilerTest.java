@@ -1,8 +1,8 @@
 package io.github.martinschneider.orzo.parser.util.decompiler;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
-import static io.github.martinschneider.orzo.util.FactoryHelper.list;
-import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
+import static io.github.martinschneider.orzo.util.Factory.list;
+import static io.github.martinschneider.orzo.util.Factory.stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.github.martinschneider.orzo.util.decompiler.BytecodeDecompiler;
