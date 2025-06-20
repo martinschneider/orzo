@@ -41,6 +41,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT_ZERO;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import static java.util.Collections.emptyList;
@@ -51,6 +52,7 @@ import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.OperandStack;
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
@@ -63,11 +65,13 @@ import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
+import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -238,7 +242,11 @@ public class ExpressionGenerator {
     Identifier curr = (Identifier) token;
     Identifier prev = null;
     do {
-      if (token instanceof MethodCall) {
+      // In handleId() method, add this BEFORE line 241:
+      if (token instanceof ConstructorCall) {
+        ConstructorCall constructorCall = (ConstructorCall) token;
+        type = generateConstructorCall(out, classIdMap, constructorCall);
+      } else if (token instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) token;
         type = ctx.methodCallGen.generate(out, classIdMap, methodCall);
         if (curr.arrSel != null) {
@@ -321,6 +329,102 @@ public class ExpressionGenerator {
       out.write(arrayType);
     } else {
       // TODO:
+    }
+  }
+
+  String generateConstructorCall(
+      DynamicByteArray out, GlobalIdentifierMap classIdMap, ConstructorCall constructorCall) {
+    String className = (String) constructorCall.val; // The type name from "new TypeName(...)"
+
+    // Convert to JVM class name format (e.g., String -> java/lang/String)
+    String jvmClassName = convertToJVMClassName(className);
+
+    // Add class to constant pool before generating NEW instruction
+    ctx.constPool.addClass(jvmClassName);
+
+    // Generate NEW instruction
+    ctx.invokeGen.newInstance(out, jvmClassName);
+
+    // DUP the object reference for constructor call
+    out.write(DUP);
+    ctx.opStack.push(REF); // Track the duplicated reference
+
+    // Push constructor arguments onto stack
+    List<String> argTypes = new ArrayList<>();
+    for (Expression arg : constructorCall.args) {
+      String argType = new NumExprTypeDecider(ctx).getType(classIdMap, arg);
+      ctx.exprGen.eval(out, argType, arg);
+      argTypes.add(argType);
+    }
+
+    // Find matching constructor (constructors have method name "<init>")
+    Method constructor = findMatchingConstructor(jvmClassName, argTypes);
+    if (constructor == null) {
+      ctx.errors.addError(
+          "constructor call generator",
+          String.format("No matching constructor found for %s(%s)", className, argTypes),
+          new RuntimeException().getStackTrace());
+      return className; // Return the class type even if constructor not found
+    }
+
+    // Generate INVOKESPECIAL <init>
+    ctx.invokeGen.invokeSpecial(out, constructor);
+
+    return className; // Return the object type
+  }
+
+  private Method findMatchingConstructor(String className, List<String> argTypes) {
+    // Look for constructors in the context's method map
+    // Constructors have the method name "<init>"
+    List<List<String>> typesList = new ArrayList<>();
+    for (int i = 0; i < argTypes.size(); i++) {
+      typesList.add(TypeUtils.assignableTo(argTypes.get(i)));
+    }
+
+    Method constructor = null;
+    for (List<String> assignTypes : TypeUtils.combinations(typesList)) {
+      String constructorKey = "<init>" + TypeUtils.typesDescr(assignTypes);
+      constructor = ctx.methodMap.get(constructorKey);
+      if (constructor != null && constructor.fqClassName.equals(className)) {
+        break;
+      }
+    }
+
+    // If no constructor found, create a default constructor for basic types
+    if (constructor == null && argTypes.isEmpty()) {
+      // Default no-arg constructor
+      constructor = new Method(className, "<init>", "void", argTypes);
+    }
+
+    return constructor;
+  }
+
+  private String convertToJVMClassName(String className) {
+    // Handle common types that map to java.lang classes
+    switch (className) {
+      case "String":
+        return "java/lang/String";
+      case "Object":
+        return "java/lang/Object";
+      case "Integer":
+        return "java/lang/Integer";
+      case "Double":
+        return "java/lang/Double";
+      case "Float":
+        return "java/lang/Float";
+      case "Long":
+        return "java/lang/Long";
+      case "Boolean":
+        return "java/lang/Boolean";
+      case "Character":
+        return "java/lang/Character";
+      case "Byte":
+        return "java/lang/Byte";
+      case "Short":
+        return "java/lang/Short";
+      default:
+        // For fully qualified names, just replace dots with slashes
+        return className.replace('.', '/');
     }
   }
 

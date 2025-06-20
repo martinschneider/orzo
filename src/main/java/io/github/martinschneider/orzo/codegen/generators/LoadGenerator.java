@@ -37,6 +37,7 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FLOAT;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_INTEGER;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_LONG;
+import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
@@ -97,6 +98,12 @@ public class LoadGenerator {
 
   public HasOutput ldc(DynamicByteArray out, byte type, Object key) {
     ctx.opStack.push(mapConstantPoolType(type));
+
+    // Ensure the constant is added to the pool before looking it up
+    if (type == CONSTANT_STRING && key instanceof String) {
+      ctx.constPool.addString((String) key);
+    }
+
     byte idx = (byte) ctx.constPool.indexOf(type, key);
     out.write(LDC);
     out.write(idx);

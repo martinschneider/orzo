@@ -4,6 +4,7 @@ import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
+import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.DoStatement;
 import io.github.martinschneider.orzo.parser.productions.EmptyStatement;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
@@ -28,6 +29,7 @@ public class StatementDelegator {
     reg.put(ForStatement.class, new ForGenerator(ctx));
     reg.put(IfStatement.class, new IfGenerator(ctx));
     reg.put(MethodCall.class, new MethodCallGenerator(ctx));
+    reg.put(ConstructorCall.class, new ConstructorCallGenerator(ctx));
     reg.put(Assignment.class, new AssignmentGenerator(ctx));
     reg.put(ReturnStatement.class, new RetGenerator(ctx));
     reg.put(WhileStatement.class, new WhileGenerator(ctx));

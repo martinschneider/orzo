@@ -24,7 +24,10 @@ public class StatementParser implements ProdParser<Statement> {
   @Override
   public Statement parse(TokenList tokens) {
     Statement stmt;
-    if ((stmt = ctx.assignParser.parse(tokens)) != null) {
+    // Check constructor calls first to avoid conflicts with other parsers
+    if ((stmt = ctx.constrCallParser.parse(tokens)) != null) {
+      return stmt;
+    } else if ((stmt = ctx.assignParser.parse(tokens)) != null) {
       return stmt;
     } else if ((stmt = ctx.postIncrementParser.parse(tokens)) != null) {
       return stmt;
