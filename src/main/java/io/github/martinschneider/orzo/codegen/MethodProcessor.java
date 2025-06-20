@@ -53,7 +53,13 @@ public class MethodProcessor {
     // in the samples.
     for (Class<?> clazz :
         List.of(
-            Math.class, Double.class, Float.class, Character.class, Integer.class, Long.class)) {
+            Math.class,
+            Double.class,
+            Float.class,
+            Character.class,
+            Integer.class,
+            Long.class,
+            String.class)) {
       for (java.lang.reflect.Method m : clazz.getMethods()) {
         if (Modifier.isPublic(m.getModifiers()) && Modifier.isStatic(m.getModifiers())) {
           List<Argument> args = mapArgs(m.getParameters());
@@ -70,6 +76,30 @@ public class MethodProcessor {
           methodMap.put(clazz.getSimpleName() + '.' + getKey(method), method);
           // TODO: only do this for static imports
           methodMap.put(getKey(method), method);
+        }
+      }
+
+      // Add constructors for basic types
+      for (java.lang.reflect.Constructor<?> c : clazz.getConstructors()) {
+        if (Modifier.isPublic(c.getModifiers())) {
+          List<Argument> args = mapArgs(c.getParameters());
+          Method constructor =
+              new Method(
+                  clazz.getName().replace('.', '/'), // Use JVM class name format
+                  // Constructors are public but not static
+                  of(AccessFlag.ACC_PUBLIC),
+                  "void", // Constructors return void
+                  id("<init>"), // Constructor method name
+                  args,
+                  null);
+          // Add constructor to method map with <init> key
+          String constructorKey =
+              "<init>"
+                  + TypeUtils.typesDescr(
+                      args.stream()
+                          .map(arg -> arg.type)
+                          .collect(java.util.stream.Collectors.toList()));
+          methodMap.put(constructorKey, constructor);
         }
       }
     }

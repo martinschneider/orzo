@@ -128,14 +128,21 @@ public class OrzoTest {
         args(list("tests/ArrayLength")),
         // TODO: support infinite loops
         // args(list("tests/InfiniteRepeat")),
-        args(list("tests/ArrayReturnType")));
+        args(list("tests/ArrayReturnType")),
+        // Constructor call examples
+        args(list("tests/Constructor")));
   }
 
   @ParameterizedTest
   @MethodSource("tests")
   public void testCorrectness(List<String> programs)
-      throws IOException, ClassNotFoundException, IllegalAccessException, IllegalArgumentException,
-          InvocationTargetException, NoSuchMethodException, SecurityException {
+      throws IOException,
+          ClassNotFoundException,
+          IllegalAccessException,
+          IllegalArgumentException,
+          InvocationTargetException,
+          NoSuchMethodException,
+          SecurityException {
     List<File> inputs = new ArrayList<>();
     List<Output> outputs = new ArrayList<>();
     List<String> classNames = new ArrayList<>();
@@ -182,8 +189,13 @@ public class OrzoTest {
   // @ParameterizedTest
   @MethodSource("tests")
   public void testBytecode(List<String> programs)
-      throws IOException, ClassNotFoundException, IllegalAccessException, IllegalArgumentException,
-          InvocationTargetException, NoSuchMethodException, SecurityException {
+      throws IOException,
+          ClassNotFoundException,
+          IllegalAccessException,
+          IllegalArgumentException,
+          InvocationTargetException,
+          NoSuchMethodException,
+          SecurityException {
     List<File> inputs = new ArrayList<>();
     List<Output> outputs = new ArrayList<>();
     List<Path> expectedClasses = new ArrayList<>();

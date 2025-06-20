@@ -96,7 +96,7 @@ public class ExpressionParser implements ProdParser<Expression> {
               if (curr instanceof Identifier) {
                 selectors.add((Identifier) curr);
                 tokens.next();
-              } else if ((constrCall = ctx.constrCallParser.parse(tokens)) != null) {
+              } else if ((constrCall = ctx.constrCallParser.parse(tokens, true)) != null) {
                 selectors.add(constrCall);
               } else {
                 exprTokens.add(curr);

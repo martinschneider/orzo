@@ -3,7 +3,7 @@ package io.github.martinschneider.orzo.parser.productions;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import java.util.List;
 
-public class ConstructorCall extends Identifier {
+public class ConstructorCall extends Identifier implements Statement {
 
   public List<Expression> args;
 

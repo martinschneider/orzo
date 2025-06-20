@@ -59,6 +59,12 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
         }
         tokens.next();
       }
+      // If no dimensions found and no brace, this is not an array initialization
+      // Let other parsers (like ConstructorCallParser) handle it
+      if (dimensions.isEmpty() && !tokens.curr().eq(sym(LBRACE))) {
+        tokens.setIdx(idx);
+        return null;
+      }
       if (tokens.curr().eq(sym(LBRACE))) {
         // TODO: support multi-dimensional initialisation
         if (dimensions.size() > 1) {

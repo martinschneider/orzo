@@ -82,6 +82,7 @@ public class InvokeGenerator {
   public HasOutput newInstance(DynamicByteArray out, String clazz) {
     out.write(NEW);
     out.write(ctx.constPool.indexOf(CONSTANT_CLASS, clazz));
+    ctx.opStack.push(REF); // Track the uninitialized object reference
     return out;
   }
 }
