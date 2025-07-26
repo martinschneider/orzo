@@ -101,6 +101,9 @@ public class ClassParser implements ProdParser<Clazz> {
         if (isEnum) {
           ctx.enumParser.fqn = ctx.currClazz.fqn();
           members.add(ctx.enumParser.parse(tokens));
+          // Continue parsing remaining class body (fields, methods, etc.)
+          List<ClassMember> additionalMembers = parseClassBody(tokens, isInterface);
+          members.addAll(additionalMembers);
         } else {
           members = parseClassBody(tokens, isInterface);
         }
@@ -122,7 +125,7 @@ public class ClassParser implements ProdParser<Clazz> {
         }
         // TODO: one could argue that this should be handled during code generation rather than
         // parsing
-        if (!isInterface && !hasConstr) {
+        if (!isInterface && !isEnum && !hasConstr) {
           methods.add(defaultConstr(ctx.currClazz.fqn()));
         }
 

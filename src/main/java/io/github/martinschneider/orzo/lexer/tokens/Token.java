@@ -58,10 +58,18 @@ public class Token {
   }
 
   public static IntLiteral integer(String val) {
-    return new IntLiteral(new BigInteger(val), false);
+    return integer(val, false);
   }
 
   public static IntLiteral integer(String val, boolean isLong) {
+    // Handle hexadecimal literals
+    if (val.startsWith("0x") || val.startsWith("0X")) {
+      String hexValue = val.substring(2); // Remove 0x prefix
+      if (hexValue.isEmpty()) {
+        throw new NumberFormatException("Invalid hexadecimal literal: " + val);
+      }
+      return new IntLiteral(new BigInteger(hexValue, 16), isLong);
+    }
     return new IntLiteral(new BigInteger(val), isLong);
   }
 

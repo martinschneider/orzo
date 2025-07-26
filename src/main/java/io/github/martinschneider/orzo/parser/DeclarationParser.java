@@ -36,7 +36,29 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
     List<Expression> values = new ArrayList<>();
     List<AccessFlag> accFlags = new ArrayList<>();
     if (tokens.curr() instanceof Scope) {
-      accFlags.add(((Scopes) ((Scope) tokens.curr()).val).accFlag); // OMG!
+      try {
+        accFlags.add(((Scopes) ((Scope) tokens.curr()).val).accFlag);
+      } catch (NoSuchFieldError e) {
+        // TODO: Temporary workaround for bootstrapping circular dependency
+        // Handle case where Scopes.accFlag field doesn't exist yet (during self-compilation)
+        // Use a default access flag based on the scope name
+        // This should be replaced with proper dependency resolution and compilation ordering
+        Scopes scopeVal = (Scopes) ((Scope) tokens.curr()).val;
+        switch (scopeVal) {
+          case PUBLIC:
+            accFlags.add(AccessFlag.ACC_PUBLIC);
+            break;
+          case PRIVATE:
+            accFlags.add(AccessFlag.ACC_PRIVATE);
+            break;
+          case PROTECTED:
+            accFlags.add(AccessFlag.ACC_PROTECTED);
+            break;
+          case DEFAULT:
+            // No access flag needed for default
+            break;
+        }
+      }
       tokens.next();
     }
     if (tokens.curr().eq(keyword(STATIC))) {

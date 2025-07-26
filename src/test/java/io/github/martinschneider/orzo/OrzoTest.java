@@ -130,7 +130,10 @@ public class OrzoTest {
         // args(list("tests/InfiniteRepeat")),
         args(list("tests/ArrayReturnType")),
         // Constructor call examples
-        args(list("tests/Constructor")));
+        args(list("tests/Constructor")),
+        args(list("tests/StaticFields", "tests/Constants")),
+        args(list("tests/Enum", "tests/Color", "tests/Status", "tests/Size")),
+        args(list("tests/TestEnumSupport", "tests/AccessFlagTest", "tests/Status")));
   }
 
   @ParameterizedTest
@@ -166,6 +169,7 @@ public class OrzoTest {
     for (int i = 0; i < programs.size(); i++) {
       classLoader.put(classNames.get(i), streams.get(i).toByteArray());
     }
+    // First class should have main method
     Class<?> clazz = classLoader.loadClass(classNames.get(0));
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     PrintStream ps = new PrintStream(baos);

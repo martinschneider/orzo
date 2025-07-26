@@ -154,7 +154,12 @@ public class CodeGenerator {
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, varInfo.name));
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, TypeUtils.descr(varInfo)));
     // TODO: for some reason this still breaks for long and double
-    if (varInfo.accFlags.contains(AccessFlag.ACC_FINAL)) {
+    // Only add ConstantValue for primitive types and String, not for object types (like enum
+    // constants)
+    if (varInfo.accFlags.contains(AccessFlag.ACC_FINAL)
+        && varInfo.val != null
+        && !varInfo.type.startsWith("L")
+        && !varInfo.type.startsWith("[")) {
       out.write((short) 1); // attribute size
       // https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.2
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "ConstantValue"));
@@ -168,7 +173,9 @@ public class CodeGenerator {
   }
 
   private void superClassIndex() {
-    out.write(ctx.constPool.indexOf(CONSTANT_CLASS, "java/lang/Object"));
+    String superClass =
+        ctx.clazz.baseClass != null ? ctx.clazz.baseClass.replace('.', '/') : "java/lang/Object";
+    out.write(ctx.constPool.indexOf(CONSTANT_CLASS, superClass));
   }
 
   private void supportPrint(Clazz clazz) {

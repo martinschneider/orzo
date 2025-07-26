@@ -29,6 +29,29 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, Assignment assignment) {
+    // Handle field access assignments (this.field = value)
+    if (assignment.left.size() == 2 && assignment.right.size() == 1) {
+      // Check if this is a field assignment like "this.field = value"
+      Identifier first = assignment.left.get(0);
+      Identifier second = assignment.left.get(1);
+
+      if ("this".equals(first.val.toString())) {
+        // Handle this.field = value as a single field assignment
+        return handleThisFieldAssignment(out, method, second, assignment.right.get(0));
+      }
+    }
+
+    // Safety check to prevent IndexOutOfBoundsException
+    if (assignment.left.size() != assignment.right.size()) {
+      ctx.errors.addError(
+          "assignment generator",
+          String.format(
+              "Mismatch between left (%d) and right (%d) sides of assignment",
+              assignment.left.size(), assignment.right.size()),
+          new RuntimeException().getStackTrace());
+      return out;
+    }
+
     for (int i = 0; i < assignment.left.size(); i++) {
       Identifier left = assignment.left.get(i);
       Expression right = assignment.right.get(i);
@@ -166,5 +189,34 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       }
     }
     return retValue;
+  }
+
+  private HasOutput handleThisFieldAssignment(
+      DynamicByteArray out, Method method, Identifier fieldName, Expression value) {
+    // Load this reference
+    ctx.loadGen.loadReference(out, (short) 0);
+
+    // Evaluate the right-hand side expression
+    String fieldType = null;
+
+    // Find the field info to get the correct type
+    VariableInfo fieldInfo = ctx.classIdMap.variables.get(fieldName);
+    if (fieldInfo != null) {
+      fieldType = fieldInfo.type;
+    }
+
+    ctx.exprGen.eval(out, fieldType, value);
+
+    // Store the value in the field
+    if (fieldInfo != null && fieldInfo.isField) {
+      ctx.storeGen.putField(out, fieldInfo.idx);
+    } else {
+      ctx.errors.addError(
+          "assignment generator",
+          "Field not found: " + fieldName.val.toString(),
+          new RuntimeException().getStackTrace());
+    }
+
+    return out;
   }
 }

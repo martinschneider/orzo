@@ -13,11 +13,16 @@ src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantTypes.jav
 src/main/java/io/github/martinschneider/orzo/codegen/HasOutput.java
 src/main/java/io/github/martinschneider/orzo/codegen/identifier/IdentifierInfo.java
 src/main/java/io/github/martinschneider/orzo/codegen/OpCodes.java
+src/main/java/io/github/martinschneider/orzo/lexer/tokens/Keywords.java
+src/main/java/io/github/martinschneider/orzo/lexer/tokens/Operators.java
+#src/main/java/io/github/martinschneider/orzo/lexer/tokens/Scopes.java
+src/main/java/io/github/martinschneider/orzo/lexer/tokens/Symbols.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/AccessFlag.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/ClassMember.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/EmptyStatement.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/Selector.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/Statement.java
-src/main/java/io/github/martinschneider/orzo/util/Pair.java
+src/main/java/io/github/martinschneider/orzo/util/Pair.java  
 
 # java.lang.OutOfMemoryError: Java heap space
 #src/main/java/io/github/martinschneider/orzo/codegen/ByteUtils2.java
@@ -30,5 +35,5 @@ src/main/java/io/github/martinschneider/orzo/util/Pair.java
 # requires support to call super in another class than java.lang.Object
 #src/main/java/io/github/martinschneider/orzo/lexer/tokens/EOF.java
 
-# require better Object supportR
+# require better Object support
 # src/main/java/io/github/martinschneider/orzo/parser/productions/*.java

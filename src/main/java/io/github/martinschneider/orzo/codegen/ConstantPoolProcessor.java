@@ -41,6 +41,26 @@ public class ConstantPoolProcessor {
       // TODO: support interfaces from other packages
       constPool.addClass((clazz.packageName + "." + interfaceName).replace('.', '/'));
     }
+
+    // Add enum-specific constants if this is an enum
+    if (clazz.isEnum) {
+      constPool.addClass("java/lang/Enum");
+      constPool.addClass("[L" + clazz.fqn('/') + ";"); // Array type
+      constPool.addMethodRef("java/lang/Object", "clone", "()Ljava/lang/Object;");
+      constPool.addMethodRef(
+          "java/lang/Enum", "valueOf", "(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;");
+      constPool.addMethodRef(clazz.fqn('/'), "<init>", "(Ljava/lang/String;I)V");
+      constPool.addMethodRef("java/lang/Enum", "<init>", "(Ljava/lang/String;I)V");
+
+      // Add enum constant names as strings
+      if (clazz.fields != null && !clazz.fields.isEmpty()) {
+        ParallelDeclaration enumConstantsDecl = clazz.fields.get(0);
+        for (Declaration constant : enumConstantsDecl.declarations) {
+          String constantName = constant.name.id().toString();
+          constPool.addString(constantName);
+        }
+      }
+    }
     for (Method method : clazz.methods) {
       if (clazz.isInterface) {
         constPool.addUtf8(method.name.val.toString());

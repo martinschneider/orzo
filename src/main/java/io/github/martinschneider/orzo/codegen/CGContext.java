@@ -23,8 +23,10 @@ import java.util.Map;
 
 public class CGContext {
   public Clazz clazz;
+  public List<Clazz> allClazzes;
   public ConstantPool constPool;
   public Map<String, Method> methodMap;
+  public Map<String, FieldProcessor.StaticField> staticFieldMap;
   public StatementDelegator delegator;
   public AssignmentGenerator assignGen;
   public ExpressionGenerator exprGen;
@@ -45,6 +47,7 @@ public class CGContext {
 
   public void init(CompilerErrors errors, CodeGenerator codeGen, int idx, List<Clazz> clazzes) {
     clazz = clazzes.get(idx);
+    allClazzes = clazzes;
     this.errors = errors;
     constPoolProc = new ConstantPoolProcessor(this);
     constPool = constPoolProc.processConstantPool(clazz);
@@ -54,6 +57,7 @@ public class CGContext {
     methodGen = new MethodGenerator(this);
     methodCallGen = new MethodCallGenerator(this);
     methodMap = new MethodProcessor().getMethodMap(clazz, clazzes);
+    staticFieldMap = new FieldProcessor().getStaticFieldMap(clazz, clazzes);
     assignGen = new AssignmentGenerator(this);
     basicGen = new BasicGenerator(this);
     invokeGen = new InvokeGenerator(this);

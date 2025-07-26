@@ -1,5 +1,3 @@
-![Progress](https://progress-bar.dev/14/?title=self-compile)
-
 ![Orzo](logo.png)
 
 Orzo is a Java-based language for the JVM.
@@ -17,7 +15,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] String
 - [X] interfaces
 - [ ] [reference types](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.4) (partially supported)
-- [ ] [enums](https://docs.oracle.com/javase/specs/jls/se18/html/jls-8.html#jls-8.9) (partially supported)
+- [X] [enums](https://docs.oracle.com/javase/specs/jls/se18/html/jls-8.html#jls-8.9)
 - [ ] class inheritance
 - [ ] [exceptions](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.10)
 - [ ] multi-dimensional arrays
@@ -100,3 +98,5 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 # Usage
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
+
+Self-compilation progress: ██▏░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 5.3%

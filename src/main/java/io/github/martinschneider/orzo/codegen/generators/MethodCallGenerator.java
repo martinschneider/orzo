@@ -115,7 +115,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       ctx.invokeGen.invokeVirtual(
           out, new Method("java/io/PrintStream", "println", VOID, List.of(BOOLEAN)));
     } else {
-      // TODO: call toString() first
+      // Handle object types (including enums) by calling println(Object)
+      ctx.invokeGen.invokeVirtual(
+          out, new Method("java/io/PrintStream", "println", VOID, List.of("Ljava/lang/Object;")));
     }
     return out;
   }

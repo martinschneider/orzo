@@ -27,6 +27,11 @@ public class MemberProcessor {
 
   // add all fields to the constant pool and idMap
   public void processFields() {
+    // Add $VALUES field for enums
+    if (ctx.clazz.isEnum) {
+      addEnumValuesField();
+    }
+
     for (ParallelDeclaration pDecl : ctx.clazz.fields) {
       for (Declaration decl : pDecl.declarations) {
         ctx.classIdMap.variables.putField(
@@ -43,7 +48,7 @@ public class MemberProcessor {
                     decl.name.id().toString(),
                     TypeUtils.descr(decl.type, decl.arrDim)),
                 decl.val));
-        if (decl.accFlags.contains(AccessFlag.ACC_FINAL)) {
+        if (decl.accFlags.contains(AccessFlag.ACC_FINAL) && decl.val != null) {
           ctx.constPool.addUtf8("ConstantValue");
           ctx.constPool.addByType(decl.type, decl.val.getConstantValue(decl.type));
         }
@@ -97,6 +102,20 @@ public class MemberProcessor {
 
   // add initializer code for fields
   public void addClInit(List<Method> methods) {
+    // Handle enum-specific initialization
+    if (ctx.clazz.isEnum) {
+      addEnumMethods(methods);
+      // Add enum constructor
+      if (ctx.clazz.getConstructors().isEmpty()) {
+        addEnumConstructor(methods);
+      } else {
+        // Transform user-defined enum constructors to include implicit enum parameters
+        transformEnumConstructors(methods);
+      }
+      addEnumStaticInitializer(methods);
+      return;
+    }
+
     List<ParallelDeclaration> staticInits = new ArrayList<>();
     List<ParallelDeclaration> constrInits = new ArrayList<>();
     if (ctx.clazz.fields == null) {
@@ -156,5 +175,136 @@ public class MemberProcessor {
         constr.body = body;
       }
     }
+  }
+
+  // Add enum-specific methods: values() and valueOf()
+  private void addEnumMethods(List<Method> methods) {
+    // Add required constants to pool for enum method generation
+    String arrayType = "[L" + ctx.clazz.fqn('/') + ";";
+    String enumType = "L" + ctx.clazz.fqn('/') + ";";
+
+    // Add constants needed for values() method
+    ctx.constPool.addMethodRef("java/lang/Object", "clone", "()Ljava/lang/Object;");
+    ctx.constPool.addClass(arrayType);
+
+    // Add constants needed for valueOf() method
+    ctx.constPool.addClass(ctx.clazz.fqn('/'));
+    ctx.constPool.addMethodRef(
+        "java/lang/Enum", "valueOf", "(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;");
+
+    // Add constants needed for $values() method
+    ctx.constPool.addClass(ctx.clazz.fqn('/'));
+
+    // Add values() method
+    Method valuesMethod =
+        new Method(
+            ctx.clazz.fqn(),
+            of(AccessFlag.ACC_PUBLIC, AccessFlag.ACC_STATIC),
+            arrayType, // Return array of enum type
+            id("values"),
+            emptyList(),
+            emptyList() // Empty body - will be generated in bytecode
+            );
+    ctx.constPool.addUtf8(valuesMethod.name.val.toString());
+    ctx.constPool.addUtf8(TypeUtils.methodDescr(valuesMethod));
+    methods.add(valuesMethod);
+
+    // Add valueOf(String) method
+    Method valueOfMethod =
+        new Method(
+            ctx.clazz.fqn(),
+            of(AccessFlag.ACC_PUBLIC, AccessFlag.ACC_STATIC),
+            "L" + ctx.clazz.fqn('/') + ";", // Return enum type
+            id("valueOf"),
+            of(new Argument("java.lang.String", id("name"))),
+            emptyList() // Empty body - will be generated in bytecode
+            );
+    ctx.constPool.addUtf8(valueOfMethod.name.val.toString());
+    ctx.constPool.addUtf8(TypeUtils.methodDescr(valueOfMethod));
+    methods.add(valueOfMethod);
+
+    // Add private $values() helper method
+    Method dollarValuesMethod =
+        new Method(
+            ctx.clazz.fqn(),
+            of(AccessFlag.ACC_PRIVATE, AccessFlag.ACC_STATIC),
+            "[L" + ctx.clazz.fqn('/') + ";", // Return array of enum type
+            id("$values"),
+            emptyList(),
+            emptyList() // Empty body - will be generated in bytecode
+            );
+    ctx.constPool.addUtf8(dollarValuesMethod.name.val.toString());
+    ctx.constPool.addUtf8(TypeUtils.methodDescr(dollarValuesMethod));
+    methods.add(dollarValuesMethod);
+  }
+
+  // Add enum static initializer that creates all enum instances
+  private void addEnumStaticInitializer(List<Method> methods) {
+    Method clInit =
+        new Method(
+            ctx.clazz.fqn(),
+            of(AccessFlag.ACC_STATIC),
+            "void",
+            id("<clinit>"),
+            emptyList(),
+            emptyList() // Empty body - will be generated in bytecode
+            );
+    ctx.constPool.addUtf8(clInit.name.val.toString());
+    ctx.constPool.addUtf8(TypeUtils.methodDescr(clInit));
+    methods.add(clInit);
+  }
+
+  // Add enum constructor that takes (String name, int ordinal)
+  private void addEnumConstructor(List<Method> methods) {
+    Method enumConstructor =
+        new Method(
+            ctx.clazz.fqn(),
+            of(AccessFlag.ACC_PRIVATE), // Enum constructors are private
+            "void",
+            id("<init>"),
+            of(new Argument("java.lang.String", id("name")), new Argument("int", id("ordinal"))),
+            emptyList() // Empty body - will call super constructor
+            );
+    ctx.constPool.addUtf8(enumConstructor.name.val.toString());
+    ctx.constPool.addUtf8(TypeUtils.methodDescr(enumConstructor));
+    methods.add(enumConstructor);
+  }
+
+  // Transform user-defined enum constructors to include implicit enum parameters
+  private void transformEnumConstructors(List<Method> methods) {
+    for (Method constructor : ctx.clazz.getConstructors()) {
+      // Prepend the implicit enum parameters (name, ordinal) to the constructor's argument list
+      List<Argument> newArgs = new ArrayList<>();
+      newArgs.add(new Argument("java.lang.String", id("name")));
+      newArgs.add(new Argument("int", id("ordinal")));
+      newArgs.addAll(constructor.args);
+
+      // Update the constructor's argument list
+      constructor.args = newArgs;
+
+      // Update the method descriptor in the constant pool
+      ctx.constPool.addUtf8(constructor.name.val.toString());
+      ctx.constPool.addUtf8(TypeUtils.methodDescr(constructor));
+    }
+  }
+
+  // Add $VALUES field for enums
+  private void addEnumValuesField() {
+    String arrayType = "[L" + ctx.clazz.fqn('/') + ";";
+    String elementType = "L" + ctx.clazz.fqn('/') + ";";
+    ctx.classIdMap.variables.putField(
+        id("$VALUES"),
+        new VariableInfo(
+            "$VALUES",
+            REF,
+            elementType, // Element type, not array type
+            of(AccessFlag.ACC_PRIVATE, AccessFlag.ACC_STATIC),
+            true,
+            ctx.constPool.indexOf(
+                CONSTANT_FIELDREF,
+                ctx.clazz.fqn('/'),
+                "$VALUES",
+                arrayType), // Use full array type for constant pool
+            null));
   }
 }

@@ -17,7 +17,11 @@ public class ParserTest {
     for (int i = 1; i <= nrOfChars; i++) {
       stringBuffer.append((char) (int) (Math.random() * 256 + 1));
     }
-    target.parse(new Lexer().getTokens(stringBuffer.toString()));
+    try {
+      target.parse(new Lexer().getTokens(stringBuffer.toString()));
+    } catch (NumberFormatException e) {
+      // this is okay (random inputs can have "0x" followed not by a valid hex number)
+    }
   }
 
   @Test

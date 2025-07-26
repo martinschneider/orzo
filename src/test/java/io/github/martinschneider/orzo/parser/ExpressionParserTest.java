@@ -4,9 +4,7 @@ import static io.github.martinschneider.orzo.TestHelper.args;
 import static io.github.martinschneider.orzo.TestHelper.assertTokenIdx;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.*;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.util.FactoryHelper.*;
-import static io.github.martinschneider.orzo.util.FactoryHelper.id;
 import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -71,6 +69,8 @@ public class ExpressionParserTest {
         args("-1 - (-i)", expr(list(integer(-1), integer(-1), id("i"), op(TIMES), op(MINUS)))),
         args("(byte) 1", expr(list(integer(1)), Type.type("byte"))),
         args("a.b", expr(list(id("a", "b")))),
+        args("Color.GREEN", expr(list(id("Color", "GREEN")))),
+        args("Size.SMALL.label", expr(list(id("Size", "SMALL", "label")))),
         args("a.b.c.d", expr(list(id("a", "b", "c", "d")))),
         args("new MyType()", expr(list(constr("MyType", emptyList())))),
         args(

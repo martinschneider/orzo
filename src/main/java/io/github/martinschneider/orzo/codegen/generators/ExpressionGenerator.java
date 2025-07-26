@@ -49,6 +49,7 @@ import static java.util.Collections.emptyList;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
+import io.github.martinschneider.orzo.codegen.FieldProcessor;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.OperandStack;
@@ -75,6 +76,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class ExpressionGenerator {
   private static final String LOGGER_NAME = "expression code generator";
@@ -263,11 +265,8 @@ public class ExpressionGenerator {
         } else {
           VariableInfo varInfo = ctx.classIdMap.variables.get(curr);
           if (varInfo == null) {
-            ctx.errors.addError(
-                LOGGER_NAME,
-                String.format("Unknown variable: %s", curr),
-                new RuntimeException().getStackTrace());
-            return type;
+            // Try to resolve mixed static/instance field access chain
+            return handleStaticInstanceChain(out, curr, type);
           }
           String varType = varInfo.type;
           String arrType = varInfo.arrType;
@@ -295,6 +294,117 @@ public class ExpressionGenerator {
       prev = curr;
       curr = curr.next;
     } while (curr != null);
+    return type;
+  }
+
+  private String handleStaticInstanceChain(DynamicByteArray out, Identifier curr, String type) {
+    // Try to find the longest prefix that resolves to a static field
+    List<String> identifierParts = new ArrayList<>();
+    Identifier tempCurr = curr;
+    while (tempCurr != null) {
+      identifierParts.add(tempCurr.val.toString()); // Use val instead of toString()
+      tempCurr = tempCurr.next;
+    }
+
+    // Try progressively shorter prefixes as static fields
+    for (int splitPoint = identifierParts.size() - 1; splitPoint > 0; splitPoint--) {
+      // Build the static field name from the prefix
+      StringBuilder staticFieldName = new StringBuilder();
+      for (int i = 0; i < splitPoint; i++) {
+        if (staticFieldName.length() > 0) {
+          staticFieldName.append(".");
+        }
+        staticFieldName.append(identifierParts.get(i));
+      }
+
+      FieldProcessor.StaticField staticField = ctx.staticFieldMap.get(staticFieldName.toString());
+      if (staticField != null) {
+        // Found a static field! Generate GETSTATIC for the prefix
+        String className = staticField.className.replace('.', '/');
+        String fieldType = TypeUtils.descr(staticField.fieldType);
+        ctx.constPool.addClass(className);
+        ctx.constPool.addFieldRef(className, staticField.fieldName, fieldType);
+
+        // Generate GETSTATIC bytecode
+        out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC);
+        out.write(
+            ctx.constPool.indexOf(
+                io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF,
+                className,
+                staticField.fieldName,
+                fieldType));
+        ctx.opStack.push(staticField.fieldType);
+
+        // Now handle the remaining part as instance field access
+        String currentType = staticField.fieldType;
+        for (int i = splitPoint; i < identifierParts.size(); i++) {
+          String instanceFieldName = identifierParts.get(i);
+
+          // Get instance fields for the current type
+          FieldProcessor fieldProcessor = new FieldProcessor();
+          Map<String, FieldProcessor.InstanceField> instanceFields =
+              fieldProcessor.getInstanceFieldMap(currentType, ctx.allClazzes);
+
+          FieldProcessor.InstanceField instanceField = instanceFields.get(instanceFieldName);
+          if (instanceField == null) {
+            ctx.errors.addError(
+                LOGGER_NAME,
+                String.format(
+                    "Unknown instance field: %s in type %s", instanceFieldName, currentType),
+                new RuntimeException().getStackTrace());
+            return type;
+          }
+
+          // Generate GETFIELD for instance field access
+          String instClassName = instanceField.className.replace('.', '/');
+          String instFieldType = TypeUtils.descr(instanceField.fieldType);
+          ctx.constPool.addClass(instClassName);
+          ctx.constPool.addFieldRef(instClassName, instanceField.fieldName, instFieldType);
+
+          out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETFIELD);
+          out.write(
+              ctx.constPool.indexOf(
+                  io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF,
+                  instClassName,
+                  instanceField.fieldName,
+                  instFieldType));
+          ctx.opStack.pop(); // Pop object reference
+          ctx.opStack.push(instanceField.fieldType); // Push field value
+
+          currentType = instanceField.fieldType;
+        }
+
+        return currentType;
+      }
+    }
+
+    // No static field found, try simple static field resolution
+    String fieldName = curr.toString();
+    FieldProcessor.StaticField staticField = ctx.staticFieldMap.get(fieldName);
+    if (staticField != null) {
+      // Generate GETSTATIC instruction for static field access
+      String className = staticField.className.replace('.', '/');
+      String fieldType = TypeUtils.descr(staticField.fieldType);
+      ctx.constPool.addClass(className);
+      ctx.constPool.addFieldRef(className, staticField.fieldName, fieldType);
+
+      // Generate GETSTATIC bytecode
+      out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC);
+      out.write(
+          ctx.constPool.indexOf(
+              io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF,
+              className,
+              staticField.fieldName,
+              fieldType));
+      ctx.opStack.push(staticField.fieldType);
+
+      return staticField.fieldType;
+    }
+
+    ctx.errors.addError(
+        LOGGER_NAME,
+        String.format("Unknown variable: %s", curr),
+        new RuntimeException().getStackTrace());
     return type;
   }
 

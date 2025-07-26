@@ -121,7 +121,7 @@ public class ClassParserTest {
                 emptyList(),
                 null,
                 "Types",
-                list(defaultConstr("Types")),
+                emptyList(),
                 list(new ParallelDeclaration(emptyList())))));
   }
 

@@ -61,6 +61,9 @@ public class TypeUtils {
     }
     if (type.startsWith("L") && type.endsWith(";")) {
       return type;
+    } else if (type.startsWith("[") && (type.contains(";") || type.length() == 2)) {
+      // Fully-formed array type descriptor - return as is
+      return type;
     }
     // TODO: use a single check
     else if (type.contains(STRING) && !type.contains("java.lang.String")) {

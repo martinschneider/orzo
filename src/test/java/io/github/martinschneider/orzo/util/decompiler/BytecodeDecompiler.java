@@ -10,8 +10,21 @@ public class BytecodeDecompiler {
       // The index i must point at an opcode at the beginning of each iteration (this also implies
       // that the first byte in the input must be an opcode).
       short idx = (short) unsign(input[i]);
+
+      // Check if idx is valid before accessing OPCODE array
+      if (idx >= Mnemonic.OPCODE.length) {
+        strBuilder.append("INVALID_OPCODE_" + idx);
+        // Skip to next byte since we can't interpret this one
+        continue;
+      }
+
       strBuilder.append(Mnemonic.OPCODE[idx]);
       try {
+        // Check bounds for ADDITIONAL_BYTES as well
+        if (idx >= Mnemonic.ADDITIONAL_BYTES.length) {
+          strBuilder.append(" [UNKNOWN_PARAMS]");
+          continue;
+        }
         ParameterType type = Mnemonic.ADDITIONAL_BYTES[idx];
         // special handling for WIDE (196) op code
         if (idx == 196) {

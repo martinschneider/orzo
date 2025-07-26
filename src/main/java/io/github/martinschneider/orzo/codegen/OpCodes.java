@@ -18,6 +18,7 @@ public class OpCodes {
   public static final byte BIPUSH = (byte) 16;
   public static final byte SIPUSH = (byte) 17;
   public static final byte LDC = (byte) 18;
+  public static final byte LDC_W = (byte) 19;
   public static final byte LDC2_W = (byte) 20;
   public static final byte ILOAD = (byte) 21;
   public static final byte LLOAD = (byte) 22;
@@ -166,6 +167,9 @@ public class OpCodes {
   public static final byte INVOKESTATIC = (byte) 184;
   public static final byte NEW = (byte) 187;
   public static final byte NEWARRAY = (byte) 188;
+  public static final byte ANEWARRAY = (byte) 189;
   public static final byte ARRAYLENGTH = (byte) 190;
+  public static final byte CHECKCAST = (byte) 192;
+  public static final byte INSTANCEOF = (byte) 193;
   public static final byte WIDE = (byte) 196;
 }

@@ -199,6 +199,31 @@ public class Lexer {
   private void scanNum() throws IOException {
     if (Character.isDigit(character)) {
       buffer.append(character);
+
+      // Check for hexadecimal literals (0x or 0X)
+      if (character == '0') {
+        char nextChar = (char) inputReader.read();
+        if (nextChar == 'x' || nextChar == 'X') {
+          buffer.append(nextChar);
+          // Scan hexadecimal digits
+          while (isHexDigit(character = (char) inputReader.read())) {
+            buffer.append(character);
+          }
+          boolean isLong = false;
+          if (character == 'l' || character == 'L') {
+            isLong = true;
+          } else {
+            inputReader.unread(character);
+          }
+          tokenList.add(integer(buffer.toString(), isLong).wLoc(inputReader.getLoc()));
+          buffer.setLength(0);
+          return;
+        } else {
+          inputReader.unread(nextChar);
+        }
+      }
+
+      // Regular decimal number scanning
       while (Character.isDigit(character = (char) inputReader.read())) {
         buffer.append(character);
       }
@@ -215,6 +240,10 @@ public class Lexer {
       tokenList.add(integer(buffer.toString(), isLong).wLoc(inputReader.getLoc()));
       buffer.setLength(0);
     }
+  }
+
+  private boolean isHexDigit(char c) {
+    return Character.isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
   }
 
   private void scanOps() throws IOException {

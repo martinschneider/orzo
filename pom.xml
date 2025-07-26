@@ -108,6 +108,16 @@
                   <executable>${basedir}/selfcompile.sh</executable>
                 </configuration>
               </execution>
+              <execution>
+                <id>Write stats</id>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <phase>verify</phase>
+                <configuration>
+                  <executable>${basedir}/update_progress.sh</executable>
+                </configuration>
+              </execution>
             </executions>
           </plugin>
           <plugin>

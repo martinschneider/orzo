@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.GETFIELD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKESPECIAL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKESTATIC;
@@ -27,6 +28,14 @@ public class InvokeGenerator {
     out.write(GETSTATIC);
     out.write(ctx.constPool.indexOf(CONSTANT_FIELDREF, clazz, field, type));
     ctx.opStack.push(REF);
+    return out;
+  }
+
+  public HasOutput getField(DynamicByteArray out, String clazz, String field, String type) {
+    out.write(GETFIELD);
+    out.write(ctx.constPool.indexOf(CONSTANT_FIELDREF, clazz, field, type));
+    ctx.opStack.pop(); // Pop the object reference
+    ctx.opStack.push(type); // Push the field value
     return out;
   }
 

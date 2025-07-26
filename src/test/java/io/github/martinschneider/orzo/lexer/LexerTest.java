@@ -136,6 +136,10 @@ public class LexerTest {
     for (int i = 1; i <= nrOfChars; i++) {
       stringBuffer.append((char) (int) (Math.random() * 256 + 1));
     }
-    scanner.getTokens(stringBuffer.toString());
+    try {
+      scanner.getTokens(stringBuffer.toString());
+    } catch (NumberFormatException e) {
+      // this is okay (random inputs can have "0x" followed not by a valid hex number)
+    }
   }
 }
