@@ -56,11 +56,13 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       Identifier left = assignment.left.get(i);
       Expression right = assignment.right.get(i);
       Identifier id = left;
+      boolean thisLoaded = false;
       while (id != null) {
         // TODO: currently, we do not support fields and local variables having the same name :-(
         // TODO: properly handle all classes
         if ("this".equals(id.val)) {
           ctx.loadGen.loadReference(out, (short) 0);
+          thisLoaded = true;
         } else {
           VariableInfo varInfo = ctx.classIdMap.variables.get(id);
           if (varInfo == null) {
@@ -97,12 +99,13 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
               ctx.classIdMap.variables.tmpCount++;
             }
             if (left.arrSel == null) {
-              ctx.exprGen.eval(out, type, right);
-              if (varInfo.isField) {
-                ctx.storeGen.putField(out, varInfo.idx);
-              } else {
-                ctx.storeGen.store(out, varInfo);
+              if (!thisLoaded
+                  && varInfo.isField
+                  && !varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
+                ctx.loadGen.loadReference(out, varInfo.objectRef);
               }
+              ctx.exprGen.eval(out, type, right);
+              ctx.storeGen.store(out, varInfo);
             } else {
               assignInArray(out, ctx.classIdMap, left, right);
             }

@@ -69,7 +69,7 @@ public class CodeGenerator {
   }
 
   private void fields() {
-    out.write((short) ctx.classIdMap.variables.fieldSize);
+    out.write((short) ctx.classIdMap.variables.fieldMap.size());
     for (VariableInfo varInfo : ctx.classIdMap.variables.fieldMap.values()) {
       writeField(out, varInfo);
     }
@@ -133,9 +133,8 @@ public class CodeGenerator {
     for (Method method : methods) {
       ctx.classIdMap.variables.localMap.clear();
       ctx.classIdMap.variables.localSize = 0;
-      // keep idx 0 for "this" reference for super constructor call
-      // TODO: is there a better way?
-      if (Method.CONSTRUCTOR_NAME.equals(method.name.toString())) {
+      if (!method.accFlags.contains(AccessFlag.ACC_STATIC)) {
+        // Slot 0 is reserved for 'this' in all non-static methods (including constructors)
         ctx.classIdMap.variables.localSize = 1;
       }
       ctx.memberProc.processMethodArgs(method);

@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.codegen;
 
 public class OpCodes {
+  public static final byte ACONST_NULL = (byte) 1;
   public static final byte ICONST_M1 = (byte) 2;
   public static final byte ICONST_0 = (byte) 3;
   public static final byte ICONST_1 = (byte) 4;

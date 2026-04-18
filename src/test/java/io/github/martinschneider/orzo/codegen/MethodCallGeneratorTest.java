@@ -23,7 +23,11 @@ public class MethodCallGeneratorTest extends StatementGeneratorTest<MethodCall> 
   private static Stream<Arguments> test() throws IOException {
     // TODO: add more interesting tests
     return stream(
-        args("testMethod()", emptyList(), list(constant("testMethod", 1)), list("invokestatic 1")),
+        args(
+            "testMethod()",
+            emptyList(),
+            list(constant("testMethod", 1)),
+            list("aload_0", "invokevirtual 1")),
         args(
             "System.out.println(0)",
             emptyList(),

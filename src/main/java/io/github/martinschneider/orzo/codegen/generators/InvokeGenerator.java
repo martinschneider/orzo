@@ -40,13 +40,16 @@ public class InvokeGenerator {
   }
 
   public HasOutput invokeVirtual(DynamicByteArray out, Method method) {
+    String clazzName = method.fqClassName.replaceAll("\\.", "/");
+    String methodName = method.name.id();
+    if (!ctx.clazz.fqn('/').equals(clazzName)) {
+      ctx.constPool.addClass(clazzName);
+      ctx.constPool.addMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
+    }
     out.write(INVOKEVIRTUAL);
     out.write(
         ctx.constPool.indexOf(
-            CONSTANT_METHODREF,
-            method.fqClassName,
-            method.name.id(),
-            TypeUtils.methodDescr(method)));
+            CONSTANT_METHODREF, clazzName, methodName, TypeUtils.methodDescr(method)));
     ctx.opStack.pop(1 + method.args.size());
     ctx.opStack.push(method.type);
     return out;

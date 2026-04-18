@@ -24,6 +24,12 @@ public class MockConstantPool extends ConstantPool {
     }
   }
 
+  @Override
+  public void addClass(String clazz) {}
+
+  @Override
+  public void addMethodRef(String classKey, String name, String type) {}
+
   public short indexOf(byte entryType, String classKey, String key, String type) {
     return indexOf((byte) 0, key);
   }

@@ -38,6 +38,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT_ZERO;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
@@ -243,25 +244,26 @@ public class ExpressionGenerator {
       String type) {
     Identifier curr = (Identifier) token;
     Identifier prev = null;
+    String returnType = type;
     do {
       // In handleId() method, add this BEFORE line 241:
       if (token instanceof ConstructorCall) {
         ConstructorCall constructorCall = (ConstructorCall) token;
-        type = generateConstructorCall(out, classIdMap, constructorCall);
+        returnType = generateConstructorCall(out, classIdMap, constructorCall);
       } else if (token instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) token;
-        type = ctx.methodCallGen.generate(out, classIdMap, methodCall);
+        returnType = ctx.methodCallGen.generate(out, classIdMap, methodCall);
         if (curr.arrSel != null) {
-          ctx.loadGen.loadValueFromArrayOnStack(out, classIdMap, curr.arrSel.exprs, type);
-          if (!type.isEmpty()) {
+          ctx.loadGen.loadValueFromArrayOnStack(out, classIdMap, curr.arrSel.exprs, returnType);
+          if (!returnType.isEmpty()) {
             // remove leading '[' from type
-            type = type.substring(methodCall.arrSel.exprs.size());
+            returnType = returnType.substring(methodCall.arrSel.exprs.size());
           }
         }
       } else {
         if (prev != null && ctx.classIdMap.variables.get(prev).arrType != null) {
           ctx.basicGen.arrayLength(out);
-          type = INT;
+          returnType = INT;
         } else {
           VariableInfo varInfo = ctx.classIdMap.variables.get(curr);
           if (varInfo == null) {
@@ -281,20 +283,32 @@ public class ExpressionGenerator {
             if (curr.arrSel != null) {
               // array
               ctx.loadGen.loadValueFromArray(out, classIdMap, curr.arrSel.exprs, varInfo);
-              type = varInfo.arrType;
+              returnType = varInfo.arrType;
             } else {
               ctx.loadGen.load(out, varInfo);
             }
           }
-          if (!type.equals(varType) && arrType == null) {
+          // Defer narrowing conversion from long to a smaller type when more tokens
+          // follow: operators should work on the long, not on a prematurely truncated int.
+          // E.g. (byte)((val >> 56) & 255) must use LSHR/LAND, not L2I+ISHR.
+          boolean deferNarrowing =
+              LONG.equals(varType)
+                  && !LONG.equals(type)
+                  && !DOUBLE.equals(type)
+                  && !FLOAT.equals(type)
+                  && (i + 1 < tokens.size());
+          if (!type.equals(varType) && arrType == null && !deferNarrowing) {
             ctx.basicGen.convert1(out, varType, type);
+          }
+          if (deferNarrowing) {
+            returnType = varType;
           }
         }
       }
       prev = curr;
       curr = curr.next;
     } while (curr != null);
-    return type;
+    return returnType;
   }
 
   private String handleStaticInstanceChain(DynamicByteArray out, Identifier curr, String type) {

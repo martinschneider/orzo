@@ -24,13 +24,11 @@ src/main/java/io/github/martinschneider/orzo/parser/productions/Selector.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/Statement.java
 src/main/java/io/github/martinschneider/orzo/util/Pair.java  
 
-# java.lang.OutOfMemoryError: Java heap space
-#src/main/java/io/github/martinschneider/orzo/codegen/ByteUtils2.java
+src/main/java/io/github/martinschneider/orzo/codegen/ByteUtils2.java
 #src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantDouble.java
 #src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantLong.java
 
-# java.lang.VerifyError: Operand stack underflow
-#src/main/java/io/github/martinschneider/orzo/codegen/DynamicByteArray.java
+src/main/java/io/github/martinschneider/orzo/codegen/DynamicByteArray.java
 
 # requires support to call super in another class than java.lang.Object
 #src/main/java/io/github/martinschneider/orzo/lexer/tokens/EOF.java

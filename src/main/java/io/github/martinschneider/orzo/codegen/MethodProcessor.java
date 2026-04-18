@@ -36,8 +36,9 @@ public class MethodProcessor {
         for (Method method : clazz.methods) {
           methodMap.put(clazz.name + '.' + getKey(method), method);
           methodMap.put(clazz.fqn() + '.' + getKey(method), method);
-          // TODO: only do this for static imports
-          methodMap.put(getKey(method), method);
+          if (method.accFlags.contains(AccessFlag.ACC_STATIC)) {
+            methodMap.put(getKey(method), method);
+          }
         }
       }
     }

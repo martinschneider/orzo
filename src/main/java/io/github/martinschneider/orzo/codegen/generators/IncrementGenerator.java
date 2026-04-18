@@ -18,6 +18,7 @@ import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 
@@ -84,6 +85,24 @@ public class IncrementGenerator implements StatementGenerator<IncrementStatement
 
   private HasOutput incInt(
       DynamicByteArray out, VariableInfo varInfo, short val, boolean pre, boolean evalOnly) {
+    if (varInfo.isField) {
+      // IINC only works for local variables; fields require explicit load/add/store
+      boolean isStatic = varInfo.accFlags.contains(AccessFlag.ACC_STATIC);
+      if (!evalOnly && !pre) {
+        ctx.loadGen.load(out, varInfo); // load old value for post-increment return
+      }
+      if (!isStatic) {
+        ctx.loadGen.loadReference(out, varInfo.objectRef); // objectref for PUTFIELD
+      }
+      ctx.loadGen.load(out, varInfo); // load current field value
+      ctx.pushGen.push(out, INT, 1);
+      out.write(ARITHMETIC_OPS.get(val > 0 ? PLUS : MINUS).get(INT)[0]);
+      ctx.storeGen.store(out, varInfo);
+      if (!evalOnly && pre) {
+        ctx.loadGen.load(out, varInfo); // load new value for pre-increment return
+      }
+      return out;
+    }
     if (!evalOnly && !pre) {
       ctx.loadGen.load(out, varInfo);
     }

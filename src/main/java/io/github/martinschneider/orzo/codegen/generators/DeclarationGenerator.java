@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
@@ -52,7 +53,12 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
   public HasOutput generateArray(
       DynamicByteArray out, GlobalIdentifierMap classIdMap, Method method, Declaration decl) {
     // TODO: handle method calls in array declaration
-    if (decl.val == null || !(decl.val instanceof ArrayInit)) {
+    if (decl.val == null) {
+      out.write(ACONST_NULL);
+      ctx.assignGen.assignArray(out, classIdMap, decl.type, decl.arrDim, decl.name);
+      return out;
+    }
+    if (!(decl.val instanceof ArrayInit)) {
       ctx.errors.addError(
           LOG_NAME,
           "invalid array initialiser " + decl.val,
@@ -63,6 +69,12 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
     byte arrayType = getArrayType(type);
     byte storeOpCode = getStoreOpCode(type);
     ArrayInit arrInit = (ArrayInit) decl.val;
+    if (decl.isField) {
+      VariableInfo varInfo = ctx.classIdMap.variables.get(decl.name);
+      if (varInfo != null && !varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
+        ctx.loadGen.loadReference(out, varInfo.objectRef);
+      }
+    }
     createArray(out, classIdMap, arrayType, arrInit.dims);
     // multi-dim array
     if (arrInit.vals.size() >= 2) {

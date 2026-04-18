@@ -19,6 +19,7 @@ import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
@@ -48,12 +49,20 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
           new RuntimeException().getStackTrace());
       return "";
     }
+    boolean isStatic = method.accFlags.contains(AccessFlag.ACC_STATIC);
+    if (!isStatic) {
+      ctx.loadGen.loadReference(out, (short) 0); // push 'this' for invokevirtual
+    }
     for (int i = 0; i < types.size(); i++) {
       ExpressionResult exprResult =
           ctx.exprGen.eval(out, method.args.get(i).type, methodCall.params.get(i));
       ctx.basicGen.convert1(out, exprResult.type, method.args.get(i).type);
     }
-    ctx.invokeGen.invokeStatic(out, method);
+    if (isStatic) {
+      ctx.invokeGen.invokeStatic(out, method);
+    } else {
+      ctx.invokeGen.invokeVirtual(out, method);
+    }
     return method.type;
   }
 

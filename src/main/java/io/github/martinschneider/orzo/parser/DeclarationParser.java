@@ -106,8 +106,7 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       List<Declaration> declarations = new ArrayList<>();
       for (int i = 0; i < names.size(); i++) {
         Expression val = (values.size() <= i) ? null : values.get(i);
-        byte arrDim = (arrDims.size() <= i) ? 0 : arrDims.get(i);
-        declarations.add(new Declaration(accFlags, type.name, arrDim, names.get(i), val));
+        declarations.add(new Declaration(accFlags, type.name, type.arr, names.get(i), val));
       }
       return new ParallelDeclaration(declarations);
     }
