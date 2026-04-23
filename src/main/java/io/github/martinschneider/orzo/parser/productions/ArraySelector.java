@@ -41,12 +41,6 @@ public class ArraySelector extends Selector {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder();
-    for (Expression expr : exprs) {
-      strBuilder.append('[');
-      strBuilder.append(expr);
-      strBuilder.append(']');
-    }
-    return strBuilder.toString();
+    return "ArraySelector";
   }
 }

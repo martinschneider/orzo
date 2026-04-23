@@ -11,12 +11,6 @@ public class Import {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder();
-    strBuilder.append("import ");
-    if (isStatic) {
-      strBuilder.append("static ");
-    }
-    strBuilder.append(id);
-    return strBuilder.toString();
+    return id;
   }
 }

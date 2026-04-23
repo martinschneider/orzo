@@ -87,6 +87,16 @@ public class FieldProcessor {
           }
         }
       }
+      // Add inherited instance fields from parent class
+      String baseClass = targetClass.baseClass;
+      if (baseClass != null && !Clazz.JAVA_LANG_OBJECT.equals(baseClass)) {
+        Map<String, InstanceField> parentFields = getInstanceFieldMap(baseClass, clazzes);
+        for (Map.Entry<String, InstanceField> entry : parentFields.entrySet()) {
+          if (!fieldMap.containsKey(entry.getKey())) {
+            fieldMap.put(entry.getKey(), entry.getValue());
+          }
+        }
+      }
     }
 
     return fieldMap;

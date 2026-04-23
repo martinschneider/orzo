@@ -37,9 +37,7 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
         type = ((Type) tokens.curr()).name;
         tokens.next();
       } else {
-        ctx.errors.tokenIdx = tokens.idx();
-        ctx.errors.addError(
-            LOG_NAME, "missing type in array initialiser", new RuntimeException().getStackTrace());
+        // Not an array init (could be a constructor call like new ArrayList<>())
         tokens.setIdx(idx);
         return null;
       }

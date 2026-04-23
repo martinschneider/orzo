@@ -1,7 +1,6 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ForStatement extends LoopStatement {
   public Statement init;
@@ -54,16 +53,6 @@ public class ForStatement extends LoopStatement {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder();
-    strBuilder.append("for ");
-    strBuilder.append(init);
-    strBuilder.append("; ");
-    strBuilder.append(cond);
-    strBuilder.append("; ");
-    strBuilder.append(loopStmt);
-    strBuilder.append(" {");
-    strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append("}");
-    return strBuilder.toString();
+    return "ForStatement";
   }
 }

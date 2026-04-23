@@ -37,9 +37,13 @@ public class ConstantPoolProcessor {
     ConstantPool constPool = new ConstantPool(ctx);
     constPool.addClass(clazz.fqn('/'));
     constPool.addClass("java/lang/Object");
+    if (clazz.baseClass != null) {
+      constPool.addClass(clazz.baseClass.replace('.', '/'));
+    }
     for (String interfaceName : clazz.interfaces) {
-      // TODO: support interfaces from other packages
-      constPool.addClass((clazz.packageName + "." + interfaceName).replace('.', '/'));
+      String ifaceFqn =
+          interfaceName.contains(".") ? interfaceName : (clazz.packageName + "." + interfaceName);
+      constPool.addClass(ifaceFqn.replace('.', '/'));
     }
 
     // Add enum-specific constants if this is an enum
@@ -140,6 +144,7 @@ public class ConstantPoolProcessor {
   }
 
   private ConstantPool processExpression(ConstantPool constPool, String type, Expression param) {
+    if (param == null) return constPool;
     for (Token token : param.tokens) {
       if (token instanceof Str) {
         constPool.addString(token.val.toString());

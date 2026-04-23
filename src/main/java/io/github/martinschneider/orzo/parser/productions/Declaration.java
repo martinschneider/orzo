@@ -27,15 +27,7 @@ public class Declaration {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder(type.toString());
-    for (int i = 0; i < arrDim; i++) {
-      strBuilder.append("[]");
-    }
-    strBuilder.append(' ');
-    strBuilder.append(name);
-    strBuilder.append('=');
-    strBuilder.append(val);
-    return strBuilder.toString();
+    return type;
   }
 
   @Override

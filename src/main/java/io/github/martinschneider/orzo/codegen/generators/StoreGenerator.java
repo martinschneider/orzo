@@ -78,8 +78,10 @@ public class StoreGenerator {
         return storeInteger(out, idx);
       case REF:
         return storeReference(out, idx);
+      default:
+        // User-defined class types and String are reference types
+        return storeReference(out, idx);
     }
-    return out;
   }
 
   private HasOutput storeLong(HasOutput out, short idx) {

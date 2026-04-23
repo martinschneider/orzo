@@ -42,16 +42,80 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     }
     String methodName = methodCall.name.toString();
     Method method = findMatchingMethod(methodName, types);
+    // For dotted names (e.g. identifier.toString), try to resolve via the receiver variable's type
+    String receiverName = null;
+    if (method == null && methodName.contains(".")) {
+      int dot = methodName.lastIndexOf('.');
+      receiverName = methodName.substring(0, dot);
+      String simpleMethod = methodName.substring(dot + 1);
+      io.github.martinschneider.orzo.codegen.identifier.VariableInfo receiverVar =
+          classIdMap.variables.localMap.get(receiverName);
+      if (receiverVar == null) {
+        receiverVar = classIdMap.variables.fieldMap.get(receiverName);
+      }
+      if (receiverVar != null && receiverVar.type != null) {
+        // Try simple class name prefix
+        int lastDotInType = receiverVar.type.lastIndexOf('.');
+        String simpleType =
+            (lastDotInType >= 0) ? receiverVar.type.substring(lastDotInType + 1) : receiverVar.type;
+        method = findMatchingMethod(simpleType + "." + simpleMethod, types);
+        if (method == null) {
+          method = findMatchingMethod(receiverVar.type + "." + simpleMethod, types);
+        }
+        // Fall back to java/lang/Object for toString(), hashCode() etc.
+        if (method == null) {
+          if (types.isEmpty()) {
+            if ("toString".equals(simpleMethod)) {
+              method = new Method("java/lang/Object", "toString", STRING, new ArrayList<>());
+            } else if ("hashCode".equals(simpleMethod)) {
+              method = new Method("java/lang/Object", "hashCode", INT, new ArrayList<>());
+            } else if ("getClass".equals(simpleMethod)) {
+              method =
+                  new Method(
+                      "java/lang/Object", "getClass", "Ljava/lang/Class;", new ArrayList<>());
+            }
+          } else if (types.size() == 1 && "equals".equals(simpleMethod)) {
+            method =
+                new Method("java/lang/Object", "equals", BOOLEAN, List.of("Ljava/lang/Object;"));
+          }
+        }
+      }
+    }
+    // Handle no-receiver Object methods called on implicit 'this'
+    if (method == null && !methodName.contains(".")) {
+      if ("getClass".equals(methodName) && types.isEmpty()) {
+        method = new Method("java/lang/Object", "getClass", "Ljava/lang/Class;", new ArrayList<>());
+      }
+    }
     if (method == null) {
       ctx.errors.addError(
           LOGGER_NAME,
-          methodCall.loc.toString() + " missing method declaration \"" + methodName + types + "\"",
+          (ctx.clazz != null ? ctx.clazz.sourceFile + " " : "")
+              + methodCall.loc.toString()
+              + " missing method declaration \""
+              + methodName
+              + types
+              + "\"",
           new RuntimeException().getStackTrace());
       return "";
     }
-    boolean isStatic = method.accFlags.contains(AccessFlag.ACC_STATIC);
+    boolean isStatic = method.accFlags != null && method.accFlags.contains(AccessFlag.ACC_STATIC);
     if (!isStatic) {
-      ctx.loadGen.loadReference(out, (short) 0); // push 'this' for invokevirtual
+      if (receiverName != null) {
+        // Load the explicit receiver variable
+        io.github.martinschneider.orzo.codegen.identifier.VariableInfo receiverVar =
+            classIdMap.variables.localMap.get(receiverName);
+        if (receiverVar == null) {
+          receiverVar = classIdMap.variables.fieldMap.get(receiverName);
+        }
+        if (receiverVar != null) {
+          ctx.loadGen.load(out, receiverVar);
+        } else {
+          ctx.loadGen.loadReference(out, (short) 0);
+        }
+      } else {
+        ctx.loadGen.loadReference(out, (short) 0); // push 'this' for invokevirtual
+      }
     }
     for (int i = 0; i < types.size(); i++) {
       ExpressionResult exprResult =
@@ -93,7 +157,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   public HasOutput callSuperConstr(HasOutput out) {
     ctx.loadGen.loadReference(out, (short) 0);
     ctx.opStack.push(SHORT);
-    ctx.invokeGen.invokeSpecial(out, defaultConstr("java/lang/Object"));
+    String superClass =
+        (ctx.clazz.baseClass != null && !ctx.clazz.baseClass.equals("java.lang.Object"))
+            ? ctx.clazz.baseClass.replace('.', '/')
+            : "java/lang/Object";
+    ctx.invokeGen.invokeSpecial(out, defaultConstr(superClass));
     return out;
   }
 

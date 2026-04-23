@@ -12,5 +12,7 @@ public enum Symbols {
   RBRAK,
   SQRT,
   LFLOOR,
-  RFLOOR
+  RFLOOR,
+  QUESTION,
+  COLON
 }

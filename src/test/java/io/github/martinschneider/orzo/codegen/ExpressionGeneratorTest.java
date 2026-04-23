@@ -204,7 +204,25 @@ public class ExpressionGeneratorTest {
             BOOLEAN,
             list(varInfo("a", "boolean", 100), varInfo("b", "boolean", 101)),
             emptyList(),
-            list("iload 100", "iload 101", "ior", "iconst_1", "ixor")));
+            list("iload 100", "iload 101", "ior", "iconst_1", "ixor")),
+        // ternary operator: (a > b ? a : b)
+        // condOut=[iload_1, iload_2, if_icmple], trueOut=[iload_1], falseOut=[iload_2]
+        // ifeqOffset = trueLen(1) + 6 = 7, gotoOffset = falseLen(1) + 3 = 4
+        args(
+            "(a > b ? a : b)",
+            INT,
+            list(varInfo("a", "int", 1), varInfo("b", "int", 2)),
+            emptyList(),
+            list("iload_1", "iload_2", "if_icmple 7", "iload_1", "goto 4", "iload_2")),
+        // ternary with compare-to-zero: (x == 0 ? 1 : 2)
+        // condOut=[iload_1, ifne], trueOut=[iconst_1], falseOut=[iconst_2]
+        // ifeqOffset = 1 + 6 = 7, gotoOffset = 1 + 3 = 4
+        args(
+            "(x == 0 ? 1 : 2)",
+            INT,
+            list(varInfo("x", "int", 1)),
+            emptyList(),
+            list("iload_1", "ifne 7", "iconst_1", "goto 4", "iconst_2")));
   }
 
   @BeforeAll

@@ -36,6 +36,7 @@ public class NumExprTypeDecider {
   }
 
   public String getType(GlobalIdentifierMap classIdMap, Expression expr) {
+    if (expr == null) return null;
     Set<String> types = new HashSet<>();
     if (expr instanceof ArrayInit) {
       types.add(((ArrayInit) expr).typeDescr());

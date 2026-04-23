@@ -51,10 +51,6 @@ public class Argument {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder();
-    strBuilder.append(type);
-    strBuilder.append(' ');
-    strBuilder.append(name);
-    return strBuilder.toString();
+    return type;
   }
 }

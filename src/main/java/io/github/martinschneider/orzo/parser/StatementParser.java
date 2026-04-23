@@ -15,8 +15,27 @@ public class StatementParser implements ProdParser<Statement> {
   public List<Statement> parseStmtSeq(TokenList tokens) {
     List<Statement> stmtSequence = new ArrayList<>();
     Statement stmt;
+    int lastIdx = -1;
+    int stuckCount = 0;
     while ((stmt = parse(tokens)) != null) {
       stmtSequence.add(stmt);
+      int currIdx = tokens.idx();
+      if (currIdx == lastIdx) {
+        stuckCount++;
+        if (stuckCount >= 3) {
+          System.err.println(
+              "[LOOP GUARD] parseStmtSeq stuck at token idx="
+                  + currIdx
+                  + " token="
+                  + tokens.curr()
+                  + " parsed="
+                  + stmt.getClass().getSimpleName());
+          break;
+        }
+      } else {
+        stuckCount = 0;
+      }
+      lastIdx = currIdx;
     }
     return (stmtSequence.size() == 0) ? null : stmtSequence;
   }

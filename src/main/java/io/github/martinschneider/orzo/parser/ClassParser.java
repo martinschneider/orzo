@@ -8,12 +8,18 @@ import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IMPORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INTERFACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.PACKAGE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import static io.github.martinschneider.orzo.parser.productions.Clazz.JAVA_LANG_ENUM;
 import static io.github.martinschneider.orzo.parser.productions.Clazz.JAVA_LANG_OBJECT;
@@ -50,6 +56,7 @@ public class ClassParser implements ProdParser<Clazz> {
     List<ParallelDeclaration> decls;
     List<ClassMember> members = new ArrayList<>();
     String packageDeclaration = parsePackageDeclaration(tokens);
+    ctx.importMap.clear();
     List<Import> imports = parseImports(tokens);
     List<String> interfaces = new ArrayList<>();
     String baseClass = JAVA_LANG_OBJECT;
@@ -72,10 +79,22 @@ public class ClassParser implements ProdParser<Clazz> {
               LOG_NAME, "missing identifier", new RuntimeException().getStackTrace());
         }
         tokens.next();
-        parseInterfaces(tokens, interfaces);
-        baseClass = parseBaseClass(tokens, isEnum);
+        // Skip generic type parameters on class/interface declaration e.g. class Foo<T>
+        if (tokens.curr().eq(op(LESS))) {
+          int depth = 1;
+          while (depth > 0) {
+            tokens.next();
+            if (tokens.curr().eq(op(LESS))) depth++;
+            else if (tokens.curr().eq(op(GREATER))) depth--;
+            else if (tokens.curr().eq(op(RSHIFT))) depth = Math.max(0, depth - 2);
+            else if (tokens.curr().eq(op(RSHIFTU))) depth = Math.max(0, depth - 3);
+          }
+          tokens.next();
+        }
+        parseInterfaces(tokens, interfaces, packageDeclaration);
+        baseClass = parseBaseClass(tokens, isEnum, packageDeclaration);
         if (interfaces.isEmpty()) {
-          parseInterfaces(tokens, interfaces);
+          parseInterfaces(tokens, interfaces, packageDeclaration);
         }
         if (!tokens.curr().eq(sym(LBRACE))) {
           ctx.errors.tokenIdx = tokens.idx();
@@ -144,28 +163,58 @@ public class ClassParser implements ProdParser<Clazz> {
     return null;
   }
 
-  private String parseBaseClass(TokenList tokens, boolean isEnum) {
+  private String parseBaseClass(TokenList tokens, boolean isEnum, String packageDeclaration) {
     if (tokens.curr().eq(keyword(EXTENDS))) {
       tokens.next();
       if (tokens.curr() instanceof Identifier) {
         String baseClass = (((Identifier) tokens.curr()).val.toString());
         tokens.next();
-        return baseClass;
+        return resolveClassName(baseClass, packageDeclaration);
       }
     }
     return isEnum ? JAVA_LANG_ENUM : JAVA_LANG_OBJECT;
   }
 
-  List<String> parseInterfaces(TokenList tokens, List<String> interfaces) {
+  private String resolveClassName(String name, String packageDeclaration) {
+    if (name.contains(".")) {
+      return name;
+    }
+    String fqn = ctx.importMap.get(name);
+    if (fqn != null) {
+      return fqn;
+    }
+    if (packageDeclaration != null && !packageDeclaration.isEmpty()) {
+      return packageDeclaration + "." + name;
+    }
+    return name;
+  }
+
+  List<String> parseInterfaces(
+      TokenList tokens, List<String> interfaces, String packageDeclaration) {
     if (tokens.curr().eq(keyword(IMPLEMENTS))) {
       tokens.next();
       while (!tokens.curr().eq(keyword(EXTENDS))
           && !(tokens.curr().eq(sym(LBRACE)))
           && !(tokens.curr() instanceof EOF)) {
         if (tokens.curr() instanceof Identifier) {
-          interfaces.add(((Identifier) tokens.curr()).val.toString());
+          interfaces.add(
+              resolveClassName(((Identifier) tokens.curr()).val.toString(), packageDeclaration));
+          tokens.next();
+          // Skip generic type arguments e.g. ProdParser<Clazz>
+          if (tokens.curr().eq(op(LESS))) {
+            int depth = 1;
+            while (depth > 0) {
+              tokens.next();
+              if (tokens.curr().eq(op(LESS))) depth++;
+              else if (tokens.curr().eq(op(GREATER))) depth--;
+              else if (tokens.curr().eq(op(RSHIFT))) depth = Math.max(0, depth - 2);
+              else if (tokens.curr().eq(op(RSHIFTU))) depth = Math.max(0, depth - 3);
+            }
+            tokens.next();
+          }
+        } else {
+          tokens.next();
         }
-        tokens.next();
         if (tokens.curr().equals(sym(COMMA))) {
           tokens.next();
         } else {
@@ -179,8 +228,27 @@ public class ClassParser implements ProdParser<Clazz> {
   List<ClassMember> parseClassBody(TokenList tokens, boolean isInterface) {
     List<ClassMember> classBody = new ArrayList<>();
     ClassMember member = null;
+    int lastIdx = -1;
+    int stuckCount = 0;
     while ((member = parserClassMember(tokens, isInterface)) != null) {
       classBody.add(member);
+      int currIdx = tokens.idx();
+      if (currIdx == lastIdx) {
+        stuckCount++;
+        if (stuckCount >= 3) {
+          System.err.println(
+              "[LOOP GUARD] parseClassBody stuck at token idx="
+                  + currIdx
+                  + " token="
+                  + tokens.curr()
+                  + " member="
+                  + member.getClass().getSimpleName());
+          break;
+        }
+      } else {
+        stuckCount = 0;
+      }
+      lastIdx = currIdx;
     }
     if (!classBody.isEmpty()) {
       return classBody;
@@ -226,6 +294,8 @@ public class ClassParser implements ProdParser<Clazz> {
           identifier.append('.');
         } else if (tokens.curr() instanceof Identifier) {
           identifier.append(tokens.curr().val);
+        } else if (tokens.curr().eq(op(TIMES))) {
+          identifier.append('*');
         } else {
           ctx.errors.addError(
               LOG_NAME,
@@ -235,8 +305,18 @@ public class ClassParser implements ProdParser<Clazz> {
         }
         tokens.next();
       }
+      String importPath = identifier.toString();
+      if (!isStatic) {
+        int lastDot = importPath.lastIndexOf('.');
+        if (lastDot >= 0) {
+          String simpleName = importPath.substring(lastDot + 1);
+          if (!simpleName.equals("*")) {
+            ctx.importMap.put(simpleName, importPath);
+          }
+        }
+      }
       tokens.next();
-      return new Import(identifier.toString(), isStatic);
+      return new Import(importPath, isStatic);
     }
     return null;
   }

@@ -11,10 +11,12 @@ import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.List;
 
 public class CodeGenerator {
-  // for higher versions the JVM enforces stricter bytecode verification
-  // TODO: implement StackMapTable attribute:
+  // Java 21 removed the type-inferencing verifier for class file version 50 (Java 6),
+  // requiring StackMapTable for all branching bytecode. Version 49 (Java 5) still uses
+  // the type-inferencing verifier and does not require StackMapTable.
+  // TODO: implement StackMapTable attribute and upgrade back to 50+:
   // https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4
-  private static final short JAVA_CLASS_MAJOR_VERSION = 50;
+  private static final short JAVA_CLASS_MAJOR_VERSION = 49;
   private static final short JAVA_CLASS_MINOR_VERSION = 0;
   private CGContext ctx;
   private List<Output> outputs;
@@ -69,9 +71,14 @@ public class CodeGenerator {
   }
 
   private void fields() {
-    out.write((short) ctx.classIdMap.variables.fieldMap.size());
+    int ownCount =
+        ctx.classIdMap.variables.fieldMap.size()
+            - ctx.classIdMap.variables.inheritedFieldNames.size();
+    out.write((short) ownCount);
     for (VariableInfo varInfo : ctx.classIdMap.variables.fieldMap.values()) {
-      writeField(out, varInfo);
+      if (!ctx.classIdMap.variables.inheritedFieldNames.contains(varInfo.name)) {
+        writeField(out, varInfo);
+      }
     }
   }
 
@@ -114,11 +121,9 @@ public class CodeGenerator {
   private void interfaces(Clazz clazz) {
     out.write((short) clazz.interfaces.size());
     for (String interfaceName : clazz.interfaces) {
-      // TODO: support interfaces from different packages
-      out.write(
-          (short)
-              ctx.constPool.indexOf(
-                  CONSTANT_CLASS, (clazz.packageName + "." + interfaceName).replace('.', '/')));
+      String ifaceFqn =
+          interfaceName.contains(".") ? interfaceName : (clazz.packageName + "." + interfaceName);
+      out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, ifaceFqn.replace('.', '/')));
     }
   }
 

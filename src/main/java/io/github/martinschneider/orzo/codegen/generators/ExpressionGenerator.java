@@ -1,12 +1,16 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFEQ;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFGE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFGT;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFLE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFLT;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFNE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ACMPEQ;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ACMPNE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPEQ;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPGE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPGT;
@@ -25,7 +29,9 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESSEQ;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.NEGATE;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
@@ -45,8 +51,10 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
 import static java.util.Collections.emptyList;
 
+import io.github.martinschneider.orzo.codegen.ByteUtils;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
@@ -65,7 +73,9 @@ import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
+import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -115,6 +125,7 @@ public class ExpressionGenerator {
     // operands is 0)
     OperandStack exprTypeStack = new OperandStack();
     List<Token> tokens = expr.tokens;
+    boolean branchEmitted = false;
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
       if (!type.equals(DOUBLE)
@@ -166,6 +177,9 @@ public class ExpressionGenerator {
         ctx.pushGen.push(out, CHAR, chr);
         type = CHAR;
         exprTypeStack.push(CHAR);
+      } else if (token instanceof TernaryExpression) {
+        type = generateTernary(out, type, (TernaryExpression) token);
+        exprTypeStack.push(type);
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
         if (List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT).contains(op)) {
@@ -195,6 +209,16 @@ public class ExpressionGenerator {
                 out, new Method("java/math/BigInteger", "longValue", LONG, emptyList()));
             type = LONG;
           }
+        } else if (op.equals(PLUS) && type.equals(STRING)) {
+          ctx.invokeGen.invokeVirtual(
+              out, new Method("java.lang.String", "concat", STRING, List.of(STRING)));
+        } else if (op.equals(NEGATE) && reverseComp) {
+          // Boolean NOT in if-condition context: the value is already on the stack.
+          // Jump (skip body) when the value is non-zero, i.e. when !value is false.
+          out.write(IFNE);
+          ctx.opStack.pop();
+          ctx.opStack.push(BOOLEAN);
+          branchEmitted = true;
         } else {
           byte[] opCode = null;
           if (COMPARATORS.contains(op) && exprTypeStack.oneOfTopTwoElementsIsZero()) {
@@ -203,11 +227,13 @@ public class ExpressionGenerator {
           } else {
             opCode = ARITHMETIC_OPS.getOrDefault(op, Collections.emptyMap()).get(type);
           }
-          if (reverseComp) {
-            if (opCode != null) {
-              // creating a copy is important, otherwise we would modify the original array
-              opCode = Arrays.copyOf(opCode, opCode.length);
-            }
+          // Fall back to reference comparison for non-primitive types not in ARITHMETIC_OPS
+          if (opCode == null && COMPARATORS.contains(op)) {
+            opCode = ARITHMETIC_OPS.getOrDefault(op, Collections.emptyMap()).get(REF);
+          }
+          if (reverseComp && opCode != null) {
+            // creating a copy is important, otherwise we would modify the original array
+            opCode = Arrays.copyOf(opCode, opCode.length);
             for (int j = 0; j < opCode.length; j++) {
               opCode[j] = reverseComp(opCode[j]);
             }
@@ -222,6 +248,9 @@ public class ExpressionGenerator {
             ctx.opStack.pop2();
             ctx.opStack.push(type);
             out.write(opCode);
+            if (COMPARATORS.contains(op)) {
+              branchEmitted = true;
+            }
           }
         }
       }
@@ -231,6 +260,12 @@ public class ExpressionGenerator {
       ctx.basicGen.convert(out, currType, expr.cast.name);
       type = expr.cast.name;
       ctx.opStack.push(type);
+    }
+    // If this expression is used as a branch condition (reverseComp=true) but no branch opcode
+    // was generated (e.g. a plain boolean variable or method call with no comparator operator),
+    // emit IFEQ so IfGenerator can append the 2-byte branch offset correctly.
+    if (reverseComp && !branchEmitted && BOOLEAN.equals(type)) {
+      out.write(IFEQ);
     }
     return new ExpressionResult(type, val);
   }
@@ -245,8 +280,13 @@ public class ExpressionGenerator {
     Identifier curr = (Identifier) token;
     Identifier prev = null;
     String returnType = type;
+    boolean prevLoadedRef = false;
     do {
-      // In handleId() method, add this BEFORE line 241:
+      if ("null".equals(curr.val)) {
+        out.write(ACONST_NULL);
+        ctx.opStack.push(REF);
+        return REF;
+      }
       if (token instanceof ConstructorCall) {
         ConstructorCall constructorCall = (ConstructorCall) token;
         returnType = generateConstructorCall(out, classIdMap, constructorCall);
@@ -261,9 +301,16 @@ public class ExpressionGenerator {
           }
         }
       } else {
-        if (prev != null && ctx.classIdMap.variables.get(prev).arrType != null) {
+        VariableInfo prevInfo = (prev != null) ? ctx.classIdMap.variables.get(prev) : null;
+        if (prev != null && prevInfo != null && prevInfo.arrType != null) {
           ctx.basicGen.arrayLength(out);
           returnType = INT;
+          prevLoadedRef = false;
+        } else if ("this".equals(curr.val.toString()) || "super".equals(curr.val.toString())) {
+          ctx.loadGen.loadReference(out, (short) 0);
+          ctx.opStack.push(REF);
+          returnType = REF;
+          prevLoadedRef = true;
         } else {
           VariableInfo varInfo = ctx.classIdMap.variables.get(curr);
           if (varInfo == null) {
@@ -272,36 +319,50 @@ public class ExpressionGenerator {
           }
           String varType = varInfo.type;
           String arrType = varInfo.arrType;
-          // look ahead for ++ or -- operators because in that case we do not push the
-          // value to the
-          // stack
-          if (i + 1 == tokens.size()
-              || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
-                  && !tokens.get(i + 1).eq(op(POST_INCREMENT))
-                  && !tokens.get(i + 1).eq(op(PRE_INCREMENT))
-                  && !tokens.get(i + 1).eq(op(PRE_DECREMENT)))) {
-            if (curr.arrSel != null) {
-              // array
-              ctx.loadGen.loadValueFromArray(out, classIdMap, curr.arrSel.exprs, varInfo);
-              returnType = varInfo.arrType;
-            } else {
-              ctx.loadGen.load(out, varInfo);
-            }
-          }
-          // Defer narrowing conversion from long to a smaller type when more tokens
-          // follow: operators should work on the long, not on a prematurely truncated int.
-          // E.g. (byte)((val >> 56) & 255) must use LSHR/LAND, not L2I+ISHR.
-          boolean deferNarrowing =
-              LONG.equals(varType)
-                  && !LONG.equals(type)
-                  && !DOUBLE.equals(type)
-                  && !FLOAT.equals(type)
-                  && (i + 1 < tokens.size());
-          if (!type.equals(varType) && arrType == null && !deferNarrowing) {
-            ctx.basicGen.convert1(out, varType, type);
-          }
-          if (deferNarrowing) {
+          if (prevLoadedRef
+              && varInfo.isField
+              && !varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
+            // Reference already on stack from previous iteration: use GETFIELD directly
+            ctx.opStack.pop();
+            ctx.loadGen.getField(out, varInfo.idx);
+            ctx.opStack.push(varType);
             returnType = varType;
+            prevLoadedRef = isNonPrimitive(varType);
+          } else {
+            // look ahead for ++ or -- operators because in that case we do not push the
+            // value to the stack
+            if (i + 1 == tokens.size()
+                || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
+                    && !tokens.get(i + 1).eq(op(POST_INCREMENT))
+                    && !tokens.get(i + 1).eq(op(PRE_INCREMENT))
+                    && !tokens.get(i + 1).eq(op(PRE_DECREMENT)))) {
+              if (curr.arrSel != null) {
+                // array
+                ctx.loadGen.loadValueFromArray(out, classIdMap, curr.arrSel.exprs, varInfo);
+                returnType = varInfo.arrType;
+              } else {
+                ctx.loadGen.load(out, varInfo);
+              }
+            }
+            // Defer narrowing conversion from long to a smaller type when more tokens
+            // follow: operators should work on the long, not on a prematurely truncated int.
+            // E.g. (byte)((val >> 56) & 255) must use LSHR/LAND, not L2I+ISHR.
+            boolean deferNarrowing =
+                LONG.equals(varType)
+                    && !LONG.equals(type)
+                    && !DOUBLE.equals(type)
+                    && !FLOAT.equals(type)
+                    && (i + 1 < tokens.size());
+            if (!type.equals(varType)
+                && arrType == null
+                && !deferNarrowing
+                && !(isNonPrimitive(varType) && isNonPrimitive(type))) {
+              ctx.basicGen.convert1(out, varType, type);
+            }
+            if (deferNarrowing) {
+              returnType = varType;
+            }
+            prevLoadedRef = isNonPrimitive(varType) && curr.arrSel == null;
           }
         }
       }
@@ -415,6 +476,11 @@ public class ExpressionGenerator {
       return staticField.fieldType;
     }
 
+    if ("null".equals(curr.val.toString())) {
+      out.write(ACONST_NULL);
+      ctx.opStack.push(REF);
+      return REF;
+    }
     ctx.errors.addError(
         LOGGER_NAME,
         String.format("Unknown variable: %s", curr),
@@ -454,6 +520,45 @@ public class ExpressionGenerator {
     } else {
       // TODO:
     }
+  }
+
+  private String generateTernary(DynamicByteArray out, String type, TernaryExpression ternary) {
+    // Generate condition bytes: eval with reverseComp=true appends the conditional jump opcode
+    // but NOT its 2-byte offset operand. We append the offset ourselves.
+    DynamicByteArray condOut = new DynamicByteArray();
+    ctx.exprGen.eval(condOut, null, ternary.condition, false, true);
+
+    // Generate true branch
+    DynamicByteArray trueOut = new DynamicByteArray();
+    ExpressionResult trueResult = ctx.exprGen.eval(trueOut, type, ternary.trueBranch);
+    String resultType = (trueResult != null && trueResult.type != null) ? trueResult.type : type;
+
+    // Generate false branch
+    DynamicByteArray falseOut = new DynamicByteArray();
+    ctx.exprGen.eval(falseOut, resultType, ternary.falseBranch);
+
+    // Layout (offsets are from each branch instruction's own opcode position):
+    //   condOut (ends with: compare opcode [no offset yet])
+    //   [ifeqHi][ifeqLo]  ← 2-byte offset for the conditional jump
+    //   trueOut
+    //   GOTO [gotoHi][gotoLo]
+    //   falseOut
+    //
+    // ifeq offset = trueLen + 6  (skip: 2-byte ifeq operand + trueLen bytes + 3-byte GOTO)
+    // goto offset = falseLen + 3  (skip: 3-byte GOTO itself + falseLen bytes)
+    int trueLen = trueOut.size();
+    int falseLen = falseOut.size();
+    short ifeqOffset = (short) (trueLen + 6);
+    short gotoOffset = (short) (falseLen + 3);
+
+    out.write(condOut.getBytes());
+    out.write(ByteUtils.shortToByteArray(ifeqOffset));
+    out.write(trueOut.getBytes());
+    out.write(GOTO);
+    out.write(ByteUtils.shortToByteArray(gotoOffset));
+    out.write(falseOut.getBytes());
+
+    return resultType;
   }
 
   String generateConstructorCall(
@@ -552,6 +657,20 @@ public class ExpressionGenerator {
     }
   }
 
+  private static boolean isNonPrimitive(String type) {
+    return type != null
+        && !INT.equals(type)
+        && !LONG.equals(type)
+        && !BYTE.equals(type)
+        && !SHORT.equals(type)
+        && !DOUBLE.equals(type)
+        && !FLOAT.equals(type)
+        && !CHAR.equals(type)
+        && !BOOLEAN.equals(type)
+        && !VOID.equals(type)
+        && !"int_zero".equals(type);
+  }
+
   // To generate code for control structures it is often useful to get the inverse comparator. For
   // example, for "if (x==0)" we will use the opcode 154 (IFNE) to jump beyond the code in the if
   // block. This method performs this conversion.
@@ -581,6 +700,10 @@ public class ExpressionGenerator {
         return IF_ICMPGT;
       case IF_ICMPGE:
         return IF_ICMPLT;
+      case IF_ACMPEQ:
+        return IF_ACMPNE;
+      case IF_ACMPNE:
+        return IF_ACMPEQ;
     }
     return opCode;
   }

@@ -3,7 +3,6 @@ package io.github.martinschneider.orzo.parser.productions;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Location;
 import java.util.List;
-import java.util.stream.Collectors;
 
 // extending Token is not the most elegant solution but it helps with parsing method calls as part
 // of expressions
@@ -67,14 +66,6 @@ public class MethodCall extends Identifier implements Statement {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder();
-    strBuilder.append(name);
-    strBuilder.append('(');
-    strBuilder.append(params.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append(')');
-    if (arrSel != null) {
-      strBuilder.append(arrSel);
-    }
-    return strBuilder.toString();
+    return name;
   }
 }

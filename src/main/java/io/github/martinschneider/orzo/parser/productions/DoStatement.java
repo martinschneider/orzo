@@ -1,7 +1,6 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DoStatement extends LoopStatement {
   public DoStatement(Expression condition, List<Statement> body) {
@@ -49,13 +48,6 @@ public class DoStatement extends LoopStatement {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder();
-    strBuilder.append("do ");
-    strBuilder.append(" {");
-    strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append("}");
-    strBuilder.append(" while ");
-    strBuilder.append(cond);
-    return strBuilder.toString();
+    return "DoStatement";
   }
 }

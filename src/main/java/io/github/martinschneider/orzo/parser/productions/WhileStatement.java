@@ -1,7 +1,6 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class WhileStatement extends LoopStatement {
   public WhileStatement(Expression cond, List<Statement> body) {
@@ -49,12 +48,6 @@ public class WhileStatement extends LoopStatement {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder();
-    strBuilder.append("while ");
-    strBuilder.append(cond);
-    strBuilder.append(" {");
-    strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append("}");
-    return strBuilder.toString();
+    return "WhileStatement";
   }
 }

@@ -6,14 +6,17 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class IdentifierMap {
   // long and double take up two entries
   private static final List<String> DOUBLE_SIZE = List.of(DOUBLE, LONG);
   public Map<String, VariableInfo> localMap = new HashMap<>();
   public Map<String, VariableInfo> fieldMap = new HashMap<>();
+  public Set<String> inheritedFieldNames = new HashSet<>();
   public int localSize;
   public int fieldSize;
   public int tmpCount;
@@ -26,6 +29,11 @@ public class IdentifierMap {
     }
   }
 
+  public void putInheritedField(String name, VariableInfo var) {
+    fieldMap.put(name, var);
+    inheritedFieldNames.add(name);
+  }
+
   public void putLocal(Identifier id, VariableInfo var) {
     localMap.put(id.val.toString(), var);
     localSize++;
@@ -35,9 +43,9 @@ public class IdentifierMap {
   }
 
   public VariableInfo get(Token id) {
-    VariableInfo ret = fieldMap.get(id.val.toString());
+    VariableInfo ret = localMap.get(id.val.toString());
     if (ret == null) {
-      ret = localMap.get(id.val.toString());
+      ret = fieldMap.get(id.val.toString());
       // TODO: error handling
     }
     return ret;

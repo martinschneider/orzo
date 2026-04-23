@@ -152,7 +152,11 @@ public class OpCodes {
   public static final byte IF_ICMPGE = (byte) 162;
   public static final byte IF_ICMPGT = (byte) 163;
   public static final byte IF_ICMPLE = (byte) 164;
+  public static final byte IF_ACMPEQ = (byte) 165;
+  public static final byte IF_ACMPNE = (byte) 166;
   public static final byte GOTO = (byte) 167;
+  public static final byte IFNULL = (byte) 198;
+  public static final byte IFNONNULL = (byte) 199;
   public static final byte IRETURN = (byte) 172;
   public static final byte LRETURN = (byte) 173;
   public static final byte DRETURN = (byte) 175;

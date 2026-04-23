@@ -2,9 +2,13 @@ package io.github.martinschneider.orzo.parser;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ParserContext {
   public Clazz currClazz;
+  // Maps simple class name → fully-qualified name, built from import statements
+  public Map<String, String> importMap = new HashMap<>();
   public CompilerErrors errors;
   public ArrayDefParser arrayDefParser;
   public ArrayInitParser arrayInitParser;

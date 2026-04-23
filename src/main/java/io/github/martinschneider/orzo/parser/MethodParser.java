@@ -2,6 +2,10 @@ package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
@@ -12,6 +16,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_FINAL;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_STATIC;
@@ -99,9 +104,40 @@ public class MethodParser implements ProdParser<Method> {
       type = ctx.typeMap.TYPES.getOrDefault(id, new Type(id));
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
+    } else if (tokens.curr() instanceof Identifier
+        && ctx.importMap.containsKey(tokens.curr().toString())) {
+      String id = tokens.curr().toString();
+      type = new Type(ctx.importMap.get(id));
+      tokens.next();
+      type.arr = ctx.arrayDefParser.parse(tokens);
+    } else if (tokens.curr() instanceof Identifier
+        && !tokens.curr().toString().isEmpty()
+        && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
+      String id = tokens.curr().toString();
+      String fqn =
+          (ctx.currClazz != null
+                  && ctx.currClazz.packageName != null
+                  && !ctx.currClazz.packageName.isEmpty())
+              ? ctx.currClazz.packageName + "." + id
+              : id;
+      type = new Type(fqn);
+      tokens.next();
+      type.arr = ctx.arrayDefParser.parse(tokens);
     } else {
       tokens.setIdx(idx);
       return null;
+    }
+    // Skip generic type arguments on return type e.g. List<Statement>
+    if (tokens.curr().eq(op(LESS))) {
+      int depth = 1;
+      while (depth > 0) {
+        tokens.next();
+        if (tokens.curr().eq(op(LESS))) depth++;
+        else if (tokens.curr().eq(op(GREATER))) depth--;
+        else if (tokens.curr().eq(op(RSHIFT))) depth = Math.max(0, depth - 2);
+        else if (tokens.curr().eq(op(RSHIFTU))) depth = Math.max(0, depth - 3);
+      }
+      tokens.next();
     }
     if (tokens.curr() instanceof Identifier) {
       name = (Identifier) tokens.curr();
@@ -169,10 +205,35 @@ public class MethodParser implements ProdParser<Method> {
       } else if (tokens.curr() instanceof Identifier
           && ctx.typeMap.TYPES.containsKey(tokens.curr().toString())) {
         type = ctx.typeMap.TYPES.get(tokens.curr().toString()).toString();
+      } else if (tokens.curr() instanceof Identifier
+          && ctx.importMap.containsKey(tokens.curr().toString())) {
+        type = ctx.importMap.get(tokens.curr().toString());
+      } else if (tokens.curr() instanceof Identifier
+          && !tokens.curr().toString().isEmpty()
+          && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
+        String id = tokens.curr().toString();
+        type =
+            (ctx.currClazz != null
+                    && ctx.currClazz.packageName != null
+                    && !ctx.currClazz.packageName.isEmpty())
+                ? ctx.currClazz.packageName + "." + id
+                : id;
       } else {
         break;
       }
-      if (tokens.next().eq(sym(LBRAK))) {
+      if (tokens.next().eq(op(LESS))) {
+        // skip generic type arguments e.g. List<Token> or List<List<Token>>
+        int depth = 1;
+        while (depth > 0) {
+          tokens.next();
+          if (tokens.curr().eq(op(LESS))) depth++;
+          else if (tokens.curr().eq(op(GREATER))) depth--;
+          else if (tokens.curr().eq(op(RSHIFT))) depth = Math.max(0, depth - 2);
+          else if (tokens.curr().eq(op(RSHIFTU))) depth = Math.max(0, depth - 3);
+        }
+        tokens.next();
+      }
+      if (tokens.curr().eq(sym(LBRAK))) {
         if (tokens.next().eq(sym(RBRAK))) {
           type = "[" + type;
         } else {

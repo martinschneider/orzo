@@ -75,6 +75,16 @@ public class AssignmentParser implements ProdParser<Assignment> {
         tokens.next();
       }
     }
+    // If the first identifier looks like a type name (starts with uppercase) followed by a variable
+    // name, this is a declaration (e.g. "Argument other = ..."), not an assignment.
+    if (left.size() == 2
+        && left.get(0).next == null
+        && left.get(0).arrSel == null
+        && !left.get(0).val.toString().isEmpty()
+        && Character.isUpperCase(left.get(0).val.toString().charAt(0))) {
+      tokens.setIdx(idx);
+      return null;
+    }
     if (tokens.curr() instanceof Operator) {
       if (tokens.curr().eq(op(ASSIGN))) {
         tokens.next();

@@ -5,8 +5,10 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.QUESTION;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SQRT;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.eof;
@@ -23,6 +25,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Keyword;
 import io.github.martinschneider.orzo.lexer.tokens.Num;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
+import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.ArraySelector;
@@ -53,6 +56,9 @@ public class ExpressionParser implements ProdParser<Expression> {
     List<Token> exprTokens = new ArrayList<>();
     checkNegative(tokens, exprTokens);
     int parenthesis = 0;
+    // Track the index in exprTokens where the last depth-0->(-1) LPAREN was added,
+    // and the position in exprTokens just after that LPAREN (where the condition starts).
+    int ternaryOuterParenIdx = -1; // index of the '(' token in exprTokens
     outer:
     {
       while (tokens.curr() instanceof Num
@@ -64,7 +70,39 @@ public class ExpressionParser implements ProdParser<Expression> {
           || tokens.curr().eq(sym(SQRT))
           || tokens.curr().eq(sym(LPAREN))
           || tokens.curr().eq(sym(RPAREN))
+          || tokens.curr().eq(sym(QUESTION))
           || isNewKeyword(tokens.curr())) {
+        // Handle ternary: when we see '?' at depth -1, parse it as a ternary expression
+        if (tokens.curr().eq(sym(QUESTION)) && parenthesis == -1 && ternaryOuterParenIdx >= 0) {
+          // conditionTokens = exprTokens from ternaryOuterParenIdx+1 to end (exclude the '(')
+          List<Token> condTokens =
+              new ArrayList<>(exprTokens.subList(ternaryOuterParenIdx + 1, exprTokens.size()));
+          // prefix = exprTokens[0..ternaryOuterParenIdx-1] (everything before the '(')
+          List<Token> prefixTokens = new ArrayList<>(exprTokens.subList(0, ternaryOuterParenIdx));
+          tokens.next(); // consume '?'
+          Expression condition = new Expression(postfix(condTokens), null);
+          // Parse true branch (until ':')
+          Expression trueBranch = parseBranchUntilColon(tokens);
+          // consume ':'
+          if (tokens.curr().eq(sym(COLON))) {
+            tokens.next();
+          }
+          // Parse false branch (until ')' that closes the ternary's outer '(')
+          Expression falseBranch = parse(tokens);
+          // consume the closing ')' of the ternary
+          if (tokens.curr().eq(sym(RPAREN))) {
+            tokens.next();
+          }
+          TernaryExpression ternary = new TernaryExpression(condition, trueBranch, falseBranch);
+          // Reset: prefix + ternary as a single token
+          exprTokens = prefixTokens;
+          exprTokens.add(ternary);
+          parenthesis = 0;
+          ternaryOuterParenIdx = -1;
+          // Continue collecting the rest of the outer expression
+          continue;
+        }
+
         int idx = tokens.idx();
         boolean negative = false;
         if (List.of(sym(LPAREN), op(TIMES), op(DIV), op(POW), op(MOD))
@@ -83,9 +121,17 @@ public class ExpressionParser implements ProdParser<Expression> {
           } else {
             tokens.setIdx(idx);
             if (tokens.curr().eq(sym(LPAREN))) {
+              if (parenthesis == 0) {
+                // Record where this potential ternary-opening '(' goes in exprTokens
+                ternaryOuterParenIdx = exprTokens.size();
+              }
               parenthesis--;
             } else if (tokens.curr().eq(sym(RPAREN))) {
               parenthesis++;
+              if (parenthesis == 0) {
+                // Closing the tracked ternary paren without a '?' → not a ternary
+                ternaryOuterParenIdx = -1;
+              }
             }
             if (parenthesis > 0) {
               break outer;
@@ -110,6 +156,28 @@ public class ExpressionParser implements ProdParser<Expression> {
       }
     }
     return (exprTokens.size() > 0) ? new Expression(postfix(exprTokens), cast) : null;
+  }
+
+  /**
+   * Parse an expression branch up to (but not consuming) a ':' at the current paren depth. Used for
+   * the true-branch of a ternary.
+   */
+  private Expression parseBranchUntilColon(TokenList tokens) {
+    List<Token> branchTokens = new ArrayList<>();
+    int depth = 0;
+    while (true) {
+      Token curr = tokens.curr();
+      if (curr instanceof io.github.martinschneider.orzo.lexer.tokens.EOF) break;
+      if (curr.eq(sym(COLON)) && depth == 0) break;
+      if (curr.eq(sym(LPAREN))) depth++;
+      else if (curr.eq(sym(RPAREN))) {
+        if (depth == 0) break;
+        depth--;
+      }
+      branchTokens.add(curr);
+      tokens.next();
+    }
+    return branchTokens.isEmpty() ? new Expression() : new Expression(postfix(branchTokens));
   }
 
   private boolean isNewKeyword(Token curr) {

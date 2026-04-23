@@ -444,6 +444,10 @@ public class Lexer {
       tokenList.add(sym(COMMA).wLoc(inputReader.getLoc()));
     } else if (character == ';') {
       tokenList.add(sym(SEMICOLON).wLoc(inputReader.getLoc()));
+    } else if (character == '?') {
+      tokenList.add(sym(QUESTION).wLoc(inputReader.getLoc()));
+    } else if (character == ':') {
+      tokenList.add(sym(COLON).wLoc(inputReader.getLoc()));
     } else if (character == '.') {
       if (Character.isDigit(character = (char) inputReader.read())) {
         buffer.append('.');

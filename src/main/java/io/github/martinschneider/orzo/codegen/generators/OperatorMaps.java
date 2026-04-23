@@ -9,6 +9,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static java.util.Map.entry;
 
@@ -174,34 +175,24 @@ public class OperatorMaps {
                   new byte[] {IXOR})),
           entry(
               NOTEQUAL,
-              Map.of(
-                  INT,
-                  new byte[] {IF_ICMPNE},
-                  BYTE,
-                  new byte[] {IF_ICMPNE},
-                  SHORT,
-                  new byte[] {IF_ICMPNE},
-                  CHAR,
-                  new byte[] {IF_ICMPEQ},
-                  BOOLEAN,
-                  new byte[] {IF_ICMPNE},
-                  LONG,
-                  new byte[] {LCMP, IFNE})),
+              Map.ofEntries(
+                  entry(INT, new byte[] {IF_ICMPNE}),
+                  entry(BYTE, new byte[] {IF_ICMPNE}),
+                  entry(SHORT, new byte[] {IF_ICMPNE}),
+                  entry(CHAR, new byte[] {IF_ICMPEQ}),
+                  entry(BOOLEAN, new byte[] {IF_ICMPNE}),
+                  entry(LONG, new byte[] {LCMP, IFNE}),
+                  entry(REF, new byte[] {IF_ACMPNE}))),
           entry(
               EQUAL,
-              Map.of(
-                  INT,
-                  new byte[] {IF_ICMPEQ},
-                  BYTE,
-                  new byte[] {IF_ICMPEQ},
-                  SHORT,
-                  new byte[] {IF_ICMPEQ},
-                  CHAR,
-                  new byte[] {IF_ICMPEQ},
-                  BOOLEAN,
-                  new byte[] {IF_ICMPEQ},
-                  LONG,
-                  new byte[] {LCMP, IFEQ})),
+              Map.ofEntries(
+                  entry(INT, new byte[] {IF_ICMPEQ}),
+                  entry(BYTE, new byte[] {IF_ICMPEQ}),
+                  entry(SHORT, new byte[] {IF_ICMPEQ}),
+                  entry(CHAR, new byte[] {IF_ICMPEQ}),
+                  entry(BOOLEAN, new byte[] {IF_ICMPEQ}),
+                  entry(LONG, new byte[] {LCMP, IFEQ}),
+                  entry(REF, new byte[] {IF_ACMPEQ}))),
           entry(
               GREATEREQ,
               Map.of(

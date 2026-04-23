@@ -65,7 +65,7 @@ public class IfParser implements ProdParser<IfStatement> {
 
   IfBlock parseIfBlock(TokenList tokens, boolean negate, Token... expectedTokens) {
     Expression condition;
-    List<Statement> body;
+    List<Statement> body = null;
     if (tokens.curr() == null) {
       return null;
     }
@@ -96,23 +96,30 @@ public class IfParser implements ProdParser<IfStatement> {
           LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
     }
     tokens.next();
-    if (!tokens.curr().eq(sym(LBRACE))) {
-      tokens.prev();
-      ctx.errors.missingExpected(
-          IF_BLOCK_LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
-    }
-    tokens.next();
-    body = ctx.stmtParser.parseStmtSeq(tokens);
-    if (body == null) {
-      ctx.errors.addError(
-          IF_BLOCK_LOG_NAME, "missing body", new RuntimeException().getStackTrace());
-    }
-    if (!tokens.curr().eq(sym(RBRACE))) {
-      tokens.prev();
-      ctx.errors.missingExpected(
-          IF_BLOCK_LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
-    } else {
+    if (tokens.curr().eq(sym(LBRACE))) {
       tokens.next();
+      body = ctx.stmtParser.parseStmtSeq(tokens);
+      if (body == null) {
+        ctx.errors.addError(
+            IF_BLOCK_LOG_NAME, "missing body", new RuntimeException().getStackTrace());
+      }
+      if (!tokens.curr().eq(sym(RBRACE))) {
+        tokens.prev();
+        ctx.errors.missingExpected(
+            IF_BLOCK_LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+      } else {
+        tokens.next();
+      }
+    } else {
+      // Single-statement if body (no braces)
+      Statement stmt = ctx.stmtParser.parse(tokens);
+      if (stmt != null) {
+        body = new ArrayList<>();
+        body.add(stmt);
+      } else {
+        ctx.errors.addError(
+            IF_BLOCK_LOG_NAME, "missing body", new RuntimeException().getStackTrace());
+      }
     }
     if (condition != null & body != null) {
       return new IfBlock(condition, body);
@@ -121,27 +128,34 @@ public class IfParser implements ProdParser<IfStatement> {
   }
 
   IfBlock parseElseBlock(TokenList tokens) {
-    List<Statement> body;
+    List<Statement> body = null;
     if (!tokens.curr().eq(keyword(ELSE))) {
       return null;
     }
     tokens.next();
-    if (!tokens.curr().eq(sym(LBRACE))) {
-      tokens.prev();
-      ctx.errors.missingExpected(
-          ELSE_BLOCK_LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
-    }
-    tokens.next();
-    body = ctx.stmtParser.parseStmtSeq(tokens);
-    if (body == null) {
-      ctx.errors.addError(LOG_NAME, "missing body", new RuntimeException().getStackTrace());
-    }
-    if (!tokens.curr().eq(sym(RBRACE))) {
-      tokens.prev();
-      ctx.errors.missingExpected(
-          ELSE_BLOCK_LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
-    } else {
+    if (tokens.curr().eq(sym(LBRACE))) {
       tokens.next();
+      body = ctx.stmtParser.parseStmtSeq(tokens);
+      if (body == null) {
+        ctx.errors.addError(LOG_NAME, "missing body", new RuntimeException().getStackTrace());
+      }
+      if (!tokens.curr().eq(sym(RBRACE))) {
+        tokens.prev();
+        ctx.errors.missingExpected(
+            ELSE_BLOCK_LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+      } else {
+        tokens.next();
+      }
+    } else {
+      // Single-statement else body (no braces)
+      Statement stmt = ctx.stmtParser.parse(tokens);
+      if (stmt != null) {
+        body = new ArrayList<>();
+        body.add(stmt);
+      } else {
+        ctx.errors.addError(LOG_NAME, "missing body", new RuntimeException().getStackTrace());
+        body = null;
+      }
     }
     if (body != null) {
       return new IfBlock(null, body);

@@ -1,7 +1,6 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class IfBlock {
   public List<Statement> body;
@@ -52,16 +51,6 @@ public class IfBlock {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder();
-    if (cond == null) {
-      strBuilder.append("else{");
-    } else {
-      strBuilder.append("if(");
-      strBuilder.append(cond);
-      strBuilder.append("){");
-    }
-    strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append("}");
-    return strBuilder.toString();
+    return "IfBlock";
   }
 }

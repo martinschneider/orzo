@@ -3,7 +3,6 @@ package io.github.martinschneider.orzo.parser.productions;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Method implements ClassMember {
 
@@ -91,21 +90,6 @@ public class Method implements ClassMember {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder();
-    strBuilder.append(accFlags.stream().map(x -> x.name()).collect(Collectors.joining(" ")));
-    if (strBuilder.length() > 0) {
-      strBuilder.append(' ');
-    }
-    strBuilder.append(type);
-    strBuilder.append(' ');
-    strBuilder.append(name);
-    strBuilder.append(", args{");
-    strBuilder.append(
-        args.stream().map(x -> x.name.val.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append("}");
-    strBuilder.append(", code{");
-    strBuilder.append(body.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append("}");
-    return strBuilder.toString();
+    return type;
   }
 }

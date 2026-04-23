@@ -1,7 +1,12 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
@@ -47,6 +52,18 @@ public class ConstructorCallParser implements ProdParser<ConstructorCall> {
           new RuntimeException().getStackTrace());
       tokens.prev();
       return null;
+    }
+    // Skip generic type arguments e.g. <T>, <K, V>, <>, <List<T>>
+    if (tokens.curr().eq(op(LESS))) {
+      int depth = 1;
+      while (depth > 0) {
+        tokens.next();
+        if (tokens.curr().eq(op(LESS))) depth++;
+        else if (tokens.curr().eq(op(GREATER))) depth--;
+        else if (tokens.curr().eq(op(RSHIFT))) depth = Math.max(0, depth - 2);
+        else if (tokens.curr().eq(op(RSHIFTU))) depth = Math.max(0, depth - 3);
+      }
+      tokens.next();
     }
     List<Expression> args = ctx.methodCallParser.parseArgs(tokens);
     if (args != null) {

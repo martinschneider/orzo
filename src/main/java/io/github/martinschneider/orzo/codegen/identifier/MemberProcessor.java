@@ -7,15 +7,18 @@ import static java.util.Collections.emptyList;
 import static java.util.List.of;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
+import io.github.martinschneider.orzo.codegen.FieldProcessor;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
+import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class MemberProcessor {
 
@@ -54,6 +57,31 @@ public class MemberProcessor {
         }
       }
     }
+    // Add inherited instance fields from parent class so they are accessible in this class
+    String baseClass = ctx.clazz.baseClass;
+    if (baseClass != null && !Clazz.JAVA_LANG_OBJECT.equals(baseClass)) {
+      FieldProcessor fieldProcessor = new FieldProcessor();
+      Map<String, FieldProcessor.InstanceField> parentFields =
+          fieldProcessor.getInstanceFieldMap(baseClass, ctx.allClazzes);
+      for (Map.Entry<String, FieldProcessor.InstanceField> entry : parentFields.entrySet()) {
+        String fieldName = entry.getKey();
+        if (!ctx.classIdMap.variables.fieldMap.containsKey(fieldName)) {
+          FieldProcessor.InstanceField inheritedField = entry.getValue();
+          String fieldType = inheritedField.fieldType;
+          ctx.classIdMap.variables.putInheritedField(
+              fieldName,
+              new VariableInfo(
+                  fieldName,
+                  fieldType,
+                  null,
+                  emptyList(),
+                  true,
+                  ctx.constPool.indexOf(
+                      CONSTANT_FIELDREF, ctx.clazz.fqn('/'), fieldName, TypeUtils.descr(fieldType)),
+                  null));
+        }
+      }
+    }
   }
 
   // add all local vars to the constant pool and idMap
@@ -62,6 +90,9 @@ public class MemberProcessor {
       if (stmt instanceof ParallelDeclaration) {
         ParallelDeclaration pDecl = (ParallelDeclaration) stmt;
         for (Declaration decl : pDecl.declarations) {
+          if (decl.isField) {
+            continue; // field declarations are in fieldMap, not localMap
+          }
           ctx.classIdMap.variables.putLocal(
               decl.name,
               new VariableInfo(

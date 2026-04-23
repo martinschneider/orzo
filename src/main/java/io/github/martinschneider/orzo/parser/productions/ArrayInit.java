@@ -1,7 +1,6 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ArrayInit extends Expression {
   public String type;
@@ -44,25 +43,14 @@ public class ArrayInit extends Expression {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder("new ");
-    strBuilder.append(type);
-    for (Expression dim : dims) {
-      strBuilder.append('[');
-      strBuilder.append(dim);
-      strBuilder.append(']');
-    }
-    strBuilder.append('{');
-    strBuilder.append(vals.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append('}');
-    return strBuilder.toString();
+    return type;
   }
 
   public String typeDescr() {
-    StringBuilder strBuilder = new StringBuilder();
+    String result = type;
     for (int i = 0; i < dims.size(); i++) {
-      strBuilder.append('[');
+      result = "[" + result;
     }
-    strBuilder.append(type);
-    return strBuilder.toString();
+    return result;
   }
 }

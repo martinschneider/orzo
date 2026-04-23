@@ -10,7 +10,6 @@ import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Expression {
   public List<Token> tokens = new ArrayList<>();
@@ -84,13 +83,6 @@ public class Expression {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder();
-    if (cast != null) {
-      strBuilder.append('(');
-      strBuilder.append(cast.name);
-      strBuilder.append(')');
-    }
-    strBuilder.append(tokens.stream().map(Object::toString).collect(Collectors.joining(",")));
-    return strBuilder.toString();
+    return "Expression";
   }
 }

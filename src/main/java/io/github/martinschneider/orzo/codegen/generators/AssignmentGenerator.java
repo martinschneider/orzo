@@ -35,8 +35,8 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       Identifier first = assignment.left.get(0);
       Identifier second = assignment.left.get(1);
 
-      if ("this".equals(first.val.toString())) {
-        // Handle this.field = value as a single field assignment
+      if ("this".equals(first.val.toString()) || "super".equals(first.val.toString())) {
+        // Handle this.field = value (or super.field = value) as a single field assignment
         return handleThisFieldAssignment(out, method, second, assignment.right.get(0));
       }
     }
@@ -58,13 +58,16 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       Identifier id = left;
       boolean thisLoaded = false;
       while (id != null) {
-        // TODO: currently, we do not support fields and local variables having the same name :-(
-        // TODO: properly handle all classes
-        if ("this".equals(id.val)) {
+        if ("this".equals(id.val) || "super".equals(id.val)) {
           ctx.loadGen.loadReference(out, (short) 0);
           thisLoaded = true;
         } else {
-          VariableInfo varInfo = ctx.classIdMap.variables.get(id);
+          // When 'this' was loaded, look up the field directly to avoid the local/field name
+          // collision (e.g. constructor param 'type' vs field 'type')
+          VariableInfo varInfo =
+              thisLoaded
+                  ? ctx.classIdMap.variables.fieldMap.get(id.val.toString())
+                  : ctx.classIdMap.variables.get(id);
           if (varInfo == null) {
             ctx.errors.addError(
                 LOG_NAME,
@@ -202,8 +205,8 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
     // Evaluate the right-hand side expression
     String fieldType = null;
 
-    // Find the field info to get the correct type
-    VariableInfo fieldInfo = ctx.classIdMap.variables.get(fieldName);
+    // Find the field info to get the correct type (use fieldMap directly to avoid local shadowing)
+    VariableInfo fieldInfo = ctx.classIdMap.variables.fieldMap.get(fieldName.val.toString());
     if (fieldInfo != null) {
       fieldType = fieldInfo.type;
     }
