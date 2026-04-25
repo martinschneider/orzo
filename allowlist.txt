@@ -1,64 +1,39 @@
 src/main/java/io/github/martinschneider/orzo/codegen/ArrayTypes.java
 src/main/java/io/github/martinschneider/orzo/codegen/ByteUtils.java
-src/main/java/io/github/martinschneider/orzo/codegen/constants/Constant.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantClass.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantDouble.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantFieldref.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantFloat.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantInteger.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantInterfaceMethodref.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/Constant.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantLong.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantMethodref.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantNameAndType.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantString.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantTypes.java
+src/main/java/io/github/martinschneider/orzo/codegen/DynamicByteArray.java
+src/main/java/io/github/martinschneider/orzo/codegen/generators/DoNothingGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/HasOutput.java
 src/main/java/io/github/martinschneider/orzo/codegen/identifier/IdentifierInfo.java
 src/main/java/io/github/martinschneider/orzo/codegen/OpCodes.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Keywords.java
+src/main/java/io/github/martinschneider/orzo/lexer/tokens/Num.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Operators.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Scopes.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Symbols.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/AccessFlag.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/ClassMember.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/EmptyStatement.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/Import.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/Selector.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/FieldSelector.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/LoopStatement.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/Statement.java
-# super(args) call not yet supported
-#src/main/java/io/github/martinschneider/orzo/parser/productions/Constructor.java
-# generics not supported: T type param becomes io.github.martinschneider.orzo.parser.T
-#src/main/java/io/github/martinschneider/orzo/parser/ProdParser.java
-# ternary operator not supported
-#src/main/java/io/github/martinschneider/orzo/parser/StatementParser.java
-src/main/java/io/github/martinschneider/orzo/util/Pair.java  
-
-src/main/java/io/github/martinschneider/orzo/codegen/ByteUtils2.java
-src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantDouble.java
-src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantLong.java
-
-src/main/java/io/github/martinschneider/orzo/codegen/DynamicByteArray.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/DoNothingGenerator.java
-src/main/java/io/github/martinschneider/orzo/lexer/tokens/Num.java
-# TokenList.curr()/next() not in method map
-#src/main/java/io/github/martinschneider/orzo/parser/ArrayDefParser.java
-
-# requires support to call super in another class than java.lang.Object
-#src/main/java/io/github/martinschneider/orzo/lexer/tokens/EOF.java
-
 src/main/java/io/github/martinschneider/orzo/parser/productions/Argument.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/ArraySelector.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/ClassMember.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/DoStatement.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/WhileStatement.java
-#src/main/java/io/github/martinschneider/orzo/parser/productions/IfStatement.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/EmptyStatement.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/FieldSelector.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/ForStatement.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/IfBlock.java
-#src/main/java/io/github/martinschneider/orzo/parser/productions/Expression.java
-# Declaration.java: Objects.hash/Objects.equals not supported
-#src/main/java/io/github/martinschneider/orzo/parser/productions/Declaration.java
-# MethodCall.java: super.hashCode/super.equals not supported
-#src/main/java/io/github/martinschneider/orzo/parser/productions/MethodCall.java
-# Method.java: args.size(), "arg"+i string+int concat not supported
-#src/main/java/io/github/martinschneider/orzo/parser/productions/Method.java
-# ArrayInit.java: super.hashCode/super.equals not supported
-#src/main/java/io/github/martinschneider/orzo/parser/productions/ArrayInit.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/Import.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/LoopStatement.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/Selector.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/Statement.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/WhileStatement.java
+src/main/java/io/github/martinschneider/orzo/util/Pair.java
