@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# This will re-compile all white-listed classes with Orzo (multiple times).
+# This will re-compile all allow-listed classes with Orzo (multiple times).
 # This should run after the unit and before the integration tests, so that the integration tests can verify the self-compilation functionality.
-# After Orzo is able to compile a large enough percentage of itself, we can move from a whitelist to a blacklist approach. 
+# After Orzo is able to compile a large enough percentage of itself, we can move from an allowlist to a denylist approach.
 
 # Function to remove comments and empty lines from Java files
 clean_java_file() {
@@ -31,7 +31,7 @@ find .tmp/java -name "*.java" | while read -r file; do
     mv "$temp_file" "$file"
 done
 
-done=$(grep -v -E '^#|^$' whitelist.txt | wc -l | xargs)
+done=$(grep -v -E '^#|^$' allowlist.txt | wc -l | xargs)
 total=$(find .tmp/java -name "*.java" | wc -l | xargs)
 
 while read -r file ; do 
@@ -39,7 +39,7 @@ while read -r file ; do
     if [ -f "$clean_file" ]; then
         ((doneLOC+=$(cat "$clean_file" | wc -l)))
     fi
-done < <(grep -v -E '^#|^$' whitelist.txt)
+done < <(grep -v -E '^#|^$' allowlist.txt)
 
 while read -r file ; do ((totalLOC+=$(cat "$file" | wc -l))); done < <(find .tmp/java -name "*.java")
 
@@ -49,10 +49,10 @@ javacSize=$(du -sb target/classes | awk '{print $1}')
 echo "Recompiling $done/$total files with Orzo ($percentage% of files, $percentageLOC% of LOC):"
 echo $percentageLOC > progress
 
-grep -v -E '^#|^$' whitelist.txt | sed 's|src/main/java|.tmp/java|'
+grep -v -E '^#|^$' allowlist.txt | sed 's|src/main/java|.tmp/java|'
 for i in {1..3}
 do
-  java -jar target/orzo.jar $(grep -v -E '^#|^$' whitelist.txt | sed 's|src/main/java|.tmp/java|' | tr '\n' ' ') -d target/classes
+  java -jar target/orzo.jar $(grep -v -E '^#|^$' allowlist.txt | sed 's|src/main/java|.tmp/java|' | tr '\n' ' ') -d target/classes
   jar cfe target/orzo.jar io.github.martinschneider.orzo.Orzo -C target/classes .
   orzoSize=$(du -sb target/classes | awk '{print $1}')
   percentage=$(printf %0.2f $(echo "100* $orzoSize/$javacSize" | bc -l))
