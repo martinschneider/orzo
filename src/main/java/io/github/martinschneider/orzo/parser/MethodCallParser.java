@@ -86,7 +86,7 @@ public class MethodCallParser implements ProdParser<MethodCall> {
         tokens.setIdx(idx);
         return null;
       }
-      return new MethodCall(name.toString(), parameters, arrSel).wLoc(idToken.loc);
+      return new MethodCall(name.toString(), parameters, arrSel);
     }
     return null;
   }

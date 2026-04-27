@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.util.ObjectUtils;
 
 public class Argument {
   public Identifier name;
@@ -51,6 +52,6 @@ public class Argument {
 
   @Override
   public String toString() {
-    return type;
+    return ObjectUtils.toString(this);
   }
 }

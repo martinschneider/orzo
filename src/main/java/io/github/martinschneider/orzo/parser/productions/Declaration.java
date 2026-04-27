@@ -1,8 +1,8 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.util.ObjectUtils;
 import java.util.List;
-import java.util.Objects;
 
 public class Declaration {
   public List<AccessFlag> accFlags;
@@ -26,26 +26,17 @@ public class Declaration {
   }
 
   @Override
-  public String toString() {
-    return type;
-  }
-
-  @Override
   public int hashCode() {
-    return Objects.hash(accFlags, arrDim, isField, name, type, val);
+    return ObjectUtils.hashCode(this);
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (obj == null) return false;
-    if (getClass() != obj.getClass()) return false;
-    Declaration other = (Declaration) obj;
-    return Objects.equals(accFlags, other.accFlags)
-        && arrDim == other.arrDim
-        && isField == other.isField
-        && Objects.equals(name, other.name)
-        && Objects.equals(type, other.type)
-        && Objects.equals(val, other.val);
+    return ObjectUtils.equals(this, obj);
+  }
+
+  @Override
+  public String toString() {
+    return ObjectUtils.toString(this);
   }
 }

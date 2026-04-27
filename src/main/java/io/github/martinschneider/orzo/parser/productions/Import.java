@@ -1,5 +1,7 @@
 package io.github.martinschneider.orzo.parser.productions;
 
+import io.github.martinschneider.orzo.util.ObjectUtils;
+
 public class Import {
   public String id;
   public boolean isStatic;
@@ -11,6 +13,6 @@ public class Import {
 
   @Override
   public String toString() {
-    return id;
+    return ObjectUtils.toString(this);
   }
 }

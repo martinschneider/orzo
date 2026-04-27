@@ -41,11 +41,10 @@ public class CGContext {
   public InvokeGenerator invokeGen;
   public OperandStack opStack;
   public CompilerErrors errors;
-  public CodeGenerator codeGen;
   public MemberProcessor memberProc;
   public GlobalIdentifierMap classIdMap;
 
-  public void init(CompilerErrors errors, CodeGenerator codeGen, int idx, List<Clazz> clazzes) {
+  public void init(CompilerErrors errors, int idx, List<Clazz> clazzes) {
     clazz = clazzes.get(idx);
     allClazzes = clazzes;
     this.errors = errors;
@@ -65,7 +64,6 @@ public class CGContext {
     loadGen = new LoadGenerator(this);
     storeGen = new StoreGenerator(this);
     opStack = new OperandStack();
-    this.codeGen = codeGen;
     memberProc = new MemberProcessor(this);
     classIdMap = new GlobalIdentifierMap();
     classIdMap.variables = new IdentifierMap();

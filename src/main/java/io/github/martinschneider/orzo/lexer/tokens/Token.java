@@ -4,7 +4,6 @@ import java.math.BigInteger;
 
 public class Token {
   public Object val;
-  public Location loc;
 
   public Token(Object val) {
     this.val = val;

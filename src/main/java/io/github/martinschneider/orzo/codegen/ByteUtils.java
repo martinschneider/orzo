@@ -28,26 +28,6 @@ public class ByteUtils {
     };
   }
 
-  public static byte[] combine(byte left, byte right) {
-    return combine(new byte[] {left}, new byte[] {right});
-  }
-
-  public static byte[] combine(byte left, byte[] right) {
-    return combine(new byte[] {left}, right);
-  }
-
-  public static byte[] combine(byte[] left, byte right) {
-    return combine(left, new byte[] {right});
-  }
-
-  public static byte[] combine(byte left, short right) {
-    return combine(left, shortToByteArray(right));
-  }
-
-  public static byte[] combine(short left, byte right) {
-    return combine(shortToByteArray(left), right);
-  }
-
   public static byte[] combine(byte[] left, byte[] right) {
     byte[] result = new byte[left.length + right.length];
     for (int i = 0; i < left.length; i++) {

@@ -5,12 +5,6 @@ public class Operator extends Sym {
     super(val);
   }
 
-  @Override
-  public Operator wLoc(Location loc) {
-    this.loc = loc;
-    return this;
-  }
-
   public Operators opValue() {
     return ((Operators) val);
   }

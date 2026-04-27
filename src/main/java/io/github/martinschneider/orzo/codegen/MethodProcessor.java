@@ -6,7 +6,6 @@ import static java.util.List.of;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
-import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
@@ -14,7 +13,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class MethodProcessor {
   public Map<String, Method> getMethodMap(Clazz currentClazz, List<Clazz> clazzes) {
@@ -29,8 +27,6 @@ public class MethodProcessor {
 
   private Map<String, Method> addImported(
       Map<String, Method> methodMap, Clazz currentClazz, List<Clazz> clazzes) {
-    List<Import> imports = currentClazz.imports;
-    List<String> importStrings = imports.stream().map(x -> x.id).collect(Collectors.toList());
     for (Clazz clazz : clazzes) {
       if (!currentClazz.equals(clazz)) {
         for (Method method : clazz.methods) {
@@ -60,7 +56,8 @@ public class MethodProcessor {
             Character.class,
             Integer.class,
             Long.class,
-            String.class)) {
+            String.class,
+            io.github.martinschneider.orzo.util.ObjectUtils.class)) {
       for (java.lang.reflect.Method m : clazz.getMethods()) {
         if (Modifier.isPublic(m.getModifiers()) && Modifier.isStatic(m.getModifiers())) {
           List<Argument> args = mapArgs(m.getParameters());

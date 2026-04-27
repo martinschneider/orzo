@@ -43,6 +43,24 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class TypeUtils {
+  public static boolean isPrimitive(String type) {
+    if (type == null) return false;
+    switch (type) {
+      case "int":
+      case "long":
+      case "byte":
+      case "short":
+      case "char":
+      case "float":
+      case "double":
+      case "boolean":
+      case "void":
+        return true;
+      default:
+        return false;
+    }
+  }
+
   public static String descr(String type) {
     return descr(type, 0);
   }
@@ -86,6 +104,8 @@ public class TypeUtils {
       return type.replaceAll(VOID, "V");
     } else if (type.contains(BOOLEAN)) {
       return type.replaceAll(BOOLEAN, "Z");
+    } else if (type.equals("Object")) {
+      return "Ljava/lang/Object;";
     } else {
       return "L" + type.replaceAll("\\.", "/") + ";";
     }
@@ -180,19 +200,30 @@ public class TypeUtils {
       case STRING:
         return List.of("Ljava/lang/String;");
       case INT:
-        return List.of(INT, LONG, DOUBLE);
+        return List.of(INT, LONG, DOUBLE, "java.lang.Object", "Object");
       case BYTE:
-        return List.of(BYTE, SHORT, INT, LONG);
+        return List.of(BYTE, SHORT, INT, LONG, "java.lang.Object", "Object");
       case SHORT:
-        return List.of(SHORT, INT, LONG);
+        return List.of(SHORT, INT, LONG, "java.lang.Object", "Object");
       case LONG:
-        return List.of(LONG);
+        return List.of(LONG, "java.lang.Object", "Object");
       case DOUBLE:
-        return List.of(DOUBLE);
+        return List.of(DOUBLE, "java.lang.Object", "Object");
       case FLOAT:
-        return List.of(FLOAT, DOUBLE);
+        return List.of(FLOAT, DOUBLE, "java.lang.Object", "Object");
       case CHAR:
-        return List.of(CHAR, INT, LONG);
+        return List.of(CHAR, INT, LONG, "java.lang.Object", "Object");
+      case BOOLEAN:
+        return List.of(BOOLEAN, "java.lang.Object", "Object");
+    }
+    // Reference types (including simple "Object" or fully-qualified "java.lang.Object")
+    // are assignable to java.lang.Object for method lookup purposes.
+    if (type != null && !type.isEmpty()) {
+      if (type.equals("java.lang.Object")
+          || type.equals("Object")
+          || type.equals("java/lang/Object")) {
+        return List.of("java.lang.Object");
+      }
     }
     return emptyList();
   }

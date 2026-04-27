@@ -1,7 +1,6 @@
 package io.github.martinschneider.orzo.util;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.str;
 import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.identifier.IdentifierMap;
@@ -214,6 +213,16 @@ public class FactoryHelper {
   }
 
   public static Method method(
+      String fqClassName,
+      List<AccessFlag> accFlags,
+      String type,
+      Identifier name,
+      List<Argument> arguments,
+      List<Statement> body) {
+    return new Method(fqClassName, accFlags, type, name, arguments, body);
+  }
+
+  public static Method method(
       List<AccessFlag> accFlags,
       String type,
       Identifier name,
@@ -281,7 +290,4 @@ public class FactoryHelper {
   public static <T> Stream<T> stream(T... t) {
     return Stream.of(t);
   }
-
-  // TODO this is currently unused
-  private static final Token[] TOKENS = new Token[] {str("test")};
 }

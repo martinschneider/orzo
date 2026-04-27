@@ -2,8 +2,10 @@ package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.ARRAYLENGTH;
 import static io.github.martinschneider.orzo.codegen.OpCodes.CHECKCAST;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKESTATIC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.WIDE;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
+import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.CAST_OPS;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.CAST_OPS_1;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
@@ -49,12 +51,63 @@ public class BasicGenerator {
   public void convert1(DynamicByteArray out, String from, String to) {
     // TODO: array casts
     if (from != null && to != null) {
-      addCastingErrors(from, to);
-      out.write(
-          CAST_OPS_1.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]));
+      if (PRIMITIVE_TYPES.contains(from)
+          && !from.equals("void")
+          && !PRIMITIVE_TYPES.contains(to)
+          && !to.startsWith("[")) {
+        autobox(out, from);
+      } else {
+        addCastingErrors(from, to);
+        out.write(
+            CAST_OPS_1.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]));
+      }
     }
     ctx.opStack.pop();
     ctx.opStack.push(to);
+  }
+
+  private void autobox(DynamicByteArray out, String primitiveType) {
+    String wrapperClass;
+    String descriptor;
+    switch (primitiveType) {
+      case "boolean":
+        wrapperClass = "java/lang/Boolean";
+        descriptor = "(Z)Ljava/lang/Boolean;";
+        break;
+      case "int":
+        wrapperClass = "java/lang/Integer";
+        descriptor = "(I)Ljava/lang/Integer;";
+        break;
+      case "long":
+        wrapperClass = "java/lang/Long";
+        descriptor = "(J)Ljava/lang/Long;";
+        break;
+      case "double":
+        wrapperClass = "java/lang/Double";
+        descriptor = "(D)Ljava/lang/Double;";
+        break;
+      case "float":
+        wrapperClass = "java/lang/Float";
+        descriptor = "(F)Ljava/lang/Float;";
+        break;
+      case "char":
+        wrapperClass = "java/lang/Character";
+        descriptor = "(C)Ljava/lang/Character;";
+        break;
+      case "byte":
+        wrapperClass = "java/lang/Byte";
+        descriptor = "(B)Ljava/lang/Byte;";
+        break;
+      case "short":
+        wrapperClass = "java/lang/Short";
+        descriptor = "(S)Ljava/lang/Short;";
+        break;
+      default:
+        return;
+    }
+    ctx.constPool.addClass(wrapperClass);
+    out.write(INVOKESTATIC);
+    out.write(ctx.constPool.indexOf(CONSTANT_METHODREF, wrapperClass, "valueOf", descriptor));
   }
 
   private void addCastingErrors(String from, String to) {

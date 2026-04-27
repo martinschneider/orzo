@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.parser.productions;
 
+import io.github.martinschneider.orzo.util.ObjectUtils;
 import java.util.List;
 
 public class ParallelDeclaration implements Statement, ClassMember {
@@ -11,36 +12,16 @@ public class ParallelDeclaration implements Statement, ClassMember {
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((declarations == null) ? 0 : declarations.hashCode());
-    return result;
+    return ObjectUtils.hashCode(this);
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    ParallelDeclaration other = (ParallelDeclaration) obj;
-    if (declarations == null) {
-      if (other.declarations != null) {
-        return false;
-      }
-    } else if (!declarations.equals(other.declarations)) {
-      return false;
-    }
-    return true;
+    return ObjectUtils.equals(this, obj);
   }
 
   @Override
   public String toString() {
-    return "[declarations=" + declarations + "]";
+    return ObjectUtils.toString(this);
   }
 }

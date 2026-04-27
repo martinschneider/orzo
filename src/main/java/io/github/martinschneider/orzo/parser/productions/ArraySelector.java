@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.parser.productions;
 
+import io.github.martinschneider.orzo.util.ObjectUtils;
 import java.util.List;
 
 public class ArraySelector extends Selector {
@@ -11,36 +12,16 @@ public class ArraySelector extends Selector {
 
   @Override
   public int hashCode() {
-    int prime = 31;
-    int result = 1;
-    result = prime * result + ((exprs == null) ? 0 : exprs.hashCode());
-    return result;
+    return ObjectUtils.hashCode(this);
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    ArraySelector other = (ArraySelector) obj;
-    if (exprs == null) {
-      if (other.exprs != null) {
-        return false;
-      }
-    } else if (!exprs.equals(other.exprs)) {
-      return false;
-    }
-    return true;
+    return ObjectUtils.equals(this, obj);
   }
 
   @Override
   public String toString() {
-    return "ArraySelector";
+    return ObjectUtils.toString(this);
   }
 }

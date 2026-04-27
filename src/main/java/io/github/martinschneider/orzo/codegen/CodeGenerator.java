@@ -11,12 +11,9 @@ import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.List;
 
 public class CodeGenerator {
-  // Java 21 removed the type-inferencing verifier for class file version 50 (Java 6),
-  // requiring StackMapTable for all branching bytecode. Version 49 (Java 5) still uses
-  // the type-inferencing verifier and does not require StackMapTable.
-  // TODO: implement StackMapTable attribute and upgrade back to 50+:
+  // TODO: implement StackMapTable attribute
   // https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4
-  private static final short JAVA_CLASS_MAJOR_VERSION = 49;
+  private static final short JAVA_CLASS_MAJOR_VERSION = 50;
   private static final short JAVA_CLASS_MINOR_VERSION = 0;
   private CGContext ctx;
   private List<Output> outputs;
@@ -84,7 +81,7 @@ public class CodeGenerator {
 
   private void init(int idx) {
     out = outputs.get(idx);
-    ctx.init(errors, this, idx, clazzes);
+    ctx.init(errors, idx, clazzes);
     ctx.constPool.addUtf8("SourceFile");
     ctx.constPool.addUtf8(ctx.clazz.sourceFile);
   }

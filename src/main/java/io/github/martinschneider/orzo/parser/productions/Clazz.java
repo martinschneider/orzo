@@ -3,10 +3,9 @@ package io.github.martinschneider.orzo.parser.productions;
 import static io.github.martinschneider.orzo.parser.productions.Method.CONSTRUCTOR_NAME;
 
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import io.github.martinschneider.orzo.util.ObjectUtils;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 public class Clazz {
   public static final String JAVA_LANG_OBJECT = "java.lang.Object";
@@ -50,37 +49,12 @@ public class Clazz {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        baseClass,
-        fields,
-        imports,
-        interfaces,
-        isEnum,
-        isInterface,
-        methods,
-        name,
-        packageName,
-        scope,
-        sourceFile);
+    return ObjectUtils.hashCode(this);
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (obj == null) return false;
-    if (getClass() != obj.getClass()) return false;
-    Clazz other = (Clazz) obj;
-    return Objects.equals(baseClass, other.baseClass)
-        && Objects.equals(fields, other.fields)
-        && Objects.equals(imports, other.imports)
-        && Objects.equals(interfaces, other.interfaces)
-        && isEnum == other.isEnum
-        && isInterface == other.isInterface
-        && Objects.equals(methods, other.methods)
-        && Objects.equals(name, other.name)
-        && Objects.equals(packageName, other.packageName)
-        && Objects.equals(scope, other.scope)
-        && Objects.equals(sourceFile, other.sourceFile);
+    return ObjectUtils.equals(this, obj);
   }
 
   public String fqn() {
@@ -99,32 +73,7 @@ public class Clazz {
 
   @Override
   public String toString() {
-    StringBuilder strBuilder = new StringBuilder();
-    if (isInterface) {
-      strBuilder.append("interface ");
-    } else if (isEnum) {
-      strBuilder.append("enum ");
-    } else {
-      strBuilder.append("class ");
-    }
-    if (packageName != null && !packageName.isEmpty()) {
-      strBuilder.append(packageName);
-      strBuilder.append('.');
-    }
-    strBuilder.append(name.toString());
-    strBuilder.append(", implements[");
-    strBuilder.append(interfaces.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    if (baseClass != JAVA_LANG_OBJECT) {
-      strBuilder.append("], extends[");
-      strBuilder.append(baseClass);
-    }
-    strBuilder.append("], imports[");
-    strBuilder.append(imports.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append("], methods[");
-    strBuilder.append(methods.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    strBuilder.append("], fields[");
-    strBuilder.append(fields.stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
-    return strBuilder.toString();
+    return ObjectUtils.toString(this);
   }
 
   public List<Method> getConstructors() {

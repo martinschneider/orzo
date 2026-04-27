@@ -71,14 +71,18 @@ public class NumExprTypeDecider {
         }
       } else if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
-        VariableInfo var = ctx.classIdMap.variables.get(token);
-        if (var != null) {
-          if (id.arrSel != null) {
-            types.add(var.arrType);
-          } else if (var.arrType != null) {
-            types.add("[" + var.arrType);
-          } else {
-            types.add(var.type);
+        if ("this".equals(id.val.toString())) {
+          types.add("java.lang.Object");
+        } else {
+          VariableInfo var = ctx.classIdMap.variables.get(token);
+          if (var != null) {
+            if (id.arrSel != null) {
+              types.add(var.arrType);
+            } else if (var.arrType != null) {
+              types.add("[" + var.arrType);
+            } else {
+              types.add(var.type);
+            }
           }
         }
       }
@@ -109,6 +113,12 @@ public class NumExprTypeDecider {
       return BYTE;
     } else if (types.contains(STRING)) {
       return STRING;
+    }
+    // For reference types not matched above, return as-is rather than defaulting to INT
+    for (String type : types) {
+      if (type != null && !type.isEmpty()) {
+        return type;
+      }
     }
     return INT;
   }

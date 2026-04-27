@@ -163,7 +163,7 @@ public class EnumGeneratorTest {
 
     // Setup enum class and context
     Clazz enumClazz = createColorEnum();
-    target.ctx.init(new CompilerErrors(), null, 0, list(enumClazz));
+    target.ctx.init(new CompilerErrors(), 0, list(enumClazz));
 
     // Create enum method
     Method enumMethod = createEnumMethod(methodName, signature, methodArgs);

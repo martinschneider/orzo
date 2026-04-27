@@ -22,10 +22,8 @@ public class ParserErrorTest {
 
   private static Stream<Arguments> testClass() throws IOException {
     return stream(
-        args("public class Martin {", list(err("EOF parse class: expected RBRACE but found EOF"))),
-        args(
-            "public class Martin }",
-            list(err("L1:21 parse class: expected LBRACE but found RBRACE"))));
+        args("public class Martin {", list(err("parse class: expected RBRACE but found EOF"))),
+        args("public class Martin }", list(err("parse class: expected LBRACE but found RBRACE"))));
   }
 
   @ParameterizedTest

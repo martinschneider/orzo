@@ -1,7 +1,7 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
-import io.github.martinschneider.orzo.lexer.tokens.Location;
+import io.github.martinschneider.orzo.util.ObjectUtils;
 import java.util.List;
 
 // extending Token is not the most elegant solution but it helps with parsing method calls as part
@@ -21,18 +21,9 @@ public class MethodCall extends Identifier implements Statement {
     this.arrSel = arrSel;
   }
 
-  public MethodCall wLoc(Location loc) {
-    this.loc = loc;
-    return this;
-  }
-
   @Override
   public int hashCode() {
-    int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + ((name == null) ? 0 : name.hashCode());
-    result = prime * result + ((params == null) ? 0 : params.hashCode());
-    return result;
+    return ObjectUtils.hashCode(this);
   }
 
   @Override
@@ -66,6 +57,6 @@ public class MethodCall extends Identifier implements Statement {
 
   @Override
   public String toString() {
-    return name;
+    return ObjectUtils.toString(this);
   }
 }

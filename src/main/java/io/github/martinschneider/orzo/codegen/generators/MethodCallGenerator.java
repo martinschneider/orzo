@@ -20,9 +20,11 @@ import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
+import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -91,7 +93,6 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       ctx.errors.addError(
           LOGGER_NAME,
           (ctx.clazz != null ? ctx.clazz.sourceFile + " " : "")
-              + methodCall.loc.toString()
               + " missing method declaration \""
               + methodName
               + types
@@ -118,9 +119,14 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       }
     }
     for (int i = 0; i < types.size(); i++) {
-      ExpressionResult exprResult =
-          ctx.exprGen.eval(out, method.args.get(i).type, methodCall.params.get(i));
-      ctx.basicGen.convert1(out, exprResult.type, method.args.get(i).type);
+      String srcType = types.get(i);
+      String tgtType = method.args.get(i).type;
+      // When autoboxing (primitive → reference): use source type for eval so that
+      // PushGenerator emits correct bytecode for numeric literals
+      String evalType =
+          TypeUtils.isPrimitive(srcType) && !TypeUtils.isPrimitive(tgtType) ? srcType : tgtType;
+      ExpressionResult exprResult = ctx.exprGen.eval(out, evalType, methodCall.params.get(i));
+      ctx.basicGen.convert1(out, exprResult.type, tgtType);
     }
     if (isStatic) {
       ctx.invokeGen.invokeStatic(out, method);
@@ -133,7 +139,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, MethodCall methodCall) {
     if ("super".equals(methodCall.name.toString())) {
-      callSuperConstr(out);
+      if (methodCall.params != null && !methodCall.params.isEmpty()) {
+        callSuperConstrWithArgs(out, methodCall);
+      } else {
+        callSuperConstr(out);
+      }
     } else if ("System.out.println".equals(methodCall.name.toString())) {
       for (Expression param : methodCall.params) {
         ctx.invokeGen.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
@@ -163,6 +173,79 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
             : "java/lang/Object";
     ctx.invokeGen.invokeSpecial(out, defaultConstr(superClass));
     return out;
+  }
+
+  public HasOutput callSuperConstrWithArgs(DynamicByteArray out, MethodCall methodCall) {
+    ctx.loadGen.loadReference(out, (short) 0);
+    ctx.opStack.push(SHORT);
+    String superClass =
+        (ctx.clazz.baseClass != null && !ctx.clazz.baseClass.equals("java.lang.Object"))
+            ? ctx.clazz.baseClass.replace('.', '/')
+            : "java/lang/Object";
+    // Phase 1: collect argument types without emitting bytecode
+    List<String> exprTypes = new ArrayList<>();
+    for (Expression param : methodCall.params) {
+      exprTypes.add(new NumExprTypeDecider(ctx).getType(ctx.classIdMap, param));
+    }
+    // Find constructor using type information
+    Method superConstr = ctx.exprGen.findMatchingConstructor(superClass, exprTypes);
+    if (superConstr == null) {
+      superConstr = findConstructorViaReflection(superClass, exprTypes.size());
+    }
+    if (superConstr == null) {
+      List<Argument> constrArgs = new ArrayList<>();
+      for (int i = 0; i < exprTypes.size(); i++) {
+        constrArgs.add(
+            new Argument(
+                exprTypes.get(i), io.github.martinschneider.orzo.lexer.tokens.Token.id("p" + i)));
+      }
+      superConstr =
+          new Method(
+              superClass.replace('/', '.'),
+              List.of(AccessFlag.ACC_PUBLIC),
+              "void",
+              io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
+              constrArgs,
+              null);
+    }
+    // Phase 2: eval each argument and box if needed
+    for (int i = 0; i < methodCall.params.size(); i++) {
+      String srcType = exprTypes.get(i);
+      String tgtType = superConstr.args.get(i).type;
+      String evalType =
+          TypeUtils.isPrimitive(srcType) && !TypeUtils.isPrimitive(tgtType) ? srcType : tgtType;
+      ExpressionResult exprResult = ctx.exprGen.eval(out, evalType, methodCall.params.get(i));
+      ctx.basicGen.convert1(out, exprResult.type, tgtType);
+    }
+    ctx.invokeGen.invokeSpecial(out, superConstr);
+    return out;
+  }
+
+  private Method findConstructorViaReflection(String jvmClassName, int argCount) {
+    try {
+      Class<?> clazz = Class.forName(jvmClassName.replace('/', '.'));
+      for (java.lang.reflect.Constructor<?> c : clazz.getConstructors()) {
+        if (Modifier.isPublic(c.getModifiers()) && c.getParameterCount() == argCount) {
+          List<Argument> args = new ArrayList<>();
+          for (java.lang.reflect.Parameter p : c.getParameters()) {
+            args.add(
+                new Argument(
+                    p.getType().getName(),
+                    io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
+          }
+          return new Method(
+              jvmClassName.replace('/', '.'),
+              List.of(AccessFlag.ACC_PUBLIC),
+              "void",
+              io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
+              args,
+              null);
+        }
+      }
+    } catch (ClassNotFoundException e) {
+      // not on classpath, fall through
+    }
+    return null;
   }
 
   /**
@@ -197,6 +280,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
           out, new Method("java/io/PrintStream", "println", VOID, List.of("Ljava/lang/Object;")));
     }
     return out;
+  }
+
+  public boolean isPrimitiveType(String type) {
+    return TypeUtils.isPrimitive(type);
   }
 
   public Method findMatchingMethod(String methodName, List<String> types) {

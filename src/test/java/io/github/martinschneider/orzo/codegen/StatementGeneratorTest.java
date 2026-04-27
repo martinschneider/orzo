@@ -51,7 +51,6 @@ public abstract class StatementGeneratorTest<T extends Statement> {
     ctx = new CGContext();
     ctx.init(
         new CompilerErrors(),
-        null,
         0,
         list(
             clazz(

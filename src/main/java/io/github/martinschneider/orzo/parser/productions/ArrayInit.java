@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.parser.productions;
 
+import io.github.martinschneider.orzo.util.ObjectUtils;
 import java.util.List;
 
 public class ArrayInit extends Expression {
@@ -15,35 +16,17 @@ public class ArrayInit extends Expression {
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + ((dims == null) ? 0 : dims.hashCode());
-    result = prime * result + ((type == null) ? 0 : type.hashCode());
-    result = prime * result + ((vals == null) ? 0 : vals.hashCode());
-    return result;
+    return ObjectUtils.hashCode(this);
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
-    ArrayInit other = (ArrayInit) obj;
-    if (dims == null) {
-      if (other.dims != null) return false;
-    } else if (!dims.equals(other.dims)) return false;
-    if (type == null) {
-      if (other.type != null) return false;
-    } else if (!type.equals(other.type)) return false;
-    if (vals == null) {
-      if (other.vals != null) return false;
-    } else if (!vals.equals(other.vals)) return false;
-    return true;
+    return ObjectUtils.equals(this, obj);
   }
 
   @Override
   public String toString() {
-    return type;
+    return ObjectUtils.toString(this);
   }
 
   public String typeDescr() {

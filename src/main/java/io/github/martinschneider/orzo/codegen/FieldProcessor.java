@@ -3,14 +3,12 @@ package io.github.martinschneider.orzo.codegen;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
-import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class FieldProcessor {
 
@@ -126,9 +124,6 @@ public class FieldProcessor {
 
   private void addImportedFields(
       Map<String, StaticField> fieldMap, Clazz currentClazz, List<Clazz> clazzes) {
-    List<Import> imports = currentClazz.imports;
-    List<String> importStrings = imports.stream().map(x -> x.id).collect(Collectors.toList());
-
     for (Clazz clazz : clazzes) {
       if (!currentClazz.equals(clazz)) {
         addFieldsFromClass(fieldMap, clazz);

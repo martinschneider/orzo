@@ -1,7 +1,6 @@
 package io.github.martinschneider.orzo.error;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.Location;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,12 +16,10 @@ public class CompilerErrors {
 
   public void missingExpected(
       String loggerName, Token expected, TokenList tokens, StackTraceElement[] trace) {
-    Location loc = tokens.get(tokenIdx).loc;
     errors.add(
         new CompilerError(
             String.format(
-                "%s %s: expected %s but found %s",
-                (loc != null) ? loc : "EOF", loggerName, expected, tokens.get(tokenIdx)),
+                "%s: expected %s but found %s", loggerName, expected, tokens.get(tokenIdx)),
             trace));
   }
 

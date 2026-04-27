@@ -103,7 +103,7 @@ public class MethodGeneratorTest {
       List<String> expectedLines,
       String expectedFootStr)
       throws IOException {
-    target.ctx.init(new CompilerErrors(), null, 0, list(clazz));
+    target.ctx.init(new CompilerErrors(), 0, list(clazz));
     target.ctx.constPool = new MockConstantPool(target.ctx, constants, fields);
     parser.parse(lexer.getTokens(input));
     target.ctx.classIdMap.variables = fields;

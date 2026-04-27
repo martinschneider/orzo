@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.parser.productions;
 
+import io.github.martinschneider.orzo.util.ObjectUtils;
 import java.util.List;
 
 public class ForStatement extends LoopStatement {
@@ -15,11 +16,7 @@ public class ForStatement extends LoopStatement {
 
   @Override
   public int hashCode() {
-    int prime = 31;
-    int result = 1;
-    result = prime * result + ((body == null) ? 0 : body.hashCode());
-    result = prime * result + ((cond == null) ? 0 : cond.hashCode());
-    return result;
+    return ObjectUtils.hashCode(this);
   }
 
   @Override
@@ -53,6 +50,6 @@ public class ForStatement extends LoopStatement {
 
   @Override
   public String toString() {
-    return "ForStatement";
+    return ObjectUtils.toString(this);
   }
 }

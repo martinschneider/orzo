@@ -15,11 +15,6 @@ public class Identifier extends Token {
     this.arrSel = arrSel;
   }
 
-  public Identifier wLoc(Location loc) {
-    this.loc = loc;
-    return this;
-  }
-
   @Override
   public String toString() {
     StringBuilder strBuilder = new StringBuilder();

@@ -1,5 +1,7 @@
 package io.github.martinschneider.orzo.parser.productions;
 
+import io.github.martinschneider.orzo.util.ObjectUtils;
+
 public class ReturnStatement implements Statement {
   public Expression retValue;
 
@@ -9,36 +11,16 @@ public class ReturnStatement implements Statement {
 
   @Override
   public int hashCode() {
-    int prime = 31;
-    int result = 1;
-    result = prime * result + ((retValue == null) ? 0 : retValue.hashCode());
-    return result;
+    return ObjectUtils.hashCode(this);
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    ReturnStatement other = (ReturnStatement) obj;
-    if (retValue == null) {
-      if (other.retValue != null) {
-        return false;
-      }
-    } else if (!retValue.equals(other.retValue)) {
-      return false;
-    }
-    return true;
+    return ObjectUtils.equals(this, obj);
   }
 
   @Override
   public String toString() {
-    return "RETURN " + retValue;
+    return ObjectUtils.toString(this);
   }
 }

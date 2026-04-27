@@ -212,7 +212,6 @@ public class MemberProcessor {
   private void addEnumMethods(List<Method> methods) {
     // Add required constants to pool for enum method generation
     String arrayType = "[L" + ctx.clazz.fqn('/') + ";";
-    String enumType = "L" + ctx.clazz.fqn('/') + ";";
 
     // Add constants needed for values() method
     ctx.constPool.addMethodRef("java/lang/Object", "clone", "()Ljava/lang/Object;");

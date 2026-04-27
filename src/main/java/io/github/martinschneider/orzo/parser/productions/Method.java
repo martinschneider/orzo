@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.parser.productions;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.util.ObjectUtils;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,14 +55,7 @@ public class Method implements ClassMember {
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((accFlags == null) ? 0 : accFlags.hashCode());
-    result = prime * result + ((args == null) ? 0 : args.hashCode());
-    result = prime * result + ((body == null) ? 0 : body.hashCode());
-    result = prime * result + ((name == null) ? 0 : name.hashCode());
-    result = prime * result + ((type == null) ? 0 : type.hashCode());
-    return result;
+    return ObjectUtils.hashCode(this);
   }
 
   @Override
@@ -90,6 +84,6 @@ public class Method implements ClassMember {
 
   @Override
   public String toString() {
-    return type;
+    return ObjectUtils.toString(this);
   }
 }

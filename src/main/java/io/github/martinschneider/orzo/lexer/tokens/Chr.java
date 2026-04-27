@@ -1,17 +1,14 @@
 package io.github.martinschneider.orzo.lexer.tokens;
 
+import io.github.martinschneider.orzo.util.ObjectUtils;
+
 public class Chr extends Token {
   public Chr(char val) {
     super(val);
   }
 
-  public Chr wLoc(Location loc) {
-    this.loc = loc;
-    return this;
-  }
-
   @Override
   public String toString() {
-    return "CHR(" + val + ")";
+    return ObjectUtils.toString(this);
   }
 }

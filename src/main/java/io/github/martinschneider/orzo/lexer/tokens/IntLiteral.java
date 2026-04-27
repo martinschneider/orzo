@@ -14,11 +14,6 @@ public class IntLiteral extends Token implements Num {
     this(BigInteger.valueOf(val), isLong);
   }
 
-  public IntLiteral wLoc(Location loc) {
-    this.loc = loc;
-    return this;
-  }
-
   public long intValue() {
     return ((BigInteger) val).longValue();
   }

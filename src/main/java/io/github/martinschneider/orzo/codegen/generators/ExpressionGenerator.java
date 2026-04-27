@@ -356,8 +356,19 @@ public class ExpressionGenerator {
             if (!type.equals(varType)
                 && arrType == null
                 && !deferNarrowing
-                && !(isNonPrimitive(varType) && isNonPrimitive(type))) {
+                && !(isNonPrimitive(varType) && isNonPrimitive(type))
+                && !(isNonPrimitive(varType) && curr.next != null)) {
               ctx.basicGen.convert1(out, varType, type);
+            } else if (STRING.equals(type)
+                && isNonPrimitive(varType)
+                && !STRING.equals(varType)
+                && curr.next == null
+                && curr.arrSel == null) {
+              // Non-String reference in string concat context: convert via String.valueOf(Object)
+              ctx.invokeGen.invokeStatic(
+                  out,
+                  new Method("java.lang.String", "valueOf", STRING, List.of("java.lang.Object")));
+              returnType = STRING;
             }
             if (deferNarrowing) {
               returnType = varType;
@@ -578,12 +589,10 @@ public class ExpressionGenerator {
     out.write(DUP);
     ctx.opStack.push(REF); // Track the duplicated reference
 
-    // Push constructor arguments onto stack
+    // Phase 1: collect argument types without emitting bytecode
     List<String> argTypes = new ArrayList<>();
     for (Expression arg : constructorCall.args) {
-      String argType = new NumExprTypeDecider(ctx).getType(classIdMap, arg);
-      ctx.exprGen.eval(out, argType, arg);
-      argTypes.add(argType);
+      argTypes.add(new NumExprTypeDecider(ctx).getType(classIdMap, arg));
     }
 
     // Find matching constructor (constructors have method name "<init>")
@@ -596,13 +605,23 @@ public class ExpressionGenerator {
       return className; // Return the class type even if constructor not found
     }
 
+    // Phase 2: eval each argument and box if needed
+    for (int i = 0; i < constructorCall.args.size(); i++) {
+      String srcType = argTypes.get(i);
+      String tgtType = constructor.args.get(i).type;
+      String evalType =
+          TypeUtils.isPrimitive(srcType) && !TypeUtils.isPrimitive(tgtType) ? srcType : tgtType;
+      ExpressionResult exprResult = ctx.exprGen.eval(out, evalType, constructorCall.args.get(i));
+      ctx.basicGen.convert1(out, exprResult.type, tgtType);
+    }
+
     // Generate INVOKESPECIAL <init>
     ctx.invokeGen.invokeSpecial(out, constructor);
 
     return className; // Return the object type
   }
 
-  private Method findMatchingConstructor(String className, List<String> argTypes) {
+  Method findMatchingConstructor(String className, List<String> argTypes) {
     // Look for constructors in the context's method map
     // Constructors have the method name "<init>"
     List<List<String>> typesList = new ArrayList<>();
@@ -611,10 +630,24 @@ public class ExpressionGenerator {
     }
 
     Method constructor = null;
+    String simpleName =
+        className.contains("/") ? className.substring(className.lastIndexOf('/') + 1) : className;
     for (List<String> assignTypes : TypeUtils.combinations(typesList)) {
-      String constructorKey = "<init>" + TypeUtils.typesDescr(assignTypes);
-      constructor = ctx.methodMap.get(constructorKey);
-      if (constructor != null && constructor.fqClassName.equals(className)) {
+      String argsDescr = TypeUtils.typesDescr(assignTypes);
+      // Try bare key (for constructors in current class or java.lang classes)
+      String constructorKey = "<init>" + argsDescr;
+      Method candidate = ctx.methodMap.get(constructorKey);
+      if (candidate != null
+          && (candidate.fqClassName.equals(className)
+              || candidate.fqClassName.endsWith("." + className)
+              || candidate.fqClassName.replace('.', '/').equals(className))) {
+        constructor = candidate;
+        break;
+      }
+      // Try class-prefixed key (for constructors of same-compilation-unit classes)
+      candidate = ctx.methodMap.get(simpleName + ".<init>" + argsDescr);
+      if (candidate != null) {
+        constructor = candidate;
         break;
       }
     }
@@ -652,6 +685,12 @@ public class ExpressionGenerator {
       case "Short":
         return "java/lang/Short";
       default:
+        // Check if it's a user-defined class in the current compilation unit
+        for (io.github.martinschneider.orzo.parser.productions.Clazz clazz : ctx.allClazzes) {
+          if (clazz.name.equals(className)) {
+            return clazz.fqn('/');
+          }
+        }
         // For fully qualified names, just replace dots with slashes
         return className.replace('.', '/');
     }

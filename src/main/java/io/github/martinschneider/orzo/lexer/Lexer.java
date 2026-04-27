@@ -19,7 +19,7 @@ public class Lexer {
   private char character;
   private final CompilerErrors errors = new CompilerErrors();
   // a PushbackReader is used to be able to jump forward and backward in the input stream
-  private LineAwareReader inputReader;
+  private PushbackReader inputReader;
   private List<Token> tokenList;
 
   public CompilerErrors getErrors() {
@@ -27,12 +27,12 @@ public class Lexer {
   }
 
   public TokenList getTokens(File file) throws IOException {
-    inputReader = new LineAwareReader(new FileReader(file));
+    inputReader = new PushbackReader(new FileReader(file));
     return getTokens(inputReader);
   }
 
   public TokenList getTokens(String string) throws IOException {
-    inputReader = new LineAwareReader(new StringReader(string));
+    inputReader = new PushbackReader(new StringReader(string));
     return getTokens(inputReader);
   }
 
@@ -147,7 +147,7 @@ public class Lexer {
     } else {
       inputReader.unread(character);
     }
-    tokenList.add(fp(buffer.toString(), isFloat).wLoc(inputReader.getLoc()));
+    tokenList.add(fp(buffer.toString(), isFloat));
     buffer.setLength(0);
   }
 
@@ -164,14 +164,14 @@ public class Lexer {
       for (Keywords keyword : Keywords.values()) {
         // TODO: specify case-sensitive keywords (instead of assuming they are all lowercase)
         if (str.equals(keyword.name().toLowerCase())) {
-          tokenList.add(keyword(str).wLoc(inputReader.getLoc()));
+          tokenList.add(keyword(str));
           buffer.setLength(0);
         }
       }
       // scopes
       for (Scopes scope : Scopes.values()) {
         if (str.equals(scope.name().toLowerCase())) {
-          tokenList.add(scope(Scopes.valueOf(str.toUpperCase())).wLoc(inputReader.getLoc()));
+          tokenList.add(scope(Scopes.valueOf(str.toUpperCase())));
           buffer.setLength(0);
         }
       }
@@ -186,7 +186,7 @@ public class Lexer {
         buffer.setLength(0);
       }
       if (buffer.length() > 0) {
-        tokenList.add(id(buffer.toString()).wLoc(inputReader.getLoc()));
+        tokenList.add(id(buffer.toString()));
       }
       buffer.setLength(0);
     }
@@ -215,7 +215,7 @@ public class Lexer {
           } else {
             inputReader.unread(character);
           }
-          tokenList.add(integer(buffer.toString(), isLong).wLoc(inputReader.getLoc()));
+          tokenList.add(integer(buffer.toString(), isLong));
           buffer.setLength(0);
           return;
         } else {
@@ -237,7 +237,7 @@ public class Lexer {
       } else {
         inputReader.unread(character);
       }
-      tokenList.add(integer(buffer.toString(), isLong).wLoc(inputReader.getLoc()));
+      tokenList.add(integer(buffer.toString(), isLong));
       buffer.setLength(0);
     }
   }
@@ -252,15 +252,15 @@ public class Lexer {
         if (tokenList.size() > 0
             && (tokenList.get(tokenList.size() - 1) instanceof Identifier
                 || tokenList.get(tokenList.size() - 1).equals(sym(RBRAK)))) {
-          tokenList.add(op(POST_DECREMENT).wLoc(inputReader.getLoc()));
+          tokenList.add(op(POST_DECREMENT));
         } else {
-          tokenList.add(op(PRE_DECREMENT).wLoc(inputReader.getLoc()));
+          tokenList.add(op(PRE_DECREMENT));
         }
       } else if (character == '=') {
-        tokenList.add(op(MINUS_ASSIGN).wLoc(inputReader.getLoc()));
+        tokenList.add(op(MINUS_ASSIGN));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(MINUS).wLoc(inputReader.getLoc()));
+        tokenList.add(op(MINUS));
       }
     } else if (character == '/') {
       // look-ahead to check for comment
@@ -270,26 +270,26 @@ public class Lexer {
       } else if (character == '/') {
         scanComment2();
       } else if (character == '=') {
-        tokenList.add(op(DIV_ASSIGN).wLoc(inputReader.getLoc()));
+        tokenList.add(op(DIV_ASSIGN));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(DIV).wLoc(inputReader.getLoc()));
+        tokenList.add(op(DIV));
       }
     } else if (character == '%') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(MOD_ASSIGN).wLoc(inputReader.getLoc()));
+        tokenList.add(op(MOD_ASSIGN));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(MOD).wLoc(inputReader.getLoc()));
+        tokenList.add(op(MOD));
       }
     } else if (character == '*') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(TIMES_ASSIGN).wLoc(inputReader.getLoc()));
+        tokenList.add(op(TIMES_ASSIGN));
       } else if (character == '*') {
-        tokenList.add(op(POW).wLoc(inputReader.getLoc()));
+        tokenList.add(op(POW));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(TIMES).wLoc(inputReader.getLoc()));
+        tokenList.add(op(TIMES));
       }
     } else if (character == '+') {
       char character;
@@ -297,89 +297,89 @@ public class Lexer {
         if ((tokenList.size() > 0)
             && (tokenList.get(tokenList.size() - 1) instanceof Identifier
                 || tokenList.get(tokenList.size() - 1).equals(sym(RBRAK)))) {
-          tokenList.add(op(POST_INCREMENT).wLoc(inputReader.getLoc()));
+          tokenList.add(op(POST_INCREMENT));
         } else {
-          tokenList.add(op(PRE_INCREMENT).wLoc(inputReader.getLoc()));
+          tokenList.add(op(PRE_INCREMENT));
         }
       } else if (character == '=') {
-        tokenList.add(op(PLUS_ASSIGN).wLoc(inputReader.getLoc()));
+        tokenList.add(op(PLUS_ASSIGN));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(PLUS).wLoc(inputReader.getLoc()));
+        tokenList.add(op(PLUS));
       }
     } else if (character == '>') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(GREATEREQ).wLoc(inputReader.getLoc()));
+        tokenList.add(op(GREATEREQ));
       } else if (character == '>') {
         if ((character = (char) inputReader.read()) == '>') {
           if ((character = (char) inputReader.read()) == '=') {
-            tokenList.add(op(RSHIFTU_ASSIGN).wLoc(inputReader.getLoc()));
+            tokenList.add(op(RSHIFTU_ASSIGN));
           } else {
             inputReader.unread(character);
-            tokenList.add(op(RSHIFTU).wLoc(inputReader.getLoc()));
+            tokenList.add(op(RSHIFTU));
           }
         } else if (character == '=') {
-          tokenList.add(op(RSHIFT_ASSIGN).wLoc(inputReader.getLoc()));
+          tokenList.add(op(RSHIFT_ASSIGN));
         } else {
           inputReader.unread(character);
-          tokenList.add(op(RSHIFT).wLoc(inputReader.getLoc()));
+          tokenList.add(op(RSHIFT));
         }
       } else {
-        tokenList.add(op(GREATER).wLoc(inputReader.getLoc()));
+        tokenList.add(op(GREATER));
         inputReader.unread(character);
       }
     } else if (character == '<') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(LESSEQ).wLoc(inputReader.getLoc()));
+        tokenList.add(op(LESSEQ));
       } else if (character == '<') {
         if ((character = (char) inputReader.read()) == '=') {
-          tokenList.add(op(LSHIFT_ASSIGN).wLoc(inputReader.getLoc()));
+          tokenList.add(op(LSHIFT_ASSIGN));
         } else {
           inputReader.unread(character);
-          tokenList.add(op(LSHIFT).wLoc(inputReader.getLoc()));
+          tokenList.add(op(LSHIFT));
         }
       } else {
-        tokenList.add(op(LESS).wLoc(inputReader.getLoc()));
+        tokenList.add(op(LESS));
         inputReader.unread(character);
       }
     } else if (character == '=') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(EQUAL).wLoc(inputReader.getLoc()));
+        tokenList.add(op(EQUAL));
       } else {
-        tokenList.add(op(ASSIGN).wLoc(inputReader.getLoc()));
+        tokenList.add(op(ASSIGN));
         inputReader.unread(character);
       }
     } else if (character == '!') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(NOTEQUAL).wLoc(inputReader.getLoc()));
+        tokenList.add(op(NOTEQUAL));
       } else {
         inputReader.unread(character);
         tokenList.add(op(NEGATE));
       }
     } else if (character == '&') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(BITWISE_AND_ASSIGN).wLoc(inputReader.getLoc()));
+        tokenList.add(op(BITWISE_AND_ASSIGN));
       } else if (character == '&') {
-        tokenList.add(op(LOGICAL_AND).wLoc(inputReader.getLoc()));
+        tokenList.add(op(LOGICAL_AND));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(BITWISE_AND).wLoc(inputReader.getLoc()));
+        tokenList.add(op(BITWISE_AND));
       }
     } else if (character == '|') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(BITWISE_OR_ASSIGN).wLoc(inputReader.getLoc()));
+        tokenList.add(op(BITWISE_OR_ASSIGN));
       } else if (character == '|') {
-        tokenList.add(op(LOGICAL_OR).wLoc(inputReader.getLoc()));
+        tokenList.add(op(LOGICAL_OR));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(BITWISE_OR).wLoc(inputReader.getLoc()));
+        tokenList.add(op(BITWISE_OR));
       }
     } else if (character == '^') {
       if ((character = (char) inputReader.read()) == '=') {
-        tokenList.add(op(BITWISE_XOR_ASSIGN).wLoc(inputReader.getLoc()));
+        tokenList.add(op(BITWISE_XOR_ASSIGN));
       } else {
         inputReader.unread(character);
-        tokenList.add(op(BITWISE_XOR).wLoc(inputReader.getLoc()));
+        tokenList.add(op(BITWISE_XOR));
       }
     } else if (character == '√') {
       tokenList.add(sym(SQRT));
@@ -392,17 +392,17 @@ public class Lexer {
 
   private void scanParen() {
     if (character == '(') {
-      tokenList.add(sym(LPAREN).wLoc(inputReader.getLoc()));
+      tokenList.add(sym(LPAREN));
     } else if (character == ')') {
-      tokenList.add(sym(RPAREN).wLoc(inputReader.getLoc()));
+      tokenList.add(sym(RPAREN));
     } else if (character == '{') {
-      tokenList.add(sym(LBRACE).wLoc(inputReader.getLoc()));
+      tokenList.add(sym(LBRACE));
     } else if (character == '}') {
-      tokenList.add(sym(RBRACE).wLoc(inputReader.getLoc()));
+      tokenList.add(sym(RBRACE));
     } else if (character == '[') {
-      tokenList.add(sym(LBRAK).wLoc(inputReader.getLoc()));
+      tokenList.add(sym(LBRAK));
     } else if (character == ']') {
-      tokenList.add(sym(RBRAK).wLoc(inputReader.getLoc()));
+      tokenList.add(sym(RBRAK));
     }
   }
 
@@ -410,7 +410,7 @@ public class Lexer {
     if ((character == '\'')) {
       int c;
       if ((c = inputReader.read()) != -1) {
-        tokenList.add(chr((char) c).wLoc(inputReader.getLoc()));
+        tokenList.add(chr((char) c));
       }
       if ((c = (char) inputReader.read()) != '\'') {
         errors.addError("scan character", "missing '", new RuntimeException().getStackTrace());
@@ -433,7 +433,7 @@ public class Lexer {
         errors.addError(
             "scan string", "missing \" in string", new RuntimeException().getStackTrace());
       } else {
-        tokenList.add(str(buffer.toString()).wLoc(inputReader.getLoc()));
+        tokenList.add(str(buffer.toString()));
       }
     }
     buffer.setLength(0);
@@ -441,13 +441,13 @@ public class Lexer {
 
   private void scanSym() throws IOException {
     if (character == ',') {
-      tokenList.add(sym(COMMA).wLoc(inputReader.getLoc()));
+      tokenList.add(sym(COMMA));
     } else if (character == ';') {
-      tokenList.add(sym(SEMICOLON).wLoc(inputReader.getLoc()));
+      tokenList.add(sym(SEMICOLON));
     } else if (character == '?') {
-      tokenList.add(sym(QUESTION).wLoc(inputReader.getLoc()));
+      tokenList.add(sym(QUESTION));
     } else if (character == ':') {
-      tokenList.add(sym(COLON).wLoc(inputReader.getLoc()));
+      tokenList.add(sym(COLON));
     } else if (character == '.') {
       if (Character.isDigit(character = (char) inputReader.read())) {
         buffer.append('.');
@@ -455,7 +455,7 @@ public class Lexer {
         scanDouble();
       } else {
         inputReader.unread(character);
-        tokenList.add(sym(DOT).wLoc(inputReader.getLoc()));
+        tokenList.add(sym(DOT));
       }
     }
   }

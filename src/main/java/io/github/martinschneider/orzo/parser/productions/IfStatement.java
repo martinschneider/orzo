@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.parser.productions;
 
+import io.github.martinschneider.orzo.util.ObjectUtils;
 import java.util.List;
 
 public class IfStatement implements Statement {
@@ -13,40 +14,16 @@ public class IfStatement implements Statement {
 
   @Override
   public int hashCode() {
-    int prime = 31;
-    int result = 1;
-    result = prime * result + (hasElse ? 1231 : 1237);
-    result = prime * result + ((ifBlks == null) ? 0 : ifBlks.hashCode());
-    return result;
+    return ObjectUtils.hashCode(this);
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    IfStatement other = (IfStatement) obj;
-    if (hasElse != other.hasElse) {
-      return false;
-    }
-    if (ifBlks == null) {
-      if (other.ifBlks != null) {
-        return false;
-      }
-    } else if (!ifBlks.equals(other.ifBlks)) {
-      return false;
-    }
-    return true;
+    return ObjectUtils.equals(this, obj);
   }
 
   @Override
   public String toString() {
-    return "IfStatement";
+    return ObjectUtils.toString(this);
   }
 }

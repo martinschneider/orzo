@@ -238,7 +238,6 @@ public class ExpressionGeneratorTest {
     ctx = new CGContext();
     ctx.init(
         new CompilerErrors(),
-        null,
         0,
         list(
             clazz(

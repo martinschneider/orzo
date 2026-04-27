@@ -56,13 +56,11 @@ public class InvokeGenerator {
   }
 
   public HasOutput invokeSpecial(HasOutput out, Method method) {
+    String clazzName = method.fqClassName.replace('.', '/');
     out.write(INVOKESPECIAL);
     out.write(
         ctx.constPool.indexOf(
-            CONSTANT_METHODREF,
-            method.fqClassName,
-            method.name.id(),
-            TypeUtils.methodDescr(method)));
+            CONSTANT_METHODREF, clazzName, method.name.id(), TypeUtils.methodDescr(method)));
     ctx.opStack.pop(1 + method.args.size());
     ctx.opStack.push(method.type);
     return out;
@@ -86,7 +84,7 @@ public class InvokeGenerator {
     out.write(
         ctx.constPool.indexOf(
             CONSTANT_METHODREF, clazzName, methodName, TypeUtils.methodDescr(method)));
-    ctx.opStack.pop(1 + method.args.size());
+    ctx.opStack.pop(method.args.size());
     ctx.opStack.push(method.type);
     return out;
   }

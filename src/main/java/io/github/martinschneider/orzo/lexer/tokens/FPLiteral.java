@@ -14,11 +14,6 @@ public class FPLiteral extends Token implements Num {
     this(BigDecimal.valueOf(val), isFloat);
   }
 
-  public FPLiteral wLoc(Location loc) {
-    this.loc = loc;
-    return this;
-  }
-
   public double doubleVal() {
     return ((BigDecimal) val).doubleValue();
   }
