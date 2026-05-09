@@ -15,6 +15,7 @@ src/main/java/io/github/martinschneider/orzo/codegen/DynamicByteArray.java
 src/main/java/io/github/martinschneider/orzo/codegen/ExpressionResult.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/DoNothingGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/HasOutput.java
+src/main/java/io/github/martinschneider/orzo/codegen/identifier/GlobalIdentifierMap.java
 src/main/java/io/github/martinschneider/orzo/codegen/identifier/IdentifierInfo.java
 src/main/java/io/github/martinschneider/orzo/codegen/OpCodes.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/BoolLiteral.java
@@ -27,11 +28,13 @@ src/main/java/io/github/martinschneider/orzo/lexer/tokens/Operators.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Scope.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Scopes.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Str.java
+src/main/java/io/github/martinschneider/orzo/lexer/tokens/Sym.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Symbols.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/TernaryExpression.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/AccessFlag.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/Argument.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/ArraySelector.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/FieldSelector.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/Assignment.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/Break.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/ClassMember.java

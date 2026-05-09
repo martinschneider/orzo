@@ -691,6 +691,19 @@ public class ExpressionGenerator {
             return clazz.fqn('/');
           }
         }
+        // Try resolving via current class's package (for same-package references)
+        if (ctx.clazz != null && !className.contains(".")) {
+          String pkg = ctx.clazz.packageName;
+          if (pkg != null && !pkg.isEmpty()) {
+            String candidate = pkg + "." + className;
+            try {
+              Class.forName(candidate);
+              return candidate.replace('.', '/');
+            } catch (ClassNotFoundException e) {
+              // not in same package; fall through
+            }
+          }
+        }
         // For fully qualified names, just replace dots with slashes
         return className.replace('.', '/');
     }
