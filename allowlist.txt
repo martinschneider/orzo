@@ -54,3 +54,4 @@ src/main/java/io/github/martinschneider/orzo/parser/productions/Statement.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/WhileStatement.java
 src/main/java/io/github/martinschneider/orzo/codegen/identifier/VariableInfo.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/Declaration.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/MethodCall.java

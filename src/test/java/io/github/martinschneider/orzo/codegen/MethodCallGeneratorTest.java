@@ -44,10 +44,12 @@ public class MethodCallGeneratorTest extends StatementGeneratorTest<MethodCall> 
             list(constant("<init>", 3)),
             list("aload_0", "invokespecial 3")),
         args(
-            "this()",
+            "this()", emptyList(), list(constant("<init>", 3)), list("aload_0", "invokespecial 3")),
+        args(
+            "super.hashCode()",
             emptyList(),
-            list(constant("<init>", 3)),
-            list("aload_0", "invokespecial 3")));
+            list(constant("hashCode", 5)),
+            list("aload_0", "invokespecial 5")));
   }
 
   @BeforeAll

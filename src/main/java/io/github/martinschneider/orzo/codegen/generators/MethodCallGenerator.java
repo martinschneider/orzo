@@ -82,6 +82,22 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
           }
         }
       }
+      // Handle super.method() calls - invokespecial on parent class
+      if (method == null && "super".equals(receiverName)) {
+        String superClass =
+            (ctx.clazz != null
+                    && ctx.clazz.baseClass != null
+                    && !"java.lang.Object".equals(ctx.clazz.baseClass))
+                ? ctx.clazz.baseClass.replace('.', '/')
+                : "java/lang/Object";
+        if (types.isEmpty() && "toString".equals(simpleMethod)) {
+          method = new Method(superClass, "toString", STRING, new ArrayList<>());
+        } else if (types.isEmpty() && "hashCode".equals(simpleMethod)) {
+          method = new Method(superClass, "hashCode", INT, new ArrayList<>());
+        } else if (types.size() == 1 && "equals".equals(simpleMethod)) {
+          method = new Method(superClass, "equals", BOOLEAN, List.of("Ljava/lang/Object;"));
+        }
+      }
     }
     // Handle no-receiver Object methods called on implicit 'this'
     if (method == null && !methodName.contains(".")) {
@@ -130,6 +146,8 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     }
     if (isStatic) {
       ctx.invokeGen.invokeStatic(out, method);
+    } else if ("super".equals(receiverName)) {
+      ctx.invokeGen.invokeSpecial(out, method);
     } else {
       ctx.invokeGen.invokeVirtual(out, method);
     }
