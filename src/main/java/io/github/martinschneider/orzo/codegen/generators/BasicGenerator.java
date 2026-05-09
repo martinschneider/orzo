@@ -9,6 +9,7 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.CAST_OPS;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.CAST_OPS_1;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -51,7 +52,9 @@ public class BasicGenerator {
   public void convert1(DynamicByteArray out, String from, String to) {
     // TODO: array casts
     if (from != null && to != null) {
-      if (PRIMITIVE_TYPES.contains(from)
+      if (PRIMITIVE_TYPES.contains(from) && !from.equals("void") && STRING.equals(to)) {
+        primitiveToString(out, from);
+      } else if (PRIMITIVE_TYPES.contains(from)
           && !from.equals("void")
           && !PRIMITIVE_TYPES.contains(to)
           && !to.startsWith("[")) {
@@ -64,6 +67,33 @@ public class BasicGenerator {
     }
     ctx.opStack.pop();
     ctx.opStack.push(to);
+  }
+
+  private void primitiveToString(DynamicByteArray out, String primitiveType) {
+    String descriptor;
+    switch (primitiveType) {
+      case "boolean":
+        descriptor = "(Z)Ljava/lang/String;";
+        break;
+      case "char":
+        descriptor = "(C)Ljava/lang/String;";
+        break;
+      case "long":
+        descriptor = "(J)Ljava/lang/String;";
+        break;
+      case "float":
+        descriptor = "(F)Ljava/lang/String;";
+        break;
+      case "double":
+        descriptor = "(D)Ljava/lang/String;";
+        break;
+      default: // byte, short, int all widen to int on the JVM stack
+        descriptor = "(I)Ljava/lang/String;";
+        break;
+    }
+    ctx.constPool.addClass("java/lang/String");
+    out.write(INVOKESTATIC);
+    out.write(ctx.constPool.indexOf(CONSTANT_METHODREF, "java/lang/String", "valueOf", descriptor));
   }
 
   private void autobox(DynamicByteArray out, String primitiveType) {

@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
+import static io.github.martinschneider.orzo.codegen.MockConstantPool.constant;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IINC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD;
 import static io.github.martinschneider.orzo.util.FactoryHelper.list;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -206,6 +208,15 @@ public class BasicGeneratorTest {
     target.convert1(out, from, to);
     assertEquals(String.join("\n", expectedLines), BytecodeDecompiler.decompile(out.getBytes()));
     assertEquals(expectedErrors, ctx.errors.errors.size());
+  }
+
+  // Primitive types must convert to String via String.valueOf, not autobox to wrapper class
+  @Test
+  public void convert1PrimitiveToStringTest() throws IOException {
+    ctx.constPool = new MockConstantPool(ctx, list(constant("valueOf", 7)));
+    target.convert1(out, "short", "String");
+    assertEquals("invokestatic 7", BytecodeDecompiler.decompile(out.getBytes()));
+    assertEquals(0, ctx.errors.errors.size());
   }
 
   @ParameterizedTest

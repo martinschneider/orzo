@@ -40,7 +40,9 @@ public class MethodGenerator {
       if (clazz.isEnum && generateEnumMethod(methodOut, method, clazz)) {
         returned = true;
       } else {
-        if (method instanceof Constructor && !startsWithCallToSuper(method.body)) {
+        if (method instanceof Constructor
+            && !startsWithCallToSuper(method.body)
+            && !startsWithCallToThis(method.body)) {
           ctx.methodCallGen.callSuperConstr(methodOut);
         }
         for (Statement stmt : method.body) {
@@ -82,6 +84,14 @@ public class MethodGenerator {
     }
     MethodCall call = (MethodCall) body.get(0);
     return "super".equals(call.name);
+  }
+
+  public boolean startsWithCallToThis(List<Statement> body) {
+    if (body.isEmpty() || !(body.get(0) instanceof MethodCall)) {
+      return false;
+    }
+    MethodCall call = (MethodCall) body.get(0);
+    return "this".equals(call.name);
   }
 
   private void generateCode(DynamicByteArray out, Method method, Statement stmt) {

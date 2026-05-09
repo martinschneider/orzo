@@ -42,6 +42,11 @@ public class MethodCallGeneratorTest extends StatementGeneratorTest<MethodCall> 
             "super()",
             emptyList(),
             list(constant("<init>", 3)),
+            list("aload_0", "invokespecial 3")),
+        args(
+            "this()",
+            emptyList(),
+            list(constant("<init>", 3)),
             list("aload_0", "invokespecial 3")));
   }
 

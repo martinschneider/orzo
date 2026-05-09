@@ -193,6 +193,10 @@ public class MemberProcessor {
       }
       // add initializer calls after super();
       for (Method constr : constructors) {
+        // Constructors delegating to this() must not receive field inits
+        if (ctx.methodGen.startsWithCallToThis(constr.body)) {
+          continue;
+        }
         List<Statement> body = new ArrayList<>();
         boolean startsWithSuper = ctx.methodGen.startsWithCallToSuper(constr.body);
         if (startsWithSuper) {

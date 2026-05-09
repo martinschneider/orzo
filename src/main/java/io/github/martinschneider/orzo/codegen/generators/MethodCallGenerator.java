@@ -144,6 +144,8 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       } else {
         callSuperConstr(out);
       }
+    } else if ("this".equals(methodCall.name.toString())) {
+      callThisConstrWithArgs(out, methodCall);
     } else if ("System.out.println".equals(methodCall.name.toString())) {
       for (Expression param : methodCall.params) {
         ctx.invokeGen.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
@@ -218,6 +220,46 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       ctx.basicGen.convert1(out, exprResult.type, tgtType);
     }
     ctx.invokeGen.invokeSpecial(out, superConstr);
+    return out;
+  }
+
+  public HasOutput callThisConstrWithArgs(DynamicByteArray out, MethodCall methodCall) {
+    ctx.loadGen.loadReference(out, (short) 0);
+    ctx.opStack.push(SHORT);
+    String thisClass = ctx.clazz.fqn('/');
+    List<String> exprTypes = new ArrayList<>();
+    for (Expression param : methodCall.params) {
+      exprTypes.add(new NumExprTypeDecider(ctx).getType(ctx.classIdMap, param));
+    }
+    Method thisConstr = ctx.exprGen.findMatchingConstructor(thisClass, exprTypes);
+    if (thisConstr == null) {
+      thisConstr = findConstructorViaReflection(thisClass, exprTypes.size());
+    }
+    if (thisConstr == null) {
+      List<Argument> constrArgs = new ArrayList<>();
+      for (int i = 0; i < exprTypes.size(); i++) {
+        constrArgs.add(
+            new Argument(
+                exprTypes.get(i), io.github.martinschneider.orzo.lexer.tokens.Token.id("p" + i)));
+      }
+      thisConstr =
+          new Method(
+              thisClass.replace('/', '.'),
+              List.of(AccessFlag.ACC_PUBLIC),
+              "void",
+              io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
+              constrArgs,
+              null);
+    }
+    for (int i = 0; i < methodCall.params.size(); i++) {
+      String srcType = exprTypes.get(i);
+      String tgtType = thisConstr.args.get(i).type;
+      String evalType =
+          TypeUtils.isPrimitive(srcType) && !TypeUtils.isPrimitive(tgtType) ? srcType : tgtType;
+      ExpressionResult exprResult = ctx.exprGen.eval(out, evalType, methodCall.params.get(i));
+      ctx.basicGen.convert1(out, exprResult.type, tgtType);
+    }
+    ctx.invokeGen.invokeSpecial(out, thisConstr);
     return out;
   }
 
