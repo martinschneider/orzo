@@ -95,6 +95,24 @@ public class FieldProcessor {
           }
         }
       }
+    } else {
+      // Class not being compiled: fall back to reflection
+      try {
+        Class<?> reflClass = Class.forName(cleanClassName);
+        while (reflClass != null && reflClass != Object.class) {
+          for (Field field : reflClass.getDeclaredFields()) {
+            if (!Modifier.isStatic(field.getModifiers())
+                && !fieldMap.containsKey(field.getName())) {
+              fieldMap.put(
+                  field.getName(),
+                  new InstanceField(cleanClassName, field.getName(), field.getType().getName()));
+            }
+          }
+          reflClass = reflClass.getSuperclass();
+        }
+      } catch (ClassNotFoundException e) {
+        // class not on classpath; no fields added
+      }
     }
 
     return fieldMap;
