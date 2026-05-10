@@ -25,6 +25,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.lang.reflect.Modifier;
@@ -104,6 +105,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         } else if (types.size() == 1 && "equals".equals(simpleMethod)) {
           method = new Method(superClass, "equals", BOOLEAN, List.of("Ljava/lang/Object;"));
         }
+      }
+      // Reflection fallback for class-name-prefixed calls (e.g. ParserContext.build(errors))
+      if (method == null && receiverVar == null && !"super".equals(receiverName)) {
+        String resolvedClassName = resolveClassName(receiverName);
+        method = findMethodViaReflection(resolvedClassName, simpleMethod, types.size());
       }
     }
     // Handle no-receiver Object methods called on implicit 'this'
@@ -298,7 +304,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     return out;
   }
 
-  private Method findConstructorViaReflection(String jvmClassName, int argCount) {
+  Method findConstructorViaReflection(String jvmClassName, int argCount) {
     try {
       Class<?> clazz = Class.forName(jvmClassName.replace('/', '.'));
       for (java.lang.reflect.Constructor<?> c : clazz.getConstructors()) {
@@ -385,6 +391,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       }
       Class<?> clazz = Class.forName(javaClassName);
       for (java.lang.reflect.Method m : clazz.getMethods()) {
+        if (m.isBridge()) continue;
         if (m.getName().equals(methodName) && m.getParameterCount() == argCount) {
           List<Argument> args = new ArrayList<>();
           for (java.lang.reflect.Parameter p : m.getParameters()) {
@@ -421,8 +428,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       types.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
     }
     String methodName = methodCall.name.toString();
-    Method method = findMatchingMethod(methodName, types);
-    if (method == null && receiverType != null) {
+    Method method = null;
+    if (receiverType != null) {
+      // Prioritize receiver-type-specific lookups to avoid matching same-named methods on 'this'
       int lastDot = receiverType.lastIndexOf('.');
       String simpleType = (lastDot >= 0) ? receiverType.substring(lastDot + 1) : receiverType;
       method = findMatchingMethod(simpleType + "." + methodName, types);
@@ -432,6 +440,15 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       if (method == null) {
         method = findMethodViaReflectionTyped(receiverType, methodName, types);
       }
+      // FQN resolution fallback for simple class names (e.g. "ClassParser" → package-qualified)
+      if (method == null) {
+        String resolvedType = resolveClassName(receiverType);
+        method = findMethodViaReflectionTyped(resolvedType, methodName, types);
+      }
+    }
+    // Bare-name fallback (for method calls where type info is unavailable)
+    if (method == null) {
+      method = findMatchingMethod(methodName, types);
     }
     if (method == null) {
       ctx.errors.addError(
@@ -477,6 +494,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       }
       Class<?> clazz = Class.forName(javaClassName);
       for (java.lang.reflect.Method m : clazz.getMethods()) {
+        if (m.isBridge()) continue;
         if (!m.getName().equals(methodName) || m.getParameterCount() != argTypes.size()) {
           continue;
         }
@@ -533,6 +551,23 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     } catch (ClassNotFoundException e) {
       return true;
     }
+  }
+
+  private String resolveClassName(String simpleName) {
+    if (simpleName == null || simpleName.contains(".")) {
+      return simpleName;
+    }
+    if (ctx.clazz != null && ctx.clazz.imports != null) {
+      for (Import imp : ctx.clazz.imports) {
+        if (!imp.isStatic && imp.id.endsWith("." + simpleName)) {
+          return imp.id;
+        }
+      }
+    }
+    if (ctx.clazz != null && ctx.clazz.packageName != null && !ctx.clazz.packageName.isEmpty()) {
+      return ctx.clazz.packageName + "." + simpleName;
+    }
+    return simpleName;
   }
 
   public Method findMatchingMethod(String methodName, List<String> types) {

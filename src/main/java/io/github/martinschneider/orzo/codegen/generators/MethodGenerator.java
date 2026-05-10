@@ -56,8 +56,13 @@ public class MethodGenerator {
       if (!returned) {
         methodOut.write(RETURN);
       }
-      out.write(methodOut.size() + 12); // stack size (2) + local var size (2) + code size (4) +
-      // exception table size (2) + attribute count size (2)
+      byte[] stackMapBytes =
+          io.github.martinschneider.orzo.codegen.StackMapTableBuilder.buildFromBytecode(
+              methodOut.getBytes(), method, ctx, ctx.constPool);
+      int codeLen = methodOut.size();
+      int attrSize = 12 + codeLen + (stackMapBytes != null ? stackMapBytes.length : 0);
+      out.write(attrSize); // stack size (2) + local var size (2) + code size (4) +
+      // exception table size (2) + attribute count size (2) + optional StackMapTable
       // Set appropriate max stack size for enum methods
       short maxStackSize = (short) (ctx.opStack.maxSize() + 1);
       if (clazz.isEnum && generateEnumMethod(new DynamicByteArray(), method, clazz)) {
@@ -66,10 +71,15 @@ public class MethodGenerator {
       }
       out.write(maxStackSize); // max stack size
       out.write((short) (ctx.classIdMap.variables.localSize + 1)); // max local var size
-      out.write(methodOut.size());
+      out.write(codeLen);
       out.write(methodOut.flush());
       out.write((short) 0); // exception table of size 0
-      out.write((short) 0); // attribute count for this attribute of 0
+      if (stackMapBytes != null) {
+        out.write((short) 1); // 1 attribute: StackMapTable
+        out.write(stackMapBytes);
+      } else {
+        out.write((short) 0); // no attributes
+      }
     } else {
       out.write((short) 0); // attribute size
       out.write(methodOut.flush());

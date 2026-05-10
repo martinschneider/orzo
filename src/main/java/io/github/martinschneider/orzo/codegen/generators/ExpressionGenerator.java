@@ -292,7 +292,7 @@ public class ExpressionGenerator {
         returnType = generateConstructorCall(out, classIdMap, constructorCall);
       } else if (curr instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) curr;
-        if (prev instanceof MethodCall) {
+        if (prev instanceof MethodCall || prev instanceof ConstructorCall) {
           returnType = ctx.methodCallGen.generateChained(out, classIdMap, methodCall, returnType);
         } else {
           returnType = ctx.methodCallGen.generate(out, classIdMap, methodCall);
@@ -496,6 +496,12 @@ public class ExpressionGenerator {
       ctx.opStack.push(REF);
       return REF;
     }
+    // Try as a class-prefixed static method call: e.g. ParserContext.build(errors)
+    if (curr.next instanceof MethodCall) {
+      MethodCall mc = (MethodCall) curr.next;
+      String dottedName = curr.val.toString() + "." + mc.name;
+      return ctx.methodCallGen.generate(out, ctx.classIdMap, new MethodCall(dottedName, mc.params));
+    }
     ctx.errors.addError(
         LOGGER_NAME,
         String.format("Unknown variable: %s", curr),
@@ -602,6 +608,9 @@ public class ExpressionGenerator {
     // Find matching constructor (constructors have method name "<init>")
     Method constructor = findMatchingConstructor(jvmClassName, argTypes);
     if (constructor == null) {
+      constructor = ctx.methodCallGen.findConstructorViaReflection(jvmClassName, argTypes.size());
+    }
+    if (constructor == null) {
       ctx.errors.addError(
           "constructor call generator",
           String.format("No matching constructor found for %s(%s)", className, argTypes),
@@ -693,6 +702,18 @@ public class ExpressionGenerator {
         for (io.github.martinschneider.orzo.parser.productions.Clazz clazz : ctx.allClazzes) {
           if (clazz.name.equals(className)) {
             return clazz.fqn('/');
+          }
+        }
+        // Try resolving via import list
+        if (ctx.clazz != null && ctx.clazz.imports != null && !className.contains(".")) {
+          for (io.github.martinschneider.orzo.parser.productions.Import imp : ctx.clazz.imports) {
+            if (!imp.isStatic && imp.id != null) {
+              String simpleName =
+                  imp.id.contains(".") ? imp.id.substring(imp.id.lastIndexOf('.') + 1) : imp.id;
+              if (simpleName.equals(className)) {
+                return imp.id.replace('.', '/');
+              }
+            }
           }
         }
         // Try resolving via current class's package (for same-package references)

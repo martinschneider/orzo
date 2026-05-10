@@ -61,8 +61,21 @@ public class BasicGenerator {
         autobox(out, from);
       } else {
         addCastingErrors(from, to);
-        out.write(
-            CAST_OPS_1.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]));
+        byte[] castOps =
+            CAST_OPS_1.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]);
+        out.write(castOps);
+        // Narrowing reference conversion (e.g. erased generic Object → String): emit CHECKCAST
+        if (castOps.length == 0
+            && !PRIMITIVE_TYPES.contains(from)
+            && !PRIMITIVE_TYPES.contains(to)
+            && !from.equals(to)
+            && !"void".equals(to)
+            && isNarrowingReferenceConversion(from, to)) {
+          String jvmTo = resolveJvmClassName(to);
+          ctx.constPool.addClass(jvmTo);
+          out.write(CHECKCAST);
+          out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmTo));
+        }
       }
     }
     ctx.opStack.pop();
@@ -182,5 +195,31 @@ public class BasicGenerator {
 
   public void arrayLength(HasOutput out) {
     out.write(ARRAYLENGTH);
+  }
+
+  private boolean isNarrowingReferenceConversion(String from, String to) {
+    try {
+      Class<?> fromClass = resolveClass(from);
+      Class<?> toClass = resolveClass(to);
+      return fromClass.isAssignableFrom(toClass) && !toClass.isAssignableFrom(fromClass);
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }
+
+  private Class<?> resolveClass(String typeName) throws ClassNotFoundException {
+    try {
+      return Class.forName(typeName);
+    } catch (ClassNotFoundException e) {
+      return Class.forName("java.lang." + typeName);
+    }
+  }
+
+  private String resolveJvmClassName(String typeName) {
+    try {
+      return resolveClass(typeName).getName().replace('.', '/');
+    } catch (ClassNotFoundException e) {
+      return typeName.replace('.', '/');
+    }
   }
 }

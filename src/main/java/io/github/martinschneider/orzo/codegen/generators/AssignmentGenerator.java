@@ -8,6 +8,7 @@ import static java.util.Collections.emptyList;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.IdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
@@ -108,6 +109,14 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
                 ctx.loadGen.loadReference(out, varInfo.objectRef);
               }
               ctx.exprGen.eval(out, type, right);
+              // Insert CHECKCAST when a generic/erased method returns a wider reference type
+              // than the variable's declared type (e.g. Object → String via Deque<String>.pop()).
+              String actualType = ctx.opStack.type();
+              if (actualType != null
+                  && !TypeUtils.isPrimitive(actualType)
+                  && !TypeUtils.isPrimitive(type)) {
+                ctx.basicGen.convert1(out, actualType, type);
+              }
               ctx.storeGen.store(out, varInfo);
             } else {
               assignInArray(out, ctx.classIdMap, left, right);
