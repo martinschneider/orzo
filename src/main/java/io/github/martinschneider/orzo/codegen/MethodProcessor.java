@@ -6,6 +6,7 @@ import static java.util.List.of;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
@@ -22,6 +23,7 @@ public class MethodProcessor {
     }
     addImported(methodMap, currentClazz, clazzes);
     addJavaLang(methodMap, currentClazz);
+    addStaticImportMethods(methodMap, currentClazz);
     return methodMap;
   }
 
@@ -102,6 +104,48 @@ public class MethodProcessor {
       }
     }
     return methodMap;
+  }
+
+  private void addStaticImportMethods(Map<String, Method> methodMap, Clazz currentClazz) {
+    if (currentClazz.imports == null) {
+      return;
+    }
+    for (Import imp : currentClazz.imports) {
+      if (!imp.isStatic) {
+        continue;
+      }
+      String importPath = imp.id;
+      int lastDot = importPath.lastIndexOf('.');
+      if (lastDot < 0) {
+        continue;
+      }
+      String memberName = importPath.substring(lastDot + 1);
+      if ("*".equals(memberName)) {
+        continue;
+      }
+      String className = importPath.substring(0, lastDot);
+      try {
+        Class<?> clazz = Class.forName(className);
+        for (java.lang.reflect.Method m : clazz.getMethods()) {
+          if (Modifier.isPublic(m.getModifiers())
+              && Modifier.isStatic(m.getModifiers())
+              && m.getName().equals(memberName)) {
+            List<Argument> args = mapArgs(m.getParameters());
+            Method method =
+                new Method(
+                    clazz.getName(),
+                    of(AccessFlag.ACC_PUBLIC, AccessFlag.ACC_STATIC),
+                    m.getReturnType().getName(),
+                    id(m.getName()),
+                    args,
+                    null);
+            methodMap.put(getKey(method), method);
+          }
+        }
+      } catch (ClassNotFoundException e) {
+        // not on classpath, skip
+      }
+    }
   }
 
   private List<Argument> mapArgs(Parameter[] params) {

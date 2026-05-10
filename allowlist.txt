@@ -55,3 +55,9 @@ src/main/java/io/github/martinschneider/orzo/parser/productions/WhileStatement.j
 src/main/java/io/github/martinschneider/orzo/codegen/identifier/VariableInfo.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/Declaration.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/MethodCall.java
+src/main/java/io/github/martinschneider/orzo/codegen/generators/StatementGenerator.java
+src/main/java/io/github/martinschneider/orzo/parser/ProdParser.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/Constructor.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/ArrayInit.java
+src/main/java/io/github/martinschneider/orzo/parser/BreakParser.java
+src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantInterfaceMethodref.java

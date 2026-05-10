@@ -49,7 +49,7 @@ public class MethodCallGeneratorTest extends StatementGeneratorTest<MethodCall> 
             "super.hashCode()",
             emptyList(),
             list(constant("hashCode", 5)),
-            list("aload_0", "invokespecial 5")));
+            list("aload_0", "invokespecial 5", "pop")));
   }
 
   @BeforeAll

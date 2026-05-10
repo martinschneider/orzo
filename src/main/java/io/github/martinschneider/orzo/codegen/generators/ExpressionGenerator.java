@@ -287,12 +287,16 @@ public class ExpressionGenerator {
         ctx.opStack.push(REF);
         return REF;
       }
-      if (token instanceof ConstructorCall) {
-        ConstructorCall constructorCall = (ConstructorCall) token;
+      if (curr instanceof ConstructorCall) {
+        ConstructorCall constructorCall = (ConstructorCall) curr;
         returnType = generateConstructorCall(out, classIdMap, constructorCall);
-      } else if (token instanceof MethodCall) {
-        MethodCall methodCall = (MethodCall) token;
-        returnType = ctx.methodCallGen.generate(out, classIdMap, methodCall);
+      } else if (curr instanceof MethodCall) {
+        MethodCall methodCall = (MethodCall) curr;
+        if (prev instanceof MethodCall) {
+          returnType = ctx.methodCallGen.generateChained(out, classIdMap, methodCall, returnType);
+        } else {
+          returnType = ctx.methodCallGen.generate(out, classIdMap, methodCall);
+        }
         if (curr.arrSel != null) {
           ctx.loadGen.loadValueFromArrayOnStack(out, classIdMap, curr.arrSel.exprs, returnType);
           if (!returnType.isEmpty()) {

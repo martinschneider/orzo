@@ -1,5 +1,7 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.POP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.POP2;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
@@ -19,6 +21,7 @@ import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -80,6 +83,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
             method =
                 new Method("java/lang/Object", "equals", BOOLEAN, List.of("Ljava/lang/Object;"));
           }
+        }
+        // Reflection fallback for external Java stdlib methods
+        if (method == null) {
+          method = findMethodViaReflection(receiverVar.type, simpleMethod, types.size());
         }
       }
       // Handle super.method() calls - invokespecial on parent class
@@ -148,6 +155,8 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       ctx.invokeGen.invokeStatic(out, method);
     } else if ("super".equals(receiverName)) {
       ctx.invokeGen.invokeSpecial(out, method);
+    } else if (isInterfaceClass(method.fqClassName)) {
+      ctx.invokeGen.invokeInterface(out, method);
     } else {
       ctx.invokeGen.invokeVirtual(out, method);
     }
@@ -179,7 +188,15 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         }
       }
     } else {
-      generate(out, ctx.classIdMap, methodCall);
+      String retType = generate(out, ctx.classIdMap, methodCall);
+      if (retType != null && !retType.isEmpty() && !VOID.equals(retType)) {
+        if (LONG.equals(retType) || DOUBLE.equals(retType)) {
+          out.write(POP2);
+        } else {
+          out.write(POP);
+        }
+        ctx.opStack.pop();
+      }
     }
     return out;
   }
@@ -344,6 +361,178 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
 
   public boolean isPrimitiveType(String type) {
     return TypeUtils.isPrimitive(type);
+  }
+
+  public boolean isInterfaceClass(String className) {
+    if (className == null) {
+      return false;
+    }
+    try {
+      return Class.forName(className.replace('/', '.')).isInterface();
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
+  }
+
+  public Method findMethodViaReflection(String receiverType, String methodName, int argCount) {
+    if (receiverType == null) {
+      return null;
+    }
+    try {
+      String javaClassName = receiverType.replace('/', '.');
+      if (javaClassName.startsWith("L") && javaClassName.endsWith(";")) {
+        javaClassName = javaClassName.substring(1, javaClassName.length() - 1);
+      }
+      Class<?> clazz = Class.forName(javaClassName);
+      for (java.lang.reflect.Method m : clazz.getMethods()) {
+        if (m.getName().equals(methodName) && m.getParameterCount() == argCount) {
+          List<Argument> args = new ArrayList<>();
+          for (java.lang.reflect.Parameter p : m.getParameters()) {
+            args.add(
+                new Argument(
+                    p.getType().getName(),
+                    io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
+          }
+          String returnType = m.getReturnType().getName();
+          // Normalize common return types
+          if ("java.lang.String".equals(returnType)) {
+            returnType = STRING;
+          }
+          List<AccessFlag> accFlags = new ArrayList<>();
+          if (java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
+            accFlags.add(AccessFlag.ACC_STATIC);
+          }
+          return new Method(javaClassName, accFlags, returnType, Token.id(methodName), args, null);
+        }
+      }
+    } catch (ClassNotFoundException e) {
+      // not on classpath, fall through
+    }
+    return null;
+  }
+
+  public String generateChained(
+      DynamicByteArray out,
+      GlobalIdentifierMap classIdMap,
+      MethodCall methodCall,
+      String receiverType) {
+    List<String> types = new ArrayList<>();
+    for (Expression exp : methodCall.params) {
+      types.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
+    }
+    String methodName = methodCall.name.toString();
+    Method method = findMatchingMethod(methodName, types);
+    if (method == null && receiverType != null) {
+      int lastDot = receiverType.lastIndexOf('.');
+      String simpleType = (lastDot >= 0) ? receiverType.substring(lastDot + 1) : receiverType;
+      method = findMatchingMethod(simpleType + "." + methodName, types);
+      if (method == null) {
+        method = findMatchingMethod(receiverType + "." + methodName, types);
+      }
+      if (method == null) {
+        method = findMethodViaReflectionTyped(receiverType, methodName, types);
+      }
+    }
+    if (method == null) {
+      ctx.errors.addError(
+          LOGGER_NAME,
+          (ctx.clazz != null ? ctx.clazz.sourceFile + " " : "")
+              + "missing chained method \""
+              + methodName
+              + types
+              + "\" on "
+              + receiverType,
+          new RuntimeException().getStackTrace());
+      return "";
+    }
+    // Receiver is already on the operand stack from the previous method call
+    for (int i = 0; i < types.size(); i++) {
+      String srcType = types.get(i);
+      String tgtType = method.args.get(i).type;
+      String evalType =
+          TypeUtils.isPrimitive(srcType) && !TypeUtils.isPrimitive(tgtType) ? srcType : tgtType;
+      ExpressionResult exprResult = ctx.exprGen.eval(out, evalType, methodCall.params.get(i));
+      ctx.basicGen.convert1(out, exprResult.type, tgtType);
+    }
+    boolean isStatic = method.accFlags != null && method.accFlags.contains(AccessFlag.ACC_STATIC);
+    if (isStatic) {
+      ctx.invokeGen.invokeStatic(out, method);
+    } else if (isInterfaceClass(method.fqClassName)) {
+      ctx.invokeGen.invokeInterface(out, method);
+    } else {
+      ctx.invokeGen.invokeVirtual(out, method);
+    }
+    return method.type;
+  }
+
+  private Method findMethodViaReflectionTyped(
+      String receiverType, String methodName, List<String> argTypes) {
+    if (receiverType == null) {
+      return null;
+    }
+    try {
+      String javaClassName = receiverType.replace('/', '.');
+      if (javaClassName.startsWith("L") && javaClassName.endsWith(";")) {
+        javaClassName = javaClassName.substring(1, javaClassName.length() - 1);
+      }
+      Class<?> clazz = Class.forName(javaClassName);
+      for (java.lang.reflect.Method m : clazz.getMethods()) {
+        if (!m.getName().equals(methodName) || m.getParameterCount() != argTypes.size()) {
+          continue;
+        }
+        boolean compatible = true;
+        for (int i = 0; i < argTypes.size(); i++) {
+          if (!isArgTypeCompatible(argTypes.get(i), m.getParameters()[i].getType())) {
+            compatible = false;
+            break;
+          }
+        }
+        if (!compatible) {
+          continue;
+        }
+        List<Argument> args = new ArrayList<>();
+        for (java.lang.reflect.Parameter p : m.getParameters()) {
+          args.add(
+              new Argument(
+                  p.getType().getName(),
+                  io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
+        }
+        String returnType = m.getReturnType().getName();
+        if ("java.lang.String".equals(returnType)) {
+          returnType = STRING;
+        }
+        List<AccessFlag> accFlags = new ArrayList<>();
+        if (java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
+          accFlags.add(AccessFlag.ACC_STATIC);
+        }
+        return new Method(
+            javaClassName,
+            accFlags,
+            returnType,
+            io.github.martinschneider.orzo.lexer.tokens.Token.id(methodName),
+            args,
+            null);
+      }
+    } catch (ClassNotFoundException e) {
+      // not on classpath
+    }
+    return null;
+  }
+
+  private boolean isArgTypeCompatible(String argType, Class<?> paramClass) {
+    if (argType == null) {
+      return true;
+    }
+    try {
+      String cleanType =
+          argType.startsWith("L") && argType.endsWith(";")
+              ? argType.substring(1, argType.length() - 1).replace('/', '.')
+              : argType;
+      Class<?> argClass = Class.forName(cleanType);
+      return paramClass.isAssignableFrom(argClass);
+    } catch (ClassNotFoundException e) {
+      return true;
+    }
   }
 
   public Method findMatchingMethod(String methodName, List<String> types) {

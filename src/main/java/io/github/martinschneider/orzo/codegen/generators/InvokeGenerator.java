@@ -2,12 +2,14 @@ package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.GETFIELD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKEINTERFACE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKESPECIAL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKESTATIC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKEVIRTUAL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEW;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF;
+import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_INTERFACEMETHODREF;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 
@@ -36,6 +38,28 @@ public class InvokeGenerator {
     out.write(ctx.constPool.indexOf(CONSTANT_FIELDREF, clazz, field, type));
     ctx.opStack.pop(); // Pop the object reference
     ctx.opStack.push(type); // Push the field value
+    return out;
+  }
+
+  public HasOutput invokeInterface(DynamicByteArray out, Method method) {
+    String clazzName = method.fqClassName.replaceAll("\\.", "/");
+    String methodName = method.name.id();
+    ctx.constPool.addClass(clazzName);
+    ctx.constPool.addInterfaceMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
+    out.write(INVOKEINTERFACE);
+    out.write(
+        ctx.constPool.indexOf(
+            CONSTANT_INTERFACEMETHODREF, clazzName, methodName, TypeUtils.methodDescr(method)));
+    // count = 1 (receiver) + number of args
+    int count = 1;
+    for (io.github.martinschneider.orzo.parser.productions.Argument arg : method.args) {
+      String argType = arg.type;
+      count += (argType != null && (argType.equals("long") || argType.equals("double"))) ? 2 : 1;
+    }
+    out.write((byte) count);
+    out.write((byte) 0);
+    ctx.opStack.pop(1 + method.args.size());
+    ctx.opStack.push(method.type);
     return out;
   }
 

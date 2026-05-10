@@ -3,6 +3,7 @@ package io.github.martinschneider.orzo.codegen;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
+import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -49,6 +50,9 @@ public class FieldProcessor {
 
     // Add fields from java.lang classes
     addJavaLangFields(fieldMap);
+
+    // Add fields from static imports (e.g. import static Type.VOID)
+    addStaticImportFields(fieldMap, currentClazz);
 
     return fieldMap;
   }
@@ -145,6 +149,57 @@ public class FieldProcessor {
     for (Clazz clazz : clazzes) {
       if (!currentClazz.equals(clazz)) {
         addFieldsFromClass(fieldMap, clazz);
+      }
+    }
+  }
+
+  private void addStaticImportFields(Map<String, StaticField> fieldMap, Clazz currentClazz) {
+    if (currentClazz.imports == null) {
+      return;
+    }
+    for (Import imp : currentClazz.imports) {
+      if (!imp.isStatic) {
+        continue;
+      }
+      String importPath = imp.id;
+      int lastDot = importPath.lastIndexOf('.');
+      if (lastDot < 0) {
+        continue;
+      }
+      String memberName = importPath.substring(lastDot + 1);
+      if ("*".equals(memberName)) {
+        // Wildcard static import - resolve all static fields from that class
+        String className = importPath.substring(0, lastDot);
+        try {
+          Class<?> clazz = Class.forName(className);
+          for (Field field : clazz.getFields()) {
+            if (Modifier.isPublic(field.getModifiers())
+                && Modifier.isStatic(field.getModifiers())) {
+              String fieldName = field.getName();
+              String fieldType = field.getType().getName();
+              StaticField staticField = new StaticField(className, fieldName, fieldType, false);
+              fieldMap.putIfAbsent(fieldName, staticField);
+              fieldMap.put(clazz.getSimpleName() + "." + fieldName, staticField);
+            }
+          }
+        } catch (ClassNotFoundException e) {
+          // not on classpath, skip
+        }
+        continue;
+      }
+      String className = importPath.substring(0, lastDot);
+      try {
+        Class<?> clazz = Class.forName(className);
+        Field field = clazz.getField(memberName);
+        if (Modifier.isPublic(field.getModifiers()) && Modifier.isStatic(field.getModifiers())) {
+          String fieldType = field.getType().getName();
+          StaticField staticField = new StaticField(className, memberName, fieldType, false);
+          fieldMap.put(memberName, staticField);
+          fieldMap.put(clazz.getSimpleName() + "." + memberName, staticField);
+          fieldMap.put(className + "." + memberName, staticField);
+        }
+      } catch (ClassNotFoundException | NoSuchFieldException e) {
+        // might be a static method import, not a field - skip
       }
     }
   }

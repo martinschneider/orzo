@@ -216,14 +216,14 @@ public class TypeUtils {
       case BOOLEAN:
         return List.of(BOOLEAN, "java.lang.Object", "Object");
     }
-    // Reference types (including simple "Object" or fully-qualified "java.lang.Object")
-    // are assignable to java.lang.Object for method lookup purposes.
+    // Reference types are assignable to java.lang.Object for method lookup purposes.
     if (type != null && !type.isEmpty()) {
       if (type.equals("java.lang.Object")
           || type.equals("Object")
           || type.equals("java/lang/Object")) {
         return List.of("java.lang.Object");
       }
+      return List.of(type, "java.lang.Object", "Object");
     }
     return emptyList();
   }

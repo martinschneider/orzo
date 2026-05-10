@@ -8,6 +8,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IMPORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INTERFACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.PACKAGE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_AND;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
@@ -79,17 +80,48 @@ public class ClassParser implements ProdParser<Clazz> {
               LOG_NAME, "missing identifier", new RuntimeException().getStackTrace());
         }
         tokens.next();
-        // Skip generic type parameters on class/interface declaration e.g. class Foo<T>
+        // Parse generic type parameters on class/interface declaration e.g. class Foo<T extends
+        // Bound>
+        ctx.classTypeParams.clear();
         if (tokens.curr().eq(op(LESS))) {
-          int depth = 1;
-          while (depth > 0) {
-            tokens.next();
-            if (tokens.curr().eq(op(LESS))) depth++;
-            else if (tokens.curr().eq(op(GREATER))) depth--;
-            else if (tokens.curr().eq(op(RSHIFT))) depth = Math.max(0, depth - 2);
-            else if (tokens.curr().eq(op(RSHIFTU))) depth = Math.max(0, depth - 3);
-          }
           tokens.next();
+          while (!tokens.curr().eq(op(GREATER)) && !tokens.curr().eq(op(RSHIFT))) {
+            if (tokens.curr() instanceof Identifier) {
+              String typeVarName = tokens.curr().toString();
+              String erasure = "java.lang.Object";
+              tokens.next();
+              if (tokens.curr().eq(keyword(EXTENDS))) {
+                tokens.next();
+                // Collect bound type (until , or > or &)
+                StringBuilder bound = new StringBuilder();
+                while (!tokens.curr().eq(sym(COMMA))
+                    && !tokens.curr().eq(op(GREATER))
+                    && !tokens.curr().eq(op(RSHIFT))
+                    && !tokens.curr().eq(op(BITWISE_AND))) {
+                  if (bound.length() > 0 && tokens.curr().toString().equals(".")) {
+                    bound.append(".");
+                  } else if (bound.length() > 0) {
+                    bound.append(".");
+                    bound.append(tokens.curr().toString());
+                  } else {
+                    bound.append(tokens.curr().toString());
+                  }
+                  tokens.next();
+                }
+                erasure = ctx.importMap.getOrDefault(bound.toString(), bound.toString());
+              }
+              ctx.classTypeParams.put(typeVarName, erasure);
+            }
+            if (tokens.curr().eq(sym(COMMA))) {
+              tokens.next();
+            } else if (tokens.curr().eq(op(BITWISE_AND))) {
+              // Skip additional bounds (e.g. T extends A & B) - use first bound only
+              while (!tokens.curr().eq(sym(COMMA)) && !tokens.curr().eq(op(GREATER))) {
+                tokens.next();
+              }
+            }
+          }
+          tokens.next(); // consume >
         }
         parseInterfaces(tokens, interfaces, packageDeclaration);
         baseClass = parseBaseClass(tokens, isEnum, packageDeclaration);

@@ -83,6 +83,11 @@ public class NumExprTypeDecider {
             } else {
               types.add(var.type);
             }
+          } else {
+            FieldProcessor.StaticField sf = ctx.staticFieldMap.get(id.val.toString());
+            if (sf != null) {
+              types.add(sf.fieldType);
+            }
           }
         }
       }

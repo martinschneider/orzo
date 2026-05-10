@@ -170,6 +170,7 @@ public class OpCodes {
   public static final byte INVOKEVIRTUAL = (byte) 182;
   public static final byte INVOKESPECIAL = (byte) 183;
   public static final byte INVOKESTATIC = (byte) 184;
+  public static final byte INVOKEINTERFACE = (byte) 185;
   public static final byte NEW = (byte) 187;
   public static final byte NEWARRAY = (byte) 188;
   public static final byte ANEWARRAY = (byte) 189;

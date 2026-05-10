@@ -5,6 +5,7 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FLOAT;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_INTEGER;
+import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_INTERFACEMETHODREF;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_LONG;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
@@ -35,6 +36,7 @@ public class ConstantPool {
   private Map<String, Integer> stringMap;
   private Map<String, Integer> utf8Map;
   private Map<String, Integer> methodRefMap;
+  private Map<String, Integer> interfaceMethodRefMap;
   private Map<String, Integer> fieldRefMap;
   private Map<String, Integer> nameAndTypesMap;
 
@@ -49,6 +51,7 @@ public class ConstantPool {
     floatMap = new HashMap<>();
     utf8Map = new HashMap<>();
     methodRefMap = new HashMap<>();
+    interfaceMethodRefMap = new HashMap<>();
     fieldRefMap = new HashMap<>();
     nameAndTypesMap = new HashMap<>();
   }
@@ -93,6 +96,14 @@ public class ConstantPool {
             addMethodRef(classKey, key, type);
           }
           return methodRefMap.get(compositeKey).shortValue();
+        }
+      case CONSTANT_INTERFACEMETHODREF:
+        {
+          Integer id = interfaceMethodRefMap.get(compositeKey);
+          if (id == null) {
+            addInterfaceMethodRef(classKey, key, type);
+          }
+          return interfaceMethodRefMap.get(compositeKey).shortValue();
         }
       case CONSTANT_FIELDREF:
         {
@@ -200,6 +211,15 @@ public class ConstantPool {
         classKey + "_" + name + "_" + type,
         add(
             new ConstantMethodref(
+                indexOf(ConstantTypes.CONSTANT_CLASS, classKey), (short) (size + 2))));
+    addNameAndType(name, type);
+  }
+
+  public void addInterfaceMethodRef(String classKey, String name, String type) {
+    interfaceMethodRefMap.put(
+        classKey + "_" + name + "_" + type,
+        add(
+            new ConstantInterfaceMethodref(
                 indexOf(ConstantTypes.CONSTANT_CLASS, classKey), (short) (size + 2))));
     addNameAndType(name, type);
   }

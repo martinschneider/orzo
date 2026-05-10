@@ -111,6 +111,13 @@ public class MethodParser implements ProdParser<Method> {
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
     } else if (tokens.curr() instanceof Identifier
+        && ctx.classTypeParams.containsKey(tokens.curr().toString())) {
+      // Type variable in class declaration (e.g. S in StatementGenerator<S extends Statement>)
+      String id = tokens.curr().toString();
+      type = new Type(ctx.classTypeParams.get(id));
+      tokens.next();
+      type.arr = ctx.arrayDefParser.parse(tokens);
+    } else if (tokens.curr() instanceof Identifier
         && !tokens.curr().toString().isEmpty()
         && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
       String id = tokens.curr().toString();
@@ -208,6 +215,10 @@ public class MethodParser implements ProdParser<Method> {
       } else if (tokens.curr() instanceof Identifier
           && ctx.importMap.containsKey(tokens.curr().toString())) {
         type = ctx.importMap.get(tokens.curr().toString());
+      } else if (tokens.curr() instanceof Identifier
+          && ctx.classTypeParams.containsKey(tokens.curr().toString())) {
+        // Type variable (e.g. S in StatementGenerator<S extends Statement>) → erase to bound
+        type = ctx.classTypeParams.get(tokens.curr().toString());
       } else if (tokens.curr() instanceof Identifier
           && !tokens.curr().toString().isEmpty()
           && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
