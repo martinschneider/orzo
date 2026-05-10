@@ -61,3 +61,4 @@ src/main/java/io/github/martinschneider/orzo/parser/productions/Constructor.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/ArrayInit.java
 src/main/java/io/github/martinschneider/orzo/parser/BreakParser.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantInterfaceMethodref.java
+src/main/java/io/github/martinschneider/orzo/codegen/OperandStack.java

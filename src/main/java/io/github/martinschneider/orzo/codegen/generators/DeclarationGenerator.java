@@ -10,6 +10,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
@@ -42,6 +43,12 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
           ctx.loadGen.loadReference(out, ctx.classIdMap.variables.get(decl.name).objectRef);
         }
         ctx.exprGen.eval(out, decl.type, decl.val);
+        String actualType = ctx.opStack.type();
+        if (actualType != null
+            && !TypeUtils.isPrimitive(actualType)
+            && !TypeUtils.isPrimitive(decl.type)) {
+          ctx.basicGen.convert1(out, actualType, decl.type);
+        }
       } else {
         ctx.pushGen.push(out, decl.type, ZERO);
       }

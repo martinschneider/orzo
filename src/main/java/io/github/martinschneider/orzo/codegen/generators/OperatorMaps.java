@@ -172,6 +172,8 @@ public class OperatorMaps {
                   BYTE,
                   new byte[] {IXOR},
                   SHORT,
+                  new byte[] {IXOR},
+                  BOOLEAN,
                   new byte[] {IXOR})),
           entry(
               NOTEQUAL,
