@@ -11,9 +11,7 @@ import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.List;
 
 public class CodeGenerator {
-  // TODO: implement StackMapTable attribute
-  // https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4
-  private static final short JAVA_CLASS_MAJOR_VERSION = 50;
+  private static final short JAVA_CLASS_MAJOR_VERSION = 52;
   private static final short JAVA_CLASS_MINOR_VERSION = 0;
   private CGContext ctx;
   private List<Output> outputs;
@@ -154,20 +152,19 @@ public class CodeGenerator {
     out.write(accFlags);
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, varInfo.name));
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, TypeUtils.descr(varInfo)));
+    // Only add ConstantValue for primitive types and String (compile-time constants), not for
+    // reference types (e.g. List<String> fields) whose initializers are not constant expressions.
     // TODO: for some reason this still breaks for long and double
-    // Only add ConstantValue for primitive types and String, not for object types (like enum
-    // constants)
+    Object constVal = varInfo.val != null ? varInfo.val.getConstantValue(varInfo.type) : null;
     if (varInfo.accFlags.contains(AccessFlag.ACC_FINAL)
-        && varInfo.val != null
+        && constVal != null
         && !varInfo.type.startsWith("L")
         && !varInfo.type.startsWith("[")) {
       out.write((short) 1); // attribute size
       // https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.2
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "ConstantValue"));
       out.write(2);
-      out.write(
-          ctx.constPool.indexOf(
-              ctx.constPool.getTypeByte(varInfo.type), varInfo.val.getConstantValue(varInfo.type)));
+      out.write(ctx.constPool.indexOf(ctx.constPool.getTypeByte(varInfo.type), constVal));
     } else {
       out.write((short) 0); // attribute size
     }

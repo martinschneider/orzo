@@ -19,7 +19,7 @@ public class CompilerError {
 
   @Override
   public int hashCode() {
-    return Objects.hash(msg);
+    return Objects.hashCode(msg);
   }
 
   // equals and hashCode do NOT consider the stack trace

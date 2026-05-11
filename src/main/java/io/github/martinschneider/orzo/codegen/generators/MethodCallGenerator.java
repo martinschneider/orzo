@@ -87,7 +87,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         }
         // Reflection fallback for external Java stdlib methods
         if (method == null) {
-          method = findMethodViaReflection(receiverVar.type, simpleMethod, types.size());
+          method = findMethodViaReflectionTyped(receiverVar.type, simpleMethod, types);
+          if (method == null) {
+            method = findMethodViaReflection(receiverVar.type, simpleMethod, types.size());
+          }
         }
       }
       // Handle super.method() calls - invokespecial on parent class
@@ -541,15 +544,52 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     if (argType == null) {
       return true;
     }
+    String cleanType =
+        argType.startsWith("L") && argType.endsWith(";")
+            ? argType.substring(1, argType.length() - 1).replace('/', '.')
+            : argType;
+    // Map Orzo primitive/built-in type names to Java classes
+    switch (cleanType) {
+      case "int":
+      case "byte":
+      case "short":
+      case "char":
+      case "boolean":
+        return paramClass == int.class
+            || paramClass == long.class
+            || paramClass == Integer.class
+            || paramClass == Object.class;
+      case "long":
+        return paramClass == long.class || paramClass == Long.class || paramClass == Object.class;
+      case "float":
+        return paramClass == float.class
+            || paramClass == double.class
+            || paramClass == Float.class
+            || paramClass == Object.class;
+      case "double":
+        return paramClass == double.class
+            || paramClass == Double.class
+            || paramClass == Object.class;
+      case "String":
+        cleanType = "java.lang.String";
+        break;
+      default:
+        break;
+    }
+    // Try java.lang.* if simple name
+    if (!cleanType.contains(".")) {
+      try {
+        Class<?> argClass = Class.forName("java.lang." + cleanType);
+        return paramClass.isAssignableFrom(argClass);
+      } catch (ClassNotFoundException e) {
+        // fall through
+      }
+    }
     try {
-      String cleanType =
-          argType.startsWith("L") && argType.endsWith(";")
-              ? argType.substring(1, argType.length() - 1).replace('/', '.')
-              : argType;
       Class<?> argClass = Class.forName(cleanType);
       return paramClass.isAssignableFrom(argClass);
     } catch (ClassNotFoundException e) {
-      return true;
+      return true; // unknown type: assume compatible
     }
   }
 

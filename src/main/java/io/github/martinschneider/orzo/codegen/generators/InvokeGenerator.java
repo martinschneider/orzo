@@ -98,19 +98,36 @@ public class InvokeGenerator {
       clazzName = method.fqClassName.replaceAll("\\.", "/");
       methodName = tmp[1];
       ctx.constPool.addClass(clazzName);
-      ctx.constPool.addMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
     } else if (!ctx.clazz.fqn().equals(method.fqClassName)) { // static import
       clazzName = method.fqClassName.replaceAll("\\.", "/");
       ctx.constPool.addClass(clazzName);
-      ctx.constPool.addMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
+    }
+    String descr = TypeUtils.methodDescr(method);
+    boolean isInterface = isInterfaceClass(clazzName);
+    if (isInterface) {
+      ctx.constPool.addInterfaceMethodRef(clazzName, methodName, descr);
+    } else {
+      ctx.constPool.addMethodRef(clazzName, methodName, descr);
     }
     out.write(INVOKESTATIC);
     out.write(
-        ctx.constPool.indexOf(
-            CONSTANT_METHODREF, clazzName, methodName, TypeUtils.methodDescr(method)));
+        isInterface
+            ? ctx.constPool.indexOf(CONSTANT_INTERFACEMETHODREF, clazzName, methodName, descr)
+            : ctx.constPool.indexOf(CONSTANT_METHODREF, clazzName, methodName, descr));
     ctx.opStack.pop(method.args.size());
     ctx.opStack.push(method.type);
     return out;
+  }
+
+  private boolean isInterfaceClass(String className) {
+    if (className == null) {
+      return false;
+    }
+    try {
+      return Class.forName(className.replace('/', '.')).isInterface();
+    } catch (ClassNotFoundException e) {
+      return false;
+    }
   }
 
   public HasOutput newInstance(DynamicByteArray out, String clazz) {

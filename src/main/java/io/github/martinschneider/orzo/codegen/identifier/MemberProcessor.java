@@ -157,8 +157,13 @@ public class MemberProcessor {
         break;
       }
       for (Declaration decl : pDecl.declarations) {
-        // the values of final fields are set with the ConstantValue Attribute
-        if (decl.val != null && !decl.accFlags.contains(AccessFlag.ACC_FINAL)) {
+        // Constant final fields (primitive/String) are initialized via the ConstantValue attribute.
+        // Non-constant final fields (e.g. static final List = List.of(...)) need <clinit>.
+        boolean isConstantFinal =
+            decl.accFlags.contains(AccessFlag.ACC_FINAL)
+                && decl.val != null
+                && decl.val.getConstantValue(decl.type) != null;
+        if (decl.val != null && !isConstantFinal) {
           if (decl.accFlags.contains(AccessFlag.ACC_STATIC)) {
             staticInits.add(pDecl);
           } else {

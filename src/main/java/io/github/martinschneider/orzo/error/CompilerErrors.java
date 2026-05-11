@@ -11,16 +11,19 @@ public class CompilerErrors {
   public int tokenIdx;
 
   public void addError(String loggerName, String message, StackTraceElement[] trace) {
-    errors.add(new CompilerError(String.format("%s: %s", loggerName, message), trace));
+    String msg = loggerName + ": " + message;
+    errors.add(new CompilerError(msg, trace));
   }
 
   public void missingExpected(
       String loggerName, Token expected, TokenList tokens, StackTraceElement[] trace) {
-    errors.add(
-        new CompilerError(
-            String.format(
-                "%s: expected %s but found %s", loggerName, expected, tokens.get(tokenIdx)),
-            trace));
+    String msg =
+        loggerName
+            + ": expected "
+            + expected.toString()
+            + " but found "
+            + tokens.get(tokenIdx).toString();
+    errors.add(new CompilerError(msg, trace));
   }
 
   @Override

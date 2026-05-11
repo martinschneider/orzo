@@ -62,3 +62,6 @@ src/main/java/io/github/martinschneider/orzo/parser/productions/ArrayInit.java
 src/main/java/io/github/martinschneider/orzo/parser/BreakParser.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantInterfaceMethodref.java
 src/main/java/io/github/martinschneider/orzo/codegen/OperandStack.java
+src/main/java/io/github/martinschneider/orzo/error/CompilerError.java
+src/main/java/io/github/martinschneider/orzo/error/CompilerErrors.java
+src/main/java/io/github/martinschneider/orzo/lexer/tokens/Type.java

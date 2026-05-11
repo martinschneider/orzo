@@ -80,8 +80,9 @@ public class TypeUtils {
     if (type.startsWith("L") && type.endsWith(";")) {
       return type;
     } else if (type.startsWith("[") && (type.contains(";") || type.length() == 2)) {
-      // Fully-formed array type descriptor - return as is
-      return type;
+      // Fully-formed array type descriptor — ensure dots are converted to slashes
+      // (Class.getName() returns e.g. "[Ljava.lang.Object;" with dots, JVM needs slashes)
+      return type.replace('.', '/');
     }
     // TODO: use a single check
     else if (type.contains(STRING) && !type.contains("java.lang.String")) {
@@ -106,6 +107,15 @@ public class TypeUtils {
       return type.replaceAll(BOOLEAN, "Z");
     } else if (type.equals("Object")) {
       return "Ljava/lang/Object;";
+    } else if (type.startsWith("[")) {
+      // Array of reference type (e.g. "[java.lang.StackTraceElement"):
+      // split into bracket prefix + base type name, then wrap base in L...;
+      int arrDepth = 0;
+      while (arrDepth < type.length() && type.charAt(arrDepth) == '[') {
+        arrDepth++;
+      }
+      String baseName = type.substring(arrDepth);
+      return type.substring(0, arrDepth) + "L" + baseName.replaceAll("\\.", "/") + ";";
     } else {
       return "L" + type.replaceAll("\\.", "/") + ";";
     }

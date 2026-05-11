@@ -39,6 +39,12 @@ public class ConstantPool {
   private Map<String, Integer> interfaceMethodRefMap;
   private Map<String, Integer> fieldRefMap;
   private Map<String, Integer> nameAndTypesMap;
+  // Reverse-lookup maps: CP index → descriptor, used for stack-map simulation
+  private Map<Integer, String> methodDescByIdx;
+  private Map<Integer, String> interfaceMethodDescByIdx;
+  private Map<Integer, String> fieldDescByIdx;
+  // CP index → JVM verification type for LDC constants ("I", "J", "F", "D", "Ljava/lang/String;")
+  private Map<Integer, String> ldcTypeByIdx;
 
   public ConstantPool(CGContext ctx) {
     this.ctx = ctx;
@@ -54,6 +60,10 @@ public class ConstantPool {
     interfaceMethodRefMap = new HashMap<>();
     fieldRefMap = new HashMap<>();
     nameAndTypesMap = new HashMap<>();
+    methodDescByIdx = new HashMap<>();
+    interfaceMethodDescByIdx = new HashMap<>();
+    fieldDescByIdx = new HashMap<>();
+    ldcTypeByIdx = new HashMap<>();
   }
 
   private int size;
@@ -193,7 +203,9 @@ public class ConstantPool {
   }
 
   public void addClass(String clazz) {
-    classMap.put(clazz, add(new ConstantClass((short) (size + 2))));
+    int idx = add(new ConstantClass((short) (size + 2)));
+    classMap.put(clazz, idx);
+    ldcTypeByIdx.put(idx, "Ljava/lang/Class;");
     addUtf8(clazz);
   }
 
@@ -202,34 +214,39 @@ public class ConstantPool {
   }
 
   public void addString(String string) {
-    stringMap.put(string, add(new ConstantString((short) (size + 2))));
+    int idx = add(new ConstantString((short) (size + 2)));
+    stringMap.put(string, idx);
+    ldcTypeByIdx.put(idx, "Ljava/lang/String;");
     addUtf8(string);
   }
 
   public void addMethodRef(String classKey, String name, String type) {
-    methodRefMap.put(
-        classKey + "_" + name + "_" + type,
+    int cpIdx =
         add(
             new ConstantMethodref(
-                indexOf(ConstantTypes.CONSTANT_CLASS, classKey), (short) (size + 2))));
+                indexOf(ConstantTypes.CONSTANT_CLASS, classKey), (short) (size + 2)));
+    methodRefMap.put(classKey + "_" + name + "_" + type, cpIdx);
+    methodDescByIdx.put(cpIdx, type);
     addNameAndType(name, type);
   }
 
   public void addInterfaceMethodRef(String classKey, String name, String type) {
-    interfaceMethodRefMap.put(
-        classKey + "_" + name + "_" + type,
+    int cpIdx =
         add(
             new ConstantInterfaceMethodref(
-                indexOf(ConstantTypes.CONSTANT_CLASS, classKey), (short) (size + 2))));
+                indexOf(ConstantTypes.CONSTANT_CLASS, classKey), (short) (size + 2)));
+    interfaceMethodRefMap.put(classKey + "_" + name + "_" + type, cpIdx);
+    interfaceMethodDescByIdx.put(cpIdx, type);
     addNameAndType(name, type);
   }
 
   public void addFieldRef(String classKey, String name, String type) {
-    fieldRefMap.put(
-        classKey + "_" + name + "_" + type,
+    int cpIdx =
         add(
             new ConstantFieldref(
-                indexOf(ConstantTypes.CONSTANT_CLASS, classKey), (short) (size + 2))));
+                indexOf(ConstantTypes.CONSTANT_CLASS, classKey), (short) (size + 2)));
+    fieldRefMap.put(classKey + "_" + name + "_" + type, cpIdx);
+    fieldDescByIdx.put(cpIdx, type);
     addNameAndType(name, type);
   }
 
@@ -241,19 +258,27 @@ public class ConstantPool {
   }
 
   public void addInteger(Integer val) {
-    integerMap.put(val, add(new ConstantInteger(val)));
+    int idx = add(new ConstantInteger(val));
+    integerMap.put(val, idx);
+    ldcTypeByIdx.put(idx, "I");
   }
 
   public void addLong(Long val) {
-    longMap.put(val, add(new ConstantLong(val)));
+    int idx = add(new ConstantLong(val));
+    longMap.put(val, idx);
+    ldcTypeByIdx.put(idx, "J");
   }
 
   public void addDouble(Double val) {
-    doubleMap.put(val, add(new ConstantDouble(val)));
+    int idx = add(new ConstantDouble(val));
+    doubleMap.put(val, idx);
+    ldcTypeByIdx.put(idx, "D");
   }
 
   public void addFloat(Float val) {
-    floatMap.put(val, add(new ConstantFloat(val)));
+    int idx = add(new ConstantFloat(val));
+    floatMap.put(val, idx);
+    ldcTypeByIdx.put(idx, "F");
   }
 
   public void addByType(String type, Object val) {
@@ -274,6 +299,25 @@ public class ConstantPool {
     } else if ("String".equals(type)) {
       ctx.constPool.addString((String) val);
     }
+  }
+
+  /** Returns the method descriptor for the given CP index, or {@code null} if not found. */
+  public String getMethodDescriptor(int cpIdx) {
+    String d = methodDescByIdx.get(cpIdx);
+    return d != null ? d : interfaceMethodDescByIdx.get(cpIdx);
+  }
+
+  /** Returns the field type descriptor for the given CP index, or {@code null} if not found. */
+  public String getFieldDescriptor(int cpIdx) {
+    return fieldDescByIdx.get(cpIdx);
+  }
+
+  /**
+   * Returns the JVM verification type for a LDC-able constant at the given CP index ("I", "J", "F",
+   * "D", "Ljava/lang/String;", "Ljava/lang/Class;"), or {@code null} if not found.
+   */
+  public String getLdcType(int cpIdx) {
+    return ldcTypeByIdx.get(cpIdx);
   }
 
   public byte getTypeByte(String type) {

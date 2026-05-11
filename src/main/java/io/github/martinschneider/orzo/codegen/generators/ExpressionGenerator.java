@@ -716,6 +716,15 @@ public class ExpressionGenerator {
             }
           }
         }
+        // Try java.lang.* auto-import (e.g. StringBuilder, Math, System)
+        if (!className.contains(".")) {
+          try {
+            Class.forName("java.lang." + className);
+            return "java/lang/" + className;
+          } catch (ClassNotFoundException e) {
+            // not in java.lang; fall through
+          }
+        }
         // Try resolving via current class's package (for same-package references)
         if (ctx.clazz != null && !className.contains(".")) {
           String pkg = ctx.clazz.packageName;

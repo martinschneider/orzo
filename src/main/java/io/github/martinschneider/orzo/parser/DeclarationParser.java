@@ -86,12 +86,18 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
         && !tokens.curr().toString().isEmpty()
         && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
       String id = tokens.curr().toString();
-      String fqn =
-          (ctx.currClazz != null
-                  && ctx.currClazz.packageName != null
-                  && !ctx.currClazz.packageName.isEmpty())
-              ? ctx.currClazz.packageName + "." + id
-              : id;
+      String fqn;
+      try {
+        Class.forName("java.lang." + id);
+        fqn = "java.lang." + id;
+      } catch (ClassNotFoundException e) {
+        fqn =
+            (ctx.currClazz != null
+                    && ctx.currClazz.packageName != null
+                    && !ctx.currClazz.packageName.isEmpty())
+                ? ctx.currClazz.packageName + "." + id
+                : id;
+      }
       type = new Type(fqn);
     }
     if (type != null) {
