@@ -674,6 +674,13 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         }
       }
     }
+    // Check java.lang auto-import before falling back to the current package
+    try {
+      Class.forName("java.lang." + simpleName);
+      return "java.lang." + simpleName;
+    } catch (ClassNotFoundException e) {
+      // not in java.lang, try package prefix
+    }
     if (ctx.clazz != null && ctx.clazz.packageName != null && !ctx.clazz.packageName.isEmpty()) {
       return ctx.clazz.packageName + "." + simpleName;
     }

@@ -27,9 +27,14 @@ public class ArraySelectorParser implements ProdParser<ArraySelector> {
     List<Expression> expressions = new ArrayList<>();
     Expression expr;
     int startIdx = tokens.idx();
+    int endIdx;
+    int size;
+    List lst;
+    List sub;
     while (tokens.curr().eq(sym(LBRAK))) {
       tokens.next();
-      if ((expr = ctx.exprParser.parse(tokens)) != null) {
+      expr = ctx.exprParser.parse(tokens);
+      if (expr != null) {
         expressions.add(expr);
         if (!tokens.curr().eq(sym(RBRAK))) {
           ctx.errors.missingExpected(
@@ -46,8 +51,11 @@ public class ArraySelectorParser implements ProdParser<ArraySelector> {
     }
     // this is used when called from the context of an expression
     if (removeTokens) {
-      int size = tokens.list().subList(startIdx, tokens.idx()).size();
-      tokens.list().subList(startIdx, tokens.idx()).clear();
+      endIdx = tokens.idx();
+      size = endIdx - startIdx;
+      lst = tokens.list();
+      sub = lst.subList(startIdx, endIdx);
+      sub.clear();
       tokens.bw(size);
     }
     return new ArraySelector(expressions);

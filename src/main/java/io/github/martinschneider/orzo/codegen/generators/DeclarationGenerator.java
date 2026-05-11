@@ -50,7 +50,12 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
           ctx.basicGen.convert1(out, actualType, decl.type);
         }
       } else {
-        ctx.pushGen.push(out, decl.type, ZERO);
+        if (TypeUtils.isPrimitive(decl.type)) {
+          ctx.pushGen.push(out, decl.type, ZERO);
+        } else {
+          out.write(ACONST_NULL);
+          ctx.opStack.push(decl.type);
+        }
       }
       ctx.assignGen.assign(out, ctx.classIdMap.variables, decl.type, decl.name);
     }
