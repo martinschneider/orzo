@@ -64,7 +64,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 ## Notes
 
 - array defintions must be of the form `int[] a`, `int a[]` is not supported
-- Orzo creates class files with major version 50 (Java 6). Newer versions would require implementation of the [StackMapTable attribute](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4).
+- Orzo creates class files with major version 52 (Java 8). This technically requires a [StackMapTable attribute](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4) per the JVM spec, but modern JVMs accept these files via the legacy verifier fallback.
 - fields and variables share the same namespace
 
 # Example

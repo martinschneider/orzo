@@ -438,10 +438,6 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     return out;
   }
 
-  public boolean isPrimitiveType(String type) {
-    return TypeUtils.isPrimitive(type);
-  }
-
   public boolean isInterfaceClass(String className) {
     if (className == null) {
       return false;

@@ -14,19 +14,13 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
-import java.util.Arrays;
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 public class BasicGenerator {
   private CGContext ctx;
 
   private static final String LOG_NAME = "basic generator";
-  private static final Set<String> PRIMITIVE_TYPES =
-      new HashSet<>(
-          Arrays.asList(
-              "int", "long", "byte", "short", "char", "float", "double", "boolean", "void"));
 
   public BasicGenerator(CGContext ctx) {
     this.ctx = ctx;
@@ -39,7 +33,7 @@ public class BasicGenerator {
       byte[] castBytes =
           CAST_OPS.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]);
       out.write(castBytes);
-      if (castBytes.length == 0 && !PRIMITIVE_TYPES.contains(to) && !to.equals(from)) {
+      if (castBytes.length == 0 && !TypeUtils.isPrimitive(to) && !to.equals(from)) {
         // Reference type cast: emit checkcast instruction
         out.write(CHECKCAST);
         out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, to.replace('.', '/')));
@@ -52,11 +46,11 @@ public class BasicGenerator {
   public void convert1(DynamicByteArray out, String from, String to) {
     // TODO: array casts
     if (from != null && to != null) {
-      if (PRIMITIVE_TYPES.contains(from) && !from.equals("void") && STRING.equals(to)) {
+      if (TypeUtils.isPrimitive(from) && !from.equals("void") && STRING.equals(to)) {
         primitiveToString(out, from);
-      } else if (PRIMITIVE_TYPES.contains(from)
+      } else if (TypeUtils.isPrimitive(from)
           && !from.equals("void")
-          && !PRIMITIVE_TYPES.contains(to)
+          && !TypeUtils.isPrimitive(to)
           && !to.startsWith("[")) {
         autobox(out, from);
       } else {
@@ -66,8 +60,8 @@ public class BasicGenerator {
         out.write(castOps);
         // Narrowing reference conversion (e.g. erased generic Object → String): emit CHECKCAST
         if (castOps.length == 0
-            && !PRIMITIVE_TYPES.contains(from)
-            && !PRIMITIVE_TYPES.contains(to)
+            && !TypeUtils.isPrimitive(from)
+            && !TypeUtils.isPrimitive(to)
             && !from.equals(to)
             && !"void".equals(to)
             && isNarrowingReferenceConversion(from, to)) {

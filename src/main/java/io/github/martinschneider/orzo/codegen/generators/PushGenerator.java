@@ -62,6 +62,8 @@ public class PushGenerator {
         return pushInteger(out, number.shortValue());
       case CHAR:
         return pushInteger(out, number.intValue());
+      case BOOLEAN:
+        return pushInteger(out, number.intValue() != 0 ? 1 : 0);
     }
     return out;
   }
