@@ -66,3 +66,4 @@ src/main/java/io/github/martinschneider/orzo/error/CompilerError.java
 src/main/java/io/github/martinschneider/orzo/error/CompilerErrors.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Type.java
 src/main/java/io/github/martinschneider/orzo/codegen/CGContext.java
+src/main/java/io/github/martinschneider/orzo/codegen/identifier/IdentifierMap.java

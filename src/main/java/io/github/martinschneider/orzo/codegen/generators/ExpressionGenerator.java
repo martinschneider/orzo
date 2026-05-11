@@ -375,6 +375,9 @@ public class ExpressionGenerator {
                 returnType = varInfo.arrType;
               } else {
                 ctx.loadGen.load(out, varInfo);
+                if (curr.next != null) {
+                  returnType = varType;
+                }
               }
             }
             // Defer narrowing conversion from long to a smaller type when more tokens

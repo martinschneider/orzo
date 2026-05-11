@@ -50,6 +50,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     Method method = findMatchingMethod(methodName, types);
     // For dotted names (e.g. identifier.toString), try to resolve via the receiver variable's type
     String receiverName = null;
+    String[] receiverChainParts = null;
     if (method == null && methodName.contains(".")) {
       int dot = methodName.lastIndexOf('.');
       receiverName = methodName.substring(0, dot);
@@ -114,6 +115,43 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         String resolvedClassName = resolveClassName(receiverName);
         method = findMethodViaReflection(resolvedClassName, simpleMethod, types.size());
       }
+      // Resolve receiver as a dotted field chain (e.g., "id.val" → load id, getfield val)
+      if (method == null
+          && receiverVar == null
+          && receiverName != null
+          && receiverName.contains(".")) {
+        String[] parts = receiverName.split("\\.");
+        io.github.martinschneider.orzo.codegen.identifier.VariableInfo chainFirstVar =
+            classIdMap.variables.localMap.get(parts[0]);
+        if (chainFirstVar == null) {
+          chainFirstVar = classIdMap.variables.fieldMap.get(parts[0]);
+        }
+        if (chainFirstVar != null) {
+          String chainType = chainFirstVar.type;
+          boolean chainOk = true;
+          for (int pi = 1; pi < parts.length && chainOk; pi++) {
+            java.util.Map<
+                    String, io.github.martinschneider.orzo.codegen.FieldProcessor.InstanceField>
+                chainFieldMap =
+                    new io.github.martinschneider.orzo.codegen.FieldProcessor()
+                        .getInstanceFieldMap(chainType, ctx.allClazzes);
+            io.github.martinschneider.orzo.codegen.FieldProcessor.InstanceField cf =
+                chainFieldMap.get(parts[pi]);
+            if (cf == null) {
+              chainOk = false;
+            } else {
+              chainType = cf.fieldType;
+            }
+          }
+          if (chainOk) {
+            receiverChainParts = parts;
+            method = findMethodViaReflectionTyped(chainType, simpleMethod, types);
+            if (method == null) {
+              method = findMethodViaReflection(chainType, simpleMethod, types.size());
+            }
+          }
+        }
+      }
     }
     // Handle no-receiver Object methods called on implicit 'this'
     if (method == null && !methodName.contains(".")) {
@@ -143,6 +181,38 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         }
         if (receiverVar != null) {
           ctx.loadGen.load(out, receiverVar);
+        } else if (receiverChainParts != null) {
+          io.github.martinschneider.orzo.codegen.identifier.VariableInfo chainVar =
+              classIdMap.variables.localMap.get(receiverChainParts[0]);
+          if (chainVar == null) {
+            chainVar = classIdMap.variables.fieldMap.get(receiverChainParts[0]);
+          }
+          ctx.loadGen.load(out, chainVar);
+          String chainType = chainVar.type;
+          for (int pi = 1; pi < receiverChainParts.length; pi++) {
+            java.util.Map<
+                    String, io.github.martinschneider.orzo.codegen.FieldProcessor.InstanceField>
+                chainFieldMap =
+                    new io.github.martinschneider.orzo.codegen.FieldProcessor()
+                        .getInstanceFieldMap(chainType, ctx.allClazzes);
+            io.github.martinschneider.orzo.codegen.FieldProcessor.InstanceField cf =
+                chainFieldMap.get(receiverChainParts[pi]);
+            String cn = cf.className.replace('.', '/');
+            String ftd = TypeUtils.descr(cf.fieldType);
+            ctx.constPool.addClass(cn);
+            ctx.constPool.addFieldRef(cn, cf.fieldName, ftd);
+            ctx.loadGen.getField(
+                out,
+                ctx.constPool.indexOf(
+                    io.github.martinschneider.orzo.codegen.constants.ConstantTypes
+                        .CONSTANT_FIELDREF,
+                    cn,
+                    cf.fieldName,
+                    ftd));
+            ctx.opStack.pop();
+            ctx.opStack.push(cf.fieldType);
+            chainType = cf.fieldType;
+          }
         } else {
           ctx.loadGen.loadReference(out, (short) 0);
         }

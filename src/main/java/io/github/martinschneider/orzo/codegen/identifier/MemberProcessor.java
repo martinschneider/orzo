@@ -153,9 +153,6 @@ public class MemberProcessor {
       return;
     }
     for (ParallelDeclaration pDecl : ctx.clazz.fields) {
-      if (!staticInits.isEmpty() && !constrInits.isEmpty()) {
-        break;
-      }
       for (Declaration decl : pDecl.declarations) {
         // Constant final fields (primitive/String) are initialized via the ConstantValue attribute.
         // Non-constant final fields (e.g. static final List = List.of(...)) need <clinit>.
