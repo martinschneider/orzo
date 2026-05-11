@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
@@ -7,6 +8,7 @@ import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
+import io.github.martinschneider.orzo.codegen.FieldProcessor;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
@@ -18,6 +20,7 @@ import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.List;
+import java.util.Map;
 
 public class AssignmentGenerator implements StatementGenerator<Assignment> {
   private CGContext ctx;
@@ -40,6 +43,17 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
         // Handle this.field = value (or super.field = value) as a single field assignment
         return handleThisFieldAssignment(out, method, second, assignment.right.get(0));
       }
+    }
+
+    // Handle chained field assignment (a.b = value where a.next = b)
+    // Exclude this/super - those are handled by the existing while loop below
+    if (assignment.left.size() == 1
+        && assignment.right.size() == 1
+        && assignment.left.get(0).next != null
+        && !"this".equals(assignment.left.get(0).val.toString())
+        && !"super".equals(assignment.left.get(0).val.toString())) {
+      return handleChainedFieldAssignment(
+          out, method, assignment.left.get(0), assignment.right.get(0));
     }
 
     // Safety check to prevent IndexOutOfBoundsException
@@ -204,6 +218,78 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       }
     }
     return retValue;
+  }
+
+  private HasOutput handleChainedFieldAssignment(
+      DynamicByteArray out, Method method, Identifier startId, Expression value) {
+    Identifier id = startId;
+    String currentType = null;
+
+    // Load all intermediate identifiers, tracking the current object type
+    while (id.next != null) {
+      if (currentType == null) {
+        // First identifier: look up in our identifier maps and load it
+        VariableInfo varInfo = ctx.classIdMap.variables.get(id);
+        if (varInfo == null) {
+          ctx.errors.addError(
+              LOG_NAME,
+              String.format("Unknown variable in chained assignment: %s", id.val),
+              new RuntimeException().getStackTrace());
+          return out;
+        }
+        ctx.loadGen.load(out, varInfo);
+        currentType = varInfo.type;
+      } else {
+        // Subsequent intermediate: object already on stack, getfield via FieldProcessor
+        Map<String, FieldProcessor.InstanceField> fields =
+            new FieldProcessor().getInstanceFieldMap(currentType, ctx.allClazzes);
+        FieldProcessor.InstanceField instanceField = fields.get(id.val.toString());
+        if (instanceField == null) {
+          ctx.errors.addError(
+              LOG_NAME,
+              String.format("Unknown field %s in type %s", id.val, currentType),
+              new RuntimeException().getStackTrace());
+          return out;
+        }
+        String className = instanceField.className.replace('.', '/');
+        String fieldTypeDescr = TypeUtils.descr(instanceField.fieldType);
+        ctx.constPool.addClass(className);
+        ctx.constPool.addFieldRef(className, instanceField.fieldName, fieldTypeDescr);
+        ctx.loadGen.getField(
+            out,
+            ctx.constPool.indexOf(
+                CONSTANT_FIELDREF, className, instanceField.fieldName, fieldTypeDescr));
+        ctx.opStack.pop();
+        ctx.opStack.push(instanceField.fieldType);
+        currentType = instanceField.fieldType;
+      }
+      id = id.next;
+    }
+
+    // Last identifier: store into it using FieldProcessor to look up in the outer type
+    if (currentType != null) {
+      Map<String, FieldProcessor.InstanceField> fields =
+          new FieldProcessor().getInstanceFieldMap(currentType, ctx.allClazzes);
+      FieldProcessor.InstanceField instanceField = fields.get(id.val.toString());
+      if (instanceField != null) {
+        String className = instanceField.className.replace('.', '/');
+        String fieldType = instanceField.fieldType;
+        String fieldTypeDescr = TypeUtils.descr(fieldType);
+        ctx.constPool.addClass(className);
+        ctx.constPool.addFieldRef(className, instanceField.fieldName, fieldTypeDescr);
+        ctx.exprGen.eval(out, fieldType, value);
+        ctx.storeGen.putField(
+            out,
+            ctx.constPool.indexOf(
+                CONSTANT_FIELDREF, className, instanceField.fieldName, fieldTypeDescr));
+      } else {
+        ctx.errors.addError(
+            LOG_NAME,
+            String.format("Unknown field %s in type %s", id.val, currentType),
+            new RuntimeException().getStackTrace());
+      }
+    }
+    return out;
   }
 
   private HasOutput handleThisFieldAssignment(

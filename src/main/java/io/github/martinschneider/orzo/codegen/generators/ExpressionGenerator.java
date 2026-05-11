@@ -318,6 +318,35 @@ public class ExpressionGenerator {
         } else {
           VariableInfo varInfo = ctx.classIdMap.variables.get(curr);
           if (varInfo == null) {
+            if (prevLoadedRef) {
+              // An object ref is on the stack from the previous iteration.
+              // Try to find the field in that object's type via FieldProcessor.
+              java.util.Map<String, FieldProcessor.InstanceField> fields =
+                  new FieldProcessor().getInstanceFieldMap(returnType, ctx.allClazzes);
+              FieldProcessor.InstanceField instanceField = fields.get(curr.val.toString());
+              if (instanceField != null) {
+                String className = instanceField.className.replace('.', '/');
+                String fieldType = instanceField.fieldType;
+                String fieldTypeDescr = TypeUtils.descr(fieldType);
+                ctx.constPool.addClass(className);
+                ctx.constPool.addFieldRef(className, instanceField.fieldName, fieldTypeDescr);
+                ctx.opStack.pop();
+                ctx.loadGen.getField(
+                    out,
+                    ctx.constPool.indexOf(
+                        io.github.martinschneider.orzo.codegen.constants.ConstantTypes
+                            .CONSTANT_FIELDREF,
+                        className,
+                        instanceField.fieldName,
+                        fieldTypeDescr));
+                ctx.opStack.push(fieldType);
+                returnType = fieldType;
+                prevLoadedRef = isNonPrimitive(fieldType) && curr.arrSel == null;
+                prev = curr;
+                curr = curr.next;
+                continue;
+              }
+            }
             // Try to resolve mixed static/instance field access chain
             return handleStaticInstanceChain(out, curr, type);
           }

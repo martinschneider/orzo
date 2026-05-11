@@ -136,7 +136,8 @@ public class OrzoTest {
         args(list("tests/TestEnumSupport", "tests/AccessFlagTest", "tests/Status")),
         args(list("tests/Ternary")),
         args(list("tests/OtherFieldAccess")),
-        args(list("tests/Autoboxing", "tests/AutoboxBase")));
+        args(list("tests/Autoboxing", "tests/AutoboxBase")),
+        args(list("tests/ChainedFieldAssignment", "tests/FieldHolder")));
   }
 
   @ParameterizedTest
