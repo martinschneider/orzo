@@ -1,14 +1,13 @@
 #!/bin/bash
 
-# This will re-compile all allow-listed classes with Orzo (multiple times).
+# This will re-compile all classes with Orzo (multiple times), except those listed in skiplist.txt.
 # This should run after the unit and before the integration tests, so that the integration tests can verify the self-compilation functionality.
-# After Orzo is able to compile a large enough percentage of itself, we can move from an allowlist to a denylist approach.
 
 # Function to remove comments and empty lines from Java files
 clean_java_file() {
     local input_file="$1"
     local output_file="$2"
-    
+
     # Remove single-line comments (//), multi-line comments (/* */), and empty lines
     sed -e '/\/\*/,/\*\//d' \
         -e 's#//.*##' \
@@ -31,17 +30,20 @@ find .tmp/java -name "*.java" | while read -r file; do
     mv "$temp_file" "$file"
 done
 
-done=$(grep -v -E '^#|^$' allowlist.txt | wc -l | xargs)
 total=$(find .tmp/java -name "*.java" | wc -l | xargs)
-
-while read -r file ; do 
-    clean_file=$(echo "$file" | sed 's|src/main/java|.tmp/java|')
-    if [ -f "$clean_file" ]; then
-        ((doneLOC+=$(cat "$clean_file" | wc -l)))
-    fi
-done < <(grep -v -E '^#|^$' allowlist.txt)
+denied=$(grep -v -E '^#|^$' skiplist.txt | wc -l | xargs)
+done=$((total - denied))
 
 while read -r file ; do ((totalLOC+=$(cat "$file" | wc -l))); done < <(find .tmp/java -name "*.java")
+
+while read -r file ; do
+    clean_file=$(echo "$file" | sed 's|src/main/java|.tmp/java|')
+    if [ -f "$clean_file" ]; then
+        ((deniedLOC+=$(cat "$clean_file" | wc -l)))
+    fi
+done < <(grep -v -E '^#|^$' skiplist.txt)
+
+doneLOC=$((totalLOC - deniedLOC))
 
 percentage=$(printf %0.2f $(echo "100* $done/$total" | bc -l))
 percentageLOC=$(printf %0.2f $(echo "100* $doneLOC/$totalLOC" | bc -l))
@@ -49,10 +51,20 @@ javacSize=$(du -sb target/classes | awk '{print $1}')
 echo "Recompiling $done/$total files with Orzo ($percentage% of files, $percentageLOC% of LOC):"
 echo $percentageLOC > progress
 
-grep -v -E '^#|^$' allowlist.txt | sed 's|src/main/java|.tmp/java|'
+# Build list of files to compile (all except skiplisted)
+compile_files=()
+while read -r file; do
+    rel_file=$(echo "$file" | sed 's|.tmp/java/|src/main/java/|')
+    if ! grep -qxF "$rel_file" skiplist.txt; then
+        compile_files+=("$file")
+    fi
+done < <(find .tmp/java -name "*.java")
+
+printf '%s\n' "${compile_files[@]}"
+
 for i in {1..3}
 do
-  java -jar target/orzo.jar $(grep -v -E '^#|^$' allowlist.txt | sed 's|src/main/java|.tmp/java|' | tr '\n' ' ') -d target/classes
+  java -jar target/orzo.jar "${compile_files[@]}" -d target/classes
   jar cfe target/orzo.jar io.github.martinschneider.orzo.Orzo -C target/classes .
   orzoSize=$(du -sb target/classes | awk '{print $1}')
   percentage=$(printf %0.2f $(echo "100* $orzoSize/$javacSize" | bc -l))
