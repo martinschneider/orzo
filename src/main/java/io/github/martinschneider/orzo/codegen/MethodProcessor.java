@@ -48,8 +48,10 @@ public class MethodProcessor {
   // and also automatically imports all of the public types declared in the predefined package
   // java.lang.
   private Map<String, Method> addJavaLang(Map<String, Method> methodMap, Clazz currentClazz) {
-    // TODO: Decide which classes to include. For simplicity, we limit this to what's actually used
-    // in the samples.
+    // TODO: This hardcoded list must be replaced with reflection over every class referenced in
+    // currentClazz.imports (and java.lang.* auto-imports). The current approach misses any
+    // imported class not in this list, and unnecessarily adds ALL static methods of every listed
+    // class even when only a subset is used. See docs/TODO.md — "MethodProcessor.addJavaLang()".
     for (Class<?> clazz :
         List.of(
             Math.class,

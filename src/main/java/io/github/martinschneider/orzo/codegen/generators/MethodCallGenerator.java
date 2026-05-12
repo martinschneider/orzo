@@ -69,6 +69,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         if (method == null) {
           method = findMatchingMethod(receiverVar.type + "." + simpleMethod, types);
         }
+        // TODO: the toString/hashCode/getClass/equals fallbacks below are hard-coded and fragile.
+        // All Object methods should be resolved generically via reflection on java.lang.Object
+        // so that new Object methods don't need individual special cases here.
         // Fall back to java/lang/Object for toString(), hashCode() etc.
         if (method == null) {
           if (types.isEmpty()) {
@@ -253,6 +256,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     } else if ("this".equals(methodCall.name.toString())) {
       callThisConstrWithArgs(out, methodCall);
     } else if ("System.out.println".equals(methodCall.name.toString())) {
+      // TODO: System.out.println is hard-coded. Generalise to arbitrary getstatic + invokevirtual
+      // chains driven by field type reflection so that other PrintStream methods (print, printf,
+      // System.err.println, etc.) also work without special-casing.
       for (Expression param : methodCall.params) {
         ctx.invokeGen.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
         ExpressionResult result = ctx.exprGen.eval(out, null, param);

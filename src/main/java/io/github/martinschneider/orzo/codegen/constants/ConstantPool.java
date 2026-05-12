@@ -85,9 +85,14 @@ public class ConstantPool {
       return idx;
     } else {
       if (entry instanceof ConstantLong || entry instanceof ConstantDouble) {
+        // JVM spec §4.4.5: Long and Double take two consecutive constant-pool slots.
+        // After size+=2, the valid index is the slot BEFORE the increment (size-1 post-increment,
+        // or size pre-increment). Returning `size` here may produce an off-by-one index.
+        // Tests pass currently because Long/Double constants in self-compiled code are rare.
+        // TODO: verify this is correct or fix — see docs/TODO.md "ConstantPool.add()".
         size += 2;
         entries.add(entry);
-        return size; // TODO: shouldn't this be size-1?
+        return size;
       } else {
         size++;
         entries.add(entry);
