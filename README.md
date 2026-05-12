@@ -17,7 +17,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [ ] [reference types](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.4) (partially supported)
 - [X] [enums](https://docs.oracle.com/javase/specs/jls/se18/html/jls-8.html#jls-8.9)
 - [ ] class inheritance
-- [ ] [exceptions](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.10)
+- [X] [exceptions](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.10) (catch handlers; exception table + StackMapTable emitted)
 - [ ] multi-dimensional arrays
 
 ## Operators
@@ -42,7 +42,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [ ] unary logical `!`
 - [ ] unary bitwise `~`
 - [ ] unary plus `+`
-- [ ] `instanceof`
+- [X] `instanceof`
 - [ ] String and char concatenation `+`
 - [ ] ternary `?:`
 
@@ -56,7 +56,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] [return](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.17)
 - [ ] method and constructor calls (partially supported)
 - [ ] [continue](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.16)
-- [ ] [try](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.20)
+- [X] [try](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.20) (try-catch; finally is parsed but not emitted)
 - [ ] [switch](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.11)
 - [ ] [lambdas](https://docs.oracle.com/javase/specs/jls/se18/html/jls-15.html#jls-15.27)
 - [ ] [unless](https://www.perltutorial.org/perl-unless/) ✨
@@ -64,7 +64,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 ## Notes
 
 - array defintions must be of the form `int[] a`, `int a[]` is not supported
-- Orzo creates class files with major version 52 (Java 8). This technically requires a [StackMapTable attribute](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4) per the JVM spec, but modern JVMs accept these files via the legacy verifier fallback.
+- Orzo creates class files with major version 52 (Java 8) and emits a [StackMapTable attribute](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4) for methods with branch targets, as required by the JVM spec.
 - fields and variables share the same namespace
 
 # Example
@@ -99,4 +99,4 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
-Self-compilation progress: █████▉░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 14.7%
+Self-compilation progress: █████▉░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 14.8%

@@ -3,6 +3,7 @@ src/main/java/io/github/martinschneider/orzo/codegen/ConstantPoolProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantPool.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantUtf8.java
 src/main/java/io/github/martinschneider/orzo/codegen/FieldProcessor.java
+src/main/java/io/github/martinschneider/orzo/codegen/generators/TryGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/AssignmentGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/BasicGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ConstructorCallGenerator.java
@@ -36,6 +37,7 @@ src/main/java/io/github/martinschneider/orzo/lexer/tokens/IntLiteral.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Operator.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Token.java
 src/main/java/io/github/martinschneider/orzo/Orzo.java
+src/main/java/io/github/martinschneider/orzo/parser/TryParser.java
 src/main/java/io/github/martinschneider/orzo/parser/ArrayInitParser.java
 src/main/java/io/github/martinschneider/orzo/parser/AssignmentParser.java
 src/main/java/io/github/martinschneider/orzo/parser/CastParser.java

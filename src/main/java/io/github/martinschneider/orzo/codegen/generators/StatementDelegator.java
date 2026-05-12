@@ -15,6 +15,7 @@ import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import io.github.martinschneider.orzo.parser.productions.TryStatement;
 import io.github.martinschneider.orzo.parser.productions.WhileStatement;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +35,7 @@ public class StatementDelegator {
     reg.put(ReturnStatement.class, new RetGenerator(ctx));
     reg.put(WhileStatement.class, new WhileGenerator(ctx));
     reg.put(IncrementStatement.class, new IncrementGenerator(ctx));
+    reg.put(TryStatement.class, new TryGenerator(ctx));
     reg.put(EmptyStatement.class, new DoNothingGenerator());
   }
 

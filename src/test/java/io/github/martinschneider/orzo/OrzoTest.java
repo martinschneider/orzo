@@ -137,7 +137,9 @@ public class OrzoTest {
         args(list("tests/Ternary")),
         args(list("tests/OtherFieldAccess")),
         args(list("tests/Autoboxing", "tests/AutoboxBase")),
-        args(list("tests/ChainedFieldAssignment", "tests/FieldHolder")));
+        args(list("tests/ChainedFieldAssignment", "tests/FieldHolder")),
+        args(list("tests/TryCatch")),
+        args(list("tests/Instanceof")));
   }
 
   @ParameterizedTest

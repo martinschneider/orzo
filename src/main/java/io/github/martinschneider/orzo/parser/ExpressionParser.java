@@ -21,7 +21,9 @@ import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Chr;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.InstanceofToken;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
+import io.github.martinschneider.orzo.lexer.tokens.Keywords;
 import io.github.martinschneider.orzo.lexer.tokens.Num;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
@@ -71,7 +73,8 @@ public class ExpressionParser implements ProdParser<Expression> {
           || tokens.curr().eq(sym(LPAREN))
           || tokens.curr().eq(sym(RPAREN))
           || tokens.curr().eq(sym(QUESTION))
-          || isNewKeyword(tokens.curr())) {
+          || isNewKeyword(tokens.curr())
+          || isInstanceofKeyword(tokens.curr())) {
         // Handle ternary: when we see '?' at depth -1, parse it as a ternary expression
         if (tokens.curr().eq(sym(QUESTION)) && parenthesis == -1 && ternaryOuterParenIdx >= 0) {
           // conditionTokens = exprTokens from ternaryOuterParenIdx+1 to end (exclude the '(')
@@ -103,6 +106,13 @@ public class ExpressionParser implements ProdParser<Expression> {
           continue;
         }
 
+        if (isInstanceofKeyword(tokens.curr())) {
+          tokens.next(); // consume 'instanceof'
+          String typeName = tokens.curr().val.toString();
+          tokens.next(); // consume type name
+          exprTokens.add(new InstanceofToken(typeName));
+          continue;
+        }
         int idx = tokens.idx();
         boolean negative = false;
         if (List.of(sym(LPAREN), op(TIMES), op(DIV), op(POW), op(MOD))
@@ -182,6 +192,10 @@ public class ExpressionParser implements ProdParser<Expression> {
 
   private boolean isNewKeyword(Token curr) {
     return (curr instanceof Keyword && ((Keyword) curr).eq(keyword("new")));
+  }
+
+  private boolean isInstanceofKeyword(Token curr) {
+    return (curr instanceof Keyword && ((Keyword) curr).eq(keyword(Keywords.INSTANCEOF)));
   }
 
   private Token flattenId(List<Identifier> selectors) {

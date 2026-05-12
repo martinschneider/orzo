@@ -18,6 +18,8 @@ import io.github.martinschneider.orzo.codegen.identifier.MemberProcessor;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,8 +45,14 @@ public class CGContext {
   public CompilerErrors errors;
   public MemberProcessor memberProc;
   public GlobalIdentifierMap classIdMap;
+  // Exception table entries: each int[] is {startPc, endPc, handlerPc, catchTypeIdx}
+  public List<int[]> exceptionTable;
+  // Maps handlerPc → JVM class name (e.g. "java/lang/Exception") for StackMapTable
+  public Map<Integer, String> exceptionHandlerType;
 
   public void init(CompilerErrors errors, int idx, List<Clazz> clazzes) {
+    exceptionTable = new ArrayList<>();
+    exceptionHandlerType = new HashMap<>();
     clazz = clazzes.get(idx);
     allClazzes = clazzes;
     this.errors = errors;

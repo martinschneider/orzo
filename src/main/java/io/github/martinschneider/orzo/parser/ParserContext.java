@@ -36,6 +36,7 @@ public class ParserContext {
   public StatementParser stmtParser;
   public WhileParser whileParser;
   public RepeatParser repeatParser;
+  public TryParser tryParser;
   public TypeMap typeMap;
 
   public static ParserContext build(CompilerErrors errors) {
@@ -65,6 +66,7 @@ public class ParserContext {
     ctx.stmtParser = new StatementParser(ctx);
     ctx.whileParser = new WhileParser(ctx);
     ctx.repeatParser = new RepeatParser(ctx);
+    ctx.tryParser = new TryParser(ctx);
     ctx.typeMap = new TypeMap();
     return ctx;
   }

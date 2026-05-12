@@ -71,4 +71,10 @@ public class DynamicByteArray implements HasOutput {
   public void write(int val) {
     write(intToByteArray(val));
   }
+
+  public void patch(int pos, byte[] bytes) {
+    for (int i = 0; i < bytes.length; i++) {
+      array[pos + i] = bytes[i];
+    }
+  }
 }

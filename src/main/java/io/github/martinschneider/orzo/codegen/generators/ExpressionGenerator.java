@@ -17,9 +17,11 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPGT;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLT;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPNE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INSTANCEOF;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
+import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.ARITHMETIC_OPS;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.COMPARE_TO_ZERO_OPS;
@@ -69,6 +71,7 @@ import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Chr;
 import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.InstanceofToken;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
@@ -177,6 +180,16 @@ public class ExpressionGenerator {
         ctx.pushGen.push(out, CHAR, chr);
         type = CHAR;
         exprTypeStack.push(CHAR);
+      } else if (token instanceof InstanceofToken) {
+        InstanceofToken instof = (InstanceofToken) token;
+        String jvmType = resolveJvmClassName(instof.targetType);
+        ctx.constPool.addClass(jvmType);
+        out.write(INSTANCEOF);
+        out.write(ctx.constPool.indexOf(CONSTANT_CLASS, jvmType));
+        ctx.opStack.pop();
+        ctx.opStack.push(BOOLEAN);
+        type = BOOLEAN;
+        exprTypeStack.push(BOOLEAN);
       } else if (token instanceof TernaryExpression) {
         type = generateTernary(out, type, (TernaryExpression) token);
         exprTypeStack.push(type);
@@ -773,6 +786,10 @@ public class ExpressionGenerator {
         // For fully qualified names, just replace dots with slashes
         return className.replace('.', '/');
     }
+  }
+
+  String resolveJvmClassName(String typeName) {
+    return convertToJVMClassName(typeName);
   }
 
   private static boolean isNonPrimitive(String type) {

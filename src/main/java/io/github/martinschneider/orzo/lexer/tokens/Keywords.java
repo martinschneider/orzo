@@ -19,7 +19,11 @@ public enum Keywords {
   IMPLEMENTS,
   EXTENDS,
   REPEAT,
-  UNLESS;
+  UNLESS,
+  TRY,
+  CATCH,
+  FINALLY,
+  INSTANCEOF;
   // THIS
   // SUPER
 }

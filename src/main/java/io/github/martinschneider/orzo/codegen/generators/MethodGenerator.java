@@ -15,6 +15,7 @@ import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import io.github.martinschneider.orzo.parser.productions.TryStatement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +32,8 @@ public class MethodGenerator {
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.name.val));
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, TypeUtils.methodDescr(method)));
     DynamicByteArray methodOut = new DynamicByteArray();
+    ctx.exceptionTable.clear();
+    ctx.exceptionHandlerType.clear();
     if (!clazz.isInterface) {
       out.write((short) 1); // attribute size
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Code"));
@@ -49,6 +52,8 @@ public class MethodGenerator {
           generateCode(methodOut, method, stmt);
           if (stmt instanceof ReturnStatement) {
             returned = true;
+          } else if (stmt instanceof TryStatement) {
+            returned = tryStatementAlwaysReturns((TryStatement) stmt);
           }
         }
       }
@@ -60,7 +65,9 @@ public class MethodGenerator {
           io.github.martinschneider.orzo.codegen.StackMapTableBuilder.buildFromBytecode(
               methodOut.getBytes(), method, ctx, ctx.constPool);
       int codeLen = methodOut.size();
-      int attrSize = 12 + codeLen + (stackMapBytes != null ? stackMapBytes.length : 0);
+      int exTableSize = 8 * ctx.exceptionTable.size();
+      int attrSize =
+          12 + codeLen + exTableSize + (stackMapBytes != null ? stackMapBytes.length : 0);
       out.write(attrSize); // stack size (2) + local var size (2) + code size (4) +
       // exception table size (2) + attribute count size (2) + optional StackMapTable
       // Set appropriate max stack size for enum methods
@@ -73,7 +80,13 @@ public class MethodGenerator {
       out.write((short) (ctx.classIdMap.variables.localSize + 1)); // max local var size
       out.write(codeLen);
       out.write(methodOut.flush());
-      out.write((short) 0); // exception table of size 0
+      out.write((short) ctx.exceptionTable.size()); // exception table count
+      for (int[] entry : ctx.exceptionTable) {
+        out.write((short) entry[0]); // start_pc
+        out.write((short) entry[1]); // end_pc
+        out.write((short) entry[2]); // handler_pc
+        out.write((short) entry[3]); // catch_type (CP index)
+      }
       if (stackMapBytes != null) {
         out.write((short) 1); // 1 attribute: StackMapTable
         out.write(stackMapBytes);
@@ -86,6 +99,25 @@ public class MethodGenerator {
     }
     ctx.opStack.reset();
     return out;
+  }
+
+  private boolean tryStatementAlwaysReturns(TryStatement stmt) {
+    if (!endsWithReturn(stmt.tryBody)) {
+      return false;
+    }
+    for (io.github.martinschneider.orzo.parser.productions.CatchBlock cb : stmt.catchBlocks) {
+      if (!endsWithReturn(cb.body)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private boolean endsWithReturn(List<Statement> body) {
+    if (body == null || body.isEmpty()) {
+      return false;
+    }
+    return body.get(body.size() - 1) instanceof ReturnStatement;
   }
 
   public boolean startsWithCallToSuper(List<Statement> body) {

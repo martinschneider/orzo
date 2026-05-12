@@ -206,6 +206,18 @@ public class StackMapTableBuilder {
     Map<Integer, List<String>> branchTargetStacks =
         simulateStacks(code, constPool, targets, minBranchToTarget);
 
+    // Add exception handler entry points: stack = [exception_class]
+    for (int[] entry : ctx.exceptionTable) {
+      int handlerPc = entry[2];
+      String handlerType = ctx.exceptionHandlerType.get(handlerPc);
+      if (handlerType != null) {
+        targets.add(handlerPc);
+        List<String> handlerStack = new ArrayList<>();
+        handlerStack.add("L" + handlerType + ";");
+        branchTargetStacks.put(handlerPc, handlerStack);
+      }
+    }
+
     // Build frames
     StackMapTableBuilder builder = new StackMapTableBuilder();
     for (int target : targets) {
@@ -444,16 +456,14 @@ public class StackMapTableBuilder {
       case 53: // baload, caload, saload
       case 190: // arraylength
       case 193: // instanceof
-        if (op == 46 || op == 51 || op == 52 || op == 53 || op == 190) {
-          if (op == 46 || op == 51 || op == 52 || op == 53) { // xaload: pop ref+I
-            if (stack.size() >= 2) {
-              stack.remove(stack.size() - 1);
-              stack.remove(stack.size() - 1);
-            }
-          } else { // arraylength, instanceof: pop 1
-            if (!stack.isEmpty()) {
-              stack.remove(stack.size() - 1);
-            }
+        if (op == 46 || op == 51 || op == 52 || op == 53) { // xaload: pop ref+I
+          if (stack.size() >= 2) {
+            stack.remove(stack.size() - 1);
+            stack.remove(stack.size() - 1);
+          }
+        } else if (op == 190 || op == 193) { // arraylength, instanceof: pop 1
+          if (!stack.isEmpty()) {
+            stack.remove(stack.size() - 1);
           }
         }
         stack.add("I");

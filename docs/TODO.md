@@ -31,16 +31,16 @@ Priority: **H**igh / **M**edium / **L**ow.
 
 ## Missing Features / Known Gaps
 
-| Priority |           Location            |                                                                                      Description                                                                                       |
-|----------|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| H        | `MethodCallParser`            | Cannot parse chained method call *statements* like `a.b(x).c(y)` — only `ExpressionParser` handles chains. Statements that chain calls must be rewritten with intermediate variables.  |
-| H        | `DeclarationParser`           | Declarations inside `if`/`while`/`for` bodies are not pre-scanned by `MemberProcessor.processLocalVars()`, so they may not get correct local variable slots in some edge cases.        |
-| H        | `CodeGenerator`               | Major version 52 (Java 8) requires `StackMapTable` per JVM spec; Orzo doesn't emit it and relies on the legacy verifier fallback. This will break when targeting Java 17+ strict mode. |
-| M        | `TypeUtils.descr()`           | Multi-dimensional arrays not supported (marked TODO).                                                                                                                                  |
-| M        | `ArrayInitParser`             | Multi-dimensional array initialisation not supported (marked TODO).                                                                                                                    |
-| M        | `ForParser`                   | Statement sequences inside for-loop initialisers not supported (marked TODO).                                                                                                          |
-| M        | `MemberProcessor.addClInit()` | Explicit `static { }` initialiser blocks in source are not supported (marked TODO).                                                                                                    |
-| L        | `ConstantPool`                | Long and Double constants take two slots in the pool; the current index accounting may be wrong (see Dead Code section).                                                               |
+| Priority |           Location            |                                                                                        Description                                                                                        |
+|----------|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| H        | `MethodCallParser`            | Cannot parse chained method call *statements* like `a.b(x).c(y)` — only `ExpressionParser` handles chains. Statements that chain calls must be rewritten with intermediate variables.     |
+| H        | `DeclarationParser`           | Declarations inside `if`/`while`/`for` bodies are not pre-scanned by `MemberProcessor.processLocalVars()`, so they may not get correct local variable slots in some edge cases.           |
+| M        | `TryGenerator`                | Nested try-catch inside if/while/for uses a sub-buffer and will produce incorrect absolute PCs in the exception table. Only top-level try-catch is correct (marked TODO in TryGenerator). |
+| M        | `TypeUtils.descr()`           | Multi-dimensional arrays not supported (marked TODO).                                                                                                                                     |
+| M        | `ArrayInitParser`             | Multi-dimensional array initialisation not supported (marked TODO).                                                                                                                       |
+| M        | `ForParser`                   | Statement sequences inside for-loop initialisers not supported (marked TODO).                                                                                                             |
+| M        | `MemberProcessor.addClInit()` | Explicit `static { }` initialiser blocks in source are not supported (marked TODO).                                                                                                       |
+| L        | `ConstantPool`                | Long and Double constants take two slots in the pool; the current index accounting may be wrong (see Dead Code section).                                                                  |
 
 ---
 
