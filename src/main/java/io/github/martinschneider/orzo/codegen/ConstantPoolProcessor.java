@@ -122,6 +122,7 @@ public class ConstantPoolProcessor {
     } else if (stmt instanceof LoopStatement) {
       LoopStatement loopStatement = (LoopStatement) stmt;
       constPool = processExpression(constPool, loopStatement.cond);
+      if (loopStatement.body == null) return constPool;
       for (Statement innerStmt : loopStatement.body) {
         constPool = processStatement(constPool, innerStmt);
       }

@@ -757,6 +757,15 @@ public class ExpressionGenerator {
                   imp.id.contains(".") ? imp.id.substring(imp.id.lastIndexOf('.') + 1) : imp.id;
               if (simpleName.equals(className)) {
                 return imp.id.replace('.', '/');
+              } else if ("*".equals(simpleName)) {
+                String pkg = imp.id.substring(0, imp.id.lastIndexOf('.'));
+                String candidate = pkg + "." + className;
+                try {
+                  Class.forName(candidate);
+                  return candidate.replace('.', '/');
+                } catch (ClassNotFoundException e) {
+                  // not in this wildcard package
+                }
               }
             }
           }

@@ -219,6 +219,9 @@ public class ConstantPool {
   }
 
   public void addString(String string) {
+    if (stringMap.containsKey(string)) {
+      return;
+    }
     int idx = add(new ConstantString((short) (size + 2)));
     stringMap.put(string, idx);
     ldcTypeByIdx.put(idx, "Ljava/lang/String;");

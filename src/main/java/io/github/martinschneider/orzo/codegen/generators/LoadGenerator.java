@@ -27,6 +27,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD_3;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LDC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LDC2_W;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LDC_W;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_1;
@@ -104,9 +105,14 @@ public class LoadGenerator {
       ctx.constPool.addString((String) key);
     }
 
-    byte idx = (byte) ctx.constPool.indexOf(type, key);
-    out.write(LDC);
-    out.write(idx);
+    short idx = ctx.constPool.indexOf(type, key);
+    if (idx > 255 || idx < 0) {
+      out.write(LDC_W);
+      out.write((short) idx);
+    } else {
+      out.write(LDC);
+      out.write((byte) idx);
+    }
     return out;
   }
 

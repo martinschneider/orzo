@@ -122,16 +122,14 @@ public class MethodProcessor {
         continue;
       }
       String memberName = importPath.substring(lastDot + 1);
-      if ("*".equals(memberName)) {
-        continue;
-      }
       String className = importPath.substring(0, lastDot);
+      boolean isWildcard = "*".equals(memberName);
       try {
         Class<?> clazz = Class.forName(className);
         for (java.lang.reflect.Method m : clazz.getMethods()) {
           if (Modifier.isPublic(m.getModifiers())
               && Modifier.isStatic(m.getModifiers())
-              && m.getName().equals(memberName)) {
+              && (isWildcard || m.getName().equals(memberName))) {
             List<Argument> args = mapArgs(m.getParameters());
             Method method =
                 new Method(

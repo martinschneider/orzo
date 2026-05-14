@@ -23,6 +23,7 @@ import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_S
 import static io.github.martinschneider.orzo.parser.productions.Method.CONSTRUCTOR_NAME;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.lexer.tokens.EOF;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Scopes;
@@ -30,6 +31,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Constructor;
+import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
@@ -41,6 +43,25 @@ public class MethodParser implements ProdParser<Method> {
 
   public MethodParser(ParserContext ctx) {
     this.ctx = ctx;
+  }
+
+  private String resolveWithWildcards(String id) {
+    if (ctx.currClazz == null || ctx.currClazz.imports == null) {
+      return null;
+    }
+    for (Import imp : ctx.currClazz.imports) {
+      if (!imp.isStatic && imp.id != null && imp.id.endsWith(".*")) {
+        String pkg = imp.id.substring(0, imp.id.length() - 2);
+        String fqn = pkg + "." + id;
+        try {
+          Class.forName(fqn);
+          return fqn;
+        } catch (ClassNotFoundException e) {
+          // not in this wildcard package
+        }
+      }
+    }
+    return null;
   }
 
   @Override
@@ -121,17 +142,19 @@ public class MethodParser implements ProdParser<Method> {
         && !tokens.curr().toString().isEmpty()
         && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
       String id = tokens.curr().toString();
-      String fqn;
-      try {
-        Class.forName("java.lang." + id);
-        fqn = "java.lang." + id;
-      } catch (ClassNotFoundException e) {
-        fqn =
-            (ctx.currClazz != null
-                    && ctx.currClazz.packageName != null
-                    && !ctx.currClazz.packageName.isEmpty())
-                ? ctx.currClazz.packageName + "." + id
-                : id;
+      String fqn = resolveWithWildcards(id);
+      if (fqn == null) {
+        try {
+          Class.forName("java.lang." + id);
+          fqn = "java.lang." + id;
+        } catch (ClassNotFoundException e) {
+          fqn =
+              (ctx.currClazz != null
+                      && ctx.currClazz.packageName != null
+                      && !ctx.currClazz.packageName.isEmpty())
+                  ? ctx.currClazz.packageName + "." + id
+                  : id;
+        }
       }
       type = new Type(fqn);
       tokens.next();
@@ -182,9 +205,16 @@ public class MethodParser implements ProdParser<Method> {
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (!tokens.curr().eq(sym(RBRACE))) {
+        // Recovery: body parsing stopped before the closing brace.
+        // Skip forward to the matching } rather than resetting — this preserves the method
+        // signature even when the body contains syntax Orzo cannot yet parse.
         ctx.errors.tokenIdx = tokens.idx();
-        tokens.setIdx(idx);
-        return null;
+        int depth = 1;
+        while (depth > 0 && !(tokens.curr() instanceof EOF)) {
+          tokens.next();
+          if (tokens.curr().eq(sym(LBRACE))) depth++;
+          else if (tokens.curr().eq(sym(RBRACE))) depth--;
+        }
       }
     }
     if (body == null) {
@@ -229,16 +259,21 @@ public class MethodParser implements ProdParser<Method> {
           && !tokens.curr().toString().isEmpty()
           && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
         String id = tokens.curr().toString();
-        try {
-          Class.forName("java.lang." + id);
-          type = "java.lang." + id;
-        } catch (ClassNotFoundException e) {
-          type =
-              (ctx.currClazz != null
-                      && ctx.currClazz.packageName != null
-                      && !ctx.currClazz.packageName.isEmpty())
-                  ? ctx.currClazz.packageName + "." + id
-                  : id;
+        String resolved = resolveWithWildcards(id);
+        if (resolved != null) {
+          type = resolved;
+        } else {
+          try {
+            Class.forName("java.lang." + id);
+            type = "java.lang." + id;
+          } catch (ClassNotFoundException e) {
+            type =
+                (ctx.currClazz != null
+                        && ctx.currClazz.packageName != null
+                        && !ctx.currClazz.packageName.isEmpty())
+                    ? ctx.currClazz.packageName + "." + id
+                    : id;
+          }
         }
       } else {
         break;

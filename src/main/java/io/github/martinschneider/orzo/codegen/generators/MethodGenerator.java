@@ -10,6 +10,8 @@ import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
+import io.github.martinschneider.orzo.parser.productions.IfBlock;
+import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
@@ -54,6 +56,10 @@ public class MethodGenerator {
             returned = true;
           } else if (stmt instanceof TryStatement) {
             returned = tryStatementAlwaysReturns((TryStatement) stmt);
+          } else if (stmt instanceof IfStatement) {
+            returned = ifStatementAlwaysReturns((IfStatement) stmt);
+          } else {
+            returned = false;
           }
         }
       }
@@ -99,6 +105,18 @@ public class MethodGenerator {
     }
     ctx.opStack.reset();
     return out;
+  }
+
+  private boolean ifStatementAlwaysReturns(IfStatement stmt) {
+    if (!stmt.hasElse) {
+      return false;
+    }
+    for (IfBlock block : stmt.ifBlks) {
+      if (!endsWithReturn(block.body)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private boolean tryStatementAlwaysReturns(TryStatement stmt) {

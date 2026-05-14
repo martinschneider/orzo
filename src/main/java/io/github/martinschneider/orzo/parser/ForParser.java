@@ -12,6 +12,7 @@ import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ForParser implements ProdParser<ForStatement> {
@@ -73,8 +74,7 @@ public class ForParser implements ProdParser<ForStatement> {
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (body == null) {
-        tokens.next(sym(RBRACE));
-        ctx.errors.addError(LOG_NAME, "missing body", new RuntimeException().getStackTrace());
+        body = new ArrayList<>();
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
         tokens.next(sym(RBRACE));

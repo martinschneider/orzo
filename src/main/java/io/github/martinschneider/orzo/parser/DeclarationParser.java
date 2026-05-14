@@ -21,6 +21,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,25 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
 
   public DeclarationParser(ParserContext ctx) {
     this.ctx = ctx;
+  }
+
+  private String resolveWithWildcards(String id) {
+    if (ctx.currClazz == null || ctx.currClazz.imports == null) {
+      return null;
+    }
+    for (Import imp : ctx.currClazz.imports) {
+      if (!imp.isStatic && imp.id != null && imp.id.endsWith(".*")) {
+        String pkg = imp.id.substring(0, imp.id.length() - 2);
+        String fqn = pkg + "." + id;
+        try {
+          Class.forName(fqn);
+          return fqn;
+        } catch (ClassNotFoundException e) {
+          // not in this wildcard package
+        }
+      }
+    }
+    return null;
   }
 
   @Override
@@ -86,17 +106,19 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
         && !tokens.curr().toString().isEmpty()
         && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
       String id = tokens.curr().toString();
-      String fqn;
-      try {
-        Class.forName("java.lang." + id);
-        fqn = "java.lang." + id;
-      } catch (ClassNotFoundException e) {
-        fqn =
-            (ctx.currClazz != null
-                    && ctx.currClazz.packageName != null
-                    && !ctx.currClazz.packageName.isEmpty())
-                ? ctx.currClazz.packageName + "." + id
-                : id;
+      String fqn = resolveWithWildcards(id);
+      if (fqn == null) {
+        try {
+          Class.forName("java.lang." + id);
+          fqn = "java.lang." + id;
+        } catch (ClassNotFoundException e) {
+          fqn =
+              (ctx.currClazz != null
+                      && ctx.currClazz.packageName != null
+                      && !ctx.currClazz.packageName.isEmpty())
+                  ? ctx.currClazz.packageName + "." + id
+                  : id;
+        }
       }
       type = new Type(fqn);
     }
