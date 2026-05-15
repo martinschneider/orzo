@@ -31,9 +31,13 @@ public class Lexer {
     return getTokens(inputReader);
   }
 
-  public TokenList getTokens(String string) throws IOException {
+  public TokenList getTokens(String string) {
     inputReader = new PushbackReader(new StringReader(string));
-    return getTokens(inputReader);
+    try {
+      return getTokens(inputReader);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public TokenList getTokens(PushbackReader fileReader) throws IOException {

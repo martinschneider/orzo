@@ -87,12 +87,60 @@ public class NumExprTypeDecider {
             FieldProcessor.StaticField sf = ctx.staticFieldMap.get(id.val.toString());
             if (sf != null) {
               types.add(sf.fieldType);
+            } else if (id.next != null) {
+              // ClassName.fieldName pattern (e.g. Operators.LESS, Byte.MAX_VALUE)
+              String resolvedType = resolveChainedType(id.val.toString(), id.next.val.toString());
+              if (resolvedType != null) {
+                types.add(resolvedType);
+              }
             }
           }
         }
       }
     }
     return getSmallestType(types);
+  }
+
+  private String resolveChainedType(String className, String fieldName) {
+    String fqn = null;
+    if (ctx.clazz != null && ctx.clazz.imports != null) {
+      for (io.github.martinschneider.orzo.parser.productions.Import imp : ctx.clazz.imports) {
+        if (imp.isStatic || imp.id == null) continue;
+        if (imp.id.endsWith(".*")) {
+          String pkg = imp.id.substring(0, imp.id.length() - 2);
+          String candidate = pkg + "." + className;
+          try {
+            Class.forName(candidate);
+            fqn = candidate;
+            break;
+          } catch (ClassNotFoundException e) {
+            // try next
+          }
+        } else {
+          String simpleName =
+              imp.id.contains(".") ? imp.id.substring(imp.id.lastIndexOf('.') + 1) : imp.id;
+          if (simpleName.equals(className)) {
+            fqn = imp.id;
+            break;
+          }
+        }
+      }
+    }
+    if (fqn == null) {
+      try {
+        Class.forName("java.lang." + className);
+        fqn = "java.lang." + className;
+      } catch (ClassNotFoundException e) {
+        // not in java.lang
+      }
+    }
+    if (fqn == null) return null;
+    try {
+      java.lang.reflect.Field field = Class.forName(fqn).getField(fieldName);
+      return field.getType().getName();
+    } catch (ClassNotFoundException | NoSuchFieldException e) {
+      return null;
+    }
   }
 
   private String getSmallestType(Set<String> types) {

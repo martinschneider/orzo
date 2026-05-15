@@ -8,7 +8,6 @@ import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.parser.productions.*;
-import java.io.IOException;
 import java.util.List;
 
 public class RepeatParser implements ProdParser<LoopStatement> {
@@ -53,23 +52,14 @@ public class RepeatParser implements ProdParser<LoopStatement> {
         // infinite loop
         return new WhileStatement(new Expression(List.of(bool("true"))), body);
       }
-      try {
-        Lexer lexer = new Lexer();
-        count.tokens.add(0, id("i"));
-        count.tokens.add(op(Operators.LESS));
-        return new ForStatement(
-            ctx.stmtParser.parse(lexer.getTokens("int i=0")),
-            count,
-            ctx.stmtParser.parse(lexer.getTokens("i++")),
-            body);
-      } catch (IOException e) {
-        // TODO: is this needed?
-        ctx.errors.addError(
-            LOG_NAME,
-            String.format("unexpected error creating loop statement %s", e.getMessage()),
-            new RuntimeException().getStackTrace());
-        return null;
-      }
+      Lexer lexer = new Lexer();
+      count.tokens.add(0, id("i"));
+      count.tokens.add(op(Operators.LESS));
+      return new ForStatement(
+          ctx.stmtParser.parse(lexer.getTokens("int i=0")),
+          count,
+          ctx.stmtParser.parse(lexer.getTokens("i++")),
+          body);
     } else {
       return null;
     }

@@ -23,6 +23,7 @@ public class ForGenerator implements StatementGenerator<ForStatement> {
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, ForStatement forStmt) {
     ctx.delegator.generate(out, method, forStmt.init);
+    int etStart = ctx.exceptionTable.size();
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements
     List<Byte> breaks = new ArrayList<>();
@@ -40,6 +41,9 @@ public class ForGenerator implements StatementGenerator<ForStatement> {
     short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
     ctx.exprGen.eval(conditionOut, null, forStmt.cond, false, true);
     conditionOut.write(branchBytes);
+    // Fix up ET entries: init bytes already in out; body starts after condition
+    TryGenerator.adjustExceptionTableEntries(
+        ctx, etStart, ctx.exceptionTable.size(), out.size() + conditionOut.getBytes().length);
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {

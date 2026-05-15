@@ -30,11 +30,26 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
     this.ctx = ctx;
   }
 
+  /**
+   * Adjusts exception table entries added during sub-buffer generation so their PCs are relative to
+   * the parent buffer instead of the sub-buffer. Called by IfGenerator, WhileGenerator,
+   * ForGenerator, and DoGenerator before writing sub-buffer bytes to the parent output.
+   */
+  static void adjustExceptionTableEntries(CGContext ctx, int fromIdx, int toIdx, int baseOffset) {
+    for (int i = fromIdx; i < toIdx; i++) {
+      int[] e = ctx.exceptionTable.get(i);
+      String type = ctx.exceptionHandlerType.remove(e[2]);
+      e[0] += baseOffset;
+      e[1] += baseOffset;
+      e[2] += baseOffset;
+      if (type != null) {
+        ctx.exceptionHandlerType.put(e[2], type);
+      }
+    }
+  }
+
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, TryStatement stmt) {
-    // TODO: Nested try-catch (inside if/while/for) uses a sub-buffer and will produce
-    // incorrect absolute PCs in the exception table. Only top-level try-catch is correct.
-
     int startPc = out.size();
 
     // Generate try body

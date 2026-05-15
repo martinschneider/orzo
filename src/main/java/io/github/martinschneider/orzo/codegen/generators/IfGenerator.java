@@ -29,12 +29,17 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
   public HasOutput generate(DynamicByteArray out, Method method, IfStatement ifStmt) {
     List<DynamicByteArray> bodyOutputs = new ArrayList<>();
     List<DynamicByteArray> condOutputs = new ArrayList<>();
+    List<Integer> bodyEtStarts = new ArrayList<>();
+    List<Integer> bodyEtEnds = new ArrayList<>();
     for (int i = 0; i < ifStmt.ifBlks.size(); i++) {
       IfBlock ifBlock = ifStmt.ifBlks.get(i);
+      int etStart = ctx.exceptionTable.size();
       DynamicByteArray bodyOut = new DynamicByteArray();
       for (Statement innerStmt : ifBlock.body) {
         ctx.delegator.generate(bodyOut, method, innerStmt);
       }
+      bodyEtStarts.add(etStart);
+      bodyEtEnds.add(ctx.exceptionTable.size());
       DynamicByteArray conditionOut = new DynamicByteArray();
       if (ifBlock.cond != null) { // null for else blocks
         boolean bodyReturns = blockAlwaysReturns(ifBlock.body);
@@ -60,6 +65,13 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
         bodyOutputs.get(i).write(shortToByteArray(offset));
       }
       offset += condOutputs.get(i).size() + bodyOutputs.get(i).size();
+    }
+    // Fix up exception table entries: add each body's absolute base offset
+    int absPC = out.size();
+    for (int i = 0; i < blocks; i++) {
+      absPC += condOutputs.get(i).size();
+      TryGenerator.adjustExceptionTableEntries(ctx, bodyEtStarts.get(i), bodyEtEnds.get(i), absPC);
+      absPC += bodyOutputs.get(i).size();
     }
     for (int i = 0; i < bodyOutputs.size(); i++) {
       if (condOutputs.get(i) != null) {

@@ -139,8 +139,10 @@ public class OrzoTest {
         args(list("tests/Autoboxing", "tests/AutoboxBase")),
         args(list("tests/ChainedFieldAssignment", "tests/FieldHolder")),
         args(list("tests/TryCatch")),
+        args(list("tests/TryCatchInIf")),
         args(list("tests/Instanceof")),
-        args(list("tests/BridgeMethods")));
+        args(list("tests/BridgeMethods")),
+        args(list("tests/StaticFieldAccess")));
   }
 
   @ParameterizedTest

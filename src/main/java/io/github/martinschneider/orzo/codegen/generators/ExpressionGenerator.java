@@ -536,6 +536,31 @@ public class ExpressionGenerator {
       return staticField.fieldType;
     }
 
+    // Try to resolve as ImportedClass.fieldName (e.g. Operators.LESS, Byte.MAX_VALUE)
+    if (identifierParts.size() == 2) {
+      String partClass = identifierParts.get(0);
+      String partField = identifierParts.get(1);
+      String jvmClass = resolveJvmClassName(partClass);
+      String fqnClass = jvmClass.replace('/', '.');
+      try {
+        java.lang.reflect.Field reflField = Class.forName(fqnClass).getField(partField);
+        String reflFieldType = reflField.getType().getName();
+        String reflDescr = TypeUtils.descr(reflFieldType);
+        ctx.constPool.addClass(jvmClass);
+        ctx.constPool.addFieldRef(jvmClass, partField, reflDescr);
+        out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC);
+        out.write(
+            ctx.constPool.indexOf(
+                io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF,
+                jvmClass,
+                partField,
+                reflDescr));
+        ctx.opStack.push(reflFieldType);
+        return reflFieldType;
+      } catch (ClassNotFoundException | NoSuchFieldException e) {
+        // fall through
+      }
+    }
     if ("null".equals(curr.val.toString())) {
       out.write(ACONST_NULL);
       ctx.opStack.push(REF);

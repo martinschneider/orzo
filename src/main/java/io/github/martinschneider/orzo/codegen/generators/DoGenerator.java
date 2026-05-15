@@ -22,6 +22,7 @@ public class DoGenerator implements StatementGenerator<DoStatement> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, DoStatement doStmt) {
+    int etStart = ctx.exceptionTable.size();
     DynamicByteArray bodyOut = new DynamicByteArray();
     // keep track of break statements
     List<Byte> breaks = new ArrayList<>();
@@ -40,6 +41,8 @@ public class DoGenerator implements StatementGenerator<DoStatement> {
     branchBytes -= conditionOut.getBytes().length;
     branchBytes++;
     conditionOut.write(branchBytes);
+    // Fix up ET entries: body starts at current out position (written first)
+    TryGenerator.adjustExceptionTableEntries(ctx, etStart, ctx.exceptionTable.size(), out.size());
     byte[] bodyBytes = bodyOut.getBytes();
     for (byte idx : breaks) {
       byte[] jmpOffset =

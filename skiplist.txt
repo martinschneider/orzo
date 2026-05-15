@@ -60,7 +60,6 @@ src/main/java/io/github/martinschneider/orzo/parser/TypeMap.java
 src/main/java/io/github/martinschneider/orzo/util/FactoryHelper.java
 src/main/java/io/github/martinschneider/orzo/util/ObjectUtils.java
 src/main/java/io/github/martinschneider/orzo/error/CompilerErrors.java
-src/main/java/io/github/martinschneider/orzo/parser/RepeatParser.java
 src/main/java/io/github/martinschneider/orzo/parser/ConstructorCallParser.java
 src/main/java/io/github/martinschneider/orzo/parser/PostIncrementParser.java
 src/main/java/io/github/martinschneider/orzo/parser/PreIncrementParser.java
