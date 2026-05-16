@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.codegen;
 
 public class OpCodes {
+  public static final byte NOP = (byte) 0;
   public static final byte ACONST_NULL = (byte) 1;
   public static final byte ICONST_M1 = (byte) 2;
   public static final byte ICONST_0 = (byte) 3;
@@ -50,6 +51,7 @@ public class OpCodes {
   public static final byte LALOAD = (byte) 47;
   public static final byte FALOAD = (byte) 48;
   public static final byte DALOAD = (byte) 49;
+  public static final byte AALOAD = (byte) 50;
   public static final byte BALOAD = (byte) 51;
   public static final byte CALOAD = (byte) 52;
   public static final byte SALOAD = (byte) 53;
@@ -89,7 +91,11 @@ public class OpCodes {
   public static final byte POP = (byte) 87;
   public static final byte POP2 = (byte) 88;
   public static final byte DUP = (byte) 89;
+  public static final byte DUP_X1 = (byte) 90;
+  public static final byte DUP_X2 = (byte) 91;
   public static final byte DUP2 = (byte) 92;
+  public static final byte DUP2_X1 = (byte) 93;
+  public static final byte DUP2_X2 = (byte) 94;
   public static final byte SWAP = (byte) 95;
   public static final byte IADD = (byte) 96;
   public static final byte LADD = (byte) 97;
@@ -111,6 +117,10 @@ public class OpCodes {
   public static final byte LREM = (byte) 113;
   public static final byte FREM = (byte) 114;
   public static final byte DREM = (byte) 115;
+  public static final byte INEG = (byte) 116;
+  public static final byte LNEG = (byte) 117;
+  public static final byte FNEG = (byte) 118;
+  public static final byte DNEG = (byte) 119;
   public static final byte ISHL = (byte) 120;
   public static final byte LSHL = (byte) 121;
   public static final byte ISHR = (byte) 122;
@@ -140,6 +150,10 @@ public class OpCodes {
   public static final byte I2C = (byte) 146;
   public static final byte I2S = (byte) 147;
   public static final byte LCMP = (byte) 148;
+  public static final byte FCMPL = (byte) 149;
+  public static final byte FCMPG = (byte) 150;
+  public static final byte DCMPL = (byte) 151;
+  public static final byte DCMPG = (byte) 152;
   public static final byte IFEQ = (byte) 153;
   public static final byte IFNE = (byte) 154;
   public static final byte IFLT = (byte) 155;
@@ -155,12 +169,14 @@ public class OpCodes {
   public static final byte IF_ACMPEQ = (byte) 165;
   public static final byte IF_ACMPNE = (byte) 166;
   public static final byte GOTO = (byte) 167;
-  public static final byte IFNULL = (byte) 198;
-  public static final byte IFNONNULL = (byte) 199;
+  public static final byte JSR = (byte) 168;
+  public static final byte RET = (byte) 169;
+  public static final byte TABLESWITCH = (byte) 170;
+  public static final byte LOOKUPSWITCH = (byte) 171;
   public static final byte IRETURN = (byte) 172;
   public static final byte LRETURN = (byte) 173;
-  public static final byte DRETURN = (byte) 175;
   public static final byte FRETURN = (byte) 174;
+  public static final byte DRETURN = (byte) 175;
   public static final byte ARETURN = (byte) 176;
   public static final byte RETURN = (byte) 177;
   public static final byte GETSTATIC = (byte) 178;
@@ -171,11 +187,20 @@ public class OpCodes {
   public static final byte INVOKESPECIAL = (byte) 183;
   public static final byte INVOKESTATIC = (byte) 184;
   public static final byte INVOKEINTERFACE = (byte) 185;
+  public static final byte INVOKEDYNAMIC = (byte) 186;
   public static final byte NEW = (byte) 187;
   public static final byte NEWARRAY = (byte) 188;
   public static final byte ANEWARRAY = (byte) 189;
   public static final byte ARRAYLENGTH = (byte) 190;
+  public static final byte ATHROW = (byte) 191;
   public static final byte CHECKCAST = (byte) 192;
   public static final byte INSTANCEOF = (byte) 193;
+  public static final byte MONITORENTER = (byte) 194;
+  public static final byte MONITOREXIT = (byte) 195;
   public static final byte WIDE = (byte) 196;
+  public static final byte MULTIANEWARRAY = (byte) 197;
+  public static final byte IFNULL = (byte) 198;
+  public static final byte IFNONNULL = (byte) 199;
+  public static final byte GOTO_W = (byte) 200;
+  public static final byte JSR_W = (byte) 201;
 }

@@ -1,5 +1,207 @@
 package io.github.martinschneider.orzo.codegen;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.AALOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.AASTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ALOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ALOAD_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ALOAD_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ALOAD_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ALOAD_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ANEWARRAY;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ARETURN;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ARRAYLENGTH;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ATHROW;
+import static io.github.martinschneider.orzo.codegen.OpCodes.BALOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.BASTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.BIPUSH;
+import static io.github.martinschneider.orzo.codegen.OpCodes.CALOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.CASTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.CHECKCAST;
+import static io.github.martinschneider.orzo.codegen.OpCodes.D2F;
+import static io.github.martinschneider.orzo.codegen.OpCodes.D2I;
+import static io.github.martinschneider.orzo.codegen.OpCodes.D2L;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DADD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DALOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DASTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DCMPG;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DCMPL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DCONST_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DCONST_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DDIV;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DLOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DLOAD_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DLOAD_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DLOAD_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DLOAD_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DMUL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DNEG;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DREM;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DRETURN;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DSTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DSTORE_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DSTORE_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DSTORE_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DSTORE_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DSUB;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2_X1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2_X2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP_X1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP_X2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.F2D;
+import static io.github.martinschneider.orzo.codegen.OpCodes.F2I;
+import static io.github.martinschneider.orzo.codegen.OpCodes.F2L;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FADD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FALOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FASTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FCMPG;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FCMPL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FCONST_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FCONST_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FCONST_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FDIV;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FLOAD_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FMUL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FNEG;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FREM;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FRETURN;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FSTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FSTORE_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FSTORE_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FSTORE_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FSTORE_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FSUB;
+import static io.github.martinschneider.orzo.codegen.OpCodes.GETFIELD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC;
+import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
+import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO_W;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2B;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2C;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2D;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2F;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2L;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2S;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IADD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IALOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IAND;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IASTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_4;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_5;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_M1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IDIV;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFEQ;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFGE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFGT;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFLE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFLT;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFNE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFNONNULL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFNULL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ACMPEQ;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ACMPNE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPEQ;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPGE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPGT;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLT;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPNE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IINC;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ILOAD_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IMUL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INEG;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INSTANCEOF;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKEDYNAMIC;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKEINTERFACE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKESPECIAL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKESTATIC;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKEVIRTUAL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IOR;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IREM;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IRETURN;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ISHL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ISHR;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ISTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ISTORE_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ISTORE_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ISTORE_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ISTORE_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ISUB;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IUSHR;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IXOR;
+import static io.github.martinschneider.orzo.codegen.OpCodes.JSR;
+import static io.github.martinschneider.orzo.codegen.OpCodes.JSR_W;
+import static io.github.martinschneider.orzo.codegen.OpCodes.L2D;
+import static io.github.martinschneider.orzo.codegen.OpCodes.L2F;
+import static io.github.martinschneider.orzo.codegen.OpCodes.L2I;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LADD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LALOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LAND;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LASTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LCMP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LCONST_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LCONST_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LDC;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LDC2_W;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LDC_W;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LDIV;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LLOAD_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LMUL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LNEG;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LOOKUPSWITCH;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LOR;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LREM;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LRETURN;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LSHL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LSHR;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LSUB;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LUSHR;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LXOR;
+import static io.github.martinschneider.orzo.codegen.OpCodes.MONITORENTER;
+import static io.github.martinschneider.orzo.codegen.OpCodes.MONITOREXIT;
+import static io.github.martinschneider.orzo.codegen.OpCodes.MULTIANEWARRAY;
+import static io.github.martinschneider.orzo.codegen.OpCodes.NEW;
+import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
+import static io.github.martinschneider.orzo.codegen.OpCodes.NOP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.POP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.POP2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.PUTFIELD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.PUTSTATIC;
+import static io.github.martinschneider.orzo.codegen.OpCodes.RET;
+import static io.github.martinschneider.orzo.codegen.OpCodes.RETURN;
+import static io.github.martinschneider.orzo.codegen.OpCodes.SALOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.SASTORE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.SIPUSH;
+import static io.github.martinschneider.orzo.codegen.OpCodes.SWAP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.TABLESWITCH;
+import static io.github.martinschneider.orzo.codegen.OpCodes.WIDE;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 
@@ -19,7 +221,7 @@ import java.util.TreeMap;
  * Builds the StackMapTable attribute for a method.
  *
  * <p>Records branch targets and associated local variable types during code generation, then
- * serialises them into the StackMapTable attribute format (JVM spec §4.7.4). Every frame uses
+ * serializes them into the StackMapTable attribute format (JVM spec §4.7.4). Every frame uses
  * full_frame (tag 255) with an empty operand stack, which is always true for branch targets in
  * Orzo's structured-control-flow output.
  */
@@ -144,8 +346,8 @@ public class StackMapTableBuilder {
       if (prev >= 0) {
         prevInstrOffset.put(i, prev);
       }
-      int op = code[i] & 0xFF;
-      if ((op >= 153 && op <= 167) || op == 198 || op == 199) {
+      byte op = code[i];
+      if ((op >= IFEQ && op <= GOTO) || op == IFNULL || op == IFNONNULL) {
         if (i + 2 < code.length) {
           short branchOffset = (short) (((code[i + 1] & 0xFF) << 8) | (code[i + 2] & 0xFF));
           int target = i + branchOffset;
@@ -154,19 +356,19 @@ public class StackMapTableBuilder {
             branchesToTarget.computeIfAbsent(target, k -> new ArrayList<>()).add(i);
           }
         }
-        if (op == 167) { // GOTO: instruction-after-GOTO also needs a frame
+        if (op == GOTO) { // GOTO: instruction-after-GOTO also needs a frame
           int next = i + 3;
           if (next < code.length) {
             targets.add(next);
           }
         }
-      } else if ((op >= 172 && op <= 177) || op == 191) {
+      } else if ((op >= IRETURN && op <= RETURN) || op == ATHROW) {
         // xRETURN (172-177) / ATHROW (191): instruction after unconditional transfer needs a frame
         int next = i + 1;
         if (next < code.length) {
           targets.add(next);
         }
-      } else if (op == 200 || op == 201) {
+      } else if (op == GOTO_W || op == JSR_W) {
         if (i + 4 < code.length) {
           int branchOffset =
               ((code[i + 1] & 0xFF) << 24)
@@ -179,7 +381,7 @@ public class StackMapTableBuilder {
             branchesToTarget.computeIfAbsent(target, k -> new ArrayList<>()).add(i);
           }
         }
-        if (op == 200) {
+        if (op == GOTO_W) {
           int next = i + 5;
           if (next < code.length) {
             targets.add(next);
@@ -313,10 +515,10 @@ public class StackMapTableBuilder {
         stack = new ArrayList<>();
       }
 
-      int op = code[i] & 0xFF;
+      byte op = code[i];
 
       // Conditional branches: pop comparison operands, record target stack
-      if ((op >= 153 && op <= 158) || op == 198 || op == 199) {
+      if ((op >= IFEQ && op <= IFLE) || op == IFNULL || op == IFNONNULL) {
         // ifeq..ifle, ifnull, ifnonnull: pop 1
         if (i + 2 < code.length) {
           short off = (short) (((code[i + 1] & 0xFF) << 8) | (code[i + 2] & 0xFF));
@@ -330,7 +532,7 @@ public class StackMapTableBuilder {
             stack.remove(stack.size() - 1);
           }
         }
-      } else if ((op >= 159 && op <= 166)) {
+      } else if (op >= IF_ICMPEQ && op <= IF_ACMPNE) {
         // if_icmpxx (159-164), if_acmpxx (165-166): pop 2
         if (i + 2 < code.length) {
           short off = (short) (((code[i + 1] & 0xFF) << 8) | (code[i + 2] & 0xFF));
@@ -346,7 +548,7 @@ public class StackMapTableBuilder {
             stack.remove(stack.size() - 1);
           }
         }
-      } else if (op == 167) { // GOTO
+      } else if (op == GOTO) {
         if (i + 2 < code.length) {
           short off = (short) (((code[i + 1] & 0xFF) << 8) | (code[i + 2] & 0xFF));
           int target = i + off;
@@ -358,7 +560,7 @@ public class StackMapTableBuilder {
           }
           dead = true;
         }
-      } else if (op == 200) { // GOTO_W
+      } else if (op == GOTO_W) {
         if (i + 4 < code.length) {
           int off =
               ((code[i + 1] & 0xFF) << 24)
@@ -373,7 +575,7 @@ public class StackMapTableBuilder {
           }
           dead = true;
         }
-      } else if ((op >= 172 && op <= 177) || op == 191) {
+      } else if ((op >= IRETURN && op <= RETURN) || op == ATHROW) {
         // xRETURN / ATHROW: unconditional transfer; dead code after needs empty stack frame
         applyStackEffect(op, code, i, stack, constPool);
         int next = i + 1;
@@ -397,34 +599,34 @@ public class StackMapTableBuilder {
    * (getfield, invokevirtual, etc.) the ConstantPool is consulted for type information.
    */
   private static void applyStackEffect(
-      int op, byte[] code, int pos, List<String> stack, ConstantPool constPool) {
+      byte op, byte[] code, int pos, List<String> stack, ConstantPool constPool) {
     switch (op) {
-      case 0: // nop
-      case 132: // iinc
+      case NOP:
+      case IINC:
         break;
 
       // Push ref
-      case 1: // aconst_null
-      case 42:
-      case 43:
-      case 44:
-      case 45: // aload_0..3
-      case 25: // aload (wide form handled separately)
-      case 50: // aaload (pops ref+I, pushes ref)
-      case 89:
-      case 90:
-      case 91:
-      case 92:
-      case 93:
-      case 94: // dup variants
+      case ACONST_NULL:
+      case ALOAD_0:
+      case ALOAD_1:
+      case ALOAD_2:
+      case ALOAD_3:
+      case ALOAD:
+      case AALOAD:
+      case DUP:
+      case DUP_X1:
+      case DUP_X2:
+      case DUP2:
+      case DUP2_X1:
+      case DUP2_X2:
         // For dup: push a copy of the top (type unknown without full stack view, use Object)
-        if (op >= 89 && op <= 94) {
+        if (op >= DUP && op <= DUP2_X2) {
           if (!stack.isEmpty()) {
             stack.add(stack.get(stack.size() - 1));
           } else {
             stack.add("Ljava/lang/Object;");
           }
-        } else if (op == 50) { // aaload
+        } else if (op == AALOAD) {
           if (stack.size() >= 2) {
             stack.remove(stack.size() - 1);
             stack.remove(stack.size() - 1);
@@ -436,32 +638,32 @@ public class StackMapTableBuilder {
         break;
 
       // Push I
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-      case 6:
-      case 7:
-      case 8: // iconst_m1..5
-      case 16:
-      case 17: // bipush, sipush
-      case 21:
-      case 26:
-      case 27:
-      case 28:
-      case 29: // iload, iload_0..3
-      case 46: // iaload
-      case 51:
-      case 52:
-      case 53: // baload, caload, saload
-      case 190: // arraylength
-      case 193: // instanceof
-        if (op == 46 || op == 51 || op == 52 || op == 53) { // xaload: pop ref+I
+      case ICONST_M1:
+      case ICONST_0:
+      case ICONST_1:
+      case ICONST_2:
+      case ICONST_3:
+      case ICONST_4:
+      case ICONST_5:
+      case BIPUSH:
+      case SIPUSH:
+      case ILOAD:
+      case ILOAD_0:
+      case ILOAD_1:
+      case ILOAD_2:
+      case ILOAD_3:
+      case IALOAD:
+      case BALOAD:
+      case CALOAD:
+      case SALOAD:
+      case ARRAYLENGTH:
+      case INSTANCEOF:
+        if (op == IALOAD || op == BALOAD || op == CALOAD || op == SALOAD) { // xaload: pop ref+I
           if (stack.size() >= 2) {
             stack.remove(stack.size() - 1);
             stack.remove(stack.size() - 1);
           }
-        } else if (op == 190 || op == 193) { // arraylength, instanceof: pop 1
+        } else if (op == ARRAYLENGTH || op == INSTANCEOF) { // arraylength, instanceof: pop 1
           if (!stack.isEmpty()) {
             stack.remove(stack.size() - 1);
           }
@@ -470,15 +672,15 @@ public class StackMapTableBuilder {
         break;
 
       // Push J
-      case 9:
-      case 10: // lconst_0..1
-      case 22:
-      case 30:
-      case 31:
-      case 32:
-      case 33: // lload, lload_0..3
-      case 47: // laload: pop ref+I, push J
-        if (op == 47) {
+      case LCONST_0:
+      case LCONST_1:
+      case LLOAD:
+      case LLOAD_0:
+      case LLOAD_1:
+      case LLOAD_2:
+      case LLOAD_3:
+      case LALOAD:
+        if (op == LALOAD) {
           if (stack.size() >= 2) {
             stack.remove(stack.size() - 1);
             stack.remove(stack.size() - 1);
@@ -488,16 +690,16 @@ public class StackMapTableBuilder {
         break;
 
       // Push F
-      case 11:
-      case 12:
-      case 13: // fconst_0..2
-      case 23:
-      case 34:
-      case 35:
-      case 36:
-      case 37: // fload, fload_0..3
-      case 48: // faload: pop ref+I, push F
-        if (op == 48) {
+      case FCONST_0:
+      case FCONST_1:
+      case FCONST_2:
+      case FLOAD:
+      case FLOAD_0:
+      case FLOAD_1:
+      case FLOAD_2:
+      case FLOAD_3:
+      case FALOAD:
+        if (op == FALOAD) {
           if (stack.size() >= 2) {
             stack.remove(stack.size() - 1);
             stack.remove(stack.size() - 1);
@@ -507,15 +709,15 @@ public class StackMapTableBuilder {
         break;
 
       // Push D
-      case 14:
-      case 15: // dconst_0..1
-      case 24:
-      case 38:
-      case 39:
-      case 40:
-      case 41: // dload, dload_0..3
-      case 49: // daload: pop ref+I, push D
-        if (op == 49) {
+      case DCONST_0:
+      case DCONST_1:
+      case DLOAD:
+      case DLOAD_0:
+      case DLOAD_1:
+      case DLOAD_2:
+      case DLOAD_3:
+      case DALOAD:
+        if (op == DALOAD) {
           if (stack.size() >= 2) {
             stack.remove(stack.size() - 1);
             stack.remove(stack.size() - 1);
@@ -525,50 +727,50 @@ public class StackMapTableBuilder {
         break;
 
       // Pop 1 (store, return, throw)
-      case 54:
-      case 59:
-      case 60:
-      case 61:
-      case 62: // istore, istore_0..3
-      case 55:
-      case 63:
-      case 64:
-      case 65:
-      case 66: // lstore, lstore_0..3
-      case 56:
-      case 67:
-      case 68:
-      case 69:
-      case 70: // fstore, fstore_0..3
-      case 57:
-      case 71:
-      case 72:
-      case 73:
-      case 74: // dstore, dstore_0..3
-      case 58:
-      case 75:
-      case 76:
-      case 77:
-      case 78: // astore, astore_0..3
-      case 87: // pop
-      case 172:
-      case 173:
-      case 174:
-      case 175:
-      case 176: // ireturn..areturn
-      case 191: // athrow
-      case 194:
-      case 195: // monitorenter, monitorexit
+      case ISTORE:
+      case ISTORE_0:
+      case ISTORE_1:
+      case ISTORE_2:
+      case ISTORE_3:
+      case LSTORE:
+      case LSTORE_0:
+      case LSTORE_1:
+      case LSTORE_2:
+      case LSTORE_3:
+      case FSTORE:
+      case FSTORE_0:
+      case FSTORE_1:
+      case FSTORE_2:
+      case FSTORE_3:
+      case DSTORE:
+      case DSTORE_0:
+      case DSTORE_1:
+      case DSTORE_2:
+      case DSTORE_3:
+      case ASTORE:
+      case ASTORE_0:
+      case ASTORE_1:
+      case ASTORE_2:
+      case ASTORE_3:
+      case POP:
+      case IRETURN:
+      case LRETURN:
+      case FRETURN:
+      case DRETURN:
+      case ARETURN:
+      case ATHROW:
+      case MONITORENTER:
+      case MONITOREXIT:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         break;
 
-      case 177: // return
+      case RETURN:
         break;
 
       // pop2
-      case 88:
+      case POP2:
         if (stack.size() >= 2) {
           stack.remove(stack.size() - 1);
           stack.remove(stack.size() - 1);
@@ -578,17 +780,17 @@ public class StackMapTableBuilder {
         break;
 
       // iadd, isub, imul, idiv, irem: pop 2, push I
-      case 96:
-      case 100:
-      case 104:
-      case 108:
-      case 112:
-      case 120:
-      case 122:
-      case 124: // ishl, ishr, iushr
-      case 126:
-      case 128:
-      case 130: // iand, ior, ixor
+      case IADD:
+      case ISUB:
+      case IMUL:
+      case IDIV:
+      case IREM:
+      case ISHL:
+      case ISHR:
+      case IUSHR:
+      case IAND:
+      case IOR:
+      case IXOR:
         if (stack.size() >= 2) {
           stack.remove(stack.size() - 1);
           stack.remove(stack.size() - 1);
@@ -597,7 +799,7 @@ public class StackMapTableBuilder {
         break;
 
       // ineg: pop I, push I
-      case 116:
+      case INEG:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
@@ -605,14 +807,14 @@ public class StackMapTableBuilder {
         break;
 
       // ladd, lsub, lmul, ldiv, lrem, land, lor, lxor: pop 2, push J
-      case 97:
-      case 101:
-      case 105:
-      case 109:
-      case 113:
-      case 127:
-      case 129:
-      case 131:
+      case LADD:
+      case LSUB:
+      case LMUL:
+      case LDIV:
+      case LREM:
+      case LAND:
+      case LOR:
+      case LXOR:
         if (stack.size() >= 2) {
           stack.remove(stack.size() - 1);
           stack.remove(stack.size() - 1);
@@ -621,9 +823,9 @@ public class StackMapTableBuilder {
         break;
 
       // lshl, lshr, lushr: pop J+I, push J
-      case 121:
-      case 123:
-      case 125:
+      case LSHL:
+      case LSHR:
+      case LUSHR:
         if (stack.size() >= 2) {
           stack.remove(stack.size() - 1);
           stack.remove(stack.size() - 1);
@@ -632,7 +834,7 @@ public class StackMapTableBuilder {
         break;
 
       // lneg: pop J, push J
-      case 117:
+      case LNEG:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
@@ -640,11 +842,11 @@ public class StackMapTableBuilder {
         break;
 
       // fadd, fsub, fmul, fdiv, frem: pop 2, push F
-      case 98:
-      case 102:
-      case 106:
-      case 110:
-      case 114:
+      case FADD:
+      case FSUB:
+      case FMUL:
+      case FDIV:
+      case FREM:
         if (stack.size() >= 2) {
           stack.remove(stack.size() - 1);
           stack.remove(stack.size() - 1);
@@ -653,7 +855,7 @@ public class StackMapTableBuilder {
         break;
 
       // fneg: pop F, push F
-      case 118:
+      case FNEG:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
@@ -661,11 +863,11 @@ public class StackMapTableBuilder {
         break;
 
       // dadd, dsub, dmul, ddiv, drem: pop 2, push D
-      case 99:
-      case 103:
-      case 107:
-      case 111:
-      case 115:
+      case DADD:
+      case DSUB:
+      case DMUL:
+      case DDIV:
+      case DREM:
         if (stack.size() >= 2) {
           stack.remove(stack.size() - 1);
           stack.remove(stack.size() - 1);
@@ -674,7 +876,7 @@ public class StackMapTableBuilder {
         break;
 
       // dneg: pop D, push D
-      case 119:
+      case DNEG:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
@@ -682,11 +884,11 @@ public class StackMapTableBuilder {
         break;
 
       // lcmp, fcmpl/g, dcmpl/g: pop 2, push I
-      case 148:
-      case 149:
-      case 150:
-      case 151:
-      case 152:
+      case LCMP:
+      case FCMPL:
+      case FCMPG:
+      case DCMPL:
+      case DCMPG:
         if (stack.size() >= 2) {
           stack.remove(stack.size() - 1);
           stack.remove(stack.size() - 1);
@@ -695,93 +897,93 @@ public class StackMapTableBuilder {
         break;
 
       // i2l
-      case 133:
+      case I2L:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("J");
         break;
       // i2f
-      case 134:
+      case I2F:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("F");
         break;
       // i2d
-      case 135:
+      case I2D:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("D");
         break;
       // l2i
-      case 136:
+      case L2I:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("I");
         break;
       // l2f
-      case 137:
+      case L2F:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("F");
         break;
       // l2d
-      case 138:
+      case L2D:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("D");
         break;
       // f2i
-      case 139:
+      case F2I:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("I");
         break;
       // f2l
-      case 140:
+      case F2L:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("J");
         break;
       // f2d
-      case 141:
+      case F2D:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("D");
         break;
       // d2i
-      case 142:
+      case D2I:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("I");
         break;
       // d2l
-      case 143:
+      case D2L:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("J");
         break;
       // d2f
-      case 144:
+      case D2F:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         stack.add("F");
         break;
       // i2b, i2c, i2s
-      case 145:
-      case 146:
-      case 147:
+      case I2B:
+      case I2C:
+      case I2S:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
@@ -789,14 +991,14 @@ public class StackMapTableBuilder {
         break;
 
       // Array stores: pop ref+I+value = 3 items
-      case 79:
-      case 80:
-      case 81:
-      case 82:
-      case 83:
-      case 84:
-      case 85:
-      case 86: // iastore..sastore (79-86)
+      case IASTORE:
+      case LASTORE:
+      case FASTORE:
+      case DASTORE:
+      case AASTORE:
+      case BASTORE:
+      case CASTORE:
+      case SASTORE:
         if (stack.size() >= 3) {
           stack.remove(stack.size() - 1);
           stack.remove(stack.size() - 1);
@@ -805,7 +1007,7 @@ public class StackMapTableBuilder {
         break;
 
       // swap: exchange top two
-      case 95:
+      case SWAP:
         if (stack.size() >= 2) {
           String a = stack.remove(stack.size() - 1);
           String b = stack.remove(stack.size() - 1);
@@ -815,20 +1017,20 @@ public class StackMapTableBuilder {
         break;
 
       // checkcast: no stack change (just verifies)
-      case 192:
+      case CHECKCAST:
         break;
 
       // new: push ref
-      case 187:
-      case 189: // anewarray
-        if (!stack.isEmpty() && op == 189) {
+      case NEW:
+      case ANEWARRAY:
+        if (!stack.isEmpty() && op == ANEWARRAY) {
           stack.remove(stack.size() - 1); // pop count
         }
         stack.add("Ljava/lang/Object;");
         break;
 
       // newarray: pop count, push typed array ref
-      case 188:
+      case NEWARRAY:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
@@ -836,7 +1038,7 @@ public class StackMapTableBuilder {
         break;
 
       // multianewarray: pop dimensions items, push ref
-      case 197:
+      case MULTIANEWARRAY:
         {
           int dims = pos + 3 < code.length ? (code[pos + 3] & 0xFF) : 1;
           for (int d = 0; d < dims && !stack.isEmpty(); d++) {
@@ -847,7 +1049,7 @@ public class StackMapTableBuilder {
         }
 
       // LDC: push constant
-      case 18:
+      case LDC:
         {
           int cpIdx = code[pos + 1] & 0xFF;
           String ldcType = constPool.getLdcType(cpIdx);
@@ -855,7 +1057,7 @@ public class StackMapTableBuilder {
           break;
         }
       // LDC_W
-      case 19:
+      case LDC_W:
         {
           int cpIdx = ((code[pos + 1] & 0xFF) << 8) | (code[pos + 2] & 0xFF);
           String ldcType = constPool.getLdcType(cpIdx);
@@ -863,7 +1065,7 @@ public class StackMapTableBuilder {
           break;
         }
       // LDC2_W (long or double)
-      case 20:
+      case LDC2_W:
         {
           int cpIdx = ((code[pos + 1] & 0xFF) << 8) | (code[pos + 2] & 0xFF);
           String ldcType = constPool.getLdcType(cpIdx);
@@ -872,7 +1074,7 @@ public class StackMapTableBuilder {
         }
 
       // GETSTATIC: push field type
-      case 178:
+      case GETSTATIC:
         {
           int cpIdx = ((code[pos + 1] & 0xFF) << 8) | (code[pos + 2] & 0xFF);
           String desc = constPool.getFieldDescriptor(cpIdx);
@@ -881,14 +1083,14 @@ public class StackMapTableBuilder {
         }
 
       // PUTSTATIC: pop 1
-      case 179:
+      case PUTSTATIC:
         if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1);
         }
         break;
 
       // GETFIELD: pop ref, push field type
-      case 180:
+      case GETFIELD:
         {
           if (!stack.isEmpty()) {
             stack.remove(stack.size() - 1);
@@ -900,7 +1102,7 @@ public class StackMapTableBuilder {
         }
 
       // PUTFIELD: pop ref + value = 2
-      case 181:
+      case PUTFIELD:
         if (stack.size() >= 2) {
           stack.remove(stack.size() - 1);
           stack.remove(stack.size() - 1);
@@ -908,9 +1110,9 @@ public class StackMapTableBuilder {
         break;
 
       // INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE: pop receiver + args, push return
-      case 182:
-      case 183:
-      case 185:
+      case INVOKEVIRTUAL:
+      case INVOKESPECIAL:
+      case INVOKEINTERFACE:
         {
           int cpIdx = ((code[pos + 1] & 0xFF) << 8) | (code[pos + 2] & 0xFF);
           String desc = constPool.getMethodDescriptor(cpIdx);
@@ -919,8 +1121,8 @@ public class StackMapTableBuilder {
         }
 
       // INVOKESTATIC, INVOKEDYNAMIC: pop args, push return
-      case 184:
-      case 186:
+      case INVOKESTATIC:
+      case INVOKEDYNAMIC:
         {
           int cpIdx = ((code[pos + 1] & 0xFF) << 8) | (code[pos + 2] & 0xFF);
           String desc = constPool.getMethodDescriptor(cpIdx);
@@ -1098,21 +1300,21 @@ public class StackMapTableBuilder {
    * ATHROW).
    */
   private static boolean isUnconditionalTransfer(byte[] code, int pos) {
-    int op = code[pos] & 0xFF;
-    return op == 167 || op == 200 || (op >= 172 && op <= 177) || op == 191;
+    byte op = code[pos];
+    return op == GOTO || op == GOTO_W || (op >= IRETURN && op <= RETURN) || op == ATHROW;
   }
 
   /**
    * Returns true if the instruction at {@code pos} stores a value into local variable {@code slot}.
    */
   private static boolean isStoreToSlot(byte[] code, int pos, int slot) {
-    int op = code[pos] & 0xFF;
-    if (op >= 59 && op <= 62) return (op - 59) == slot; // istore_0..3
-    if (op >= 63 && op <= 66) return (op - 63) == slot; // lstore_0..3
-    if (op >= 67 && op <= 70) return (op - 67) == slot; // fstore_0..3
-    if (op >= 71 && op <= 74) return (op - 71) == slot; // dstore_0..3
-    if (op >= 75 && op <= 78) return (op - 75) == slot; // astore_0..3
-    if (op >= 54 && op <= 58 && pos + 1 < code.length) { // xstore slot
+    byte op = code[pos];
+    if (op >= ISTORE_0 && op <= ISTORE_3) return (op - ISTORE_0) == slot; // istore_0..3
+    if (op >= LSTORE_0 && op <= LSTORE_3) return (op - LSTORE_0) == slot; // lstore_0..3
+    if (op >= FSTORE_0 && op <= FSTORE_3) return (op - FSTORE_0) == slot; // fstore_0..3
+    if (op >= DSTORE_0 && op <= DSTORE_3) return (op - DSTORE_0) == slot; // dstore_0..3
+    if (op >= ASTORE_0 && op <= ASTORE_3) return (op - ASTORE_0) == slot; // astore_0..3
+    if (op >= ISTORE && op <= ASTORE && pos + 1 < code.length) { // xstore slot
       return (code[pos + 1] & 0xFF) == slot;
     }
     return false;
@@ -1126,19 +1328,19 @@ public class StackMapTableBuilder {
     Map<Integer, Integer> firstStore = new HashMap<>();
     int i = 0;
     while (i < code.length) {
-      int op = code[i] & 0xFF;
+      byte op = code[i];
       int slot = -1;
-      if (op >= 59 && op <= 62) {
-        slot = op - 59; // ISTORE_0..ISTORE_3
-      } else if (op >= 63 && op <= 66) {
-        slot = op - 63; // LSTORE_0..LSTORE_3
-      } else if (op >= 67 && op <= 70) {
-        slot = op - 67; // FSTORE_0..FSTORE_3
-      } else if (op >= 71 && op <= 74) {
-        slot = op - 71; // DSTORE_0..DSTORE_3
-      } else if (op >= 75 && op <= 78) {
-        slot = op - 75; // ASTORE_0..ASTORE_3
-      } else if (op >= 54 && op <= 58) {
+      if (op >= ISTORE_0 && op <= ISTORE_3) {
+        slot = op - ISTORE_0; // ISTORE_0..ISTORE_3
+      } else if (op >= LSTORE_0 && op <= LSTORE_3) {
+        slot = op - LSTORE_0; // LSTORE_0..LSTORE_3
+      } else if (op >= FSTORE_0 && op <= FSTORE_3) {
+        slot = op - FSTORE_0; // FSTORE_0..FSTORE_3
+      } else if (op >= DSTORE_0 && op <= DSTORE_3) {
+        slot = op - DSTORE_0; // DSTORE_0..DSTORE_3
+      } else if (op >= ASTORE_0 && op <= ASTORE_3) {
+        slot = op - ASTORE_0; // ASTORE_0..ASTORE_3
+      } else if (op >= ISTORE && op <= ASTORE) {
         // xSTORE with explicit slot operand (2-byte instruction)
         if (i + 1 < code.length) {
           slot = code[i + 1] & 0xFF;
@@ -1167,80 +1369,69 @@ public class StackMapTableBuilder {
 
   /** Returns the byte-length of the instruction at code[pos]. */
   private static int opcodeLength(byte[] code, int pos) {
-    int op = code[pos] & 0xFF;
-    switch (op) {
-      // 2-byte instructions
-      case 16: // BIPUSH
-      case 18: // LDC
-      case 21:
-      case 22:
-      case 23:
-      case 24:
-      case 25: // xLOAD (generic)
-      case 54:
-      case 55:
-      case 56:
-      case 57:
-      case 58: // xSTORE (generic)
-      case 169: // RET
-      case 188: // NEWARRAY
+    switch (code[pos]) {
+      case BIPUSH:
+      case LDC:
+      case ILOAD:
+      case LLOAD:
+      case FLOAD:
+      case DLOAD:
+      case ALOAD:
+      case ISTORE:
+      case LSTORE:
+      case FSTORE:
+      case DSTORE:
+      case ASTORE:
+      case RET:
+      case NEWARRAY:
         return 2;
-
-      // 3-byte instructions
-      case 17: // SIPUSH
-      case 19: // LDC_W
-      case 20: // LDC2_W
-      case 132: // IINC
-      case 153:
-      case 154:
-      case 155:
-      case 156:
-      case 157:
-      case 158: // IFEQ..IFLE
-      case 159:
-      case 160:
-      case 161:
-      case 162:
-      case 163:
-      case 164: // IF_ICMPEQ..IF_ICMPLE
-      case 165:
-      case 166: // IF_ACMPEQ, IF_ACMPNE
-      case 167: // GOTO
-      case 168: // JSR
-      case 178:
-      case 179:
-      case 180:
-      case 181: // GETSTATIC..PUTFIELD
-      case 182:
-      case 183:
-      case 184: // INVOKEVIRTUAL..INVOKESTATIC
-      case 187: // NEW
-      case 189: // ANEWARRAY
-      case 192: // CHECKCAST
-      case 193: // INSTANCEOF
-      case 198: // IFNULL
-      case 199: // IFNONNULL
+      case SIPUSH:
+      case LDC_W:
+      case LDC2_W:
+      case IINC:
+      case IFEQ:
+      case IFNE:
+      case IFLT:
+      case IFGE:
+      case IFGT:
+      case IFLE:
+      case IF_ICMPEQ:
+      case IF_ICMPNE:
+      case IF_ICMPLT:
+      case IF_ICMPGE:
+      case IF_ICMPGT:
+      case IF_ICMPLE:
+      case IF_ACMPEQ:
+      case IF_ACMPNE:
+      case GOTO:
+      case JSR:
+      case GETSTATIC:
+      case PUTSTATIC:
+      case GETFIELD:
+      case PUTFIELD:
+      case INVOKEVIRTUAL:
+      case INVOKESPECIAL:
+      case INVOKESTATIC:
+      case NEW:
+      case ANEWARRAY:
+      case CHECKCAST:
+      case INSTANCEOF:
+      case IFNULL:
+      case IFNONNULL:
         return 3;
-
-      // 4-byte instructions
-      case 197: // MULTIANEWARRAY (u2 class_index + u1 dimensions)
+      case MULTIANEWARRAY:
         return 4;
-
-      // 5-byte instructions
-      case 185: // INVOKEINTERFACE
-      case 186: // INVOKEDYNAMIC
-      case 200: // GOTO_W
-      case 201: // JSR_W
+      case INVOKEINTERFACE:
+      case INVOKEDYNAMIC:
+      case GOTO_W:
+      case JSR_W:
         return 5;
-
-      // Variable-length
-      case 196: // WIDE
+      case WIDE:
         return wideOpcodeLength(code, pos);
-      case 170: // TABLESWITCH
+      case TABLESWITCH:
         return tableswitchLength(code, pos);
-      case 171: // LOOKUPSWITCH
+      case LOOKUPSWITCH:
         return lookupswitchLength(code, pos);
-
       default:
         return 1;
     }
@@ -1250,8 +1441,8 @@ public class StackMapTableBuilder {
     if (pos + 1 >= code.length) {
       return 2;
     }
-    int modOp = code[pos + 1] & 0xFF;
-    return (modOp == 132) ? 6 : 4; // WIDE IINC = 6; all other WIDE variants = 4
+    byte modOp = code[pos + 1];
+    return (modOp == IINC) ? 6 : 4; // WIDE IINC = 6; all other WIDE variants = 4
   }
 
   private static int tableswitchLength(byte[] code, int pos) {

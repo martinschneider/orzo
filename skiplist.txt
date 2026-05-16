@@ -3,6 +3,7 @@ src/main/java/io/github/martinschneider/orzo/codegen/ConstantPoolProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantPool.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantUtf8.java
 src/main/java/io/github/martinschneider/orzo/codegen/FieldProcessor.java
+src/main/java/io/github/martinschneider/orzo/codegen/Output.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/TryGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/AssignmentGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/BasicGenerator.java
@@ -26,7 +27,6 @@ src/main/java/io/github/martinschneider/orzo/codegen/generators/WhileGenerator.j
 src/main/java/io/github/martinschneider/orzo/codegen/identifier/MemberProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/MethodProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/NumExprTypeDecider.java
-src/main/java/io/github/martinschneider/orzo/codegen/Output.java
 src/main/java/io/github/martinschneider/orzo/codegen/StackMapTableBuilder.java
 src/main/java/io/github/martinschneider/orzo/codegen/TypeUtils.java
 src/main/java/io/github/martinschneider/orzo/lexer/Lexer.java
