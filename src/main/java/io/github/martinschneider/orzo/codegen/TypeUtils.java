@@ -31,7 +31,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
 import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
@@ -77,48 +76,51 @@ public class TypeUtils {
     for (int i = 0; i < arrDim; i++) {
       type = '[' + type;
     }
+    // Already a fully-formed descriptor
     if (type.startsWith("L") && type.endsWith(";")) {
       return type;
-    } else if (type.startsWith("[") && (type.contains(";") || type.length() == 2)) {
-      // Fully-formed array type descriptor — ensure dots are converted to slashes
-      // (Class.getName() returns e.g. "[Ljava.lang.Object;" with dots, JVM needs slashes)
+    }
+    // Separate array prefix from base type name
+    int depth = 0;
+    while (depth < type.length() && type.charAt(depth) == '[') {
+      depth++;
+    }
+    String prefix = type.substring(0, depth);
+    String base = type.substring(depth);
+    // Already a formed array element (e.g. "[I" → base="I", "[Ljava/lang/Object;" → has ';')
+    if (!prefix.isEmpty() && (base.length() == 1 || base.contains(";"))) {
       return type.replace('.', '/');
     }
-    // TODO: use a single check
-    else if (type.contains(STRING) && !type.contains("java.lang.String")) {
-      return type.replaceAll(STRING, "Ljava/lang/String;");
-    } else if (type.contains(BYTE)) {
-      return type.replaceAll(BYTE, "B");
-    } else if (type.contains(CHAR)) {
-      return type.replaceAll(CHAR, "C");
-    } else if (type.contains(DOUBLE)) {
-      return type.replaceAll(DOUBLE, "D");
-    } else if (type.contains(FLOAT)) {
-      return type.replaceAll(FLOAT, "F");
-    } else if (type.contains(INT)) {
-      return type.replaceAll(INT, "I");
-    } else if (type.contains(LONG)) {
-      return type.replaceAll(LONG, "J");
-    } else if (type.contains(SHORT)) {
-      return type.replaceAll(SHORT, "S");
-    } else if (type.contains(VOID)) {
-      return type.replaceAll(VOID, "V");
-    } else if (type.contains(BOOLEAN)) {
-      return type.replaceAll(BOOLEAN, "Z");
-    } else if (type.equals("Object")) {
-      return "Ljava/lang/Object;";
-    } else if (type.startsWith("[")) {
-      // Array of reference type (e.g. "[java.lang.StackTraceElement"):
-      // split into bracket prefix + base type name, then wrap base in L...;
-      int arrDepth = 0;
-      while (arrDepth < type.length() && type.charAt(arrDepth) == '[') {
-        arrDepth++;
-      }
-      String baseName = type.substring(arrDepth);
-      return type.substring(0, arrDepth) + "L" + baseName.replaceAll("\\.", "/") + ";";
-    } else {
-      return "L" + type.replaceAll("\\.", "/") + ";";
+    // Exact primitive type matching (no substring confusion)
+    switch (base) {
+      case "byte":
+        return prefix + "B";
+      case "char":
+        return prefix + "C";
+      case "double":
+        return prefix + "D";
+      case "float":
+        return prefix + "F";
+      case "int":
+        return prefix + "I";
+      case "long":
+        return prefix + "J";
+      case "short":
+        return prefix + "S";
+      case "void":
+        return prefix + "V";
+      case "boolean":
+        return prefix + "Z";
+      case "Object":
+        return prefix + "Ljava/lang/Object;";
+      case "String":
+        return prefix + "Ljava/lang/String;";
     }
+    // Reference type (possibly qualified): wrap in L...;
+    if (base.equals("java.lang.String")) {
+      return prefix + "Ljava/lang/String;";
+    }
+    return prefix + "L" + base.replace('.', '/') + ";";
   }
 
   public static String methodDescr(Method method) {

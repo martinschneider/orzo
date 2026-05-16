@@ -7,6 +7,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
@@ -299,6 +300,11 @@ public class MethodParser implements ProdParser<Method> {
           tokens.next();
           break;
         }
+      } else if (tokens.curr().eq(sym(DOT))
+          && tokens.next().eq(sym(DOT))
+          && tokens.next().eq(sym(DOT))) {
+        // varargs (e.g. PrintStream... outputs) — treat as array parameter
+        type = "[" + type;
       } else {
         tokens.prev();
       }
