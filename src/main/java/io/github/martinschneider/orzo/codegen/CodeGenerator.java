@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CodeGenerator {
-  private static final short JAVA_CLASS_MAJOR_VERSION = 52;
+  private static final short JAVA_CLASS_MAJOR_VERSION = 64;
   private static final short JAVA_CLASS_MINOR_VERSION = 0;
   private CGContext ctx;
   private List<Output> outputs;
