@@ -38,13 +38,13 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] unary minus `-`
 - [ ] [casting](https://docs.oracle.com/javase/specs/jls/se18/html/jls-15.html#jls-15.16) `()` (partially supported)
 - [ ] [object creation](https://docs.oracle.com/javase/specs/jls/se18/html/jls-12.html#jls-12.5) `new` (partially supported)
-- [ ] logical `&&`, `||`
+- [X] logical `&&`, `||`
 - [ ] unary logical `!`
 - [ ] unary bitwise `~`
 - [ ] unary plus `+`
 - [X] `instanceof`
 - [ ] String and char concatenation `+`
-- [ ] ternary `?:`
+- [X] ternary `?:`
 
 ## Control strcutures
 

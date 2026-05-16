@@ -44,9 +44,7 @@ public class DynamicByteArray implements HasOutput {
   }
 
   public byte[] flush() {
-    byte[] retValue;
-    // TODO: variable declaration with a method call doesn't work
-    retValue = getBytes();
+    byte[] retValue = getBytes();
     size = 2;
     pointer = 0;
     array = new byte[size];

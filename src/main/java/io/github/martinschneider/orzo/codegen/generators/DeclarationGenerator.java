@@ -64,17 +64,14 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
 
   public HasOutput generateArray(
       DynamicByteArray out, GlobalIdentifierMap classIdMap, Method method, Declaration decl) {
-    // TODO: handle method calls in array declaration
     if (decl.val == null) {
       out.write(ACONST_NULL);
       ctx.assignGen.assignArray(out, classIdMap, decl.type, decl.arrDim, decl.name);
       return out;
     }
     if (!(decl.val instanceof ArrayInit)) {
-      ctx.errors.addError(
-          LOG_NAME,
-          "invalid array initialiser " + decl.val,
-          new RuntimeException().getStackTrace());
+      ctx.exprGen.eval(out, decl.type, decl.val);
+      ctx.assignGen.assignArray(out, classIdMap, decl.type, decl.arrDim, decl.name);
       return out;
     }
     String type = decl.type;

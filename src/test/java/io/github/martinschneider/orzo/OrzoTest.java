@@ -142,7 +142,8 @@ public class OrzoTest {
         args(list("tests/TryCatchInIf")),
         args(list("tests/Instanceof")),
         args(list("tests/BridgeMethods")),
-        args(list("tests/StaticFieldAccess")));
+        args(list("tests/StaticFieldAccess")),
+        args(list("tests/ArrayMethodInit")));
   }
 
   @ParameterizedTest
