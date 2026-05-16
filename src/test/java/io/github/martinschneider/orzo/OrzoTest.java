@@ -143,7 +143,8 @@ public class OrzoTest {
         args(list("tests/Instanceof")),
         args(list("tests/BridgeMethods")),
         args(list("tests/StaticFieldAccess")),
-        args(list("tests/ArrayMethodInit")));
+        args(list("tests/ArrayMethodInit")),
+        args(list("tests/NullCheckAnd")));
   }
 
   @ParameterizedTest

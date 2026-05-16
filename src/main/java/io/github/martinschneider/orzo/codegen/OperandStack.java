@@ -63,27 +63,10 @@ public class OperandStack {
   }
 
   // one and only one!
-  // TODO: ideally this would be written as:
-  //   (tmp != null && tmp.equals(INT_ZERO)) ^ (types.peek() != null &&
-  // types.peek().equals(INT_ZERO))
-  // but Orzo does not yet correctly compile compound null-check conditions of the form
-  //   if (x != null && x.method()) { ... }
-  // (the generated if_acmpeq instruction is missing its 2-byte branch offset operand).
-  // Fix the code generator to support this pattern, then simplify this method.
   public boolean oneOfTopTwoElementsIsZero() {
-    boolean first = false;
-    boolean second = false;
     String tmp = types.pop();
-    if (tmp != null) {
-      if (tmp.equals(INT_ZERO)) {
-        first = true;
-      }
-    }
-    if (types.peek() != null) {
-      if (types.peek().equals(INT_ZERO)) {
-        second = true;
-      }
-    }
+    boolean first = tmp != null && tmp.equals(INT_ZERO);
+    boolean second = types.peek() != null && types.peek().equals(INT_ZERO);
     types.push(tmp);
     return first ^ second;
   }
