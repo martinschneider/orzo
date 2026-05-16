@@ -35,8 +35,10 @@ public class BasicGenerator {
       out.write(castBytes);
       if (castBytes.length == 0 && !TypeUtils.isPrimitive(to) && !to.equals(from)) {
         // Reference type cast: emit checkcast instruction
+        String jvmTo = to.replace('.', '/');
+        ctx.constPool.addClass(jvmTo);
         out.write(CHECKCAST);
-        out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, to.replace('.', '/')));
+        out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmTo));
       }
     }
     ctx.opStack.pop();

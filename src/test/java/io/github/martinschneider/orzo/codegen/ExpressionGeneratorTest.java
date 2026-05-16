@@ -192,13 +192,13 @@ public class ExpressionGeneratorTest {
             BOOLEAN,
             list(varInfo("a", "boolean", 100), varInfo("b", "boolean", 101)),
             emptyList(),
-            list("iload 100", "iload 101", "iand")),
+            list("iload 100", "ifeq 8", "iload 101", "goto 4", "iconst_0")),
         args(
             "a || b",
             BOOLEAN,
             list(varInfo("a", "boolean", 100), varInfo("b", "boolean", 101)),
             emptyList(),
-            list("iload 100", "iload 101", "ior")),
+            list("iload 100", "ifne 8", "iload 101", "goto 4", "iconst_1")),
         args(
             "a ^ b",
             BOOLEAN,

@@ -80,6 +80,22 @@ public class NumExprTypeDecider {
               types.add(var.arrType);
             } else if (var.arrType != null) {
               types.add("[" + var.arrType);
+            } else if (id.next != null) {
+              String chainType = var.type;
+              Identifier link = id.next;
+              while (link != null && chainType != null) {
+                FieldProcessor.InstanceField field =
+                    new FieldProcessor()
+                        .getInstanceFieldMap(chainType, ctx.allClazzes)
+                        .get(link.val.toString());
+                if (field != null) {
+                  chainType = field.fieldType;
+                  link = link.next;
+                } else {
+                  chainType = null;
+                }
+              }
+              types.add(chainType != null ? chainType : var.type);
             } else {
               types.add(var.type);
             }

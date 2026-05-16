@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IFNE;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -39,7 +40,15 @@ public class DoGenerator implements StatementGenerator<DoStatement> {
     short branchBytes = (short) -(bodyOut.getBytes().length + conditionOut.getBytes().length);
     ctx.exprGen.eval(conditionOut, null, doStmt.cond, false, false);
     branchBytes -= conditionOut.getBytes().length;
-    branchBytes++;
+    byte[] condBytes = conditionOut.getBytes();
+    int lastUnsigned = condBytes.length > 0 ? (condBytes[condBytes.length - 1] & 0xFF) : -1;
+    if (lastUnsigned >= 153 && lastUnsigned <= 166) {
+      // eval already emitted a branch opcode; offset is measured from its start
+      branchBytes++;
+    } else {
+      // condition yields a value (0/1) on the stack; branch back if non-zero
+      conditionOut.write(IFNE);
+    }
     conditionOut.write(branchBytes);
     // Fix up ET entries: body starts at current out position (written first)
     TryGenerator.adjustExceptionTableEntries(ctx, etStart, ctx.exceptionTable.size(), out.size());

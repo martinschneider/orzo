@@ -31,15 +31,15 @@ Priority: **H**igh / **M**edium / **L**ow.
 
 ## Missing Features / Known Gaps
 
-| Priority |           Location            |                                                                                        Description                                                                                        |
-|----------|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| H        | `MethodCallParser`            | Cannot parse chained method call *statements* like `a.b(x).c(y)` — only `ExpressionParser` handles chains. Statements that chain calls must be rewritten with intermediate variables.     |
-| H        | `DeclarationParser`           | Declarations inside `if`/`while`/`for` bodies are not pre-scanned by `MemberProcessor.processLocalVars()`, so they may not get correct local variable slots in some edge cases.           |
-| M        | `TypeUtils.descr()`           | Multi-dimensional arrays not supported (marked TODO).                                                                                                                                     |
-| M        | `ArrayInitParser`             | Multi-dimensional array initialisation not supported (marked TODO).                                                                                                                       |
-| M        | `ForParser`                   | Statement sequences inside for-loop initialisers not supported (marked TODO).                                                                                                             |
-| M        | `MemberProcessor.addClInit()` | Explicit `static { }` initialiser blocks in source are not supported (marked TODO).                                                                                                       |
-| L        | `ConstantPool`                | Long and Double constants take two slots in the pool; the current index accounting may be wrong (see Dead Code section).                                                                  |
+| Priority |           Location            |                                                                                      Description                                                                                      |
+|----------|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| H        | `MethodCallParser`            | Cannot parse chained method call *statements* like `a.b(x).c(y)` — only `ExpressionParser` handles chains. Statements that chain calls must be rewritten with intermediate variables. |
+| H        | `DeclarationParser`           | Declarations inside `if`/`while`/`for` bodies are not pre-scanned by `MemberProcessor.processLocalVars()`, so they may not get correct local variable slots in some edge cases.       |
+| M        | `TypeUtils.descr()`           | Multi-dimensional arrays not supported (marked TODO).                                                                                                                                 |
+| M        | `ArrayInitParser`             | Multi-dimensional array initialisation not supported (marked TODO).                                                                                                                   |
+| M        | `ForParser`                   | Statement sequences inside for-loop initialisers not supported (marked TODO).                                                                                                         |
+| M        | `MemberProcessor.addClInit()` | Explicit `static { }` initialiser blocks in source are not supported (marked TODO).                                                                                                   |
+| L        | `ConstantPool`                | Long and Double constants take two slots in the pool; the current index accounting may be wrong (see Dead Code section).                                                              |
 
 ---
 

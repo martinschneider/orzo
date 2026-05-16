@@ -3,6 +3,8 @@ package io.github.martinschneider.orzo.codegen.generators;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_0;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFEQ;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFGE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFGT;
@@ -18,6 +20,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLT;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPNE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INSTANCEOF;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IXOR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
@@ -30,6 +33,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESSEQ;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_AND;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_OR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.NEGATE;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
@@ -128,6 +133,39 @@ public class ExpressionGenerator {
     // operands is 0)
     OperandStack exprTypeStack = new OperandStack();
     List<Token> tokens = expr.tokens;
+    int logOpIdx = findOutermostLogicalOp(tokens);
+    if (logOpIdx >= 0) {
+      Operators logOpType = ((Operator) tokens.get(logOpIdx)).opValue();
+      int rStart = findRightOperandStart(tokens, logOpIdx);
+      List<Token> leftTokens = new ArrayList<>(tokens.subList(0, rStart));
+      List<Token> rightTokens = new ArrayList<>(tokens.subList(rStart, logOpIdx));
+      DynamicByteArray leftOut = evalAsValue(null, new Expression(leftTokens));
+      out.write(leftOut.getBytes());
+      DynamicByteArray rightOut = evalAsValue(null, new Expression(rightTokens));
+      byte[] rightBytes = rightOut.getBytes();
+      if (logOpType == LOGICAL_AND) {
+        out.write(IFEQ);
+        out.write((short) (rightBytes.length + 6));
+        out.write(rightBytes);
+        out.write(GOTO);
+        out.write((short) 4);
+        out.write(ICONST_0);
+      } else {
+        out.write(IFNE);
+        out.write((short) (rightBytes.length + 6));
+        out.write(rightBytes);
+        out.write(GOTO);
+        out.write((short) 4);
+        out.write(ICONST_1);
+      }
+      if (reverseComp) {
+        out.write(IFEQ);
+      }
+      ctx.opStack.pop();
+      ctx.opStack.pop();
+      ctx.opStack.push(BOOLEAN);
+      return new ExpressionResult(BOOLEAN, null);
+    }
     boolean branchEmitted = false;
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
@@ -226,12 +264,27 @@ public class ExpressionGenerator {
           ctx.invokeGen.invokeVirtual(
               out, new Method("java.lang.String", "concat", STRING, List.of(STRING)));
         } else if (op.equals(NEGATE) && reverseComp) {
-          // Boolean NOT in if-condition context: the value is already on the stack.
-          // Jump (skip body) when the value is non-zero, i.e. when !value is false.
-          out.write(IFNE);
-          ctx.opStack.pop();
-          ctx.opStack.push(BOOLEAN);
-          branchEmitted = true;
+          boolean logicalOpFollows = false;
+          for (int j = i + 1; j < tokens.size(); j++) {
+            if (tokens.get(j) instanceof Operator) {
+              Operators jType = ((Operator) tokens.get(j)).opValue();
+              if (jType == LOGICAL_AND || jType == LOGICAL_OR) {
+                logicalOpFollows = true;
+                break;
+              }
+            }
+          }
+          if (!logicalOpFollows) {
+            // Jump (skip body) when the value is non-zero, i.e. when !value is false.
+            out.write(IFNE);
+            ctx.opStack.pop();
+            ctx.opStack.push(BOOLEAN);
+            branchEmitted = true;
+          } else {
+            // Logical op follows: emit boolean NOT as value (ICONST_1 + IXOR) without a branch.
+            out.write(ICONST_1);
+            out.write(IXOR);
+          }
         } else {
           byte[] opCode = null;
           if (COMPARATORS.contains(op) && exprTypeStack.oneOfTopTwoElementsIsZero()) {
@@ -330,36 +383,40 @@ public class ExpressionGenerator {
           prevLoadedRef = true;
         } else {
           VariableInfo varInfo = ctx.classIdMap.variables.get(curr);
-          if (varInfo == null) {
-            if (prevLoadedRef) {
-              // An object ref is on the stack from the previous iteration.
-              // Try to find the field in that object's type via FieldProcessor.
-              java.util.Map<String, FieldProcessor.InstanceField> fields =
-                  new FieldProcessor().getInstanceFieldMap(returnType, ctx.allClazzes);
-              FieldProcessor.InstanceField instanceField = fields.get(curr.val.toString());
-              if (instanceField != null) {
-                String className = instanceField.className.replace('.', '/');
-                String fieldType = instanceField.fieldType;
-                String fieldTypeDescr = TypeUtils.descr(fieldType);
-                ctx.constPool.addClass(className);
-                ctx.constPool.addFieldRef(className, instanceField.fieldName, fieldTypeDescr);
-                ctx.opStack.pop();
-                ctx.loadGen.getField(
-                    out,
-                    ctx.constPool.indexOf(
-                        io.github.martinschneider.orzo.codegen.constants.ConstantTypes
-                            .CONSTANT_FIELDREF,
-                        className,
-                        instanceField.fieldName,
-                        fieldTypeDescr));
-                ctx.opStack.push(fieldType);
-                returnType = fieldType;
-                prevLoadedRef = isNonPrimitive(fieldType) && curr.arrSel == null;
-                prev = curr;
-                curr = curr.next;
-                continue;
-              }
+          // When a ref is on the stack, instance field access on that object takes priority
+          // over any local variable with the same name (but not over known class fields).
+          if (prevLoadedRef && (varInfo == null || !varInfo.isField)) {
+            java.util.Map<String, FieldProcessor.InstanceField> fields =
+                new FieldProcessor().getInstanceFieldMap(returnType, ctx.allClazzes);
+            FieldProcessor.InstanceField instanceField = fields.get(curr.val.toString());
+            if (instanceField != null) {
+              String className = instanceField.className.replace('.', '/');
+              String fieldType = instanceField.fieldType;
+              String fieldTypeDescr = TypeUtils.descr(fieldType);
+              ctx.constPool.addClass(className);
+              ctx.constPool.addFieldRef(className, instanceField.fieldName, fieldTypeDescr);
+              ctx.opStack.pop();
+              ctx.loadGen.getField(
+                  out,
+                  ctx.constPool.indexOf(
+                      io.github.martinschneider.orzo.codegen.constants.ConstantTypes
+                          .CONSTANT_FIELDREF,
+                      className,
+                      instanceField.fieldName,
+                      fieldTypeDescr));
+              ctx.opStack.push(fieldType);
+              returnType = fieldType;
+              prevLoadedRef = isNonPrimitive(fieldType) && curr.arrSel == null;
+              prev = curr;
+              curr = curr.next;
+              continue;
             }
+            if (varInfo == null) {
+              return handleStaticInstanceChain(out, curr, type);
+            }
+            // varInfo != null but no instance field found: load the local variable
+          }
+          if (varInfo == null) {
             // Try to resolve mixed static/instance field access chain
             return handleStaticInstanceChain(out, curr, type);
           }
@@ -838,6 +895,158 @@ public class ExpressionGenerator {
         && !BOOLEAN.equals(type)
         && !VOID.equals(type)
         && !"int_zero".equals(type);
+  }
+
+  // Evaluates an expression with reverseComp=false and ensures the result is a 0/1 value.
+  // If eval() emits a bare branch opcode (e.g. IF_ACMPEQ from a comparator), append a
+  // value-conversion pattern: branch → ICONST_1 (true), fall-through → ICONST_0 (false).
+  private DynamicByteArray evalAsValue(String type, Expression expr) {
+    DynamicByteArray subOut = new DynamicByteArray();
+    eval(subOut, type, expr, false, false);
+    byte[] bytes = subOut.getBytes();
+    if (bytes.length > 0) {
+      int lastOp = lastOpcode(bytes);
+      if (lastOp >= 153 && lastOp <= 166) {
+        // Branch opcode without its 2-byte operand: add offset + value-producing tail.
+        // Branch fires when condition is TRUE → jump to ICONST_1 (7 bytes ahead of opcode).
+        subOut.write((short) 7); // 2-byte offset to ICONST_1
+        subOut.write(ICONST_0); // false case (fall-through)
+        subOut.write(GOTO);
+        subOut.write((short) 4); // 4 bytes from GOTO opcode → past ICONST_1
+        subOut.write(ICONST_1); // true case
+      }
+    }
+    return subOut;
+  }
+
+  // Returns the opcode of the last instruction in the bytecode array by forward-scanning.
+  private static int lastOpcode(byte[] code) {
+    int i = 0;
+    int lastPos = 0;
+    while (i < code.length) {
+      lastPos = i;
+      i += instrLen(code, i);
+    }
+    return code[lastPos] & 0xFF;
+  }
+
+  // Returns the byte length of the instruction at code[pos].
+  private static int instrLen(byte[] code, int pos) {
+    int op = code[pos] & 0xFF;
+    if (op <= 15
+        || (op >= 26 && op <= 53)
+        || (op >= 59 && op <= 131)
+        || op == 133
+        || (op >= 136 && op <= 147)
+        || op == 148
+        || (op >= 172 && op <= 177)
+        || op == 190
+        || op == 191
+        || op == 194
+        || op == 195) {
+      return 1;
+    }
+    switch (op) {
+      case 16:
+      case 18:
+      case 21:
+      case 22:
+      case 23:
+      case 24:
+      case 25:
+      case 54:
+      case 55:
+      case 56:
+      case 57:
+      case 58:
+      case 132:
+      case 169:
+      case 188:
+        return 2;
+      case 17:
+      case 19:
+      case 20:
+      case 153:
+      case 154:
+      case 155:
+      case 156:
+      case 157:
+      case 158:
+      case 159:
+      case 160:
+      case 161:
+      case 162:
+      case 163:
+      case 164:
+      case 165:
+      case 166:
+      case 167:
+      case 168:
+      case 178:
+      case 179:
+      case 180:
+      case 181:
+      case 182:
+      case 183:
+      case 184:
+      case 187:
+      case 189:
+      case 192:
+      case 193:
+      case 197:
+      case 198:
+      case 199:
+        return 3;
+      case 185:
+      case 186:
+      case 200:
+      case 201:
+        return 5;
+      default:
+        return 1;
+    }
+  }
+
+  // Returns the index of the outermost LOGICAL_AND or LOGICAL_OR in a postfix token list,
+  // or -1 if neither is present. In postfix, the outermost binary logical op appears last.
+  // In postfix notation, the outermost operator is always the last token.
+  // Only return its index if it is a logical AND or OR; otherwise short-circuit does not apply.
+  private int findOutermostLogicalOp(List<Token> tokens) {
+    if (tokens.isEmpty()) return -1;
+    Token last = tokens.get(tokens.size() - 1);
+    if (last instanceof Operator) {
+      Operators opType = ((Operator) last).opValue();
+      if (opType == LOGICAL_AND || opType == LOGICAL_OR) {
+        return tokens.size() - 1;
+      }
+    }
+    return -1;
+  }
+
+  // Given a postfix token list and the index of a binary operator, return the start index
+  // of the right operand. Uses stack-balance counting: each leaf pushes +1, binary ops -1,
+  // unary ops 0; the right operand starts where balance first reaches 1 from opPos-1.
+  private int findRightOperandStart(List<Token> tokens, int opPos) {
+    int balance = 0;
+    for (int i = opPos - 1; i >= 0; i--) {
+      Token t = tokens.get(i);
+      if (t instanceof Operator) {
+        Operators opType = ((Operator) t).opValue();
+        if (opType == NEGATE
+            || opType == POST_INCREMENT
+            || opType == POST_DECREMENT
+            || opType == PRE_INCREMENT
+            || opType == PRE_DECREMENT) {
+          // unary: no net stack change
+        } else {
+          balance--; // binary: consumes 2, produces 1
+        }
+      } else {
+        balance++; // leaf token (identifier, literal, etc.)
+      }
+      if (balance == 1) return i;
+    }
+    return 0;
   }
 
   // To generate code for control structures it is often useful to get the inverse comparator. For

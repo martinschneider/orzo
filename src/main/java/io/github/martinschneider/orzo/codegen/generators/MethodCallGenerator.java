@@ -464,10 +464,15 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       if (javaClassName.startsWith("L") && javaClassName.endsWith(";")) {
         javaClassName = javaClassName.substring(1, javaClassName.length() - 1);
       }
+      javaClassName = resolveClassName(javaClassName);
       Class<?> clazz = Class.forName(javaClassName);
+      java.lang.reflect.Method bridgeCandidate = null;
       for (java.lang.reflect.Method m : clazz.getMethods()) {
-        if (m.isBridge()) continue;
         if (m.getName().equals(methodName) && m.getParameterCount() == argCount) {
+          if (m.isBridge()) {
+            if (bridgeCandidate == null) bridgeCandidate = m;
+            continue;
+          }
           List<Argument> args = new ArrayList<>();
           for (java.lang.reflect.Parameter p : m.getParameters()) {
             args.add(
@@ -486,6 +491,25 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
           }
           return new Method(javaClassName, accFlags, returnType, Token.id(methodName), args, null);
         }
+      }
+      // Fall back to bridge methods (e.g. StringBuilder.length() is a bridge on Java 21)
+      if (bridgeCandidate != null) {
+        List<Argument> args = new ArrayList<>();
+        for (java.lang.reflect.Parameter p : bridgeCandidate.getParameters()) {
+          args.add(
+              new Argument(
+                  p.getType().getName(),
+                  io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
+        }
+        String returnType = bridgeCandidate.getReturnType().getName();
+        if ("java.lang.String".equals(returnType)) {
+          returnType = STRING;
+        }
+        List<AccessFlag> accFlags = new ArrayList<>();
+        if (java.lang.reflect.Modifier.isStatic(bridgeCandidate.getModifiers())) {
+          accFlags.add(AccessFlag.ACC_STATIC);
+        }
+        return new Method(javaClassName, accFlags, returnType, Token.id(methodName), args, null);
       }
     } catch (ClassNotFoundException e) {
       // not on classpath, fall through
@@ -524,6 +548,49 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     // Bare-name fallback (for method calls where type info is unavailable)
     if (method == null) {
       method = findMatchingMethod(methodName, types);
+    }
+    // Handle dotted method name as field chain + method (e.g. "val.toString" on Token)
+    if (method == null && methodName.contains(".")) {
+      int lastDotInName = methodName.lastIndexOf('.');
+      String fieldPart = methodName.substring(0, lastDotInName);
+      String methodPart = methodName.substring(lastDotInName + 1);
+      String chainType = receiverType;
+      boolean chainOk = chainType != null;
+      for (String fp : fieldPart.split("\\.")) {
+        if (!chainOk) break;
+        java.util.Map<String, io.github.martinschneider.orzo.codegen.FieldProcessor.InstanceField>
+            fm =
+                new io.github.martinschneider.orzo.codegen.FieldProcessor()
+                    .getInstanceFieldMap(chainType, ctx.allClazzes);
+        io.github.martinschneider.orzo.codegen.FieldProcessor.InstanceField fi = fm.get(fp);
+        if (fi == null) {
+          chainOk = false;
+        } else {
+          String jvmClass = fi.className.replace('.', '/');
+          String descr = TypeUtils.descr(fi.fieldType);
+          ctx.constPool.addClass(jvmClass);
+          ctx.constPool.addFieldRef(jvmClass, fi.fieldName, descr);
+          ctx.opStack.pop();
+          ctx.loadGen.getField(
+              out,
+              ctx.constPool.indexOf(
+                  io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF,
+                  jvmClass,
+                  fi.fieldName,
+                  descr));
+          ctx.opStack.push(fi.fieldType);
+          chainType = fi.fieldType;
+        }
+      }
+      if (chainOk) {
+        method = findMethodViaReflectionTyped(chainType, methodPart, types);
+        if (method == null) {
+          method = findMethodViaReflection(chainType, methodPart, types.size());
+        }
+        if (method == null && types.isEmpty() && "toString".equals(methodPart)) {
+          method = new Method("java/lang/Object", "toString", STRING, new ArrayList<>());
+        }
+      }
     }
     if (method == null) {
       ctx.errors.addError(
@@ -567,9 +634,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       if (javaClassName.startsWith("L") && javaClassName.endsWith(";")) {
         javaClassName = javaClassName.substring(1, javaClassName.length() - 1);
       }
+      javaClassName = resolveClassName(javaClassName);
       Class<?> clazz = Class.forName(javaClassName);
+      java.lang.reflect.Method bridgeCandidate = null;
       for (java.lang.reflect.Method m : clazz.getMethods()) {
-        if (m.isBridge()) continue;
         if (!m.getName().equals(methodName) || m.getParameterCount() != argTypes.size()) {
           continue;
         }
@@ -581,6 +649,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
           }
         }
         if (!compatible) {
+          continue;
+        }
+        if (m.isBridge()) {
+          if (bridgeCandidate == null) bridgeCandidate = m;
           continue;
         }
         List<Argument> args = new ArrayList<>();
@@ -596,6 +668,31 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         }
         List<AccessFlag> accFlags = new ArrayList<>();
         if (java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
+          accFlags.add(AccessFlag.ACC_STATIC);
+        }
+        return new Method(
+            javaClassName,
+            accFlags,
+            returnType,
+            io.github.martinschneider.orzo.lexer.tokens.Token.id(methodName),
+            args,
+            null);
+      }
+      // Fall back to bridge methods (e.g. StringBuilder.length() is a bridge on Java 21)
+      if (bridgeCandidate != null) {
+        List<Argument> args = new ArrayList<>();
+        for (java.lang.reflect.Parameter p : bridgeCandidate.getParameters()) {
+          args.add(
+              new Argument(
+                  p.getType().getName(),
+                  io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
+        }
+        String returnType = bridgeCandidate.getReturnType().getName();
+        if ("java.lang.String".equals(returnType)) {
+          returnType = STRING;
+        }
+        List<AccessFlag> accFlags = new ArrayList<>();
+        if (java.lang.reflect.Modifier.isStatic(bridgeCandidate.getModifiers())) {
           accFlags.add(AccessFlag.ACC_STATIC);
         }
         return new Method(
