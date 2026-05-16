@@ -1,21 +1,19 @@
 package io.github.martinschneider.orzo.codegen.constants;
 
-// import static io.github.martinschneider.orzo.codegen.constants.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
 
 public class ConstantClass implements Constant {
-  private short _val;
+  private short val;
 
   public ConstantClass(short val) {
-    this._val = val;
+    this.val = val;
   }
 
   public byte[] info() {
-    return shortToByteArray(_val);
+    return shortToByteArray(val);
   }
 
   public byte tag() {
-    return 7;
-    // return ConstantTypes.CONSTANT_CLASS;
+    return ConstantTypes.CONSTANT_CLASS;
   }
 }

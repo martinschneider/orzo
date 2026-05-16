@@ -4,20 +4,19 @@ import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
 
 public class ConstantString implements Constant {
 
-  private short _val;
+  private short val;
 
   public ConstantString(short val) {
-    this._val = val;
+    this.val = val;
   }
 
   @Override
   public byte tag() {
-    return 8;
-    // return ConstantTypes.CONSTANT_STRING;
+    return ConstantTypes.CONSTANT_STRING;
   }
 
   @Override
   public byte[] info() {
-    return shortToByteArray(_val);
+    return shortToByteArray(val);
   }
 }

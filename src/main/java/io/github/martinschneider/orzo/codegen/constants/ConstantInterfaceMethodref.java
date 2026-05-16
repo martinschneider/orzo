@@ -3,17 +3,17 @@ package io.github.martinschneider.orzo.codegen.constants;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.intToByteArray;
 
 public class ConstantInterfaceMethodref implements Constant {
-  private short _classId;
-  private short _nameAndTypeId;
+  private short classId;
+  private short nameAndTypeId;
 
   public ConstantInterfaceMethodref(short classId, short nameAndTypeId) {
-    this._classId = classId;
-    this._nameAndTypeId = nameAndTypeId;
+    this.classId = classId;
+    this.nameAndTypeId = nameAndTypeId;
   }
 
   @Override
   public byte[] info() {
-    return intToByteArray((_classId << 16) | (_nameAndTypeId & 65535));
+    return intToByteArray((classId << 16) | (nameAndTypeId & 0xFFFF));
   }
 
   @Override
