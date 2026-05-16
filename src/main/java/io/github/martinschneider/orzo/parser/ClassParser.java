@@ -19,6 +19,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
@@ -32,6 +33,7 @@ import io.github.martinschneider.orzo.lexer.tokens.EOF;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ClassMember;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Constructor;
@@ -39,6 +41,7 @@ import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
+import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -290,6 +293,20 @@ public class ClassParser implements ProdParser<Clazz> {
   }
 
   private ClassMember parserClassMember(TokenList tokens, boolean isInterface) {
+    if (tokens.curr().eq(keyword(STATIC))) {
+      int savedIdx = tokens.idx();
+      tokens.next();
+      if (tokens.curr().eq(sym(LBRACE))) {
+        tokens.next();
+        List<Statement> body = ctx.stmtParser.parseStmtSeq(tokens);
+        if (tokens.curr().eq(sym(RBRACE))) {
+          tokens.next();
+        }
+        return new Method(
+            "", List.of(AccessFlag.ACC_STATIC), "void", id("<clinit>"), emptyList(), body);
+      }
+      tokens.setIdx(savedIdx);
+    }
     ClassMember member = null;
     if ((member = ctx.methodParser.parse(tokens, isInterface)) != null) {
       return member;

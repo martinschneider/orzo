@@ -170,22 +170,30 @@ public class MemberProcessor {
         }
       }
     }
-    // for now, a static initialiser is only necessary if there is at least one
-    // public field with a non-default value (because its value must be set in the
-    // initialiser)
-    // TODO: support explicit use of static initialiser blocks, e.g. support static
-    // { ... } in the
-    // source code
-    if (!staticInits.isEmpty()) {
-      Method clInit =
-          new Method(
-              "", of(AccessFlag.ACC_STATIC), "void", id("<clinit>"), emptyList(), emptyList());
-      ctx.constPool.addUtf8(clInit.name.val.toString());
-      ctx.constPool.addUtf8(TypeUtils.methodDescr(clInit));
-      List<Statement> statements = new ArrayList<>();
-      statements.addAll(staticInits);
-      clInit.body = statements;
-      methods.add(clInit);
+    Method userClinit = null;
+    for (Method m : methods) {
+      if ("<clinit>".equals(m.name.val.toString())) {
+        userClinit = m;
+        break;
+      }
+    }
+    if (!staticInits.isEmpty() || userClinit != null) {
+      if (userClinit != null) {
+        List<Statement> merged = new ArrayList<>(staticInits);
+        merged.addAll(userClinit.body);
+        userClinit.body = merged;
+        ctx.constPool.addUtf8(userClinit.name.val.toString());
+        ctx.constPool.addUtf8(TypeUtils.methodDescr(userClinit));
+      } else {
+        Method clInit =
+            new Method(
+                "", of(AccessFlag.ACC_STATIC), "void", id("<clinit>"), emptyList(), emptyList());
+        ctx.constPool.addUtf8(clInit.name.val.toString());
+        ctx.constPool.addUtf8(TypeUtils.methodDescr(clInit));
+        List<Statement> statements = new ArrayList<>(staticInits);
+        clInit.body = statements;
+        methods.add(clInit);
+      }
     }
     if (!constrInits.isEmpty()) {
       List<Method> constructors = ctx.clazz.getConstructors();

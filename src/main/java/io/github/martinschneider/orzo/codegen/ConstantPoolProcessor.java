@@ -70,8 +70,10 @@ public class ConstantPoolProcessor {
         constPool.addUtf8(method.name.val.toString());
         constPool.addUtf8(TypeUtils.methodDescr(method));
       } else {
-        constPool.addMethodRef(
-            clazz.fqn('/'), method.name.val.toString(), TypeUtils.methodDescr(method));
+        String methodName = method.name.val.toString();
+        if (!"<clinit>".equals(methodName)) {
+          constPool.addMethodRef(clazz.fqn('/'), methodName, TypeUtils.methodDescr(method));
+        }
         for (Statement stmt : method.body) {
           constPool = processStatement(constPool, stmt);
         }

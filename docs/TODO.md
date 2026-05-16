@@ -38,7 +38,6 @@ Priority: **H**igh / **M**edium / **L**ow.
 | M        | `TypeUtils.descr()`           | Multi-dimensional arrays not supported (marked TODO).                                                                                                                                 |
 | M        | `ArrayInitParser`             | Multi-dimensional array initialisation not supported (marked TODO).                                                                                                                   |
 | M        | `ForParser`                   | Statement sequences inside for-loop initialisers not supported (marked TODO).                                                                                                         |
-| M        | `MemberProcessor.addClInit()` | Explicit `static { }` initialiser blocks in source are not supported (marked TODO).                                                                                                   |
 | L        | `ConstantPool`                | Long and Double constants take two slots in the pool; the current index accounting may be wrong (see Dead Code section).                                                              |
 
 ---
