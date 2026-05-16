@@ -145,7 +145,9 @@ public class OrzoTest {
         args(list("tests/StaticFieldAccess")),
         args(list("tests/ArrayMethodInit")),
         args(list("tests/NullCheckAnd")),
-        args(list("tests/StaticInit")));
+        args(list("tests/StaticInit")),
+        args(list("tests/TryCatchLocals")),
+        args(list("tests/ArrayLengthCast")));
   }
 
   @ParameterizedTest

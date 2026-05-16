@@ -409,7 +409,11 @@ public class StackMapTableBuilder {
         simulateStacks(code, constPool, targets, minBranchToTarget);
 
     // Add exception handler entry points: stack = [exception_class]
+    // Also build a map from handler PC to the minimum try-start PC so that locals at handler frames
+    // are computed conservatively (only variables definitely initialized before the try range).
+    Map<Integer, Integer> handlerToTryStart = new HashMap<>();
     for (int[] entry : ctx.exceptionTable) {
+      int tryStart = entry[0];
       int handlerPc = entry[2];
       String handlerType = ctx.exceptionHandlerType.get(handlerPc);
       if (handlerType != null) {
@@ -418,6 +422,7 @@ public class StackMapTableBuilder {
         handlerStack.add("L" + handlerType + ";");
         branchTargetStacks.put(handlerPc, handlerStack);
       }
+      handlerToTryStart.merge(handlerPc, tryStart, Math::min);
     }
 
     // Build frames
@@ -432,6 +437,13 @@ public class StackMapTableBuilder {
         targetLocals.add("L" + ctx.clazz.fqn('/') + ";");
       }
 
+      // For exception handlers, a variable is only guaranteed to be initialized if it was
+      // definitely assigned before the try range started (the handler can be entered from any
+      // instruction within the try range, including the very first one). Use the try-start PC
+      // as the effective target for isInitialized so that variables first stored within the
+      // try body are not incorrectly included.
+      int effectiveTarget = handlerToTryStart.getOrDefault(target, target);
+
       // Determine the highest initialized slot so we know when to stop emitting locals.
       int maxInitSlot = -1;
       for (VariableInfo var : sorted) {
@@ -439,7 +451,7 @@ public class StackMapTableBuilder {
         boolean initialized =
             isInitialized(
                 slot,
-                target,
+                effectiveTarget,
                 paramSlots,
                 firstStoreOffset,
                 branchesToTarget,
@@ -463,7 +475,7 @@ public class StackMapTableBuilder {
           boolean initialized =
               isInitialized(
                   slot,
-                  target,
+                  effectiveTarget,
                   paramSlots,
                   firstStoreOffset,
                   branchesToTarget,

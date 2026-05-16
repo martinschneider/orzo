@@ -37,6 +37,9 @@ public class NumExprTypeDecider {
 
   public String getType(GlobalIdentifierMap classIdMap, Expression expr) {
     if (expr == null) return null;
+    if (expr.cast != null) {
+      return expr.cast.name;
+    }
     Set<String> types = new HashSet<>();
     if (expr instanceof ArrayInit) {
       types.add(((ArrayInit) expr).typeDescr());
@@ -79,7 +82,11 @@ public class NumExprTypeDecider {
             if (id.arrSel != null) {
               types.add(var.arrType);
             } else if (var.arrType != null) {
-              types.add("[" + var.arrType);
+              if (id.next != null && "length".equals(id.next.val.toString())) {
+                types.add(INT);
+              } else {
+                types.add("[" + var.arrType);
+              }
             } else if (id.next != null) {
               String chainType = var.type;
               Identifier link = id.next;
