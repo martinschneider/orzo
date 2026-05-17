@@ -76,11 +76,15 @@ public class MethodGenerator {
           12 + codeLen + exTableSize + (stackMapBytes != null ? stackMapBytes.length : 0);
       out.write(attrSize); // stack size (2) + local var size (2) + code size (4) +
       // exception table size (2) + attribute count size (2) + optional StackMapTable
-      // Set appropriate max stack size for enum methods
-      short maxStackSize = (short) (ctx.opStack.maxSize() + 1);
+      short maxStackSize =
+          (short)
+              io.github.martinschneider.orzo.codegen.StackMapTableBuilder.computeMaxStack(
+                  methodOut.getBytes(),
+                  ctx.constPool,
+                  ctx.exceptionTable,
+                  ctx.exceptionHandlerType);
       if (clazz.isEnum && generateEnumMethod(new DynamicByteArray(), method, clazz)) {
-        // Enum methods need larger stack: NEW + DUP + name + ordinal + constructor args = 5+ slots
-        maxStackSize = 6; // Increased to handle constructor arguments
+        maxStackSize = (short) Math.max(maxStackSize, 6);
       }
       out.write(maxStackSize); // max stack size
       out.write((short) (ctx.classIdMap.variables.localSize + 1)); // max local var size

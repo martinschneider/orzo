@@ -306,6 +306,124 @@ public class StackMapTableBuilder {
   }
 
   /**
+   * Computes the maximum operand-stack depth for the given method bytecode by forward simulation.
+   * Handles all branch instructions, dead code after unconditional transfers, and exception-handler
+   * entry points (which carry one element on the stack). Returns 0 for null/empty code.
+   */
+  public static int computeMaxStack(byte[] code, ConstantPool constPool) {
+    return computeMaxStack(
+        code, constPool, java.util.Collections.emptyList(), java.util.Collections.emptyMap());
+  }
+
+  /**
+   * Computes the maximum operand-stack depth for the given method bytecode by forward simulation.
+   * Exception handler entry points are seeded with one stack element (the exception object).
+   * Returns 0 for null/empty code.
+   */
+  public static int computeMaxStack(
+      byte[] code,
+      ConstantPool constPool,
+      List<int[]> exceptionTable,
+      Map<Integer, String> handlerTypes) {
+    if (code == null || code.length == 0) {
+      return 0;
+    }
+    Map<Integer, List<String>> targetStacks = new HashMap<>();
+
+    // Seed exception handler entry points: JVM pushes the exception object before transferring
+    // control, so each handler starts with exactly one reference on the operand stack.
+    for (int[] entry : exceptionTable) {
+      int handlerPc = entry[2];
+      String handlerType = handlerTypes.get(handlerPc);
+      List<String> handlerStack = new ArrayList<>();
+      handlerStack.add(handlerType != null ? "L" + handlerType + ";" : "Ljava/lang/Throwable;");
+      targetStacks.putIfAbsent(handlerPc, handlerStack);
+    }
+
+    List<String> stack = new ArrayList<>();
+    int maxDepth = 0;
+    boolean dead = false;
+    int i = 0;
+    while (i < code.length) {
+      if (targetStacks.containsKey(i)) {
+        stack = new ArrayList<>(targetStacks.get(i));
+        dead = false;
+        // Measure depth at target entry: for handler targets the exception object is the
+        // peak before the first instruction (e.g. astore) consumes it.
+        maxDepth = Math.max(maxDepth, slotCount(stack));
+      } else if (dead) {
+        stack = new ArrayList<>();
+      }
+      byte op = code[i];
+      if ((op >= IFEQ && op <= IFLE) || op == IFNULL || op == IFNONNULL) {
+        if (i + 2 < code.length) {
+          short off = (short) (((code[i + 1] & 0xFF) << 8) | (code[i + 2] & 0xFF));
+          int target = i + off;
+          List<String> ts = new ArrayList<>(stack);
+          if (!ts.isEmpty()) ts.remove(ts.size() - 1);
+          targetStacks.putIfAbsent(target, ts);
+          if (!stack.isEmpty()) stack.remove(stack.size() - 1);
+        }
+      } else if (op >= IF_ICMPEQ && op <= IF_ACMPNE) {
+        if (i + 2 < code.length) {
+          short off = (short) (((code[i + 1] & 0xFF) << 8) | (code[i + 2] & 0xFF));
+          int target = i + off;
+          List<String> ts = new ArrayList<>(stack);
+          if (ts.size() >= 2) {
+            ts.remove(ts.size() - 1);
+            ts.remove(ts.size() - 1);
+          }
+          targetStacks.putIfAbsent(target, ts);
+          if (stack.size() >= 2) {
+            stack.remove(stack.size() - 1);
+            stack.remove(stack.size() - 1);
+          }
+        }
+      } else if (op == GOTO) {
+        if (i + 2 < code.length) {
+          short off = (short) (((code[i + 1] & 0xFF) << 8) | (code[i + 2] & 0xFF));
+          int target = i + off;
+          targetStacks.putIfAbsent(target, new ArrayList<>(stack));
+          int next = i + 3;
+          if (next < code.length) targetStacks.putIfAbsent(next, new ArrayList<>());
+          dead = true;
+        }
+      } else if (op == GOTO_W) {
+        if (i + 4 < code.length) {
+          int off =
+              ((code[i + 1] & 0xFF) << 24)
+                  | ((code[i + 2] & 0xFF) << 16)
+                  | ((code[i + 3] & 0xFF) << 8)
+                  | (code[i + 4] & 0xFF);
+          int target = i + off;
+          targetStacks.putIfAbsent(target, new ArrayList<>(stack));
+          int next = i + 5;
+          if (next < code.length) targetStacks.putIfAbsent(next, new ArrayList<>());
+          dead = true;
+        }
+      } else if ((op >= IRETURN && op <= RETURN) || op == ATHROW) {
+        applyStackEffect(op, code, i, stack, constPool);
+        int next = i + 1;
+        if (next < code.length) targetStacks.putIfAbsent(next, new ArrayList<>());
+        dead = true;
+      } else {
+        applyStackEffect(op, code, i, stack, constPool);
+      }
+      maxDepth = Math.max(maxDepth, slotCount(stack));
+      i += opcodeLength(code, i);
+    }
+    return maxDepth;
+  }
+
+  private static int slotCount(List<String> stack) {
+    int count = 0;
+    for (String t : stack) {
+      count += ("J".equals(t) || "D".equals(t)) ? 2 : 1;
+    }
+    return count;
+  }
+
+  /**
    * Post-processing scanner: scans the fully-generated method bytecode, finds all branch targets,
    * and emits a StackMapTable with full_frame entries.
    *

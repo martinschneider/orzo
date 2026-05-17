@@ -75,7 +75,7 @@ public class MethodGeneratorTest {
             list(constant("()V", 1), constant("Code", 2), constant("test", 3)),
             varMap(list(varInfo("x", "int", 0))),
             clazz,
-            "000100030001000100020000000F00020001000000",
+            "000100030001000100020000000F00010001000000",
             list("iconst_1", "istore_0", "return"),
             "000000"));
     //				args("public Martin(){}",
