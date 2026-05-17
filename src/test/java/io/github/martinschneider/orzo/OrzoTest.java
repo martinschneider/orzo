@@ -147,7 +147,8 @@ public class OrzoTest {
         args(list("tests/NullCheckAnd")),
         args(list("tests/StaticInit")),
         args(list("tests/TryCatchLocals")),
-        args(list("tests/ArrayLengthCast")));
+        args(list("tests/ArrayLengthCast")),
+        args(list("tests/ForEachLoops")));
   }
 
   @ParameterizedTest

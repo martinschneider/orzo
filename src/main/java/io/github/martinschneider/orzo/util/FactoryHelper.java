@@ -29,6 +29,7 @@ import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.DoStatement;
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.ForEachStatement;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.IfBlock;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
@@ -180,6 +181,11 @@ public class FactoryHelper {
       Statement loopStatement,
       List<Statement> body) {
     return new ForStatement(initialization, condition, loopStatement, body);
+  }
+
+  public static ForEachStatement forEachStmt(
+      String elemType, String elemVar, Expression iterable, List<Statement> body) {
+    return new ForEachStatement(elemType, new Identifier(elemVar), iterable, body);
   }
 
   public static CompilerError err(String msg) {

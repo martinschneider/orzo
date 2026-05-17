@@ -24,6 +24,7 @@ public class ParserContext {
   public EnumParser enumParser;
   public ExpressionParser exprParser;
   public FloorParser floorParser;
+  public ForEachParser forEachParser;
   public ForParser forParser;
   public IfParser ifParser;
   public MethodCallParser methodCallParser;
@@ -54,6 +55,7 @@ public class ParserContext {
     ctx.enumParser = new EnumParser(ctx);
     ctx.exprParser = new ExpressionParser(ctx);
     ctx.floorParser = new FloorParser(ctx);
+    ctx.forEachParser = new ForEachParser(ctx);
     ctx.forParser = new ForParser(ctx);
     ctx.ifParser = new IfParser(ctx);
     ctx.methodCallParser = new MethodCallParser(ctx);

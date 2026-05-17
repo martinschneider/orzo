@@ -7,6 +7,7 @@ import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.DoStatement;
 import io.github.martinschneider.orzo.parser.productions.EmptyStatement;
+import io.github.martinschneider.orzo.parser.productions.ForEachStatement;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
@@ -27,6 +28,7 @@ public class StatementDelegator {
   public void init() {
     reg.put(ParallelDeclaration.class, new DeclarationGenerator(ctx));
     reg.put(DoStatement.class, new DoGenerator(ctx));
+    reg.put(ForEachStatement.class, new ForEachGenerator(ctx));
     reg.put(ForStatement.class, new ForGenerator(ctx));
     reg.put(IfStatement.class, new IfGenerator(ctx));
     reg.put(MethodCall.class, new MethodCallGenerator(ctx));
