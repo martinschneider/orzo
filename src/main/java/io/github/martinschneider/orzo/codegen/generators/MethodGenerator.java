@@ -6,7 +6,10 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.*;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.StackMapTableBuilder;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
+import io.github.martinschneider.orzo.parser.productions.CatchBlock;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
@@ -19,6 +22,7 @@ import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import io.github.martinschneider.orzo.parser.productions.TryStatement;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class MethodGenerator {
@@ -68,8 +72,7 @@ public class MethodGenerator {
         methodOut.write(RETURN);
       }
       byte[] stackMapBytes =
-          io.github.martinschneider.orzo.codegen.StackMapTableBuilder.buildFromBytecode(
-              methodOut.getBytes(), method, ctx, ctx.constPool);
+          StackMapTableBuilder.buildFromBytecode(methodOut.getBytes(), method, ctx, ctx.constPool);
       int codeLen = methodOut.size();
       int exTableSize = 8 * ctx.exceptionTable.size();
       int attrSize =
@@ -78,7 +81,7 @@ public class MethodGenerator {
       // exception table size (2) + attribute count size (2) + optional StackMapTable
       short maxStackSize =
           (short)
-              io.github.martinschneider.orzo.codegen.StackMapTableBuilder.computeMaxStack(
+              StackMapTableBuilder.computeMaxStack(
                   methodOut.getBytes(),
                   ctx.constPool,
                   ctx.exceptionTable,
@@ -127,7 +130,7 @@ public class MethodGenerator {
     if (!endsWithReturn(stmt.tryBody)) {
       return false;
     }
-    for (io.github.martinschneider.orzo.parser.productions.CatchBlock cb : stmt.catchBlocks) {
+    for (CatchBlock cb : stmt.catchBlocks) {
       if (!endsWithReturn(cb.body)) {
         return false;
       }
@@ -432,8 +435,7 @@ public class MethodGenerator {
         for (ParallelDeclaration pDecl : clazz.fields) {
           for (Declaration field : pDecl.declarations) {
             // Skip static fields (enum constants)
-            if (!field.accFlags.contains(
-                io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_STATIC)) {
+            if (!field.accFlags.contains(AccessFlag.ACC_STATIC)) {
 
               // Load this: aload_0
               out.write(ALOAD_0);
@@ -471,9 +473,7 @@ public class MethodGenerator {
       for (ParallelDeclaration pDecl : clazz.fields) {
         for (Declaration decl : pDecl.declarations) {
           // Skip static fields (enum constants) and fields without default values
-          if (!decl.accFlags.contains(
-                  io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_STATIC)
-              && decl.val != null) {
+          if (!decl.accFlags.contains(AccessFlag.ACC_STATIC) && decl.val != null) {
             // Load this: aload_0
             out.write(ALOAD_0);
 
@@ -514,6 +514,6 @@ public class MethodGenerator {
       ParallelDeclaration enumConstantsDecl = clazz.fields.get(0);
       return enumConstantsDecl.declarations;
     }
-    return java.util.Collections.emptyList();
+    return Collections.emptyList();
   }
 }

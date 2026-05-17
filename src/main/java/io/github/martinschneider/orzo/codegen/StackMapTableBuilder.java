@@ -211,11 +211,14 @@ import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  * Builds the StackMapTable attribute for a method.
@@ -278,7 +281,7 @@ public class StackMapTableBuilder {
     content.write((short) frames.size()); // number_of_entries
 
     int previousOffset = -1;
-    for (java.util.Map.Entry<Integer, Frame> entry : frames.entrySet()) {
+    for (Map.Entry<Integer, Frame> entry : frames.entrySet()) {
       int offset = entry.getKey();
       Frame frame = entry.getValue();
       int offsetDelta = (previousOffset == -1) ? offset : (offset - previousOffset - 1);
@@ -311,8 +314,7 @@ public class StackMapTableBuilder {
    * entry points (which carry one element on the stack). Returns 0 for null/empty code.
    */
   public static int computeMaxStack(byte[] code, ConstantPool constPool) {
-    return computeMaxStack(
-        code, constPool, java.util.Collections.emptyList(), java.util.Collections.emptyMap());
+    return computeMaxStack(code, constPool, Collections.emptyList(), Collections.emptyMap());
   }
 
   /**
@@ -456,7 +458,7 @@ public class StackMapTableBuilder {
     // prevInstrOffset
     Map<Integer, List<Integer>> branchesToTarget = new HashMap<>();
     Map<Integer, Integer> prevInstrOffset = new HashMap<>();
-    java.util.TreeSet<Integer> targets = new java.util.TreeSet<>();
+    TreeSet<Integer> targets = new TreeSet<>();
 
     int prev = -1;
     int i = 0;
@@ -517,7 +519,7 @@ public class StackMapTableBuilder {
     // Scan 2: forward stack simulation to determine operand stack at each branch target
     // (simulateStacks still uses minBranchToTarget for legacy; rebuild it here)
     Map<Integer, Integer> minBranchToTarget = new HashMap<>();
-    for (java.util.Map.Entry<Integer, List<Integer>> e : branchesToTarget.entrySet()) {
+    for (Map.Entry<Integer, List<Integer>> e : branchesToTarget.entrySet()) {
       int tgt = e.getKey();
       for (int src : e.getValue()) {
         minBranchToTarget.merge(tgt, src, Math::min);
@@ -615,8 +617,7 @@ public class StackMapTableBuilder {
         }
       }
 
-      List<String> stackTypes =
-          branchTargetStacks.getOrDefault(target, java.util.Collections.emptyList());
+      List<String> stackTypes = branchTargetStacks.getOrDefault(target, Collections.emptyList());
       builder.addFrame(target, targetLocals, stackTypes);
     }
     return builder.build(constPool);
@@ -630,7 +631,7 @@ public class StackMapTableBuilder {
   private static Map<Integer, List<String>> simulateStacks(
       byte[] code,
       ConstantPool constPool,
-      java.util.Set<Integer> targets,
+      Set<Integer> targets,
       Map<Integer, Integer> minBranchToTarget) {
     Map<Integer, List<String>> result = new HashMap<>();
     List<String> stack = new ArrayList<>();
@@ -1401,7 +1402,7 @@ public class StackMapTableBuilder {
 
     // Recurse into each direct branch source: use the CUT at the source, not just its offset.
     // This correctly propagates through indirect paths such as cond_branch → fallthrough → target.
-    for (int src : branchesToTarget.getOrDefault(target, java.util.Collections.emptyList())) {
+    for (int src : branchesToTarget.getOrDefault(target, Collections.emptyList())) {
       result =
           Math.min(
               result,
