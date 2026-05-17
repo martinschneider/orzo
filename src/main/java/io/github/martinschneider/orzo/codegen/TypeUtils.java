@@ -7,6 +7,7 @@ import static io.github.martinschneider.orzo.codegen.ArrayTypes.FLOAT_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.INT_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.LONG_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.SHORT_ARRAY;
+import static io.github.martinschneider.orzo.codegen.OpCodes.AALOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.BALOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.BASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.CALOAD;
@@ -147,21 +148,28 @@ public class TypeUtils {
   public static byte getLoadOpCode(String type) {
     switch (type) {
       case INT:
+      case "I":
         return IALOAD;
       case BYTE:
+      case "B":
         return BALOAD;
       case SHORT:
+      case "S":
         return SALOAD;
       case LONG:
+      case "J":
         return LALOAD;
       case DOUBLE:
+      case "D":
         return DALOAD;
       case FLOAT:
+      case "F":
         return FALOAD;
       case CHAR:
+      case "C":
         return CALOAD;
     }
-    return 0;
+    return AALOAD;
   }
 
   public static byte getStoreOpCode(String type) {

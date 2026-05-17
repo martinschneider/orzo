@@ -149,7 +149,11 @@ public class OrzoTest {
         args(list("tests/TryCatchLocals")),
         args(list("tests/ArrayLengthCast")),
         args(list("tests/ForEachLoops")),
-        args(list("tests/ForEachPrimitive")));
+        args(list("tests/ForEachPrimitive")),
+        args(list("tests/ForEachNestedBranch")),
+        args(list("tests/ForEachNestedFor")),
+        args(list("tests/ForEachAndCondition")),
+        args(list("tests/ArrayFieldAccess", "tests/ArrayFieldHolder")));
   }
 
   @ParameterizedTest

@@ -82,7 +82,8 @@ public class FieldProcessor {
         for (Declaration decl : parallelDecl.declarations) {
           if (isInstanceField(decl)) {
             String fieldName = decl.name.val.toString();
-            String fieldType = decl.type;
+            String fieldType =
+                decl.arrDim > 0 ? TypeUtils.descr(decl.type, decl.arrDim) : decl.type;
 
             InstanceField field = new InstanceField(targetClass.fqn(), fieldName, fieldType);
             fieldMap.put(fieldName, field);

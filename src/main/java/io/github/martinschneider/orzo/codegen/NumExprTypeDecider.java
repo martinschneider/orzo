@@ -91,12 +91,20 @@ public class NumExprTypeDecider {
               String chainType = var.type;
               Identifier link = id.next;
               while (link != null && chainType != null) {
+                if ("length".equals(link.val.toString()) && chainType.startsWith("[")) {
+                  chainType = INT;
+                  link = link.next;
+                  continue;
+                }
                 FieldProcessor.InstanceField field =
                     new FieldProcessor()
                         .getInstanceFieldMap(chainType, ctx.allClazzes)
                         .get(link.val.toString());
                 if (field != null) {
                   chainType = field.fieldType;
+                  if (link.arrSel != null && chainType.startsWith("[")) {
+                    chainType = chainType.substring(1);
+                  }
                   link = link.next;
                 } else {
                   chainType = null;

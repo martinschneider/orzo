@@ -54,6 +54,5 @@ src/main/java/io/github/martinschneider/orzo/parser/SqrtParser.java
 src/main/java/io/github/martinschneider/orzo/parser/StatementParser.java
 src/main/java/io/github/martinschneider/orzo/util/FactoryHelper.java
 src/main/java/io/github/martinschneider/orzo/util/ObjectUtils.java
-src/main/java/io/github/martinschneider/orzo/error/CompilerErrors.java
 src/main/java/io/github/martinschneider/orzo/parser/ConstructorCallParser.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ForEachGenerator.java

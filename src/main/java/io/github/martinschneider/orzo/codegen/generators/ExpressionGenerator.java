@@ -372,7 +372,10 @@ public class ExpressionGenerator {
         }
       } else {
         VariableInfo prevInfo = (prev != null) ? ctx.classIdMap.variables.get(prev) : null;
-        if (prev != null && prevInfo != null && prevInfo.arrType != null) {
+        boolean prevWasArray =
+            (prevInfo != null && prevInfo.arrType != null)
+                || (returnType != null && returnType.startsWith("["));
+        if (prev != null && prevWasArray) {
           ctx.basicGen.arrayLength(out);
           returnType = INT;
           prevLoadedRef = false;
@@ -406,7 +409,18 @@ public class ExpressionGenerator {
                       fieldTypeDescr));
               ctx.opStack.push(fieldType);
               returnType = fieldType;
-              prevLoadedRef = isNonPrimitive(fieldType) && curr.arrSel == null;
+              if (curr.arrSel != null && fieldType.startsWith("[")) {
+                String elemDescriptor = fieldType.substring(1);
+                ctx.loadGen.loadValueFromArrayOnStack(
+                    out, classIdMap, curr.arrSel.exprs, elemDescriptor);
+                ctx.opStack.pop();
+                String elemType = jvmDescriptorToTypeName(elemDescriptor);
+                ctx.opStack.push(elemType);
+                returnType = elemType;
+                prevLoadedRef = isNonPrimitive(elemType);
+              } else {
+                prevLoadedRef = isNonPrimitive(fieldType) && curr.arrSel == null;
+              }
               prev = curr;
               curr = curr.next;
               continue;
@@ -881,6 +895,32 @@ public class ExpressionGenerator {
 
   String resolveJvmClassName(String typeName) {
     return convertToJVMClassName(typeName);
+  }
+
+  private static String jvmDescriptorToTypeName(String descriptor) {
+    switch (descriptor) {
+      case "I":
+        return INT;
+      case "B":
+        return BYTE;
+      case "S":
+        return SHORT;
+      case "J":
+        return LONG;
+      case "D":
+        return DOUBLE;
+      case "F":
+        return FLOAT;
+      case "C":
+        return CHAR;
+      case "Z":
+        return BOOLEAN;
+      default:
+        if (descriptor.startsWith("L") && descriptor.endsWith(";")) {
+          return descriptor.substring(1, descriptor.length() - 1).replace('/', '.');
+        }
+        return descriptor;
+    }
   }
 
   private static boolean isNonPrimitive(String type) {
