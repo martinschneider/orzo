@@ -8,6 +8,7 @@ src/main/java/io/github/martinschneider/orzo/codegen/generators/AssignmentGenera
 src/main/java/io/github/martinschneider/orzo/codegen/generators/BasicGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ConstructorCallGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/DeclarationGenerator.java
+src/main/java/io/github/martinschneider/orzo/codegen/generators/WhileGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/DoGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ExpressionGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ForGenerator.java
@@ -22,7 +23,6 @@ src/main/java/io/github/martinschneider/orzo/codegen/generators/PushGenerator.ja
 src/main/java/io/github/martinschneider/orzo/codegen/generators/RetGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/StatementDelegator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/StoreGenerator.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/WhileGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/identifier/MemberProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/MethodProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/NumExprTypeDecider.java

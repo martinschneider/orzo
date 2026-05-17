@@ -18,12 +18,28 @@ import io.github.martinschneider.orzo.parser.productions.ForEachStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
   private CGContext ctx;
 
   private static final String ITERATOR_CLASS = "java/util/Iterator";
   private static final String ITERABLE_CLASS = "java/lang/Iterable";
+
+  // Maps primitive element type name → [boxed JVM class, unboxing method name, unboxing descriptor]
+  private static final Map<String, String[]> UNBOX = new HashMap<>();
+
+  static {
+    UNBOX.put("byte", new String[] {"java/lang/Byte", "byteValue", "()B"});
+    UNBOX.put("short", new String[] {"java/lang/Short", "shortValue", "()S"});
+    UNBOX.put("int", new String[] {"java/lang/Integer", "intValue", "()I"});
+    UNBOX.put("long", new String[] {"java/lang/Long", "longValue", "()J"});
+    UNBOX.put("float", new String[] {"java/lang/Float", "floatValue", "()F"});
+    UNBOX.put("double", new String[] {"java/lang/Double", "doubleValue", "()D"});
+    UNBOX.put("char", new String[] {"java/lang/Character", "charValue", "()C"});
+    UNBOX.put("boolean", new String[] {"java/lang/Boolean", "booleanValue", "()Z"});
+  }
 
   public ForEachGenerator(CGContext ctx) {
     this.ctx = ctx;
@@ -54,18 +70,30 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
     ctx.loadGen.load(bodyOut, ctx.classIdMap.variables.get(iterId));
     ctx.invokeGen.invokeInterface(bodyOut, nextMethod);
 
-    // CHECKCAST to the declared element type (resolve simple names like "String" to JVM internal
-    // names)
-    String descriptor = TypeUtils.descr(stmt.elemType);
-    String jvmElemType =
-        (descriptor.startsWith("L") && descriptor.endsWith(";"))
-            ? descriptor.substring(1, descriptor.length() - 1)
-            : stmt.elemType.replace('.', '/');
-    ctx.constPool.addClass(jvmElemType);
-    bodyOut.write(CHECKCAST);
-    bodyOut.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmElemType));
+    String[] unboxInfo = UNBOX.get(stmt.elemType);
+    if (unboxInfo != null) {
+      // Primitive element type: CHECKCAST to boxed class, then unbox
+      String boxedClass = unboxInfo[0];
+      String unboxMethodName = unboxInfo[1];
+      String primitiveType = stmt.elemType;
+      ctx.constPool.addClass(boxedClass);
+      bodyOut.write(CHECKCAST);
+      bodyOut.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, boxedClass));
+      ctx.invokeGen.invokeVirtual(
+          bodyOut, new Method(boxedClass, unboxMethodName, primitiveType, Collections.emptyList()));
+    } else {
+      // Reference element type: resolve simple names like "String" to JVM internal names
+      String descriptor = TypeUtils.descr(stmt.elemType);
+      String jvmElemType =
+          (descriptor.startsWith("L") && descriptor.endsWith(";"))
+              ? descriptor.substring(1, descriptor.length() - 1)
+              : stmt.elemType.replace('.', '/');
+      ctx.constPool.addClass(jvmElemType);
+      bodyOut.write(CHECKCAST);
+      bodyOut.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmElemType));
+    }
 
-    // Store the cast element into the loop variable (allocates slot if needed)
+    // Store the cast/unboxed element into the loop variable (allocates slot if needed)
     ctx.assignGen.assign(bodyOut, ctx.classIdMap.variables, stmt.elemType, stmt.elemVar);
 
     // Emit body statements
