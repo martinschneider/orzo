@@ -31,6 +31,7 @@ import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.ArraySelector;
+import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
@@ -68,6 +69,7 @@ public class ExpressionParser implements ProdParser<Expression> {
           || tokens.curr() instanceof Str
           || tokens.curr() instanceof Chr
           || tokens.curr() instanceof Identifier
+          || (tokens.curr() instanceof Type && parenthesis < 0)
           || tokens.curr() instanceof Operator
           || tokens.curr().eq(sym(SQRT))
           || tokens.curr().eq(sym(LPAREN))
@@ -165,7 +167,67 @@ public class ExpressionParser implements ProdParser<Expression> {
         if (!selectors.isEmpty()) exprTokens.add(flattenId(selectors));
       }
     }
+    // Handle ((Type) inner).method() — DOT after balanced parenthesized cast expression
+    if (tokens.curr().eq(sym(DOT)) && parenthesis == 0 && isCastMethodChainPattern(exprTokens)) {
+      String castType = resolveCastType(exprTokens.get(2).val.toString());
+      List<Token> innerTokens = new ArrayList<>(exprTokens.subList(4, exprTokens.size() - 1));
+      Expression innerExpr = new Expression(postfix(innerTokens), null);
+      exprTokens = new ArrayList<>();
+      tokens.next(); // skip DOT
+      List<Identifier> chainSelectors = new ArrayList<>();
+      do {
+        int chainIdx = tokens.idx();
+        MethodCall mc = parseMethod(tokens);
+        if (mc != null) {
+          chainSelectors.add(mc);
+        } else {
+          tokens.setIdx(chainIdx);
+          if (tokens.curr() instanceof Identifier && !tokens.curr().eq(eof())) {
+            chainSelectors.add((Identifier) tokens.curr());
+            tokens.next();
+          } else {
+            break;
+          }
+        }
+      } while (tokens.curr().eq(sym(DOT)) && tokens.next() != null);
+      CastMethodCall castCall = new CastMethodCall(castType, innerExpr);
+      if (!chainSelectors.isEmpty()) {
+        castCall.next = (Identifier) flattenId(chainSelectors);
+      }
+      exprTokens.add(castCall);
+    }
     return (exprTokens.size() > 0) ? new Expression(postfix(exprTokens), cast) : null;
+  }
+
+  private boolean isCastMethodChainPattern(List<Token> exprTokens) {
+    if (exprTokens.size() < 5) return false;
+    if (!exprTokens.get(0).eq(sym(LPAREN))) return false;
+    if (!exprTokens.get(1).eq(sym(LPAREN))) return false;
+    Token third = exprTokens.get(2);
+    if (!(third instanceof Identifier) && !(third instanceof Type)) return false;
+    String name = third.val.toString();
+    if (name.isEmpty() || !Character.isUpperCase(name.charAt(0))) return false;
+    if (!exprTokens.get(3).eq(sym(RPAREN))) return false;
+    if (!exprTokens.get(exprTokens.size() - 1).eq(sym(RPAREN))) return false;
+    return true;
+  }
+
+  private String resolveCastType(String name) {
+    String fqn = ctx.importMap.get(name);
+    if (fqn != null) return fqn;
+    if (ctx.currClazz != null && name.equals(ctx.currClazz.name)) return ctx.currClazz.fqn();
+    try {
+      Class.forName("java.lang." + name);
+      return "java.lang." + name;
+    } catch (ClassNotFoundException e) {
+      // not in java.lang
+    }
+    if (ctx.currClazz != null
+        && ctx.currClazz.packageName != null
+        && !ctx.currClazz.packageName.isEmpty()) {
+      return ctx.currClazz.packageName + "." + name;
+    }
+    return name;
   }
 
   /**

@@ -153,7 +153,9 @@ public class OrzoTest {
         args(list("tests/ForEachNestedBranch")),
         args(list("tests/ForEachNestedFor")),
         args(list("tests/ForEachAndCondition")),
-        args(list("tests/ArrayFieldAccess", "tests/ArrayFieldHolder")));
+        args(list("tests/ArrayFieldAccess", "tests/ArrayFieldHolder")),
+        args(list("tests/CastMethodChain")),
+        args(list("tests/LongIntComparison")));
   }
 
   @ParameterizedTest

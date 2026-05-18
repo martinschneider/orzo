@@ -85,6 +85,7 @@ import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
+import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -353,12 +354,20 @@ public class ExpressionGenerator {
         ctx.opStack.push(REF);
         return REF;
       }
-      if (curr instanceof ConstructorCall) {
+      if (curr instanceof CastMethodCall) {
+        CastMethodCall castCall = (CastMethodCall) curr;
+        ExpressionResult innerResult = eval(out, null, castCall.innerExpr);
+        ctx.basicGen.convert(out, innerResult.type, castCall.castType);
+        returnType = castCall.castType;
+        prevLoadedRef = true;
+      } else if (curr instanceof ConstructorCall) {
         ConstructorCall constructorCall = (ConstructorCall) curr;
         returnType = generateConstructorCall(out, classIdMap, constructorCall);
       } else if (curr instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) curr;
-        if (prev instanceof MethodCall || prev instanceof ConstructorCall) {
+        if (prev instanceof MethodCall
+            || prev instanceof ConstructorCall
+            || prev instanceof CastMethodCall) {
           returnType = ctx.methodCallGen.generateChained(out, classIdMap, methodCall, returnType);
         } else {
           returnType = ctx.methodCallGen.generate(out, classIdMap, methodCall);
@@ -603,7 +612,13 @@ public class ExpressionGenerator {
               staticField.fieldName,
               fieldType));
       ctx.opStack.push(staticField.fieldType);
-
+      if (type != null
+          && !staticField.fieldType.equals(type)
+          && TypeUtils.isPrimitive(staticField.fieldType)
+          && TypeUtils.isPrimitive(type)) {
+        ctx.basicGen.convert1(out, staticField.fieldType, type);
+        return type;
+      }
       return staticField.fieldType;
     }
 
@@ -627,6 +642,13 @@ public class ExpressionGenerator {
                 partField,
                 reflDescr));
         ctx.opStack.push(reflFieldType);
+        if (type != null
+            && !reflFieldType.equals(type)
+            && TypeUtils.isPrimitive(reflFieldType)
+            && TypeUtils.isPrimitive(type)) {
+          ctx.basicGen.convert1(out, reflFieldType, type);
+          return type;
+        }
         return reflFieldType;
       } catch (ClassNotFoundException | NoSuchFieldException e) {
         // fall through

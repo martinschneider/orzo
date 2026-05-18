@@ -25,7 +25,6 @@ src/main/java/io/github/martinschneider/orzo/codegen/generators/StatementDelegat
 src/main/java/io/github/martinschneider/orzo/codegen/generators/StoreGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/identifier/MemberProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/MethodProcessor.java
-src/main/java/io/github/martinschneider/orzo/codegen/NumExprTypeDecider.java
 src/main/java/io/github/martinschneider/orzo/codegen/StackMapTableBuilder.java
 src/main/java/io/github/martinschneider/orzo/codegen/TypeUtils.java
 src/main/java/io/github/martinschneider/orzo/lexer/Lexer.java
@@ -56,3 +55,5 @@ src/main/java/io/github/martinschneider/orzo/util/FactoryHelper.java
 src/main/java/io/github/martinschneider/orzo/util/ObjectUtils.java
 src/main/java/io/github/martinschneider/orzo/parser/ConstructorCallParser.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ForEachGenerator.java
+src/main/java/io/github/martinschneider/orzo/parser/productions/CastMethodCall.java
+src/main/java/io/github/martinschneider/orzo/codegen/NumExprTypeDecider.java
