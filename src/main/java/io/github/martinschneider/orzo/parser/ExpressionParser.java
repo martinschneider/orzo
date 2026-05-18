@@ -167,6 +167,11 @@ public class ExpressionParser implements ProdParser<Expression> {
         if (!selectors.isEmpty()) exprTokens.add(flattenId(selectors));
       }
     }
+    // Handle ((Type) inner) — balanced parenthesized cast expression without following DOT
+    if (parenthesis == 0 && !tokens.curr().eq(sym(DOT)) && isCastMethodChainPattern(exprTokens)) {
+      cast = new Type(resolveCastType(exprTokens.get(2).val.toString()));
+      exprTokens = new ArrayList<>(exprTokens.subList(4, exprTokens.size() - 1));
+    }
     // Handle ((Type) inner).method() — DOT after balanced parenthesized cast expression
     if (tokens.curr().eq(sym(DOT)) && parenthesis == 0 && isCastMethodChainPattern(exprTokens)) {
       String castType = resolveCastType(exprTokens.get(2).val.toString());

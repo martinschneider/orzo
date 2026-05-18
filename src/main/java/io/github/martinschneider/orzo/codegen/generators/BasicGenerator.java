@@ -29,12 +29,20 @@ public class BasicGenerator {
   public void convert(DynamicByteArray out, String from, String to) {
     addCastingErrors(from, to);
     // TODO: array casts
-    if (from != null && to != null) {
-      byte[] castBytes =
-          CAST_OPS.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]);
-      out.write(castBytes);
-      if (castBytes.length == 0 && !TypeUtils.isPrimitive(to) && !to.equals(from)) {
-        // Reference type cast: emit checkcast instruction
+    if (to != null) {
+      if (from != null) {
+        byte[] castBytes =
+            CAST_OPS.getOrDefault(from, Collections.emptyMap()).getOrDefault(to, new byte[0]);
+        out.write(castBytes);
+        if (castBytes.length == 0 && !TypeUtils.isPrimitive(to) && !to.equals(from)) {
+          // Reference type cast: emit checkcast instruction
+          String jvmTo = to.replace('.', '/');
+          ctx.constPool.addClass(jvmTo);
+          out.write(CHECKCAST);
+          out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmTo));
+        }
+      } else if (!TypeUtils.isPrimitive(to)) {
+        // Unknown source type — emit checkcast unconditionally for safety
         String jvmTo = to.replace('.', '/');
         ctx.constPool.addClass(jvmTo);
         out.write(CHECKCAST);
@@ -150,6 +158,7 @@ public class BasicGenerator {
   }
 
   private void addCastingErrors(String from, String to) {
+    if (from == null || to == null) return;
     // I have considered allowing these casts by mapping 0 to false and everything else to true.
     // However, I decided to stick with standard Java behaviour and raise an error instead.
     if (from.equals(BOOLEAN) && !to.equals(BOOLEAN)) {

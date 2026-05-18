@@ -31,7 +31,6 @@ src/main/java/io/github/martinschneider/orzo/lexer/Lexer.java
 src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/FPLiteral.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/IntLiteral.java
-src/main/java/io/github/martinschneider/orzo/lexer/tokens/Operator.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Token.java
 src/main/java/io/github/martinschneider/orzo/Orzo.java
 src/main/java/io/github/martinschneider/orzo/parser/MethodCallParser.java
@@ -55,5 +54,4 @@ src/main/java/io/github/martinschneider/orzo/util/FactoryHelper.java
 src/main/java/io/github/martinschneider/orzo/util/ObjectUtils.java
 src/main/java/io/github/martinschneider/orzo/parser/ConstructorCallParser.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ForEachGenerator.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/CastMethodCall.java
 src/main/java/io/github/martinschneider/orzo/codegen/NumExprTypeDecider.java
