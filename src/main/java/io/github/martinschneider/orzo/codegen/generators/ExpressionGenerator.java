@@ -173,6 +173,8 @@ public class ExpressionGenerator {
       return new ExpressionResult(BOOLEAN, null);
     }
     boolean branchEmitted = false;
+    int lastBranchPos = -1;
+    byte lastBranchOpCode = 0;
     // Pre-scan: find assignment expressions (var = expr) where lhs is a simple local variable.
     // These need special handling: skip loading lhs old value; DUP+STORE rhs at ASSIGN.
     Set<Integer> skipLoad = new HashSet<>();
@@ -292,26 +294,34 @@ public class ExpressionGenerator {
           ctx.invokeGen.invokeVirtual(
               out, new Method("java.lang.String", "concat", STRING, List.of(STRING)));
         } else if (op.equals(NEGATE) && reverseComp) {
-          boolean logicalOpFollows = false;
-          for (int j = i + 1; j < tokens.size(); j++) {
-            if (tokens.get(j) instanceof Operator) {
-              Operators jType = ((Operator) tokens.get(j)).opValue();
-              if (jType == LOGICAL_AND || jType == LOGICAL_OR) {
-                logicalOpFollows = true;
-                break;
+          if (branchEmitted && lastBranchPos >= 0) {
+            // A comparison already emitted a branch opcode. Flip it in place instead of
+            // emitting another branch (which would corrupt the instruction stream).
+            byte flipped = reverseComp(lastBranchOpCode);
+            out.patch(lastBranchPos, new byte[] {flipped});
+            lastBranchOpCode = flipped;
+          } else {
+            boolean logicalOpFollows = false;
+            for (int j = i + 1; j < tokens.size(); j++) {
+              if (tokens.get(j) instanceof Operator) {
+                Operators jType = ((Operator) tokens.get(j)).opValue();
+                if (jType == LOGICAL_AND || jType == LOGICAL_OR) {
+                  logicalOpFollows = true;
+                  break;
+                }
               }
             }
-          }
-          if (!logicalOpFollows) {
-            // Jump (skip body) when the value is non-zero, i.e. when !value is false.
-            out.write(IFNE);
-            ctx.opStack.pop();
-            ctx.opStack.push(BOOLEAN);
-            branchEmitted = true;
-          } else {
-            // Logical op follows: emit boolean NOT as value (ICONST_1 + IXOR) without a branch.
-            out.write(ICONST_1);
-            out.write(IXOR);
+            if (!logicalOpFollows) {
+              // Jump (skip body) when the value is non-zero, i.e. when !value is false.
+              out.write(IFNE);
+              ctx.opStack.pop();
+              ctx.opStack.push(BOOLEAN);
+              branchEmitted = true;
+            } else {
+              // Logical op follows: emit boolean NOT as value (ICONST_1 + IXOR) without a branch.
+              out.write(ICONST_1);
+              out.write(IXOR);
+            }
           }
         } else {
           byte[] opCode = null;
@@ -341,10 +351,12 @@ public class ExpressionGenerator {
           if (opCode != null) {
             ctx.opStack.pop2();
             ctx.opStack.push(type);
-            out.write(opCode);
             if (COMPARATORS.contains(op)) {
+              lastBranchPos = out.size();
+              lastBranchOpCode = opCode[0];
               branchEmitted = true;
             }
+            out.write(opCode);
           }
         }
       }

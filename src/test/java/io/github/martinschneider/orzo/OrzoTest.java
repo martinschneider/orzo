@@ -159,7 +159,9 @@ public class OrzoTest {
         args(list("tests/DoubleParen")),
         args(list("tests/ForEachArray")),
         args(list("tests/AssignInCondition")),
-        args(list("tests/WhileAssign")));
+        args(list("tests/WhileAssign")),
+        args(list("tests/Unless")),
+        args(list("examples/BinarySearch")));
   }
 
   @ParameterizedTest

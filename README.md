@@ -61,12 +61,12 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] static initializer blocks `static { }`
 - [ ] [switch](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.11)
 - [ ] [lambdas](https://docs.oracle.com/javase/specs/jls/se18/html/jls-15.html#jls-15.27)
-- [ ] [unless](https://www.perltutorial.org/perl-unless/) ✨
+- [X] [unless](https://www.perltutorial.org/perl-unless/) ✨
 
 ## Notes
 
 - array defintions must be of the form `int[] a`, `int a[]` is not supported
-- Orzo creates class files with major version 64 (Java 20) and emits a [StackMapTable attribute](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4) for methods with branch targets, as required by the JVM spec.
+- Orzo creates class files with major version 65 (Java 21) and emits a [StackMapTable attribute](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4) for methods with branch targets, as required by the JVM spec.
 - fields and variables share the same namespace
 
 # Example
@@ -101,4 +101,4 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
-Self-compilation progress: ████████▊░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 21.6%
+Self-compilation progress: ████████▋░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 21.4%
