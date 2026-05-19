@@ -39,24 +39,26 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [ ] [casting](https://docs.oracle.com/javase/specs/jls/se18/html/jls-15.html#jls-15.16) `()` (partially supported)
 - [ ] [object creation](https://docs.oracle.com/javase/specs/jls/se18/html/jls-12.html#jls-12.5) `new` (partially supported)
 - [X] logical `&&`, `||`
-- [ ] unary logical `!`
+- [X] unary logical `!`
 - [ ] unary bitwise `~`
 - [ ] unary plus `+`
 - [X] `instanceof`
-- [ ] String and char concatenation `+`
+- [ ] String and char concatenation `+` (String+String supported via `String.concat`; mixed-type concat unsupported)
 - [X] ternary `?:`
 
-## Control strcutures
+## Control structures
 
 - [X] [if, else if and else](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.9)
 - [X] [while](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.12)
 - [X] [do](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.13)
 - [X] [for](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.14)
+- [X] [enhanced for](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.14.2)
 - [X] [break](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.15)
 - [X] [return](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.17)
 - [ ] method and constructor calls (partially supported)
 - [ ] [continue](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.16)
 - [X] [try](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.20) (try-catch; finally is parsed but not emitted)
+- [X] static initializer blocks `static { }`
 - [ ] [switch](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.11)
 - [ ] [lambdas](https://docs.oracle.com/javase/specs/jls/se18/html/jls-15.html#jls-15.27)
 - [ ] [unless](https://www.perltutorial.org/perl-unless/) ✨
@@ -64,7 +66,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 ## Notes
 
 - array defintions must be of the form `int[] a`, `int a[]` is not supported
-- Orzo creates class files with major version 52 (Java 8) and emits a [StackMapTable attribute](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4) for methods with branch targets, as required by the JVM spec.
+- Orzo creates class files with major version 64 (Java 20) and emits a [StackMapTable attribute](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4) for methods with branch targets, as required by the JVM spec.
 - fields and variables share the same namespace
 
 # Example
@@ -99,4 +101,4 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
-Self-compilation progress: ████████▋░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 21.4%
+Self-compilation progress: ████████▊░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 21.6%
