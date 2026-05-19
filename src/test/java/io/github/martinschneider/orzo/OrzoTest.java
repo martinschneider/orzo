@@ -157,7 +157,9 @@ public class OrzoTest {
         args(list("tests/CastMethodChain")),
         args(list("tests/LongIntComparison")),
         args(list("tests/DoubleParen")),
-        args(list("tests/ForEachArray")));
+        args(list("tests/ForEachArray")),
+        args(list("tests/AssignInCondition")),
+        args(list("tests/WhileAssign")));
   }
 
   @ParameterizedTest

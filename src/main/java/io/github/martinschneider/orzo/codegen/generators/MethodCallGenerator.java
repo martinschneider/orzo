@@ -21,6 +21,7 @@ import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
@@ -30,6 +31,7 @@ import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class MethodCallGenerator implements StatementGenerator<MethodCall> {
@@ -116,7 +118,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       // Reflection fallback for class-name-prefixed calls (e.g. ParserContext.build(errors))
       if (method == null && receiverVar == null && !"super".equals(receiverName)) {
         String resolvedClassName = resolveClassName(receiverName);
-        method = findMethodViaReflection(resolvedClassName, simpleMethod, types.size());
+        method = findMethodViaReflectionTyped(resolvedClassName, simpleMethod, types);
+        if (method == null) {
+          method = findMethodViaReflection(resolvedClassName, simpleMethod, types.size());
+        }
       }
       // Resolve receiver as a dotted field chain (e.g., "id.val" → load id, getfield val)
       if (method == null
@@ -128,6 +133,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
             classIdMap.variables.localMap.get(parts[0]);
         if (chainFirstVar == null) {
           chainFirstVar = classIdMap.variables.fieldMap.get(parts[0]);
+        }
+        if (chainFirstVar == null && "this".equals(parts[0]) && ctx.clazz != null) {
+          chainFirstVar =
+              new VariableInfo(
+                  "this", ctx.clazz.fqn('.'), Collections.emptyList(), false, (short) 0, null);
         }
         if (chainFirstVar != null) {
           String chainType = chainFirstVar.type;
@@ -189,6 +199,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
               classIdMap.variables.localMap.get(receiverChainParts[0]);
           if (chainVar == null) {
             chainVar = classIdMap.variables.fieldMap.get(receiverChainParts[0]);
+          }
+          if (chainVar == null && "this".equals(receiverChainParts[0]) && ctx.clazz != null) {
+            chainVar =
+                new VariableInfo(
+                    "this", ctx.clazz.fqn('.'), Collections.emptyList(), false, (short) 0, null);
           }
           ctx.loadGen.load(out, chainVar);
           String chainType = chainVar.type;
@@ -403,6 +418,42 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
               args,
               null);
         }
+      }
+    } catch (ClassNotFoundException e) {
+      // not on classpath, fall through
+    }
+    return null;
+  }
+
+  Method findConstructorViaReflectionTyped(String jvmClassName, List<String> argTypes) {
+    try {
+      Class<?> clazz = Class.forName(jvmClassName.replace('/', '.'));
+      for (java.lang.reflect.Constructor<?> c : clazz.getConstructors()) {
+        if (!Modifier.isPublic(c.getModifiers()) || c.getParameterCount() != argTypes.size()) {
+          continue;
+        }
+        boolean compatible = true;
+        for (int i = 0; i < argTypes.size(); i++) {
+          if (!isArgTypeCompatible(argTypes.get(i), c.getParameters()[i].getType())) {
+            compatible = false;
+            break;
+          }
+        }
+        if (!compatible) continue;
+        List<Argument> args = new ArrayList<>();
+        for (java.lang.reflect.Parameter p : c.getParameters()) {
+          args.add(
+              new Argument(
+                  p.getType().getName(),
+                  io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
+        }
+        return new Method(
+            jvmClassName.replace('/', '.'),
+            List.of(AccessFlag.ACC_PUBLIC),
+            "void",
+            io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
+            args,
+            null);
       }
     } catch (ClassNotFoundException e) {
       // not on classpath, fall through
@@ -719,11 +770,14 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
             : argType;
     // Map Orzo primitive/built-in type names to Java classes
     switch (cleanType) {
+      case "boolean":
+        return paramClass == boolean.class
+            || paramClass == Boolean.class
+            || paramClass == Object.class;
       case "int":
       case "byte":
       case "short":
       case "char":
-      case "boolean":
         return paramClass == int.class
             || paramClass == long.class
             || paramClass == Integer.class
@@ -742,6 +796,46 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       case "String":
         cleanType = "java.lang.String";
         break;
+      // Boxed types: compatible with their unboxed primitive and widened primitives
+      case "java.lang.Integer":
+        return paramClass == int.class
+            || paramClass == long.class
+            || paramClass == Integer.class
+            || paramClass == Object.class;
+      case "java.lang.Long":
+        return paramClass == long.class || paramClass == Long.class || paramClass == Object.class;
+      case "java.lang.Double":
+        return paramClass == double.class
+            || paramClass == Double.class
+            || paramClass == Object.class;
+      case "java.lang.Float":
+        return paramClass == float.class
+            || paramClass == double.class
+            || paramClass == Float.class
+            || paramClass == Object.class;
+      case "java.lang.Byte":
+        return paramClass == byte.class
+            || paramClass == short.class
+            || paramClass == int.class
+            || paramClass == long.class
+            || paramClass == Byte.class
+            || paramClass == Object.class;
+      case "java.lang.Short":
+        return paramClass == short.class
+            || paramClass == int.class
+            || paramClass == long.class
+            || paramClass == Short.class
+            || paramClass == Object.class;
+      case "java.lang.Boolean":
+        return paramClass == boolean.class
+            || paramClass == Boolean.class
+            || paramClass == Object.class;
+      case "java.lang.Character":
+        return paramClass == char.class
+            || paramClass == int.class
+            || paramClass == long.class
+            || paramClass == Character.class
+            || paramClass == Object.class;
       default:
         break;
     }

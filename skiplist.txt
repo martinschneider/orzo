@@ -29,11 +29,8 @@ src/main/java/io/github/martinschneider/orzo/codegen/StackMapTableBuilder.java
 src/main/java/io/github/martinschneider/orzo/codegen/TypeUtils.java
 src/main/java/io/github/martinschneider/orzo/lexer/Lexer.java
 src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java
-src/main/java/io/github/martinschneider/orzo/lexer/tokens/FPLiteral.java
-src/main/java/io/github/martinschneider/orzo/lexer/tokens/IntLiteral.java
 src/main/java/io/github/martinschneider/orzo/lexer/tokens/Token.java
 src/main/java/io/github/martinschneider/orzo/Orzo.java
-src/main/java/io/github/martinschneider/orzo/parser/MethodCallParser.java
 src/main/java/io/github/martinschneider/orzo/parser/ArrayInitParser.java
 src/main/java/io/github/martinschneider/orzo/parser/AssignmentParser.java
 src/main/java/io/github/martinschneider/orzo/parser/ClassParser.java
@@ -42,13 +39,9 @@ src/main/java/io/github/martinschneider/orzo/parser/EnumParser.java
 src/main/java/io/github/martinschneider/orzo/parser/ExpressionParser.java
 src/main/java/io/github/martinschneider/orzo/parser/IfParser.java
 src/main/java/io/github/martinschneider/orzo/parser/MethodParser.java
-src/main/java/io/github/martinschneider/orzo/parser/ParserContext.java
 src/main/java/io/github/martinschneider/orzo/parser/Parser.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/Clazz.java
 src/main/java/io/github/martinschneider/orzo/parser/productions/Expression.java
-src/main/java/io/github/martinschneider/orzo/parser/productions/Method.java
 src/main/java/io/github/martinschneider/orzo/parser/ScopeParser.java
-src/main/java/io/github/martinschneider/orzo/parser/SqrtParser.java
 src/main/java/io/github/martinschneider/orzo/parser/StatementParser.java
 src/main/java/io/github/martinschneider/orzo/util/FactoryHelper.java
 src/main/java/io/github/martinschneider/orzo/util/ObjectUtils.java

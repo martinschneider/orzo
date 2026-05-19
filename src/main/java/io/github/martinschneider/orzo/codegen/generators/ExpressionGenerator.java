@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_1;
@@ -28,6 +29,7 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.ARITHMETIC_OPS;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.COMPARE_TO_ZERO_OPS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.EQUAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
@@ -95,8 +97,11 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ExpressionGenerator {
   private static final String LOGGER_NAME = "expression code generator";
@@ -168,6 +173,10 @@ public class ExpressionGenerator {
       return new ExpressionResult(BOOLEAN, null);
     }
     boolean branchEmitted = false;
+    // Pre-scan: find assignment expressions (var = expr) where lhs is a simple local variable.
+    // These need special handling: skip loading lhs old value; DUP+STORE rhs at ASSIGN.
+    Set<Integer> skipLoad = new HashSet<>();
+    Map<Integer, VariableInfo> assignTargets = findAssignmentTargets(tokens, skipLoad);
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
       if (!type.equals(DOUBLE)
@@ -177,8 +186,12 @@ public class ExpressionGenerator {
         // operands in
         // a different order. Therefore, we skip processing them here.
       } else if (token instanceof Identifier) {
-        type = handleId(out, ctx.classIdMap, tokens, i, token, type);
-        exprTypeStack.push(type);
+        if (skipLoad.contains(i)) {
+          // LHS of assignment expression: skip loading old value; ASSIGN handler will DUP+STORE
+        } else {
+          type = handleId(out, ctx.classIdMap, tokens, i, token, type);
+          exprTypeStack.push(type);
+        }
       } else if (token instanceof IntLiteral) {
         BigInteger bigInt = (BigInteger) ((IntLiteral) token).val;
         Long intValue = bigInt.longValue();
@@ -261,6 +274,20 @@ public class ExpressionGenerator {
                 out, new Method("java/math/BigInteger", "longValue", LONG, emptyList()));
             type = LONG;
           }
+        } else if (op == ASSIGN) {
+          if (assignTargets.containsKey(i)) {
+            // Assignment expression: RHS is on stack, LHS old value was NOT loaded.
+            // DUP rhs so one copy stays for the expression value; store the other into the var.
+            VariableInfo target = assignTargets.get(i);
+            String rhsType = ctx.opStack.type();
+            boolean isWide = LONG.equals(rhsType) || DOUBLE.equals(rhsType);
+            out.write(isWide ? DUP2 : DUP);
+            ctx.opStack.push(rhsType != null ? rhsType : REF);
+            ctx.storeGen.store(out, target);
+            ctx.opStack.pop();
+            type = rhsType != null ? rhsType : REF;
+          }
+          // else: complex LHS (field/array) — fall through, do nothing (unsupported)
         } else if (op.equals(PLUS) && type.equals(STRING)) {
           ctx.invokeGen.invokeVirtual(
               out, new Method("java.lang.String", "concat", STRING, List.of(STRING)));
@@ -771,6 +798,9 @@ public class ExpressionGenerator {
     // Find matching constructor (constructors have method name "<init>")
     Method constructor = findMatchingConstructor(jvmClassName, argTypes);
     if (constructor == null) {
+      constructor = ctx.methodCallGen.findConstructorViaReflectionTyped(jvmClassName, argTypes);
+    }
+    if (constructor == null) {
       constructor = ctx.methodCallGen.findConstructorViaReflection(jvmClassName, argTypes.size());
     }
     if (constructor == null) {
@@ -1109,6 +1139,33 @@ public class ExpressionGenerator {
       if (balance == 1) return i;
     }
     return 0;
+  }
+
+  // Scan the postfix token list for ASSIGN operators where the LHS is a single simple local
+  // variable. Returns a map from ASSIGN token index to the target VariableInfo, and populates
+  // skipLoad with the indices of LHS tokens that should NOT be loaded (since the assignment
+  // handler will DUP+STORE the RHS instead).
+  private Map<Integer, VariableInfo> findAssignmentTargets(
+      List<Token> tokens, Set<Integer> skipLoad) {
+    Map<Integer, VariableInfo> result = new HashMap<>();
+    for (int i = 0; i < tokens.size(); i++) {
+      if (!(tokens.get(i) instanceof Operator)) continue;
+      if (((Operator) tokens.get(i)).opValue() != ASSIGN) continue;
+      // If ASSIGN is the last token, it's an outermost statement-level assignment whose result
+      // is not consumed by any outer operator. Storage is handled by AssignmentGenerator; skip.
+      if (i == tokens.size() - 1) continue;
+      int rStart = findRightOperandStart(tokens, i);
+      int lStart = (rStart > 0) ? findRightOperandStart(tokens, rStart) : 0;
+      if (lStart != rStart - 1) continue;
+      if (!(tokens.get(lStart) instanceof Identifier)) continue;
+      Identifier lhsId = (Identifier) tokens.get(lStart);
+      if (lhsId.next != null || lhsId.arrSel != null) continue;
+      VariableInfo vi = ctx.classIdMap.variables.get(lhsId);
+      if (vi == null || vi.isField) continue;
+      result.put(i, vi);
+      skipLoad.add(lStart);
+    }
+    return result;
   }
 
   // To generate code for control structures it is often useful to get the inverse comparator. For

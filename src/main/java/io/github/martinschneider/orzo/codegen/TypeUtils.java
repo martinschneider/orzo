@@ -36,6 +36,8 @@ import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.Argument;
+import io.github.martinschneider.orzo.parser.productions.Clazz;
+import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -128,6 +130,45 @@ public class TypeUtils {
     StringBuilder strBuilder = new StringBuilder(argsDescr(method.args));
     strBuilder.append(TypeUtils.descr(method.type));
     return strBuilder.toString();
+  }
+
+  public static String methodDescr(Method method, List<Clazz> allClazzes, Clazz currentClazz) {
+    StringBuilder sb = new StringBuilder("(");
+    sb.append(
+        method.args.stream()
+            .map(a -> descr(resolveSimpleType(a.type, allClazzes, currentClazz)))
+            .collect(Collectors.joining("")));
+    sb.append(')');
+    sb.append(descr(resolveSimpleType(method.type, allClazzes, currentClazz)));
+    return sb.toString();
+  }
+
+  public static String resolveSimpleType(String type, List<Clazz> allClazzes, Clazz currentClazz) {
+    if (type == null) return null;
+    if (isPrimitive(type)
+        || type.contains(".")
+        || type.startsWith("[")
+        || "void".equals(type)
+        || "String".equals(type)
+        || "Object".equals(type)) {
+      return type;
+    }
+    if (allClazzes != null) {
+      for (Clazz clazz : allClazzes) {
+        if (type.equals(clazz.name)) {
+          return clazz.fqn();
+        }
+      }
+    }
+    if (currentClazz != null && currentClazz.imports != null) {
+      for (Import imp : currentClazz.imports) {
+        if (imp.isStatic || imp.id == null) continue;
+        if (imp.id.endsWith("." + type)) {
+          return imp.id;
+        }
+      }
+    }
+    return type;
   }
 
   public static String argsDescr(List<Argument> args) {

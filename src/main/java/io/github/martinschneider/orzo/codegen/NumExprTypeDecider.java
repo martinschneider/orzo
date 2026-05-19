@@ -13,12 +13,14 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.Chr;
 import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
+import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
@@ -54,6 +56,8 @@ public class NumExprTypeDecider {
         }
       } else if (token instanceof FPLiteral) {
         types.add(DOUBLE);
+      } else if (token instanceof Chr) {
+        types.add(CHAR);
       } else if (token instanceof BoolLiteral) {
         types.add(BOOLEAN);
       } else if (token instanceof Str) {
@@ -65,6 +69,13 @@ public class NumExprTypeDecider {
           argTypes.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
         }
         Method method = ctx.methodCallGen.findMatchingMethod(methodCall.name.toString(), argTypes);
+        if (method == null && methodCall.name.contains(".")) {
+          int dot = methodCall.name.lastIndexOf('.');
+          String className = methodCall.name.substring(0, dot);
+          String simpleName = methodCall.name.substring(dot + 1);
+          method =
+              ctx.methodCallGen.findMethodViaReflection(className, simpleName, argTypes.size());
+        }
         if (method != null) {
           if (methodCall.arrSel != null) {
             types.add(method.type.substring(methodCall.arrSel.exprs.size()));
@@ -72,6 +83,8 @@ public class NumExprTypeDecider {
             types.add(method.type);
           }
         }
+      } else if (token instanceof ConstructorCall) {
+        types.add(token.val.toString());
       } else if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
         if ("this".equals(id.val.toString())) {

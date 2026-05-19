@@ -36,7 +36,9 @@ public class MethodGenerator {
   public HasOutput generate(HasOutput out, Method method, Clazz clazz) {
     out.write(method.accessFlags(clazz.isInterface));
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.name.val));
-    out.write(ctx.constPool.indexOf(CONSTANT_UTF8, TypeUtils.methodDescr(method)));
+    out.write(
+        ctx.constPool.indexOf(
+            CONSTANT_UTF8, TypeUtils.methodDescr(method, ctx.allClazzes, ctx.clazz)));
     DynamicByteArray methodOut = new DynamicByteArray();
     ctx.exceptionTable.clear();
     ctx.exceptionHandlerType.clear();

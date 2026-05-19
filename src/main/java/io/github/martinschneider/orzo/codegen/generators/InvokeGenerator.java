@@ -44,12 +44,11 @@ public class InvokeGenerator {
   public HasOutput invokeInterface(DynamicByteArray out, Method method) {
     String clazzName = method.fqClassName.replaceAll("\\.", "/");
     String methodName = method.name.id();
+    String descr = TypeUtils.methodDescr(method, ctx.allClazzes, ctx.clazz);
     ctx.constPool.addClass(clazzName);
-    ctx.constPool.addInterfaceMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
+    ctx.constPool.addInterfaceMethodRef(clazzName, methodName, descr);
     out.write(INVOKEINTERFACE);
-    out.write(
-        ctx.constPool.indexOf(
-            CONSTANT_INTERFACEMETHODREF, clazzName, methodName, TypeUtils.methodDescr(method)));
+    out.write(ctx.constPool.indexOf(CONSTANT_INTERFACEMETHODREF, clazzName, methodName, descr));
     // count = 1 (receiver) + number of args
     int count = 1;
     for (io.github.martinschneider.orzo.parser.productions.Argument arg : method.args) {
@@ -66,14 +65,13 @@ public class InvokeGenerator {
   public HasOutput invokeVirtual(DynamicByteArray out, Method method) {
     String clazzName = method.fqClassName.replaceAll("\\.", "/");
     String methodName = method.name.id();
+    String descr = TypeUtils.methodDescr(method, ctx.allClazzes, ctx.clazz);
     if (!ctx.clazz.fqn('/').equals(clazzName)) {
       ctx.constPool.addClass(clazzName);
-      ctx.constPool.addMethodRef(clazzName, methodName, TypeUtils.methodDescr(method));
+      ctx.constPool.addMethodRef(clazzName, methodName, descr);
     }
     out.write(INVOKEVIRTUAL);
-    out.write(
-        ctx.constPool.indexOf(
-            CONSTANT_METHODREF, clazzName, methodName, TypeUtils.methodDescr(method)));
+    out.write(ctx.constPool.indexOf(CONSTANT_METHODREF, clazzName, methodName, descr));
     ctx.opStack.pop(1 + method.args.size());
     ctx.opStack.push(method.type);
     return out;
@@ -81,10 +79,9 @@ public class InvokeGenerator {
 
   public HasOutput invokeSpecial(HasOutput out, Method method) {
     String clazzName = method.fqClassName.replace('.', '/');
+    String descr = TypeUtils.methodDescr(method, ctx.allClazzes, ctx.clazz);
     out.write(INVOKESPECIAL);
-    out.write(
-        ctx.constPool.indexOf(
-            CONSTANT_METHODREF, clazzName, method.name.id(), TypeUtils.methodDescr(method)));
+    out.write(ctx.constPool.indexOf(CONSTANT_METHODREF, clazzName, method.name.id(), descr));
     ctx.opStack.pop(1 + method.args.size());
     ctx.opStack.push(method.type);
     return out;
@@ -102,7 +99,7 @@ public class InvokeGenerator {
       clazzName = method.fqClassName.replaceAll("\\.", "/");
       ctx.constPool.addClass(clazzName);
     }
-    String descr = TypeUtils.methodDescr(method);
+    String descr = TypeUtils.methodDescr(method, ctx.allClazzes, ctx.clazz);
     boolean isInterface = isInterfaceClass(clazzName);
     if (isInterface) {
       ctx.constPool.addInterfaceMethodRef(clazzName, methodName, descr);

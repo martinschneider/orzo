@@ -3,6 +3,7 @@ package io.github.martinschneider.orzo.codegen.generators;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ARRAYLENGTH;
 import static io.github.martinschneider.orzo.codegen.OpCodes.CHECKCAST;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKESTATIC;
+import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKEVIRTUAL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.WIDE;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
@@ -16,11 +17,23 @@ import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import java.util.Collections;
+import java.util.Map;
 
 public class BasicGenerator {
   private CGContext ctx;
 
   private static final String LOG_NAME = "basic generator";
+
+  private static final Map<String, String[]> UNBOX_INFO =
+      Map.of(
+          "java.lang.Integer", new String[] {"java/lang/Integer", "intValue", "()I", "int"},
+          "java.lang.Long", new String[] {"java/lang/Long", "longValue", "()J", "long"},
+          "java.lang.Double", new String[] {"java/lang/Double", "doubleValue", "()D", "double"},
+          "java.lang.Float", new String[] {"java/lang/Float", "floatValue", "()F", "float"},
+          "java.lang.Byte", new String[] {"java/lang/Byte", "byteValue", "()B", "byte"},
+          "java.lang.Short", new String[] {"java/lang/Short", "shortValue", "()S", "short"},
+          "java.lang.Boolean", new String[] {"java/lang/Boolean", "booleanValue", "()Z", "boolean"},
+          "java.lang.Character", new String[] {"java/lang/Character", "charValue", "()C", "char"});
 
   public BasicGenerator(CGContext ctx) {
     this.ctx = ctx;
@@ -56,7 +69,22 @@ public class BasicGenerator {
   public void convert1(DynamicByteArray out, String from, String to) {
     // TODO: array casts
     if (from != null && to != null) {
-      if (TypeUtils.isPrimitive(from) && !from.equals("void") && STRING.equals(to)) {
+      String[] unboxInfo = UNBOX_INFO.get(from);
+      if (unboxInfo != null && TypeUtils.isPrimitive(to) && !"void".equals(to)) {
+        String jvmClass = unboxInfo[0];
+        String methodName = unboxInfo[1];
+        String descriptor = unboxInfo[2];
+        String unboxedPrimitive = unboxInfo[3];
+        ctx.constPool.addClass(jvmClass);
+        ctx.constPool.addMethodRef(jvmClass, methodName, descriptor);
+        out.write(INVOKEVIRTUAL);
+        out.write(ctx.constPool.indexOf(CONSTANT_METHODREF, jvmClass, methodName, descriptor));
+        byte[] widenOps =
+            CAST_OPS_1
+                .getOrDefault(unboxedPrimitive, Collections.emptyMap())
+                .getOrDefault(to, new byte[0]);
+        out.write(widenOps);
+      } else if (TypeUtils.isPrimitive(from) && !from.equals("void") && STRING.equals(to)) {
         primitiveToString(out, from);
       } else if (TypeUtils.isPrimitive(from)
           && !from.equals("void")
