@@ -43,7 +43,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [ ] unary bitwise `~`
 - [ ] unary plus `+`
 - [X] `instanceof`
-- [ ] String and char concatenation `+` (String+String supported via `String.concat`; mixed-type concat unsupported)
+- [X] String and char concatenation `+` (String+String, String+primitive, String+expr all supported)
 - [X] ternary `?:`
 
 ## Control structures
@@ -101,4 +101,4 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
-Self-compilation progress: ████████▋░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 21.4%
+Self-compilation progress: ████████▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 21.4%

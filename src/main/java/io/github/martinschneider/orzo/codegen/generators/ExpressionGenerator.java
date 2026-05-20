@@ -23,6 +23,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPNE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INSTANCEOF;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IXOR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
+import static io.github.martinschneider.orzo.codegen.OpCodes.SWAP;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
@@ -117,11 +118,6 @@ public class ExpressionGenerator {
 
   public ExpressionResult eval(
       DynamicByteArray out, String type, Expression expr, boolean pushIfZero, boolean reverseComp) {
-    // TODO: support String concatenation
-    // TODO: support different types
-    // TODO: error handling, e.g. only "+" operator is valid for String
-    // concatenation, "%" is not
-    // valid for doubles etc.
     if (expr instanceof ArrayInit) {
       ArrayInit arrInit = (ArrayInit) expr;
       generateArray(out, ctx.classIdMap, arrInit);
@@ -197,6 +193,12 @@ public class ExpressionGenerator {
       } else if (token instanceof IntLiteral) {
         BigInteger bigInt = (BigInteger) ((IntLiteral) token).val;
         Long intValue = bigInt.longValue();
+        // When the outer type is String (string-concat context), use the natural numeric type
+        // so that int literals generate real bytecode and are available for arithmetic.
+        String literalType =
+            (STRING.equals(type) || isNonPrimitive(type))
+                ? (intValue > Integer.MAX_VALUE ? LONG : INT)
+                : type;
         // look ahead for <<, >> or >>> operators which require the second argument to
         // be an integer
         if (i + 1 < tokens.size()
@@ -204,15 +206,18 @@ public class ExpressionGenerator {
                 || (tokens.get(i + 1).eq(op(RSHIFT)))
                 || (tokens.get(i + 1).eq(op(RSHIFTU)))))) {
           ctx.pushGen.push(out, INT, BigDecimal.valueOf(intValue));
-        } else if (!type.equals(INT) || intValue != 0 || pushIfZero) {
-          ctx.pushGen.push(out, type, BigDecimal.valueOf(intValue));
+        } else if (!literalType.equals(INT) || intValue != 0 || pushIfZero) {
+          ctx.pushGen.push(out, literalType, BigDecimal.valueOf(intValue));
         }
         // special handling for 0 because there are different opcodes to compare to 0
-        if ((type.equals(INT) || type.equals(SHORT) || type.equals(BYTE) || type.equals(CHAR))
+        if ((literalType.equals(INT)
+                || literalType.equals(SHORT)
+                || literalType.equals(BYTE)
+                || literalType.equals(CHAR))
             && intValue.intValue() == 0) {
           exprTypeStack.push(INT_ZERO);
         } else {
-          exprTypeStack.push(type);
+          exprTypeStack.push(literalType);
         }
         val = bigInt;
       } else if (token instanceof BoolLiteral) {
@@ -222,12 +227,14 @@ public class ExpressionGenerator {
         exprTypeStack.push(BOOLEAN);
       } else if (token instanceof FPLiteral) {
         BigDecimal bigDec = (BigDecimal) ((FPLiteral) token).val;
-        ctx.pushGen.push(out, type, bigDec);
+        // Use DOUBLE (natural type) instead of STRING to ensure bytecode is generated.
+        ctx.pushGen.push(out, STRING.equals(type) ? DOUBLE : type, bigDec);
         val = bigDec;
         exprTypeStack.push(DOUBLE);
       } else if (token instanceof Str) {
         ctx.loadGen.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
-        type = STRING;
+        // Do NOT set type = STRING here; let exprTypeStack track the actual element type.
+        // Setting type=STRING would cause subsequent int/float tokens to generate no bytecode.
         exprTypeStack.push(STRING);
       } else if (token instanceof Chr) {
         char chr = (char) ((Chr) token).val;
@@ -290,9 +297,39 @@ public class ExpressionGenerator {
             type = rhsType != null ? rhsType : REF;
           }
           // else: complex LHS (field/array) — fall through, do nothing (unsupported)
-        } else if (op.equals(PLUS) && type.equals(STRING)) {
+        } else if (op.equals(PLUS)
+            && (STRING.equals(exprTypeStack.type()) || STRING.equals(exprTypeStack.secondType()))) {
+          String leftType = exprTypeStack.secondType();
+          // topType is the actual type of the right operand (top of expression type stack)
+          String topType = exprTypeStack.type();
+          if (STRING.equals(leftType)) {
+            // String + X: convert X to String if needed, then concat
+            if (!STRING.equals(topType)) {
+              if (isNonPrimitive(topType)) {
+                ctx.invokeGen.invokeStatic(
+                    out,
+                    new Method("java.lang.String", "valueOf", STRING, List.of("java.lang.Object")));
+              } else {
+                ctx.basicGen.primitiveToString(out, topType);
+              }
+            }
+          } else if (!LONG.equals(leftType) && !DOUBLE.equals(leftType)) {
+            // X + String (single-slot X): SWAP, valueOf(X), SWAP, then concat
+            out.write(SWAP);
+            if (isNonPrimitive(leftType)) {
+              ctx.invokeGen.invokeStatic(
+                  out,
+                  new Method("java.lang.String", "valueOf", STRING, List.of("java.lang.Object")));
+            } else {
+              ctx.basicGen.primitiveToString(out, leftType);
+            }
+            out.write(SWAP);
+          }
           ctx.invokeGen.invokeVirtual(
               out, new Method("java.lang.String", "concat", STRING, List.of(STRING)));
+          exprTypeStack.pop2();
+          exprTypeStack.push(STRING);
+          type = STRING;
         } else if (op.equals(NEGATE) && reverseComp) {
           if (branchEmitted && lastBranchPos >= 0) {
             // A comparison already emitted a branch opcode. Flip it in place instead of
@@ -351,6 +388,8 @@ public class ExpressionGenerator {
           if (opCode != null) {
             ctx.opStack.pop2();
             ctx.opStack.push(type);
+            exprTypeStack.pop2();
+            exprTypeStack.push(type);
             if (COMPARATORS.contains(op)) {
               lastBranchPos = out.size();
               lastBranchOpCode = opCode[0];
@@ -526,7 +565,13 @@ public class ExpressionGenerator {
                 && !deferNarrowing
                 && !(isNonPrimitive(varType) && isNonPrimitive(type))
                 && !(isNonPrimitive(varType) && curr.next != null)) {
-              ctx.basicGen.convert1(out, varType, type);
+              // Defer primitive→String conversion to the PLUS operator so that arithmetic
+              // sub-expressions (e.g. n+1 in "sum="+(n+1)) are computed before converting.
+              if (STRING.equals(type) && TypeUtils.isPrimitive(varType)) {
+                returnType = varType;
+              } else {
+                ctx.basicGen.convert1(out, varType, type);
+              }
             } else if (STRING.equals(type)
                 && isNonPrimitive(varType)
                 && !STRING.equals(varType)

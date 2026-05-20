@@ -161,7 +161,8 @@ public class OrzoTest {
         args(list("tests/AssignInCondition")),
         args(list("tests/WhileAssign")),
         args(list("tests/Unless")),
-        args(list("examples/BinarySearch")));
+        args(list("examples/BinarySearch")),
+        args(list("tests/StringConcat")));
   }
 
   @ParameterizedTest

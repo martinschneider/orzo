@@ -63,6 +63,13 @@ public class OperandStack {
     types.clear();
   }
 
+  public String secondType() {
+    String top = types.poll();
+    String second = types.peek();
+    if (top != null) types.push(top);
+    return second;
+  }
+
   // one and only one!
   public boolean oneOfTopTwoElementsIsZero() {
     String tmp = types.pop();

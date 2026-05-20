@@ -114,7 +114,7 @@ public class BasicGenerator {
     ctx.opStack.push(to);
   }
 
-  private void primitiveToString(DynamicByteArray out, String primitiveType) {
+  void primitiveToString(DynamicByteArray out, String primitiveType) {
     String descriptor;
     switch (primitiveType) {
       case "boolean":
