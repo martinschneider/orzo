@@ -20,6 +20,8 @@ import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import io.github.martinschneider.orzo.parser.productions.SwitchCase;
+import io.github.martinschneider.orzo.parser.productions.SwitchStatement;
 import io.github.martinschneider.orzo.parser.productions.TryStatement;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -64,6 +66,8 @@ public class MethodGenerator {
             returned = tryStatementAlwaysReturns((TryStatement) stmt);
           } else if (stmt instanceof IfStatement) {
             returned = ifStatementAlwaysReturns((IfStatement) stmt);
+          } else if (stmt instanceof SwitchStatement) {
+            returned = switchStatementAlwaysReturns((SwitchStatement) stmt);
           } else {
             returned = false;
           }
@@ -138,6 +142,19 @@ public class MethodGenerator {
       }
     }
     return true;
+  }
+
+  private boolean switchStatementAlwaysReturns(SwitchStatement stmt) {
+    boolean hasDefault = false;
+    for (SwitchCase c : stmt.cases) {
+      if (c.labels == null || c.labels.isEmpty()) {
+        hasDefault = true;
+      }
+      if (!endsWithReturn(c.body)) {
+        return false;
+      }
+    }
+    return hasDefault;
   }
 
   private boolean endsWithReturn(List<Statement> body) {

@@ -7,6 +7,7 @@ src/main/java/io/github/martinschneider/orzo/codegen/generators/TryGenerator.jav
 src/main/java/io/github/martinschneider/orzo/codegen/generators/AssignmentGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/BasicGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ConstructorCallGenerator.java
+src/main/java/io/github/martinschneider/orzo/codegen/generators/ForEachGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/DeclarationGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/WhileGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/DoGenerator.java
@@ -17,9 +18,9 @@ src/main/java/io/github/martinschneider/orzo/codegen/generators/IncrementGenerat
 src/main/java/io/github/martinschneider/orzo/codegen/generators/InvokeGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/LoadGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodCallGenerator.java
+src/main/java/io/github/martinschneider/orzo/codegen/generators/PushGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/OperatorMaps.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/PushGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/RetGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/StatementDelegator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/StoreGenerator.java
@@ -46,5 +47,6 @@ src/main/java/io/github/martinschneider/orzo/parser/StatementParser.java
 src/main/java/io/github/martinschneider/orzo/util/FactoryHelper.java
 src/main/java/io/github/martinschneider/orzo/util/ObjectUtils.java
 src/main/java/io/github/martinschneider/orzo/parser/ConstructorCallParser.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/ForEachGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/NumExprTypeDecider.java
+src/main/java/io/github/martinschneider/orzo/parser/SwitchParser.java
+src/main/java/io/github/martinschneider/orzo/codegen/generators/SwitchGenerator.java

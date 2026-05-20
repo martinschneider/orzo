@@ -23,7 +23,10 @@ public enum Keywords {
   TRY,
   CATCH,
   FINALLY,
-  INSTANCEOF;
+  INSTANCEOF,
+  SWITCH,
+  CASE;
   // THIS
   // SUPER
+  // DEFAULT is intentionally not here — it's already in Scopes as a method access modifier
 }
