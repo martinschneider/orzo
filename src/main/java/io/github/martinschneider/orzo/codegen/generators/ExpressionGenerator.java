@@ -1179,7 +1179,9 @@ public class ExpressionGenerator {
     int balance = 0;
     for (int i = opPos - 1; i >= 0; i--) {
       Token t = tokens.get(i);
-      if (t instanceof Operator) {
+      if (t instanceof InstanceofToken) {
+        // instanceof is postfix unary: consumes 1, produces 1 → no net stack change
+      } else if (t instanceof Operator) {
         Operators opType = ((Operator) t).opValue();
         if (opType == NEGATE
             || opType == POST_INCREMENT

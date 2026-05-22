@@ -149,7 +149,7 @@ public class LoadGenerator {
     for (Expression arrIdx : indices) {
       ctx.exprGen.eval(out, INT, arrIdx);
     }
-    out.write(getLoadOpCode(type.replaceAll("\\[", "")));
+    out.write(getLoadOpCode(type.replace("[", "")));
     return out;
   }
 

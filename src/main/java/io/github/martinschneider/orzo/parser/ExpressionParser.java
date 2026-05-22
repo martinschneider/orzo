@@ -1,9 +1,6 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.MOD;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.POW;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
@@ -106,6 +103,21 @@ public class ExpressionParser implements ProdParser<Expression> {
           ternaryOuterParenIdx = -1;
           // Continue collecting the rest of the outer expression
           continue;
+        } else if (tokens.curr().eq(sym(QUESTION)) && parenthesis == 0 && !exprTokens.isEmpty()) {
+          // Ternary at depth 0: all collected tokens form the condition
+          List<Token> condTokens = new ArrayList<>(exprTokens);
+          tokens.next(); // consume '?'
+          Expression condition = new Expression(postfix(condTokens), null);
+          Expression trueBranch = parseBranchUntilColon(tokens);
+          if (tokens.curr().eq(sym(COLON))) {
+            tokens.next();
+          }
+          Expression falseBranch = parse(tokens);
+          TernaryExpression ternary = new TernaryExpression(condition, trueBranch, falseBranch);
+          exprTokens = new ArrayList<>();
+          exprTokens.add(ternary);
+          ternaryOuterParenIdx = -1;
+          continue;
         }
 
         if (isInstanceofKeyword(tokens.curr())) {
@@ -117,8 +129,10 @@ public class ExpressionParser implements ProdParser<Expression> {
         }
         int idx = tokens.idx();
         boolean negative = false;
-        if (List.of(sym(LPAREN), op(TIMES), op(DIV), op(POW), op(MOD))
-            .contains(tokens.peekPrev())) {
+        Token prevToken = tokens.peekPrev();
+        if (prevToken.eq(sym(LPAREN))
+            || (prevToken instanceof Operator
+                && ((Operator) prevToken).opValue().getPrecedence() <= 12)) {
           negative = checkNegative(tokens, exprTokens);
         }
         if (negative) {

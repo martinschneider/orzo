@@ -259,7 +259,7 @@ public class TypeUtils {
     }
     switch (type) {
       case STRING:
-        return List.of("Ljava/lang/String;");
+        return List.of("Ljava/lang/String;", "Ljava/lang/Object;", "java.lang.Object", "Object");
       case INT:
         return List.of(INT, LONG, DOUBLE, "java.lang.Object", "Object");
       case BYTE:
@@ -284,7 +284,26 @@ public class TypeUtils {
           || type.equals("java/lang/Object")) {
         return List.of("java.lang.Object");
       }
-      return List.of(type, "java.lang.Object", "Object");
+      List<String> assignables = new ArrayList<>();
+      assignables.add(type);
+      try {
+        Class<?> clazz = Class.forName(type.replace('/', '.'));
+        for (Class<?> iface : clazz.getInterfaces()) {
+          assignables.add(iface.getName());
+          assignables.add(iface.getSimpleName());
+        }
+        Class<?> superClass = clazz.getSuperclass();
+        while (superClass != null && !superClass.getName().equals("java.lang.Object")) {
+          assignables.add(superClass.getName());
+          assignables.add(superClass.getSimpleName());
+          superClass = superClass.getSuperclass();
+        }
+      } catch (ClassNotFoundException e) {
+        // not on classpath
+      }
+      assignables.add("java.lang.Object");
+      assignables.add("Object");
+      return assignables;
     }
     return emptyList();
   }

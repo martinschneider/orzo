@@ -73,8 +73,12 @@ public class NumExprTypeDecider {
           int dot = methodCall.name.lastIndexOf('.');
           String className = methodCall.name.substring(0, dot);
           String simpleName = methodCall.name.substring(dot + 1);
+          VariableInfo receiverVar = classIdMap.variables.localMap.get(className);
+          if (receiverVar == null) receiverVar = classIdMap.variables.fieldMap.get(className);
+          String resolvedClass =
+              (receiverVar != null && receiverVar.type != null) ? receiverVar.type : className;
           method =
-              ctx.methodCallGen.findMethodViaReflection(className, simpleName, argTypes.size());
+              ctx.methodCallGen.findMethodViaReflection(resolvedClass, simpleName, argTypes.size());
         }
         if (method != null) {
           if (methodCall.arrSel != null) {

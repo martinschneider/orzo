@@ -49,14 +49,14 @@ public class BasicGenerator {
         out.write(castBytes);
         if (castBytes.length == 0 && !TypeUtils.isPrimitive(to) && !to.equals(from)) {
           // Reference type cast: emit checkcast instruction
-          String jvmTo = to.replace('.', '/');
+          String jvmTo = resolveJvmClassName(to);
           ctx.constPool.addClass(jvmTo);
           out.write(CHECKCAST);
           out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmTo));
         }
       } else if (!TypeUtils.isPrimitive(to)) {
         // Unknown source type — emit checkcast unconditionally for safety
-        String jvmTo = to.replace('.', '/');
+        String jvmTo = resolveJvmClassName(to);
         ctx.constPool.addClass(jvmTo);
         out.write(CHECKCAST);
         out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmTo));

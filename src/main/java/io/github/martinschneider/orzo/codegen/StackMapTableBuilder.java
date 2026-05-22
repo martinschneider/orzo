@@ -404,12 +404,12 @@ public class StackMapTableBuilder {
           dead = true;
         }
       } else if ((op >= IRETURN && op <= RETURN) || op == ATHROW) {
-        applyStackEffect(op, code, i, stack, constPool);
+        applyStackEffect(op, code, i, stack, constPool, null);
         int next = i + 1;
         if (next < code.length) targetStacks.putIfAbsent(next, new ArrayList<>());
         dead = true;
       } else {
-        applyStackEffect(op, code, i, stack, constPool);
+        applyStackEffect(op, code, i, stack, constPool, null);
       }
       maxDepth = Math.max(maxDepth, slotCount(stack));
       i += opcodeLength(code, i);
@@ -525,8 +525,18 @@ public class StackMapTableBuilder {
         minBranchToTarget.merge(tgt, src, Math::min);
       }
     }
+    // Build initial local variable type map for ALOAD type tracking
+    Map<Integer, String> initialLocalTypes = new HashMap<>();
+    if (!isStatic) {
+      initialLocalTypes.put(0, "L" + ctx.clazz.fqn('/') + ";");
+    }
+    for (Map.Entry<Integer, VariableInfo> e : slotToVar.entrySet()) {
+      VariableInfo var = e.getValue();
+      String resolvedType = TypeUtils.resolveSimpleType(var.type, ctx.allClazzes, ctx.clazz);
+      initialLocalTypes.put(e.getKey(), TypeUtils.descr(resolvedType));
+    }
     Map<Integer, List<String>> branchTargetStacks =
-        simulateStacks(code, constPool, targets, minBranchToTarget);
+        simulateStacks(code, constPool, targets, minBranchToTarget, initialLocalTypes);
 
     // Add exception handler entry points: stack = [exception_class]
     // Also build a map from handler PC to the minimum try-start PC so that locals at handler frames
@@ -632,7 +642,8 @@ public class StackMapTableBuilder {
       byte[] code,
       ConstantPool constPool,
       Set<Integer> targets,
-      Map<Integer, Integer> minBranchToTarget) {
+      Map<Integer, Integer> minBranchToTarget,
+      Map<Integer, String> localTypes) {
     Map<Integer, List<String>> result = new HashMap<>();
     List<String> stack = new ArrayList<>();
     boolean dead = false;
@@ -708,7 +719,7 @@ public class StackMapTableBuilder {
         }
       } else if ((op >= IRETURN && op <= RETURN) || op == ATHROW) {
         // xRETURN / ATHROW: unconditional transfer; dead code after needs empty stack frame
-        applyStackEffect(op, code, i, stack, constPool);
+        applyStackEffect(op, code, i, stack, constPool, localTypes);
         int next = i + 1;
         if (next < code.length) {
           result.putIfAbsent(next, new ArrayList<>());
@@ -716,7 +727,7 @@ public class StackMapTableBuilder {
         dead = true;
       } else {
         // Non-branch instruction: apply stack effect
-        applyStackEffect(op, code, i, stack, constPool);
+        applyStackEffect(op, code, i, stack, constPool, localTypes);
       }
 
       i += opcodeLength(code, i);
@@ -730,7 +741,12 @@ public class StackMapTableBuilder {
    * (getfield, invokevirtual, etc.) the ConstantPool is consulted for type information.
    */
   private static void applyStackEffect(
-      byte op, byte[] code, int pos, List<String> stack, ConstantPool constPool) {
+      byte op,
+      byte[] code,
+      int pos,
+      List<String> stack,
+      ConstantPool constPool,
+      Map<Integer, String> localTypes) {
     switch (op) {
       case NOP:
       case IINC:
@@ -764,7 +780,14 @@ public class StackMapTableBuilder {
           }
           stack.add("Ljava/lang/Object;");
         } else {
-          stack.add("Ljava/lang/Object;");
+          int slot;
+          if (op == ALOAD) {
+            slot = pos + 1 < code.length ? (code[pos + 1] & 0xFF) : -1;
+          } else {
+            slot = (op & 0xFF) - (ALOAD_0 & 0xFF);
+          }
+          String localType = (localTypes != null && slot >= 0) ? localTypes.get(slot) : null;
+          stack.add(localType != null ? localType : "Ljava/lang/Object;");
         }
         break;
 

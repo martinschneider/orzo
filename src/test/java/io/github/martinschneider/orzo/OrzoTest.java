@@ -141,6 +141,8 @@ public class OrzoTest {
         args(list("tests/TryCatch")),
         args(list("tests/TryCatchInIf")),
         args(list("tests/Instanceof")),
+        args(list("tests/InstanceofAnd")),
+        args(list("tests/CompareNegLiteral")),
         args(list("tests/BridgeMethods")),
         args(list("tests/StaticFieldAccess")),
         args(list("tests/ArrayMethodInit")),
@@ -163,7 +165,9 @@ public class OrzoTest {
         args(list("tests/Unless")),
         args(list("examples/BinarySearch")),
         args(list("tests/StringConcat")),
-        args(list("tests/Switch")));
+        args(list("tests/Switch")),
+        args(list("tests/TernaryNoParen")),
+        args(list("tests/FloatComparison")));
   }
 
   @ParameterizedTest
