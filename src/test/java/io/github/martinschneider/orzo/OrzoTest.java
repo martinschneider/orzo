@@ -167,7 +167,8 @@ public class OrzoTest {
         args(list("tests/StringConcat")),
         args(list("tests/Switch")),
         args(list("tests/TernaryNoParen")),
-        args(list("tests/FloatComparison")));
+        args(list("tests/FloatComparison")),
+        args(list("tests/TernaryMethodBranch")));
   }
 
   @ParameterizedTest

@@ -83,8 +83,9 @@ public class ExpressionParser implements ProdParser<Expression> {
           List<Token> prefixTokens = new ArrayList<>(exprTokens.subList(0, ternaryOuterParenIdx));
           tokens.next(); // consume '?'
           Expression condition = new Expression(postfix(condTokens), null);
-          // Parse true branch (until ':')
-          Expression trueBranch = parseBranchUntilColon(tokens);
+          // Parse true branch (until ':') — parse() stops naturally at ':' since it's not in the
+          // loop's accepted-token set
+          Expression trueBranch = parse(tokens);
           // consume ':'
           if (tokens.curr().eq(sym(COLON))) {
             tokens.next();
@@ -108,7 +109,7 @@ public class ExpressionParser implements ProdParser<Expression> {
           List<Token> condTokens = new ArrayList<>(exprTokens);
           tokens.next(); // consume '?'
           Expression condition = new Expression(postfix(condTokens), null);
-          Expression trueBranch = parseBranchUntilColon(tokens);
+          Expression trueBranch = parse(tokens);
           if (tokens.curr().eq(sym(COLON))) {
             tokens.next();
           }
@@ -247,28 +248,6 @@ public class ExpressionParser implements ProdParser<Expression> {
       return ctx.currClazz.packageName + "." + name;
     }
     return name;
-  }
-
-  /**
-   * Parse an expression branch up to (but not consuming) a ':' at the current paren depth. Used for
-   * the true-branch of a ternary.
-   */
-  private Expression parseBranchUntilColon(TokenList tokens) {
-    List<Token> branchTokens = new ArrayList<>();
-    int depth = 0;
-    while (true) {
-      Token curr = tokens.curr();
-      if (curr instanceof io.github.martinschneider.orzo.lexer.tokens.EOF) break;
-      if (curr.eq(sym(COLON)) && depth == 0) break;
-      if (curr.eq(sym(LPAREN))) depth++;
-      else if (curr.eq(sym(RPAREN))) {
-        if (depth == 0) break;
-        depth--;
-      }
-      branchTokens.add(curr);
-      tokens.next();
-    }
-    return branchTokens.isEmpty() ? new Expression() : new Expression(postfix(branchTokens));
   }
 
   private boolean isNewKeyword(Token curr) {
