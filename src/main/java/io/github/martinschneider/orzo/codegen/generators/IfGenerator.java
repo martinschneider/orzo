@@ -11,6 +11,7 @@ import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import io.github.martinschneider.orzo.parser.productions.ThrowStatement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +23,9 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
   }
 
   private boolean blockAlwaysReturns(List<Statement> body) {
-    return !body.isEmpty() && body.get(body.size() - 1) instanceof ReturnStatement;
+    if (body.isEmpty()) return false;
+    Statement last = body.get(body.size() - 1);
+    return last instanceof ReturnStatement || last instanceof ThrowStatement;
   }
 
   @Override

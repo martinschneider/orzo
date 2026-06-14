@@ -38,6 +38,7 @@ public class ParserContext {
   public WhileParser whileParser;
   public RepeatParser repeatParser;
   public SwitchParser switchParser;
+  public ThrowParser throwParser;
   public TryParser tryParser;
   public TypeMap typeMap;
 
@@ -70,6 +71,7 @@ public class ParserContext {
     ctx.whileParser = new WhileParser(ctx);
     ctx.repeatParser = new RepeatParser(ctx);
     ctx.switchParser = new SwitchParser(ctx);
+    ctx.throwParser = new ThrowParser(ctx);
     ctx.tryParser = new TryParser(ctx);
     ctx.typeMap = new TypeMap();
     return ctx;

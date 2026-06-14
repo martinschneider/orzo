@@ -17,7 +17,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [ ] [reference types](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.4) (partially supported)
 - [X] [enums](https://docs.oracle.com/javase/specs/jls/se18/html/jls-8.html#jls-8.9)
 - [ ] class inheritance
-- [X] [exceptions](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.10) (catch handlers; exception table + StackMapTable emitted)
+- [X] [exceptions](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.10) (try-catch and throw; exception table + StackMapTable emitted)
 - [ ] multi-dimensional arrays
 
 ## Operators
@@ -101,4 +101,4 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
-Self-compilation progress: █████████▌░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 23.9%
+Self-compilation progress: ██████████▏░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 25.3%

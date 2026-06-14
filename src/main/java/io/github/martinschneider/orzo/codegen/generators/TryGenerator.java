@@ -19,6 +19,7 @@ import io.github.martinschneider.orzo.parser.productions.CatchBlock;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import io.github.martinschneider.orzo.parser.productions.ThrowStatement;
 import io.github.martinschneider.orzo.parser.productions.TryStatement;
 import java.util.ArrayList;
 import java.util.List;
@@ -130,7 +131,8 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
     if (body == null || body.isEmpty()) {
       return false;
     }
-    return body.get(body.size() - 1) instanceof ReturnStatement;
+    Statement last = body.get(body.size() - 1);
+    return last instanceof ReturnStatement || last instanceof ThrowStatement;
   }
 
   private void storeRef(DynamicByteArray out, short slot) {

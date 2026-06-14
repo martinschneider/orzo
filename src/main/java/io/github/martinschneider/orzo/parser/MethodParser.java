@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.EXTENDS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
@@ -114,6 +115,39 @@ public class MethodParser implements ProdParser<Method> {
       accFlags.add(ACC_FINAL);
       tokens.next();
     }
+    List<String> methodTypeVarsAdded = new ArrayList<>();
+    if (tokens.curr().eq(op(LESS))) {
+      tokens.next();
+      while (!tokens.curr().eq(op(GREATER)) && !(tokens.curr() instanceof EOF)) {
+        if (tokens.curr() instanceof Identifier) {
+          String typeVarName = tokens.curr().toString();
+          tokens.next();
+          String bound = "java.lang.Object";
+          if (tokens.curr().eq(keyword(EXTENDS))) {
+            tokens.next();
+            String boundId = tokens.curr().toString();
+            tokens.next();
+            if (ctx.importMap.containsKey(boundId)) {
+              bound = ctx.importMap.get(boundId);
+            } else {
+              try {
+                Class.forName("java.lang." + boundId);
+                bound = "java.lang." + boundId;
+              } catch (ClassNotFoundException e) {
+                bound = boundId;
+              }
+            }
+          }
+          if (!ctx.classTypeParams.containsKey(typeVarName)) {
+            ctx.classTypeParams.put(typeVarName, bound);
+            methodTypeVarsAdded.add(typeVarName);
+          }
+        } else {
+          tokens.next();
+        }
+      }
+      tokens.next();
+    }
     if (tokens.curr() instanceof Type) {
       type = ((Type) tokens.curr());
       tokens.next();
@@ -161,6 +195,7 @@ public class MethodParser implements ProdParser<Method> {
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
     } else {
+      for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
       tokens.setIdx(idx);
       return null;
     }
@@ -184,6 +219,7 @@ public class MethodParser implements ProdParser<Method> {
       name = id(CONSTRUCTOR_NAME);
     }
     if (!tokens.curr().eq(sym(LPAREN))) {
+      for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
       ctx.errors.tokenIdx = tokens.idx();
       tokens.setIdx(idx);
       return null;
@@ -191,6 +227,7 @@ public class MethodParser implements ProdParser<Method> {
     tokens.next();
     arguments = parseArgs(tokens);
     if (!tokens.curr().eq(sym(RPAREN))) {
+      for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
       ctx.errors.tokenIdx = tokens.idx();
       tokens.setIdx(idx);
       return null;
@@ -199,6 +236,7 @@ public class MethodParser implements ProdParser<Method> {
     if (!isInterface) {
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
+        for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
         ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
@@ -230,12 +268,14 @@ public class MethodParser implements ProdParser<Method> {
         arguments = new ArrayList<>();
       }
       String fqn = (ctx.currClazz == null) ? null : ctx.currClazz.fqn();
+      for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
       if (isConstr) {
         return new Constructor(fqn, accFlags, name, arguments, body);
       } else {
         return new Method(fqn, accFlags, type.descr(), name, arguments, body);
       }
     }
+    for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
     return null;
   }
 

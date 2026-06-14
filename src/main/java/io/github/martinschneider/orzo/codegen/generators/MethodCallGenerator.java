@@ -518,7 +518,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       javaClassName = resolveClassName(javaClassName);
       Class<?> clazz = Class.forName(javaClassName);
       java.lang.reflect.Method bridgeCandidate = null;
-      for (java.lang.reflect.Method m : clazz.getMethods()) {
+      for (java.lang.reflect.Method m : getMethodsIncludingNonPublic(clazz)) {
         if (m.getName().equals(methodName) && m.getParameterCount() == argCount) {
           if (m.isBridge()) {
             if (bridgeCandidate == null) bridgeCandidate = m;
@@ -688,7 +688,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       javaClassName = resolveClassName(javaClassName);
       Class<?> clazz = Class.forName(javaClassName);
       java.lang.reflect.Method bridgeCandidate = null;
-      for (java.lang.reflect.Method m : clazz.getMethods()) {
+      for (java.lang.reflect.Method m : getMethodsIncludingNonPublic(clazz)) {
         if (!m.getName().equals(methodName) || m.getParameterCount() != argTypes.size()) {
           continue;
         }
@@ -760,6 +760,25 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     return null;
   }
 
+  private java.lang.reflect.Method[] getMethodsIncludingNonPublic(Class<?> clazz) {
+    java.util.List<java.lang.reflect.Method> result = new java.util.ArrayList<>();
+    for (java.lang.reflect.Method m : clazz.getMethods()) {
+      result.add(m);
+    }
+    Class<?> c = clazz;
+    while (c != null) {
+      for (java.lang.reflect.Method m : c.getDeclaredMethods()) {
+        int mod = m.getModifiers();
+        if (!java.lang.reflect.Modifier.isPublic(mod)
+            && !java.lang.reflect.Modifier.isPrivate(mod)) {
+          result.add(m);
+        }
+      }
+      c = c.getSuperclass();
+    }
+    return result.toArray(new java.lang.reflect.Method[0]);
+  }
+
   private boolean isArgTypeCompatible(String argType, Class<?> paramClass) {
     if (argType == null) {
       return true;
@@ -767,7 +786,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     String cleanType =
         argType.startsWith("L") && argType.endsWith(";")
             ? argType.substring(1, argType.length() - 1).replace('/', '.')
-            : argType;
+            : argType.replace('/', '.');
     // Map Orzo primitive/built-in type names to Java classes
     switch (cleanType) {
       case "boolean":

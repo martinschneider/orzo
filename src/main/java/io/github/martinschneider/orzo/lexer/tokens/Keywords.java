@@ -25,7 +25,8 @@ public enum Keywords {
   FINALLY,
   INSTANCEOF,
   SWITCH,
-  CASE;
+  CASE,
+  THROW;
   // THIS
   // SUPER
   // DEFAULT is intentionally not here — it's already in Scopes as a method access modifier

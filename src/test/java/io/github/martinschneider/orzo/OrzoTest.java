@@ -168,7 +168,10 @@ public class OrzoTest {
         args(list("tests/Switch")),
         args(list("tests/TernaryNoParen")),
         args(list("tests/FloatComparison")),
-        args(list("tests/TernaryMethodBranch")));
+        args(list("tests/TernaryMethodBranch")),
+        args(list("tests/ThrowStatement")),
+        args(list("tests/ThrowNested")),
+        args(list("tests/FloatCast")));
   }
 
   @ParameterizedTest
