@@ -171,7 +171,11 @@ public class OrzoTest {
         args(list("tests/TernaryMethodBranch")),
         args(list("tests/ThrowStatement")),
         args(list("tests/ThrowNested")),
-        args(list("tests/FloatCast")));
+        args(list("tests/FloatCast")),
+        args(list("tests/ReturnNull")),
+        args(list("tests/StringLiteralMethod")),
+        args(list("tests/StaticFieldMethodCall")),
+        args(list("tests/FieldInitShadowing")));
   }
 
   @ParameterizedTest

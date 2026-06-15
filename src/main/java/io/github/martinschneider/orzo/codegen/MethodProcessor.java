@@ -20,6 +20,7 @@ public class MethodProcessor {
     Map<String, Method> methodMap = new HashMap<>();
     for (Method method : currentClazz.methods) {
       methodMap.put(getKey(method), method);
+      methodMap.put(currentClazz.name + '.' + getKey(method), method);
     }
     addImported(methodMap, currentClazz, clazzes);
     addJavaLang(methodMap, currentClazz);

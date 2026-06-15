@@ -164,6 +164,39 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
             }
           }
         }
+        // Handle ClassName.STATIC_FIELD.method() via reflection (e.g.
+        // ConstantPool.INT_CONSTANT_TYPES.contains(type))
+        if (method == null && chainFirstVar == null && parts.length == 2) {
+          String resolvedClass = resolveClassName(parts[0]);
+          try {
+            Class<?> reflClass = Class.forName(resolvedClass);
+            java.lang.reflect.Field reflField = reflClass.getField(parts[1]);
+            String fieldType = reflField.getType().getName();
+            method = findMethodViaReflectionTyped(fieldType, simpleMethod, types);
+            if (method == null) {
+              method = findMethodViaReflection(fieldType, simpleMethod, types.size());
+            }
+            if (method != null) {
+              String jvmClass = resolvedClass.replace('.', '/');
+              String fieldDescr = TypeUtils.descr(fieldType);
+              ctx.constPool.addClass(jvmClass);
+              ctx.constPool.addFieldRef(jvmClass, parts[1], fieldDescr);
+              out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC);
+              out.write(
+                  ctx.constPool.indexOf(
+                      io.github.martinschneider.orzo.codegen.constants.ConstantTypes
+                          .CONSTANT_FIELDREF,
+                      jvmClass,
+                      parts[1],
+                      fieldDescr));
+              ctx.opStack.push(fieldType);
+              return generateChained(
+                  out, classIdMap, new MethodCall(simpleMethod, methodCall.params), fieldType);
+            }
+          } catch (ClassNotFoundException | NoSuchFieldException e) {
+            // fall through to existing error handling
+          }
+        }
       }
     }
     // Handle no-receiver Object methods called on implicit 'this'

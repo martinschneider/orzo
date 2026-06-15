@@ -174,7 +174,10 @@ public class ExpressionParser implements ProdParser<Expression> {
               } else {
                 exprTokens.add(curr);
                 tokens.next();
-                break;
+                // For Str literals: allow DOT-chained method calls (e.g. "string".method(arg))
+                if (!(curr instanceof Str)) {
+                  break;
+                }
               }
             }
           }

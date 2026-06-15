@@ -38,9 +38,12 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
         return generateArray(out, ctx.classIdMap, method, decl);
       }
       if (decl.val != null) {
-        VariableInfo varInfo = ctx.classIdMap.variables.get(decl.name);
-        if (decl.isField && !varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
-          ctx.loadGen.loadReference(out, ctx.classIdMap.variables.get(decl.name).objectRef);
+        VariableInfo fieldVarInfo =
+            decl.isField ? ctx.classIdMap.variables.fieldMap.get(decl.name.id().toString()) : null;
+        VariableInfo varInfo =
+            fieldVarInfo != null ? fieldVarInfo : ctx.classIdMap.variables.get(decl.name);
+        if (decl.isField && varInfo != null && !varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
+          ctx.loadGen.loadReference(out, (short) 0);
         }
         ctx.exprGen.eval(out, decl.type, decl.val);
         String actualType = ctx.opStack.type();
@@ -57,7 +60,15 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
           ctx.opStack.push(decl.type);
         }
       }
-      ctx.assignGen.assign(out, ctx.classIdMap.variables, decl.type, decl.name);
+      if (decl.isField) {
+        VariableInfo fieldVarInfo =
+            ctx.classIdMap.variables.fieldMap.get(decl.name.id().toString());
+        if (fieldVarInfo != null) {
+          ctx.storeGen.store(out, fieldVarInfo);
+        }
+      } else {
+        ctx.assignGen.assign(out, ctx.classIdMap.variables, decl.type, decl.name);
+      }
     }
     return out;
   }

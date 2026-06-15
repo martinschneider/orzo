@@ -447,6 +447,10 @@ public class ExpressionGenerator {
             || prev instanceof ConstructorCall
             || prev instanceof CastMethodCall) {
           returnType = ctx.methodCallGen.generateChained(out, classIdMap, methodCall, returnType);
+        } else if (prev == null && i > 0 && tokens.get(i - 1) instanceof Str) {
+          // String literal method chain: "literal".method(arg) — receiver already on stack
+          returnType =
+              ctx.methodCallGen.generateChained(out, classIdMap, methodCall, "java.lang.String");
         } else {
           returnType = ctx.methodCallGen.generate(out, classIdMap, methodCall);
         }
