@@ -56,7 +56,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] [break](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.15)
 - [X] [return](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.17)
 - [ ] method and constructor calls (partially supported)
-- [ ] [continue](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.16)
+- [X] [continue](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.16)
 - [X] [try](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.20) (try-catch; finally is parsed but not emitted)
 - [X] static initializer blocks `static { }`
 - [X] [switch](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.11) (String and integral types; no fall-through)
@@ -101,4 +101,4 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
-Self-compilation progress: ██████████▎░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 25.7%
+Self-compilation progress: ██████████▍░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 26.1%

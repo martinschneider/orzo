@@ -78,6 +78,8 @@ public class StatementParser implements ProdParser<Statement> {
       return stmt;
     } else if ((stmt = ctx.breakParser.parse(tokens)) != null) {
       return stmt;
+    } else if ((stmt = ctx.continueParser.parse(tokens)) != null) {
+      return stmt;
     } else {
       return null;
     }

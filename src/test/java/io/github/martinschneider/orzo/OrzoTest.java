@@ -175,7 +175,10 @@ public class OrzoTest {
         args(list("tests/ReturnNull")),
         args(list("tests/StringLiteralMethod")),
         args(list("tests/StaticFieldMethodCall")),
-        args(list("tests/FieldInitShadowing")));
+        args(list("tests/FieldInitShadowing")),
+        args(list("tests/ContinueLoops")),
+        args(list("tests/BreakContinueNested")),
+        args(list("tests/ForEachBreakContinue")));
   }
 
   @ParameterizedTest

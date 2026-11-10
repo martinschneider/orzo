@@ -14,6 +14,7 @@ public enum Keywords {
   PACKAGE,
   IMPORT,
   BREAK,
+  CONTINUE,
   NEW,
   FINAL,
   IMPLEMENTS,

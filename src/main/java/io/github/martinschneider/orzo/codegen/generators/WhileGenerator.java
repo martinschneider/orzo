@@ -6,12 +6,9 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
-import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import io.github.martinschneider.orzo.parser.productions.WhileStatement;
-import java.util.ArrayList;
-import java.util.List;
 
 public class WhileGenerator implements StatementGenerator<WhileStatement> {
   private CGContext ctx;
@@ -24,16 +21,8 @@ public class WhileGenerator implements StatementGenerator<WhileStatement> {
   public HasOutput generate(DynamicByteArray out, Method method, WhileStatement whileStmt) {
     int etStart = ctx.exceptionTable.size();
     DynamicByteArray bodyOut = new DynamicByteArray();
-    // keep track of break statements
-    List<Byte> breaks = new ArrayList<>();
     for (Statement innerStmt : whileStmt.body) {
-      if (innerStmt instanceof Break) {
-        breaks.add((byte) (bodyOut.getBytes().length + 1));
-        bodyOut.write(GOTO);
-        bodyOut.write((short) 0); // placeholder
-      } else {
-        ctx.delegator.generate(bodyOut, method, innerStmt);
-      }
+      ctx.delegator.generate(bodyOut, method, innerStmt);
     }
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
@@ -44,15 +33,22 @@ public class WhileGenerator implements StatementGenerator<WhileStatement> {
         ctx, etStart, ctx.exceptionTable.size(), out.size() + conditionOut.getBytes().length);
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
-    for (byte idx : breaks) {
-      byte[] jmpOffset = shortToByteArray((short) (bodyBytes.length - idx + 4));
-      bodyBytes[idx] = jmpOffset[0];
-      bodyBytes[idx + 1] = jmpOffset[1];
+    int condLen = conditionOut.getBytes().length;
+    // break -> past the trailing backward GOTO (loop exit); continue -> top of loop (condition
+    // check, which is condLen bytes before the body)
+    for (int pos : bodyOut.pendingBreaks) {
+      byte[] off = shortToByteArray((short) (bodyBytes.length - pos + 3));
+      bodyBytes[pos + 1] = off[0];
+      bodyBytes[pos + 2] = off[1];
+    }
+    for (int pos : bodyOut.pendingContinues) {
+      byte[] off = shortToByteArray((short) (-condLen - pos));
+      bodyBytes[pos + 1] = off[0];
+      bodyBytes[pos + 2] = off[1];
     }
     out.write(bodyBytes);
     out.write(GOTO);
-    out.write(
-        shortToByteArray((short) (-(bodyOut.getBytes().length + conditionOut.getBytes().length))));
+    out.write(shortToByteArray((short) (-(bodyBytes.length + condLen))));
     return out;
   }
 }

@@ -1,18 +1,14 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
-import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFNE;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
-import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.DoStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.Statement;
-import java.util.ArrayList;
-import java.util.List;
 
 public class DoGenerator implements StatementGenerator<DoStatement> {
   private CGContext ctx;
@@ -25,16 +21,8 @@ public class DoGenerator implements StatementGenerator<DoStatement> {
   public HasOutput generate(DynamicByteArray out, Method method, DoStatement doStmt) {
     int etStart = ctx.exceptionTable.size();
     DynamicByteArray bodyOut = new DynamicByteArray();
-    // keep track of break statements
-    List<Byte> breaks = new ArrayList<>();
     for (Statement innerStmt : doStmt.body) {
-      if (innerStmt instanceof Break) {
-        breaks.add((byte) (bodyOut.getBytes().length + 1));
-        bodyOut.write(GOTO);
-        bodyOut.write((short) 0); // placeholder
-      } else {
-        ctx.delegator.generate(bodyOut, method, innerStmt);
-      }
+      ctx.delegator.generate(bodyOut, method, innerStmt);
     }
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) -(bodyOut.getBytes().length + conditionOut.getBytes().length);
@@ -53,11 +41,17 @@ public class DoGenerator implements StatementGenerator<DoStatement> {
     // Fix up ET entries: body starts at current out position (written first)
     TryGenerator.adjustExceptionTableEntries(ctx, etStart, ctx.exceptionTable.size(), out.size());
     byte[] bodyBytes = bodyOut.getBytes();
-    for (byte idx : breaks) {
-      byte[] jmpOffset =
-          shortToByteArray((short) (bodyBytes.length - idx + 1 + conditionOut.getBytes().length));
-      bodyBytes[idx] = jmpOffset[0];
-      bodyBytes[idx + 1] = jmpOffset[1];
+    int condLen = conditionOut.getBytes().length;
+    // break -> past the condition check (loop exit); continue -> start of condition check
+    for (int pos : bodyOut.pendingBreaks) {
+      byte[] off = shortToByteArray((short) (bodyBytes.length + condLen - pos));
+      bodyBytes[pos + 1] = off[0];
+      bodyBytes[pos + 2] = off[1];
+    }
+    for (int pos : bodyOut.pendingContinues) {
+      byte[] off = shortToByteArray((short) (bodyBytes.length - pos));
+      bodyBytes[pos + 1] = off[0];
+      bodyBytes[pos + 2] = off[1];
     }
     out.write(bodyBytes);
     out.write(conditionOut.getBytes());

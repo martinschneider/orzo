@@ -80,6 +80,7 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
       if (condOutputs.get(i) != null) {
         out.write(condOutputs.get(i).getBytes());
       }
+      out.mergePending(bodyOutputs.get(i));
       out.write(bodyOutputs.get(i).getBytes());
     }
     return out;

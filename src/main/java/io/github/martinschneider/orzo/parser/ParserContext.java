@@ -19,6 +19,7 @@ public class ParserContext {
   public BreakParser breakParser;
   public CastParser castParser;
   public ConstructorCallParser constrCallParser;
+  public ContinueParser continueParser;
   public DeclarationParser declParser;
   public DoParser doParser;
   public EnumParser enumParser;
@@ -52,6 +53,7 @@ public class ParserContext {
     ctx.breakParser = new BreakParser();
     ctx.castParser = new CastParser(ctx);
     ctx.constrCallParser = new ConstructorCallParser(ctx);
+    ctx.continueParser = new ContinueParser();
     ctx.declParser = new DeclarationParser(ctx);
     ctx.doParser = new DoParser(ctx);
     ctx.enumParser = new EnumParser(ctx);

@@ -95,25 +95,19 @@ public class SwitchGenerator implements StatementGenerator<SwitchStatement> {
 
     // Emit case bodies
     int[] bodyStarts = new int[switchStmt.cases.size()];
-    List<List<Integer>> breakOpcodePositions = new ArrayList<>();
     List<Integer> gotoEndPositions = new ArrayList<>();
+    // Breaks belong to the nearest enclosing loop/switch: snapshot how many are pending before
+    // generating this switch's bodies so only breaks introduced here get redirected to its end.
+    int pendingBreaksBefore = out.pendingBreaks.size();
 
     for (int i = 0; i < switchStmt.cases.size(); i++) {
       bodyStarts[i] = out.size();
       SwitchCase c = switchStmt.cases.get(i);
-      List<Integer> breaks = new ArrayList<>();
       if (c.body != null) {
         for (Statement s : c.body) {
-          if (s instanceof Break) {
-            breaks.add(out.size()); // GOTO opcode position
-            out.write(GOTO);
-            out.write((short) 0); // placeholder → end
-          } else {
-            ctx.delegator.generate(out, method, s);
-          }
+          ctx.delegator.generate(out, method, s);
         }
       }
-      breakOpcodePositions.add(breaks);
 
       if (!bodyEndsWithReturn(c.body) && !bodyEndsWithBreak(c.body)) {
         gotoEndPositions.add(out.size()); // GOTO opcode position
@@ -136,12 +130,14 @@ public class SwitchGenerator implements StatementGenerator<SwitchStatement> {
     int noMatchTarget = (defaultIdx >= 0) ? bodyStarts[defaultIdx] : endPos;
     out.patch(noMatchGotoPos + 1, shortToByteArray((short) (noMatchTarget - noMatchGotoPos)));
 
-    // Patch break GOTOs → end
-    for (int i = 0; i < switchStmt.cases.size(); i++) {
-      for (int brkPos : breakOpcodePositions.get(i)) {
-        out.patch(brkPos + 1, shortToByteArray((short) (endPos - brkPos)));
-      }
+    // Patch break GOTOs introduced by this switch's case bodies → end; breaks pending from an
+    // outer loop/switch (recorded before this switch started) are left untouched.
+    List<Integer> ownBreaks =
+        new ArrayList<>(out.pendingBreaks.subList(pendingBreaksBefore, out.pendingBreaks.size()));
+    for (int brkPos : ownBreaks) {
+      out.patch(brkPos + 1, shortToByteArray((short) (endPos - brkPos)));
     }
+    out.pendingBreaks.subList(pendingBreaksBefore, out.pendingBreaks.size()).clear();
 
     // Patch body-end GOTOs → end
     for (int gotoPos : gotoEndPositions) {

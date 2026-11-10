@@ -6,12 +6,9 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
-import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.Statement;
-import java.util.ArrayList;
-import java.util.List;
 
 public class ForGenerator implements StatementGenerator<ForStatement> {
   private CGContext ctx;
@@ -25,17 +22,11 @@ public class ForGenerator implements StatementGenerator<ForStatement> {
     ctx.delegator.generate(out, method, forStmt.init);
     int etStart = ctx.exceptionTable.size();
     DynamicByteArray bodyOut = new DynamicByteArray();
-    // keep track of break statements
-    List<Byte> breaks = new ArrayList<>();
     for (Statement innerStmt : forStmt.body) {
-      if (innerStmt instanceof Break) {
-        breaks.add((byte) (bodyOut.getBytes().length + 1));
-        bodyOut.write(GOTO);
-        bodyOut.write((short) 0); // temporary placeholder
-      } else {
-        ctx.delegator.generate(bodyOut, method, innerStmt);
-      }
+      ctx.delegator.generate(bodyOut, method, innerStmt);
     }
+    // continue jumps here: past the body, straight to the increment step
+    int incStart = bodyOut.size();
     ctx.delegator.generate(bodyOut, method, forStmt.loopStmt);
     DynamicByteArray conditionOut = new DynamicByteArray();
     short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
@@ -46,10 +37,16 @@ public class ForGenerator implements StatementGenerator<ForStatement> {
         ctx, etStart, ctx.exceptionTable.size(), out.size() + conditionOut.getBytes().length);
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
-    for (byte idx : breaks) {
-      byte[] jmpOffset = shortToByteArray((short) (bodyBytes.length - idx + 4));
-      bodyBytes[idx] = jmpOffset[0];
-      bodyBytes[idx + 1] = jmpOffset[1];
+    // break -> past the trailing backward GOTO (loop exit); continue -> increment step
+    for (int pos : bodyOut.pendingBreaks) {
+      byte[] off = shortToByteArray((short) (bodyBytes.length - pos + 3));
+      bodyBytes[pos + 1] = off[0];
+      bodyBytes[pos + 2] = off[1];
+    }
+    for (int pos : bodyOut.pendingContinues) {
+      byte[] off = shortToByteArray((short) (incStart - pos));
+      bodyBytes[pos + 1] = off[0];
+      bodyBytes[pos + 2] = off[1];
     }
     out.write(bodyBytes);
     out.write(GOTO);

@@ -130,6 +130,9 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
       ctx.delegator.generate(bodyOut, method, innerStmt);
     }
 
+    // continue jumps here: past the body, straight to the index increment
+    int incStart = bodyOut.size();
+
     // iinc $idx, 1
     bodyOut.write(IINC);
     bodyOut.write((byte) idxSlot);
@@ -145,9 +148,21 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
     condOut.write(skipOffset);
 
     out.write(condOut.getBytes());
-    out.write(bodyOut.getBytes());
+    byte[] bodyBytes = bodyOut.getBytes();
+    // break -> past the trailing backward GOTO (loop exit); continue -> index increment
+    for (int pos : bodyOut.pendingBreaks) {
+      byte[] off = shortToByteArray((short) (bodyBytes.length - pos + 3));
+      bodyBytes[pos + 1] = off[0];
+      bodyBytes[pos + 2] = off[1];
+    }
+    for (int pos : bodyOut.pendingContinues) {
+      byte[] off = shortToByteArray((short) (incStart - pos));
+      bodyBytes[pos + 1] = off[0];
+      bodyBytes[pos + 2] = off[1];
+    }
+    out.write(bodyBytes);
     out.write(GOTO);
-    out.write(shortToByteArray((short) -(condOut.getBytes().length + bodyOut.getBytes().length)));
+    out.write(shortToByteArray((short) -(condOut.getBytes().length + bodyBytes.length)));
     return out;
   }
 
@@ -219,9 +234,22 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
 
     // Write condOut + bodyOut + GOTO back to start of condOut
     out.write(condOut.getBytes());
-    out.write(bodyOut.getBytes());
+    byte[] bodyBytes = bodyOut.getBytes();
+    int condLen = condOut.getBytes().length;
+    // break -> past the trailing backward GOTO (loop exit); continue -> top of loop (hasNext check)
+    for (int pos : bodyOut.pendingBreaks) {
+      byte[] off = shortToByteArray((short) (bodyBytes.length - pos + 3));
+      bodyBytes[pos + 1] = off[0];
+      bodyBytes[pos + 2] = off[1];
+    }
+    for (int pos : bodyOut.pendingContinues) {
+      byte[] off = shortToByteArray((short) (-condLen - pos));
+      bodyBytes[pos + 1] = off[0];
+      bodyBytes[pos + 2] = off[1];
+    }
+    out.write(bodyBytes);
     out.write(GOTO);
-    out.write(shortToByteArray((short) -(condOut.getBytes().length + bodyOut.getBytes().length)));
+    out.write(shortToByteArray((short) -(condLen + bodyBytes.length)));
     return out;
   }
 }
