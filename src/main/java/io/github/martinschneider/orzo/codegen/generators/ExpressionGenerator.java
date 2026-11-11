@@ -710,6 +710,13 @@ public class ExpressionGenerator {
       return staticField.fieldType;
     }
 
+    // Try Type.class literal
+    if (identifierParts.size() == 2 && "class".equals(identifierParts.get(1))) {
+      String jvmClass = resolveJvmClassName(identifierParts.get(0));
+      ctx.constPool.addClass(jvmClass);
+      ctx.loadGen.ldc(out, CONSTANT_CLASS, jvmClass);
+      return "java.lang.Class";
+    }
     // Try to resolve as ImportedClass.fieldName (e.g. Operators.LESS, Byte.MAX_VALUE)
     if (identifierParts.size() == 2) {
       String partClass = identifierParts.get(0);

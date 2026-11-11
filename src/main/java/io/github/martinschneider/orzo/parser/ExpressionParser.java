@@ -67,6 +67,10 @@ public class ExpressionParser implements ProdParser<Expression> {
           || tokens.curr() instanceof Chr
           || tokens.curr() instanceof Identifier
           || (tokens.curr() instanceof Type && parenthesis < 0)
+          || (tokens.curr() instanceof Type
+              && parenthesis == 0
+              && exprTokens.isEmpty()
+              && tokens.peekNext().eq(sym(DOT)))
           || tokens.curr() instanceof Operator
           || tokens.curr().eq(sym(SQRT))
           || tokens.curr().eq(sym(LPAREN))
@@ -168,6 +172,16 @@ public class ExpressionParser implements ProdParser<Expression> {
             if (!curr.eq(eof())) {
               if (curr instanceof Identifier) {
                 selectors.add((Identifier) curr);
+                tokens.next();
+              } else if (selectors.isEmpty()
+                  && curr instanceof Type
+                  && tokens.peekNext().eq(sym(DOT))) {
+                // Dotted static access on a built-in type name, e.g. String.class, String.valueOf
+                selectors.add(new Identifier(((Type) curr).name));
+                tokens.next();
+              } else if (curr instanceof Keyword && ((Keyword) curr).eq(keyword(Keywords.CLASS))) {
+                // Class literal selector, e.g. String.class
+                selectors.add(new Identifier("class"));
                 tokens.next();
               } else if ((constrCall = ctx.constrCallParser.parse(tokens, true)) != null) {
                 selectors.add(constrCall);

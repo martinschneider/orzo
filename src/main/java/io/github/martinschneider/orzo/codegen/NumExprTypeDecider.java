@@ -135,6 +135,9 @@ public class NumExprTypeDecider {
             FieldProcessor.StaticField sf = ctx.staticFieldMap.get(id.val.toString());
             if (sf != null) {
               types.add(sf.fieldType);
+            } else if (id.next != null && "class".equals(id.next.val.toString())) {
+              // Class literal, e.g. String.class
+              types.add("java.lang.Class");
             } else if (id.next != null) {
               // ClassName.fieldName pattern (e.g. Operators.LESS, Byte.MAX_VALUE)
               String resolvedType = resolveChainedType(id.val.toString(), id.next.val.toString());

@@ -178,7 +178,8 @@ public class OrzoTest {
         args(list("tests/FieldInitShadowing")),
         args(list("tests/ContinueLoops")),
         args(list("tests/BreakContinueNested")),
-        args(list("tests/ForEachBreakContinue")));
+        args(list("tests/ForEachBreakContinue")),
+        args(list("tests/ClassLiteral")));
   }
 
   @ParameterizedTest
