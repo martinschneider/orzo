@@ -461,6 +461,9 @@ public class ExpressionGenerator {
             returnType = returnType.substring(methodCall.arrSel.exprs.size());
           }
         }
+        // A trailing non-call selector (e.g. make().val) is an instance field access on the
+        // just-returned reference, not a local variable lookup.
+        prevLoadedRef = isNonPrimitive(returnType) && curr.arrSel == null;
       } else {
         VariableInfo prevInfo = (prev != null) ? ctx.classIdMap.variables.get(prev) : null;
         boolean prevWasArray =

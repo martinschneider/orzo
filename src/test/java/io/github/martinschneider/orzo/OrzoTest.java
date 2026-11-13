@@ -179,7 +179,8 @@ public class OrzoTest {
         args(list("tests/ContinueLoops")),
         args(list("tests/BreakContinueNested")),
         args(list("tests/ForEachBreakContinue")),
-        args(list("tests/ClassLiteral")));
+        args(list("tests/ClassLiteral")),
+        args(list("tests/MethodCallFieldAccess", "tests/Holder")));
   }
 
   @ParameterizedTest
