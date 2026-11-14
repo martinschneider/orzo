@@ -67,6 +67,7 @@ public class ExpressionParserTest {
         args("-1 / -i", expr(list(integer(-1), integer(-1), id("i"), op(TIMES), op(DIV)))),
         args("-1 % -i", expr(list(integer(-1), integer(-1), id("i"), op(TIMES), op(MOD)))),
         args("-1 - (-i)", expr(list(integer(-1), integer(-1), id("i"), op(TIMES), op(MINUS)))),
+        args("-(a+b)", expr(list(integer(-1), id("a"), id("b"), op(PLUS), op(TIMES)))),
         args("(byte) 1", expr(list(integer(1)), Type.type("byte"))),
         args("a.b", expr(list(id("a", "b")))),
         args("Color.GREEN", expr(list(id("Color", "GREEN")))),

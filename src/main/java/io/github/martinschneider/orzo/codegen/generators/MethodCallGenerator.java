@@ -322,6 +322,13 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       }
     } else {
       String retType = generate(out, ctx.classIdMap, methodCall);
+      // Chained calls as a standalone statement, e.g. "sb.append(x).append(y);" — each
+      // subsequent call is invoked on the previous call's return value, left on the stack.
+      io.github.martinschneider.orzo.lexer.tokens.Identifier chainNext = methodCall.next;
+      while (chainNext instanceof MethodCall) {
+        retType = generateChained(out, ctx.classIdMap, (MethodCall) chainNext, retType);
+        chainNext = chainNext.next;
+      }
       if (retType != null && !retType.isEmpty() && !VOID.equals(retType)) {
         if (LONG.equals(retType) || DOUBLE.equals(retType)) {
           out.write(POP2);
@@ -815,6 +822,40 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   private boolean isArgTypeCompatible(String argType, Class<?> paramClass) {
     if (argType == null) {
       return true;
+    }
+    // Orzo represents array types as "[" + <element type word>, e.g. "[byte" for byte[]
+    // (see NumExprTypeDecider), not a JVM array descriptor. Class.forName can't resolve that
+    // directly, so match against the parameter's component type instead of falling through
+    // to the "assume compatible" default below (which made every write(...) overload on
+    // DynamicByteArray look equally compatible with a byte[] argument).
+    if (argType.startsWith("[")) {
+      if (!paramClass.isArray()) {
+        return paramClass == Object.class;
+      }
+      String elemType = argType.substring(1);
+      Class<?> elemParam = paramClass.getComponentType();
+      // Primitive array element types must match exactly (unlike scalar args, arrays aren't
+      // covariant/widening in Java: byte[] is not assignable to int[]).
+      switch (elemType) {
+        case "boolean":
+          return elemParam == boolean.class;
+        case "byte":
+          return elemParam == byte.class;
+        case "char":
+          return elemParam == char.class;
+        case "short":
+          return elemParam == short.class;
+        case "int":
+          return elemParam == int.class;
+        case "long":
+          return elemParam == long.class;
+        case "float":
+          return elemParam == float.class;
+        case "double":
+          return elemParam == double.class;
+        default:
+          return isArgTypeCompatible(elemType, elemParam);
+      }
     }
     String cleanType =
         argType.startsWith("L") && argType.endsWith(";")

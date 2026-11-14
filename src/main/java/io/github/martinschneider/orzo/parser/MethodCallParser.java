@@ -78,15 +78,39 @@ public class MethodCallParser implements ProdParser<MethodCall> {
       name.deleteCharAt(name.length() - 1);
       parameters = parseArgs(tokens);
       ArraySelector arrSel = ctx.arraySelectorParser.parse(tokens);
-      if (tokens.curr().eq(sym(SEMICOLON)) && !saveSemicolon) {
-        tokens.next();
-      }
       if (parameters == null) {
         ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
       }
-      return new MethodCall(name.toString(), parameters, arrSel);
+      MethodCall result = new MethodCall(name.toString(), parameters, arrSel);
+      MethodCall last = result;
+      // Support chained calls as a standalone statement, e.g. "sb.append(x).append(y);".
+      // The dotted-name loop above only handles a dotted receiver/field chain ending in a
+      // single call; here we keep following ".name(args)" segments after the first call.
+      while (tokens.curr().eq(sym(DOT))) {
+        int chainIdx = tokens.idx();
+        tokens.next(); // consume '.'
+        if (!(tokens.curr() instanceof Identifier)) {
+          tokens.setIdx(chainIdx);
+          break;
+        }
+        String nextName = tokens.curr().val.toString();
+        tokens.next();
+        List<Expression> nextParams = parseArgs(tokens);
+        if (nextParams == null) {
+          tokens.setIdx(chainIdx);
+          break;
+        }
+        ArraySelector nextArrSel = ctx.arraySelectorParser.parse(tokens);
+        MethodCall next = new MethodCall(nextName, nextParams, nextArrSel);
+        last.next = next;
+        last = next;
+      }
+      if (tokens.curr().eq(sym(SEMICOLON)) && !saveSemicolon) {
+        tokens.next();
+      }
+      return result;
     }
     return null;
   }

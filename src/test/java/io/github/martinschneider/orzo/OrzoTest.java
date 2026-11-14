@@ -86,6 +86,10 @@ public class OrzoTest {
         args(list("tests/ShortArrays")),
         args(list("tests/LongArrays")),
         args(list("tests/FloatArrays")),
+        args(list("tests/ArrayWriteOverload")),
+        args(list("tests/UnsignedByteFromArray")),
+        args(list("tests/ChainedCallStatement")),
+        args(list("tests/TryInForEach")),
         args(list("examples/QuickSort")),
         /** args(list("examples/MergeSort")), */
         args(list("tests/Chars")),

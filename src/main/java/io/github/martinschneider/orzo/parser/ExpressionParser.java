@@ -54,7 +54,11 @@ public class ExpressionParser implements ProdParser<Expression> {
     }
     Type cast = ctx.castParser.parse(tokens);
     List<Token> exprTokens = new ArrayList<>();
-    checkNegative(tokens, exprTokens);
+    // Number of synthetic ')' tokens (closing a "(-1) * (" rewrite of a unary minus applied to a
+    // parenthesized sub-expression, e.g. "-(a+b)") still owed once the real parenthesis depth
+    // returns to 0.
+    int[] pendingNegatedParens = {0};
+    checkNegative(tokens, exprTokens, pendingNegatedParens);
     int parenthesis = 0;
     // Track the index in exprTokens where the last depth-0->(-1) LPAREN was added,
     // and the position in exprTokens just after that LPAREN (where the condition starts).
@@ -138,7 +142,7 @@ public class ExpressionParser implements ProdParser<Expression> {
         if (prevToken.eq(sym(LPAREN))
             || (prevToken instanceof Operator
                 && ((Operator) prevToken).opValue().getPrecedence() <= 12)) {
-          negative = checkNegative(tokens, exprTokens);
+          negative = checkNegative(tokens, exprTokens, pendingNegatedParens);
         }
         if (negative) {
           idx = tokens.idx();
@@ -188,6 +192,12 @@ public class ExpressionParser implements ProdParser<Expression> {
               } else {
                 exprTokens.add(curr);
                 tokens.next();
+                if (curr.eq(sym(RPAREN)) && parenthesis == 0 && pendingNegatedParens[0] > 0) {
+                  for (int k = 0; k < pendingNegatedParens[0]; k++) {
+                    exprTokens.add(sym(RPAREN));
+                  }
+                  pendingNegatedParens[0] = 0;
+                }
                 // For Str literals: allow DOT-chained method calls (e.g. "string".method(arg))
                 if (!(curr instanceof Str)) {
                   break;
@@ -303,7 +313,8 @@ public class ExpressionParser implements ProdParser<Expression> {
     return null;
   }
 
-  private boolean checkNegative(TokenList tokens, List<Token> exprTokens) {
+  private boolean checkNegative(
+      TokenList tokens, List<Token> exprTokens, int[] pendingNegatedParens) {
     if (tokens.curr().eq(op(MINUS))) {
       tokens.next();
       if (tokens.curr() instanceof Num) {
@@ -319,6 +330,16 @@ public class ExpressionParser implements ProdParser<Expression> {
         exprTokens.add(tokens.curr());
         exprTokens.add(sym(RPAREN));
         tokens.next();
+        return true;
+      } else if (tokens.curr().eq(sym(LPAREN))) {
+        // Rewrite "-(expr)" as "(-1) * (expr)". The following '(' is left in place for the
+        // caller's normal parenthesis handling to parse "expr" (preserving dotted selectors,
+        // method calls, etc.); a matching synthetic ')' is appended once that '(' closes (see
+        // pendingNegatedParens flush in parse()).
+        exprTokens.add(sym(LPAREN));
+        exprTokens.add(integer(-1));
+        exprTokens.add(op(TIMES));
+        pendingNegatedParens[0]++;
         return true;
       } else {
         ctx.errors.addError(

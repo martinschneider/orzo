@@ -175,6 +175,11 @@ public class ExpressionGenerator {
     // These need special handling: skip loading lhs old value; DUP+STORE rhs at ASSIGN.
     Set<Integer> skipLoad = new HashSet<>();
     Map<Integer, VariableInfo> assignTargets = findAssignmentTargets(tokens, skipLoad);
+    // True right after processing an array-element access (e.g. "arr[0]"): the element type
+    // (e.g. "byte") just got assigned to `type` below for codegen purposes, but it must not be
+    // mistaken for the expression's originally requested type when sizing a literal that follows
+    // (e.g. the 0xFF in "arr[0] & 0xFF" needs to push as int, not get narrowed to byte).
+    boolean typeFromArrayElement = false;
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
       if (!type.equals(DOUBLE)
@@ -189,6 +194,12 @@ public class ExpressionGenerator {
         } else {
           type = handleId(out, ctx.classIdMap, tokens, i, token, type);
           exprTypeStack.push(type);
+          // Only byte/short/char elements need this: Java always promotes them to int for
+          // arithmetic/bitwise ops, unlike float/double/long elements, which a following
+          // literal operand must still match (e.g. for FMUL/DMUL/LMUL to see matching types).
+          typeFromArrayElement =
+              ((Identifier) token).arrSel != null
+                  && (BYTE.equals(type) || SHORT.equals(type) || CHAR.equals(type));
         }
       } else if (token instanceof IntLiteral) {
         BigInteger bigInt = (BigInteger) ((IntLiteral) token).val;
@@ -196,9 +207,10 @@ public class ExpressionGenerator {
         // When the outer type is String (string-concat context), use the natural numeric type
         // so that int literals generate real bytecode and are available for arithmetic.
         String literalType =
-            (STRING.equals(type) || isNonPrimitive(type))
+            (STRING.equals(type) || isNonPrimitive(type) || typeFromArrayElement)
                 ? (intValue > Integer.MAX_VALUE ? LONG : INT)
                 : type;
+        typeFromArrayElement = false;
         // look ahead for <<, >> or >>> operators which require the second argument to
         // be an integer
         if (i + 1 < tokens.size()

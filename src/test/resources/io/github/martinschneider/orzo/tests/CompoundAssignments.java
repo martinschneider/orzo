@@ -19,5 +19,11 @@ public class CompoundAssignments {
     System.out.println(a); // 2
     a >>>= 8;
     System.out.println(a); // 0
+    short s = 32760;
+    s += 10;
+    System.out.println(s); // -32766 (wraps: implicit narrowing cast on compound assignment)
+    byte b = 120;
+    b += 10;
+    System.out.println(b); // -126 (wraps)
   }
 }

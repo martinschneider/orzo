@@ -120,6 +120,7 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
     ctx.storeGen.store(out, ctx.classIdMap.variables.get(idxId));
 
     // Build bodyOut: load arr[idx], store to elemVar, body, increment idx
+    int etStart = ctx.exceptionTable.size();
     DynamicByteArray bodyOut = new DynamicByteArray();
     ctx.loadGen.loadReference(bodyOut, arrSlot);
     ctx.loadGen.load(bodyOut, ctx.classIdMap.variables.get(idxId));
@@ -147,6 +148,9 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
     condOut.write(IF_ICMPGE);
     condOut.write(skipOffset);
 
+    // Fix up ET entries: body starts after condition
+    TryGenerator.adjustExceptionTableEntries(
+        ctx, etStart, ctx.exceptionTable.size(), out.size() + condOut.getBytes().length);
     out.write(condOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     // break -> past the trailing backward GOTO (loop exit); continue -> index increment
@@ -182,6 +186,7 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
     ctx.storeGen.store(out, ctx.classIdMap.variables.get(iterId));
 
     // Build bodyOut first so we know its size for the IFEQ branch offset
+    int etStart = ctx.exceptionTable.size();
     DynamicByteArray bodyOut = new DynamicByteArray();
 
     // Load $iter and call .next() to get the next element
@@ -232,6 +237,9 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
     condOut.write(IFEQ);
     condOut.write(ifeqOffset);
 
+    // Fix up ET entries: body starts after condition
+    TryGenerator.adjustExceptionTableEntries(
+        ctx, etStart, ctx.exceptionTable.size(), out.size() + condOut.getBytes().length);
     // Write condOut + bodyOut + GOTO back to start of condOut
     out.write(condOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
