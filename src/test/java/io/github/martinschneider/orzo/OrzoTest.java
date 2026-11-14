@@ -90,6 +90,10 @@ public class OrzoTest {
         args(list("tests/UnsignedByteFromArray")),
         args(list("tests/ChainedCallStatement")),
         args(list("tests/TryInForEach")),
+        args(list("tests/EmptyBlocks")),
+        args(list("tests/ReferenceArrayLiteral")),
+        args(list("tests/ForEachOverMethodCallArray")),
+        args(list("tests/ObjectUtilsUsage", "tests/ObjectUtilsUsagePoint")),
         args(list("examples/QuickSort")),
         /** args(list("examples/MergeSort")), */
         args(list("tests/Chars")),

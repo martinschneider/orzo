@@ -1,10 +1,12 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ANEWARRAY;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
+import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
@@ -86,7 +88,6 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
       return out;
     }
     String type = decl.type;
-    byte arrayType = getArrayType(type);
     byte storeOpCode = getStoreOpCode(type);
     ArrayInit arrInit = (ArrayInit) decl.val;
     if (decl.isField) {
@@ -95,7 +96,7 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
         ctx.loadGen.loadReference(out, varInfo.objectRef);
       }
     }
-    createArray(out, classIdMap, arrayType, arrInit.dims);
+    createArray(out, classIdMap, type, arrInit.dims);
     // multi-dim array
     if (arrInit.vals.size() >= 2) {
       // TODO
@@ -114,13 +115,27 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
   }
 
   private void createArray(
-      DynamicByteArray out, GlobalIdentifierMap classIdMap, byte arrayType, List<Expression> dims) {
+      DynamicByteArray out, GlobalIdentifierMap classIdMap, String type, List<Expression> dims) {
     if (dims.size() == 1) {
       ctx.exprGen.eval(out, INT, dims.get(0));
-      out.write(NEWARRAY);
-      out.write(arrayType);
+      if (TypeUtils.isPrimitive(type)) {
+        out.write(NEWARRAY);
+        out.write(getArrayType(type));
+      } else {
+        String jvmClass = jvmClassName(type);
+        ctx.constPool.addClass(jvmClass);
+        out.write(ANEWARRAY);
+        out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmClass));
+      }
     } else {
       // TODO:
     }
+  }
+
+  private String jvmClassName(String type) {
+    String descr = TypeUtils.descr(type);
+    return (descr.startsWith("L") && descr.endsWith(";"))
+        ? descr.substring(1, descr.length() - 1)
+        : descr;
   }
 }

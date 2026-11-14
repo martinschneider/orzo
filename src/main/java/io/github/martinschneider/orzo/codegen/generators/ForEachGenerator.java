@@ -25,6 +25,7 @@ import static java.util.Collections.emptyList;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
@@ -88,7 +89,13 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
     if (!(stmt.iterable.tokens.get(0) instanceof Identifier)) return false;
     Identifier id = (Identifier) stmt.iterable.tokens.get(0);
     VariableInfo info = ctx.classIdMap.variables.get(id);
-    return info != null && info.arrType != null;
+    if (info != null && info.arrType != null) {
+      return true;
+    }
+    // Not a plain array-typed local variable (e.g. the iterable is a method call like
+    // "clazz.getDeclaredFields()"); infer array-ness from the expression's type instead.
+    String inferredType = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, stmt.iterable);
+    return inferredType != null && inferredType.startsWith("[");
   }
 
   private HasOutput generateArray(DynamicByteArray out, Method method, ForEachStatement stmt) {

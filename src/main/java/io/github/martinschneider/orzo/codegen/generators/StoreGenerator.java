@@ -1,31 +1,25 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
-import static io.github.martinschneider.orzo.codegen.OpCodes.AASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_3;
-import static io.github.martinschneider.orzo.codegen.OpCodes.BASTORE;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DSTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DSTORE_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DSTORE_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DSTORE_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DSTORE_3;
-import static io.github.martinschneider.orzo.codegen.OpCodes.FASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FSTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FSTORE_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FSTORE_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FSTORE_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FSTORE_3;
-import static io.github.martinschneider.orzo.codegen.OpCodes.IASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ISTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ISTORE_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ISTORE_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ISTORE_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ISTORE_3;
-import static io.github.martinschneider.orzo.codegen.OpCodes.LASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_1;
@@ -33,7 +27,6 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LSTORE_3;
 import static io.github.martinschneider.orzo.codegen.OpCodes.PUTFIELD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.PUTSTATIC;
-import static io.github.martinschneider.orzo.codegen.OpCodes.SASTORE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
@@ -47,6 +40,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 
@@ -160,29 +154,7 @@ public class StoreGenerator {
   }
 
   public HasOutput storeInArray(HasOutput out, String type) {
-    switch (type) {
-      case BYTE:
-        out.write(BASTORE);
-        break;
-      case SHORT:
-        out.write(SASTORE);
-        break;
-      case LONG:
-        out.write(LASTORE);
-        break;
-      case INT:
-        out.write(IASTORE);
-        break;
-      case DOUBLE:
-        out.write(DASTORE);
-        break;
-      case FLOAT:
-        out.write(FASTORE);
-        break;
-      case REF:
-        out.write(AASTORE);
-        break;
-    }
+    out.write(TypeUtils.getStoreOpCode(type));
     return out;
   }
 

@@ -8,6 +8,7 @@ import static io.github.martinschneider.orzo.codegen.ArrayTypes.INT_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.LONG_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.SHORT_ARRAY;
 import static io.github.martinschneider.orzo.codegen.OpCodes.AALOAD;
+import static io.github.martinschneider.orzo.codegen.OpCodes.AASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.BALOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.BASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.CALOAD;
@@ -230,7 +231,7 @@ public class TypeUtils {
       case CHAR:
         return CASTORE;
     }
-    return 0;
+    return AASTORE;
   }
 
   public static byte getArrayType(String type) {

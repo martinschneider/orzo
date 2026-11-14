@@ -100,8 +100,9 @@ public class IfParser implements ProdParser<IfStatement> {
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (body == null) {
-        ctx.errors.addError(
-            IF_BLOCK_LOG_NAME, "missing body", new RuntimeException().getStackTrace());
+        // An empty "{}" block is valid; parseStmtSeq returns null when it found no
+        // statements, which isn't itself an error here (unlike the no-braces case below).
+        body = new ArrayList<>();
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
         tokens.prev();
@@ -137,7 +138,8 @@ public class IfParser implements ProdParser<IfStatement> {
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (body == null) {
-        ctx.errors.addError(LOG_NAME, "missing body", new RuntimeException().getStackTrace());
+        // An empty "{}" block is valid (see parseIfBlock for the same reasoning).
+        body = new ArrayList<>();
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
         tokens.prev();

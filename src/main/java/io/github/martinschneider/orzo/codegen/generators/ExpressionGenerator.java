@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ANEWARRAY;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
@@ -785,9 +786,8 @@ public class ExpressionGenerator {
   public HasOutput generateArray(
       DynamicByteArray out, GlobalIdentifierMap classIdMap, ArrayInit arrInit) {
     String type = arrInit.type;
-    byte arrayType = getArrayType(type);
     byte storeOpCode = getStoreOpCode(type);
-    createArray(out, classIdMap, arrayType, arrInit.dims);
+    createArray(out, classIdMap, type, arrInit.dims);
     // multi-dim array
     if (arrInit.vals.size() >= 2) {
       // TODO
@@ -806,11 +806,22 @@ public class ExpressionGenerator {
   }
 
   private void createArray(
-      DynamicByteArray out, GlobalIdentifierMap classIdMap, byte arrayType, List<Expression> dims) {
+      DynamicByteArray out, GlobalIdentifierMap classIdMap, String type, List<Expression> dims) {
     if (dims.size() == 1) {
       ctx.exprGen.eval(out, INT, dims.get(0));
-      out.write(NEWARRAY);
-      out.write(arrayType);
+      if (TypeUtils.isPrimitive(type)) {
+        out.write(NEWARRAY);
+        out.write(getArrayType(type));
+      } else {
+        String descr = TypeUtils.descr(type);
+        String jvmClass =
+            (descr.startsWith("L") && descr.endsWith(";"))
+                ? descr.substring(1, descr.length() - 1)
+                : descr;
+        ctx.constPool.addClass(jvmClass);
+        out.write(ANEWARRAY);
+        out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmClass));
+      }
     } else {
       // TODO:
     }
