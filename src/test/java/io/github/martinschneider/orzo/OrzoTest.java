@@ -94,6 +94,7 @@ public class OrzoTest {
         args(list("tests/ReferenceArrayLiteral")),
         args(list("tests/ForEachOverMethodCallArray")),
         args(list("tests/ObjectUtilsUsage", "tests/ObjectUtilsUsagePoint")),
+        args(list("tests/ComparisonAsValue")),
         args(list("examples/QuickSort")),
         /** args(list("examples/MergeSort")), */
         args(list("tests/Chars")),

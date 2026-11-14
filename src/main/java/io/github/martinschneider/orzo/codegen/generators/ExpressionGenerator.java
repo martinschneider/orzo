@@ -114,7 +114,118 @@ public class ExpressionGenerator {
       List.of(EQUAL, NOTEQUAL, GREATER, LESS, LESSEQ, GREATEREQ);
 
   public ExpressionResult eval(DynamicByteArray out, String type, Expression expr) {
-    return eval(out, type, expr, true, false);
+    // Unlike the raw 4-arg eval() (used by callers that build their own branch, e.g.
+    // IfGenerator/WhileGenerator/ForGenerator with reverseComp=true, or DoGenerator with
+    // reverseComp=false that patches the branch offset itself), this convenience entry point is
+    // used wherever a plain 0/1 *value* is wanted (method argument, assignment RHS, declaration
+    // initializer, etc.) — so materialize a bare comparator branch into ICONST_0/ICONST_1 here.
+    // Writes directly to the caller's `out` throughout (not a sub-buffer): several internal
+    // branch-offset computations are relative to `out`'s absolute size, which an isolated
+    // sub-buffer would get wrong whenever `out` already has prior content.
+    int startPos = out.size();
+    ExpressionResult result = eval(out, type, expr, true, false);
+    if (out.size() > startPos) {
+      byte[] written = Arrays.copyOfRange(out.getBytes(), startPos, out.size());
+      int lastOp = lastOpcode(written);
+      if (lastOp >= 153 && lastOp <= 166) {
+        // Branch opcode without its 2-byte operand: add offset + value-producing tail.
+        // Branch fires when condition is TRUE → jump to ICONST_1 (7 bytes ahead of opcode).
+        out.write((short) 7); // 2-byte offset to ICONST_1
+        out.write(ICONST_0); // false case (fall-through)
+        out.write(GOTO);
+        out.write((short) 4); // 4 bytes from GOTO opcode → past ICONST_1
+        out.write(ICONST_1); // true case
+      }
+    }
+    return result;
+  }
+
+  // Returns the opcode of the last instruction in the bytecode array by forward-scanning.
+  private static int lastOpcode(byte[] code) {
+    int i = 0;
+    int lastPos = 0;
+    while (i < code.length) {
+      lastPos = i;
+      i += instrLen(code, i);
+    }
+    return code[lastPos] & 0xFF;
+  }
+
+  // Returns the byte length of the instruction at code[pos].
+  private static int instrLen(byte[] code, int pos) {
+    int op = code[pos] & 0xFF;
+    if (op <= 15
+        || (op >= 26 && op <= 53)
+        || (op >= 59 && op <= 131)
+        || op == 133
+        || (op >= 136 && op <= 147)
+        || op == 148
+        || (op >= 172 && op <= 177)
+        || op == 190
+        || op == 191
+        || op == 194
+        || op == 195) {
+      return 1;
+    }
+    switch (op) {
+      case 16:
+      case 18:
+      case 21:
+      case 22:
+      case 23:
+      case 24:
+      case 25:
+      case 54:
+      case 55:
+      case 56:
+      case 57:
+      case 58:
+      case 132:
+      case 169:
+      case 188:
+        return 2;
+      case 17:
+      case 19:
+      case 20:
+      case 153:
+      case 154:
+      case 155:
+      case 156:
+      case 157:
+      case 158:
+      case 159:
+      case 160:
+      case 161:
+      case 162:
+      case 163:
+      case 164:
+      case 165:
+      case 166:
+      case 167:
+      case 168:
+      case 178:
+      case 179:
+      case 180:
+      case 181:
+      case 182:
+      case 183:
+      case 184:
+      case 187:
+      case 189:
+      case 192:
+      case 193:
+      case 197:
+      case 198:
+      case 199:
+        return 3;
+      case 185:
+      case 186:
+      case 200:
+      case 201:
+        return 5;
+      default:
+        return 1;
+    }
   }
 
   public ExpressionResult eval(
@@ -385,6 +496,13 @@ public class ExpressionGenerator {
           if (opCode == null && COMPARATORS.contains(op)) {
             opCode = ARITHMETIC_OPS.getOrDefault(op, Collections.emptyMap()).get(REF);
           }
+          if (!reverseComp && COMPARATORS.contains(op)) {
+            // A comparator always produces a boolean result. Only do this for a value-context
+            // caller (reverseComp=false) — reverseComp=true callers (If/While/For/ternary
+            // conditions) read `type` afterward too, and forcing BOOLEAN there changed codegen
+            // decisions for other (self-compiled) sources in ways not yet root-caused.
+            type = BOOLEAN;
+          }
           if (reverseComp && opCode != null) {
             // creating a copy is important, otherwise we would modify the original array
             opCode = Arrays.copyOf(opCode, opCode.length);
@@ -584,7 +702,15 @@ public class ExpressionGenerator {
                 && arrType == null
                 && !deferNarrowing
                 && !(isNonPrimitive(varType) && isNonPrimitive(type))
-                && !(isNonPrimitive(varType) && curr.next != null)) {
+                && !(isNonPrimitive(varType) && curr.next != null)
+                // A numeric operand can't be converted straight to boolean (that's only ever
+                // valid as the *result* of a comparison, not an operand's own type) — e.g. the
+                // `h1` in "boolean same = h1 == h2;" shouldn't be coerced to boolean just because
+                // the declaration's target type is boolean; the comparator later in the token
+                // stream is what actually produces the boolean result.
+                && !(BOOLEAN.equals(type)
+                    && !BOOLEAN.equals(varType)
+                    && TypeUtils.isPrimitive(varType))) {
               // Defer primitive→String conversion to the PLUS operator so that arithmetic
               // sub-expressions (e.g. n+1 in "sum="+(n+1)) are computed before converting.
               if (STRING.equals(type) && TypeUtils.isPrimitive(varType)) {
@@ -1103,94 +1229,6 @@ public class ExpressionGenerator {
       }
     }
     return subOut;
-  }
-
-  // Returns the opcode of the last instruction in the bytecode array by forward-scanning.
-  private static int lastOpcode(byte[] code) {
-    int i = 0;
-    int lastPos = 0;
-    while (i < code.length) {
-      lastPos = i;
-      i += instrLen(code, i);
-    }
-    return code[lastPos] & 0xFF;
-  }
-
-  // Returns the byte length of the instruction at code[pos].
-  private static int instrLen(byte[] code, int pos) {
-    int op = code[pos] & 0xFF;
-    if (op <= 15
-        || (op >= 26 && op <= 53)
-        || (op >= 59 && op <= 131)
-        || op == 133
-        || (op >= 136 && op <= 147)
-        || op == 148
-        || (op >= 172 && op <= 177)
-        || op == 190
-        || op == 191
-        || op == 194
-        || op == 195) {
-      return 1;
-    }
-    switch (op) {
-      case 16:
-      case 18:
-      case 21:
-      case 22:
-      case 23:
-      case 24:
-      case 25:
-      case 54:
-      case 55:
-      case 56:
-      case 57:
-      case 58:
-      case 132:
-      case 169:
-      case 188:
-        return 2;
-      case 17:
-      case 19:
-      case 20:
-      case 153:
-      case 154:
-      case 155:
-      case 156:
-      case 157:
-      case 158:
-      case 159:
-      case 160:
-      case 161:
-      case 162:
-      case 163:
-      case 164:
-      case 165:
-      case 166:
-      case 167:
-      case 168:
-      case 178:
-      case 179:
-      case 180:
-      case 181:
-      case 182:
-      case 183:
-      case 184:
-      case 187:
-      case 189:
-      case 192:
-      case 193:
-      case 197:
-      case 198:
-      case 199:
-        return 3;
-      case 185:
-      case 186:
-      case 200:
-      case 201:
-        return 5;
-      default:
-        return 1;
-    }
   }
 
   // Returns the index of the outermost LOGICAL_AND or LOGICAL_OR in a postfix token list,
