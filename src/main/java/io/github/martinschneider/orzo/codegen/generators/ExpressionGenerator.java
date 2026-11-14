@@ -703,14 +703,17 @@ public class ExpressionGenerator {
                 && !deferNarrowing
                 && !(isNonPrimitive(varType) && isNonPrimitive(type))
                 && !(isNonPrimitive(varType) && curr.next != null)
-                // A numeric operand can't be converted straight to boolean (that's only ever
-                // valid as the *result* of a comparison, not an operand's own type) — e.g. the
-                // `h1` in "boolean same = h1 == h2;" shouldn't be coerced to boolean just because
-                // the declaration's target type is boolean; the comparator later in the token
-                // stream is what actually produces the boolean result.
+                // An operand can't be converted straight to boolean (that's only ever valid as
+                // the *result* of a comparison, not an operand's own type, with the one real
+                // exception being unboxing java.lang.Boolean) — e.g. the `h1` in
+                // "boolean same = h1 == h2;" or the `argType` in
+                // "count += (argType != null && argType.equals(\"long\")) ? 2 : 1;" shouldn't be
+                // coerced to boolean just because the surrounding declaration/compound-assignment
+                // target type is boolean-ish; a comparator/logical-op later in the token stream
+                // is what actually produces the boolean result.
                 && !(BOOLEAN.equals(type)
                     && !BOOLEAN.equals(varType)
-                    && TypeUtils.isPrimitive(varType))) {
+                    && !"java.lang.Boolean".equals(varType))) {
               // Defer primitive→String conversion to the PLUS operator so that arithmetic
               // sub-expressions (e.g. n+1 in "sum="+(n+1)) are computed before converting.
               if (STRING.equals(type) && TypeUtils.isPrimitive(varType)) {

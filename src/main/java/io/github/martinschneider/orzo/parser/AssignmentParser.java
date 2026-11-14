@@ -34,6 +34,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
+import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.util.ArrayList;
@@ -51,6 +52,33 @@ public class AssignmentParser implements ProdParser<Assignment> {
     List<Identifier> left = new ArrayList<>();
     List<Expression> right = new ArrayList<>();
     int idx = tokens.idx();
+    // Non-destructive lookahead: if this looks like "Type.Name varName" (a declaration, e.g.
+    // "Argument other = ..." or "io.pkg.Argument other = ..."), bail out before the dotted-chain
+    // loop below, which *removes* DOT/Identifier tokens as it merges them into a Identifier.next
+    // chain — if that mutation runs and we only then discover this isn't an assignment, the
+    // removed tokens are gone for good even after resetting tokens.idx() back to `idx`.
+    if (tokens.curr() instanceof Identifier) {
+      int scanIdx = tokens.idx();
+      while (tokens.peekNext().eq(sym(DOT))) {
+        tokens.next(); // move to DOT
+        // The last segment of a built-in-sounding FQN (e.g. "java.lang.String") lexes as a
+        // Type token, not an Identifier — Type.BASIC_TYPES includes "String" alongside the
+        // primitives.
+        if (!(tokens.peekNext() instanceof Identifier) && !(tokens.peekNext() instanceof Type)) {
+          break;
+        }
+        tokens.next(); // move to the next segment
+      }
+      String lastSegment = tokens.curr().toString();
+      boolean looksLikeDeclaration =
+          !lastSegment.isEmpty()
+              && Character.isUpperCase(lastSegment.charAt(0))
+              && tokens.peekNext() instanceof Identifier;
+      tokens.setIdx(scanIdx);
+      if (looksLikeDeclaration) {
+        return null;
+      }
+    }
     while (tokens.curr() instanceof Identifier || tokens.curr().eq(sym(COMMA))) {
       if (tokens.curr() instanceof Identifier) {
         Identifier id = (Identifier) tokens.curr();

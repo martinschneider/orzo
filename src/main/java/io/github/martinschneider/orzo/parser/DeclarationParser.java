@@ -8,6 +8,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
@@ -102,6 +103,35 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
     } else if (tokens.curr() instanceof Identifier
         && ctx.importMap.containsKey(tokens.curr().toString())) {
       type = new Type(ctx.importMap.get(tokens.curr().toString()));
+    } else if (tokens.curr() instanceof Identifier && tokens.peekNext().eq(sym(DOT))) {
+      // Fully-qualified type name, e.g.
+      // "io.github.martinschneider.orzo.parser.productions.Argument".
+      // Scan the dotted chain; if the last segment starts uppercase, treat the whole thing as an
+      // already-qualified type and use it as-is. Otherwise backtrack — this wasn't a type at all
+      // (e.g. a dotted expression in a position this branch can't tell apart from a declaration).
+      int scanStart = tokens.idx();
+      StringBuilder fqn = new StringBuilder(tokens.curr().toString());
+      boolean validChain = true;
+      while (tokens.peekNext().eq(sym(DOT))) {
+        int beforeDot = tokens.idx();
+        tokens.next();
+        // The last segment of a built-in-sounding FQN (e.g. "java.lang.String") lexes as a
+        // Type token, not an Identifier — Type.BASIC_TYPES includes "String" alongside the
+        // primitives.
+        if (!(tokens.peekNext() instanceof Identifier) && !(tokens.peekNext() instanceof Type)) {
+          tokens.setIdx(beforeDot);
+          validChain = false;
+          break;
+        }
+        tokens.next();
+        fqn.append('.').append(tokens.curr().toString());
+      }
+      String lastSegment = tokens.curr().toString();
+      if (validChain && !lastSegment.isEmpty() && Character.isUpperCase(lastSegment.charAt(0))) {
+        type = new Type(fqn.toString());
+      } else {
+        tokens.setIdx(scanStart);
+      }
     } else if (tokens.curr() instanceof Identifier
         && !tokens.curr().toString().isEmpty()
         && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
