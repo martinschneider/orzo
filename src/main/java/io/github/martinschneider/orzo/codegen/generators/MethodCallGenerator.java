@@ -636,10 +636,15 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         method = findMethodViaReflectionTyped(resolvedType, methodName, types);
       }
     }
-    // Bare-name fallback (for method calls where type info is unavailable)
-    if (method == null) {
-      method = findMatchingMethod(methodName, types);
-    }
+    // No bare-name ("implicit this") fallback here: generateChained is only ever called for a
+    // genuine chain continuation (the receiver is always whatever the previous call in the chain
+    // returned, left on the stack), never an implicit-this call — so if the receiver-type-based
+    // lookups above all failed (e.g. a generic method's return erased to Object, so receiverType
+    // is a useless "java.lang.Object"), falling back to a same-named method on the *enclosing*
+    // class is never correct. It previously did exactly that silently, invoking the wrong method
+    // with mismatched semantics instead of raising a compile error (root-caused via
+    // "reg.get(x.getClass()).generate(x)" picking an unrelated this.generate(...) and
+    // VerifyError-ing at runtime instead of failing to compile).
     // Handle dotted method name as field chain + method (e.g. "val.toString" on Token)
     if (method == null && methodName.contains(".")) {
       int lastDotInName = methodName.lastIndexOf('.');
