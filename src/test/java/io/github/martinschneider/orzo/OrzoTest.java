@@ -79,6 +79,7 @@ public class OrzoTest {
         args(list("tests/BitShifts")),
         args(list("tests/UnsignedRightShift")),
         args(list("tests/CompoundAssignments")),
+        args(list("tests/CompoundAssignTernary")),
         args(list("tests/BitOperators")),
         args(list("examples/RussianPeasant")),
         args(list("tests/IntArrays")),

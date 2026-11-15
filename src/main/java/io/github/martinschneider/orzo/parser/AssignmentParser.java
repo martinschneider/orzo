@@ -27,6 +27,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
@@ -34,6 +36,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
+import io.github.martinschneider.orzo.lexer.tokens.Operators;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -122,60 +126,27 @@ public class AssignmentParser implements ProdParser<Assignment> {
         tokens.setIdx(idx);
         return null;
       } else if (tokens.curr().eq(op(PLUS_ASSIGN))) {
-        tokens.insert(op(PLUS));
-        tokens.insert(left.get(0));
-        tokens.insert(op(ASSIGN));
-        tokens.next();
+        rewriteCompoundAssign(tokens, PLUS, left.get(0));
       } else if (tokens.curr().eq(op(MINUS_ASSIGN))) {
-        tokens.insert(op(MINUS));
-        tokens.insert(left.get(0));
-        tokens.insert(op(ASSIGN));
-        tokens.next();
+        rewriteCompoundAssign(tokens, MINUS, left.get(0));
       } else if (tokens.curr().eq(op(TIMES_ASSIGN))) {
-        tokens.insert(op(TIMES));
-        tokens.insert(left.get(0));
-        tokens.insert(op(ASSIGN));
-        tokens.next();
+        rewriteCompoundAssign(tokens, TIMES, left.get(0));
       } else if (tokens.curr().eq(op(DIV_ASSIGN))) {
-        tokens.insert(op(DIV));
-        tokens.insert(left.get(0));
-        tokens.insert(op(ASSIGN));
-        tokens.next();
+        rewriteCompoundAssign(tokens, DIV, left.get(0));
       } else if (tokens.curr().eq(op(MOD_ASSIGN))) {
-        tokens.insert(op(MOD));
-        tokens.insert(left.get(0));
-        tokens.insert(op(ASSIGN));
-        tokens.next();
+        rewriteCompoundAssign(tokens, MOD, left.get(0));
       } else if (tokens.curr().eq(op(LSHIFT_ASSIGN))) {
-        tokens.insert(op(LSHIFT));
-        tokens.insert(left.get(0));
-        tokens.insert(op(ASSIGN));
-        tokens.next();
+        rewriteCompoundAssign(tokens, LSHIFT, left.get(0));
       } else if (tokens.curr().eq(op(RSHIFT_ASSIGN))) {
-        tokens.insert(op(RSHIFT));
-        tokens.insert(left.get(0));
-        tokens.insert(op(ASSIGN));
-        tokens.next();
+        rewriteCompoundAssign(tokens, RSHIFT, left.get(0));
       } else if (tokens.curr().eq(op(RSHIFTU_ASSIGN))) {
-        tokens.insert(op(RSHIFTU));
-        tokens.insert(left.get(0));
-        tokens.insert(op(ASSIGN));
-        tokens.next();
+        rewriteCompoundAssign(tokens, RSHIFTU, left.get(0));
       } else if (tokens.curr().eq(op(BITWISE_AND_ASSIGN))) {
-        tokens.insert(op(BITWISE_AND));
-        tokens.insert(left.get(0));
-        tokens.insert(op(ASSIGN));
-        tokens.next();
+        rewriteCompoundAssign(tokens, BITWISE_AND, left.get(0));
       } else if (tokens.curr().eq(op(BITWISE_OR_ASSIGN))) {
-        tokens.insert(op(BITWISE_OR));
-        tokens.insert(left.get(0));
-        tokens.insert(op(ASSIGN));
-        tokens.next();
+        rewriteCompoundAssign(tokens, BITWISE_OR, left.get(0));
       } else if (tokens.curr().eq(op(BITWISE_XOR_ASSIGN))) {
-        tokens.insert(op(BITWISE_XOR));
-        tokens.insert(left.get(0));
-        tokens.insert(op(ASSIGN));
-        tokens.next();
+        rewriteCompoundAssign(tokens, BITWISE_XOR, left.get(0));
       } else {
         tokens.prev();
         return null;
@@ -197,5 +168,41 @@ public class AssignmentParser implements ProdParser<Assignment> {
     ctx.errors.tokenIdx = tokens.idx();
     tokens.setIdx(idx);
     return null;
+  }
+
+  // Rewrites "lhs OP= rhs" to "lhs = lhs OP (rhs)" at the raw token level. The parenthesis
+  // around rhs is required: without it, a lower-precedence construct in rhs (e.g. a trailing
+  // ternary "? :") would swallow the inserted "lhs OP" into its own condition/branch instead of
+  // being applied to the ternary's result, since the rewritten tokens are fed back into the same
+  // expression parser with no memory of where the original rhs started.
+  private void rewriteCompoundAssign(TokenList tokens, Operators arithOp, Identifier left) {
+    tokens.insert(sym(LPAREN));
+    tokens.insert(op(arithOp));
+    tokens.insert(left);
+    tokens.insert(op(ASSIGN));
+    tokens.next();
+    // rhs ends at the statement's top-level SEMICOLON, or — for a for-loop increment clause,
+    // which has no trailing semicolon (e.g. "for (...; ...; i += 2)") — at the first RPAREN that
+    // isn't balanced by one of rhs's own LPARENs (the loop header's closing paren). Start the
+    // scan past our own synthetic LPAREN (the 4 tokens just inserted are, in order: ASSIGN, left,
+    // arithOp, LPAREN) — depth==0 means "no paren opened by the original rhs is still open",
+    // not counting our own wrapper paren.
+    int depth = 0;
+    int rhsEnd = tokens.idx() + 4;
+    while (rhsEnd < tokens.list().size()) {
+      Token curr = tokens.get(rhsEnd);
+      if (curr.eq(sym(LPAREN))) {
+        depth++;
+      } else if (curr.eq(sym(RPAREN))) {
+        if (depth == 0) {
+          break;
+        }
+        depth--;
+      } else if (depth == 0 && curr.eq(sym(SEMICOLON))) {
+        break;
+      }
+      rhsEnd++;
+    }
+    tokens.insert(rhsEnd, sym(RPAREN));
   }
 }
