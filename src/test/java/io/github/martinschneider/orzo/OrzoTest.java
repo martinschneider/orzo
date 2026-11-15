@@ -96,6 +96,7 @@ public class OrzoTest {
         args(list("tests/ObjectUtilsUsage", "tests/ObjectUtilsUsagePoint")),
         args(list("tests/ComparisonAsValue")),
         args(list("tests/FullyQualifiedTypeDeclaration")),
+        args(list("tests/BoxedForEach")),
         args(list("examples/QuickSort")),
         /** args(list("examples/MergeSort")), */
         args(list("tests/Chars")),
