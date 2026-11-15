@@ -47,6 +47,7 @@ public class OrzoTest {
         args(list("examples/HelloWorld")),
         args(list("tests/IntegerConstants")),
         args(list("tests/VariableAssignments")),
+        args(list("tests/AutoboxAssignment")),
         args(list("tests/IntegerExpressions")),
         args(list("tests/IfConditions")),
         args(list("tests/IfElseConditions")),

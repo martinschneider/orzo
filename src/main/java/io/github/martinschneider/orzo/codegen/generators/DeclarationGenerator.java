@@ -8,6 +8,7 @@ import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -49,9 +50,21 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
         }
         ctx.exprGen.eval(out, decl.type, decl.val);
         String actualType = ctx.opStack.type();
-        if (actualType != null
-            && !TypeUtils.isPrimitive(actualType)
-            && !TypeUtils.isPrimitive(decl.type)) {
+        // Primitive<->primitive mismatches are already handled by eval()'s own widening (it was
+        // given decl.type as its target-type hint). The two remaining cases needing an explicit
+        // conversion: autobox (e.g. "Integer x = 5;" — actualType primitive, decl.type a boxed
+        // reference type), or a CHECKCAST for a generic/erased method returning a wider reference
+        // type than the variable's declared type (both sides reference types but unequal).
+        boolean needsAutobox =
+            actualType != null
+                && TypeUtils.isPrimitive(actualType)
+                && !TypeUtils.isPrimitive(decl.type);
+        boolean needsRefCast =
+            actualType != null
+                && !actualType.equals(decl.type)
+                && !TypeUtils.isPrimitive(actualType)
+                && !TypeUtils.isPrimitive(decl.type);
+        if (needsAutobox || needsRefCast) {
           ctx.basicGen.convert1(out, actualType, decl.type);
         }
       } else {
@@ -127,6 +140,10 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
         out.write(ANEWARRAY);
         out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmClass));
       }
+      // NEWARRAY/ANEWARRAY consumes the dimension int and produces an array reference;
+      // opStack still had the dimension's int on top, so swap it for the resulting ref type.
+      ctx.opStack.pop();
+      ctx.opStack.push(REF);
     } else {
       // TODO:
     }

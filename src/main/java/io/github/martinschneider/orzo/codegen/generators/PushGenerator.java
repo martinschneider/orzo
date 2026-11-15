@@ -144,7 +144,6 @@ public class PushGenerator {
   private HasOutput bipush(DynamicByteArray out, int number) {
     out.write(BIPUSH);
     out.write((byte) number);
-    ctx.opStack.push(BYTE);
     return out;
   }
 }

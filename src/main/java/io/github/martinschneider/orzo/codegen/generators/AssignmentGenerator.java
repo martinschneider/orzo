@@ -123,12 +123,23 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
                 ctx.loadGen.loadReference(out, varInfo.objectRef);
               }
               ctx.exprGen.eval(out, type, right);
-              // Insert CHECKCAST when a generic/erased method returns a wider reference type
-              // than the variable's declared type (e.g. Object → String via Deque<String>.pop()).
+              // Primitive<->primitive mismatches are already handled by eval()'s own widening
+              // (it was given `type` as its target-type hint). The two remaining cases needing
+              // an explicit conversion: autobox (e.g. "Integer x; x = 5;" — actualType primitive,
+              // declared type a boxed reference type), or a CHECKCAST for a generic/erased method
+              // returning a wider reference type than the variable's declared type (e.g.
+              // Object -> String via Deque<String>.pop(); both sides reference, unequal).
               String actualType = ctx.opStack.type();
-              if (actualType != null
-                  && !TypeUtils.isPrimitive(actualType)
-                  && !TypeUtils.isPrimitive(type)) {
+              boolean needsAutobox =
+                  actualType != null
+                      && TypeUtils.isPrimitive(actualType)
+                      && !TypeUtils.isPrimitive(type);
+              boolean needsRefCast =
+                  actualType != null
+                      && !actualType.equals(type)
+                      && !TypeUtils.isPrimitive(actualType)
+                      && !TypeUtils.isPrimitive(type);
+              if (needsAutobox || needsRefCast) {
                 ctx.basicGen.convert1(out, actualType, type);
               }
               ctx.storeGen.store(out, varInfo);

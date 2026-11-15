@@ -951,6 +951,10 @@ public class ExpressionGenerator {
         out.write(ANEWARRAY);
         out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmClass));
       }
+      // NEWARRAY/ANEWARRAY consumes the dimension int and produces an array reference;
+      // opStack still had the dimension's int on top, so swap it for the resulting ref type.
+      ctx.opStack.pop();
+      ctx.opStack.push(REF);
     } else {
       // TODO:
     }
