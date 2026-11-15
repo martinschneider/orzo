@@ -3,6 +3,7 @@ package io.github.martinschneider.orzo.codegen.generators;
 import static io.github.martinschneider.orzo.codegen.ByteUtils.shortToByteArray;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFNE;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ACMPEQ;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPEQ;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKEVIRTUAL;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
@@ -15,6 +16,7 @@ import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -60,6 +62,11 @@ public class SwitchGenerator implements StatementGenerator<SwitchStatement> {
     }
 
     boolean isStringSwitch = STRING.equals(switchType);
+    // Enum (or any other reference-typed) switch subject: the case labels are loaded as object
+    // references (e.g. Color.RED), so comparing them needs reference equality (IF_ACMPEQ), not
+    // IF_ICMPEQ — enum constants are singletons, so reference comparison is also semantically
+    // correct, with no need to go via .ordinal()/.name().
+    boolean isRefSwitch = !isStringSwitch && !TypeUtils.isPrimitive(switchType);
 
     // Emit check blocks: for each non-default case, for each label → IFNE/IF_ICMPEQ placeholder
     // Record (absolute position of IFNE opcode, target case index)
@@ -78,11 +85,13 @@ public class SwitchGenerator implements StatementGenerator<SwitchStatement> {
           out.write(IFNE);
           out.write((short) 0); // placeholder
         } else {
-          // int/byte/short/char switch: load tmp and label, compare with if_icmpeq
+          // int/byte/short/char switch: load tmp and label, compare with if_icmpeq.
+          // enum (or other reference-typed) switch: compare the loaded references directly
+          // with if_acmpeq instead.
           ctx.loadGen.load(out, ctx.classIdMap.variables.get(id(tmpName)));
           ctx.exprGen.eval(out, switchType, label);
           checkPatches.add(new int[] {out.size(), i});
-          out.write(IF_ICMPEQ);
+          out.write(isRefSwitch ? IF_ACMPEQ : IF_ICMPEQ);
           out.write((short) 0); // placeholder
         }
       }
