@@ -235,7 +235,7 @@ public class OperatorMaps {
                   entry(INT, new byte[] {IF_ICMPLE}),
                   entry(BYTE, new byte[] {IF_ICMPLE}),
                   entry(SHORT, new byte[] {IF_ICMPLE}),
-                  entry(CHAR, new byte[] {IF_ICMPEQ}),
+                  entry(CHAR, new byte[] {IF_ICMPLE}),
                   entry(LONG, new byte[] {LCMP, IFLE}),
                   entry(FLOAT, new byte[] {FCMPG, IFLE}),
                   entry(DOUBLE, new byte[] {DCMPG, IFLE}))),

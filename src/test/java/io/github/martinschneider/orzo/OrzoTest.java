@@ -207,7 +207,8 @@ public class OrzoTest {
         args(list("tests/IfConditionScopeLeak")),
         args(list("tests/IfSlotReuseLoop")),
         args(list("tests/CharNotEqualAssignment")),
-        args(list("tests/SuperFieldShadowing", "tests/ParentFieldShadow")));
+        args(list("tests/SuperFieldShadowing", "tests/ParentFieldShadow")),
+        args(list("tests/CharLessEqual")));
   }
 
   @ParameterizedTest

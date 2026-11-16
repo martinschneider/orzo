@@ -8,11 +8,15 @@ clean_java_file() {
     local input_file="$1"
     local output_file="$2"
 
-    # Remove single-line comments (//), multi-line comments (/* */), and empty lines
-    sed -e '/\/\*/,/\*\//d' \
-        -e 's#//.*##' \
-        -e '/^[[:space:]]*$/d' \
-        "$input_file" > "$output_file"
+    # Remove /* */ comments (including /** */ javadoc) in one pass over the whole file:
+    # a line-based range delete (the previous approach) looks for the closing */
+    # starting on the NEXT line, so a self-contained one-liner like "/** doc */" swallows
+    # everything up to the next line that happens to contain */ - which deleted the whole
+    # scanDouble() method body here. Then strip // comments and empty lines.
+    perl -0777 -pe 's{/\*.*?\*/}{}gs' "$input_file" \
+        | sed -e 's#//.*##' \
+              -e '/^[[:space:]]*$/d' \
+        > "$output_file"
 }
 
 rm progress
