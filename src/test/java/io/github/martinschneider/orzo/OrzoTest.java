@@ -150,8 +150,7 @@ public class OrzoTest {
         args(list("tests/ArrayLength")),
         // TODO: support infinite loops
         // args(list("tests/InfiniteRepeat")),
-        // TODO: a local variable shadowing a field of the same name resolves inconsistently
-        // args(list("tests/VariableShadowsField")),
+        args(list("tests/VariableShadowsField")),
         args(list("tests/ArrayReturnType")),
         // Constructor call examples
         args(list("tests/Constructor")),
@@ -204,7 +203,11 @@ public class OrzoTest {
         args(list("tests/BreakContinueNested")),
         args(list("tests/ForEachBreakContinue")),
         args(list("tests/ClassLiteral")),
-        args(list("tests/MethodCallFieldAccess", "tests/Holder")));
+        args(list("tests/MethodCallFieldAccess", "tests/Holder")),
+        args(list("tests/IfConditionScopeLeak")),
+        args(list("tests/IfSlotReuseLoop")),
+        args(list("tests/CharNotEqualAssignment")),
+        args(list("tests/SuperFieldShadowing", "tests/ParentFieldShadow")));
   }
 
   @ParameterizedTest

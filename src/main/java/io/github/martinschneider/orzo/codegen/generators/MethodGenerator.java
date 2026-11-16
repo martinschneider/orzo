@@ -97,7 +97,7 @@ public class MethodGenerator {
         maxStackSize = (short) Math.max(maxStackSize, 6);
       }
       out.write(maxStackSize); // max stack size
-      out.write((short) (ctx.classIdMap.variables.localSize + 1)); // max local var size
+      out.write((short) (ctx.classIdMap.variables.localSizeMax + 1)); // max local var size
       out.write(codeLen);
       out.write(methodOut.flush());
       out.write((short) ctx.exceptionTable.size()); // exception table count

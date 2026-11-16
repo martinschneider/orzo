@@ -152,11 +152,13 @@ public class CodeGenerator {
     out.write((short) (methods.size() + bridges.size()));
     for (Method method : methods) {
       ctx.classIdMap.variables.localMap.clear();
+      ctx.classIdMap.variables.allLocalsBySlot.clear();
       ctx.classIdMap.variables.localSize = 0;
       if (!method.accFlags.contains(AccessFlag.ACC_STATIC)) {
         // Slot 0 is reserved for 'this' in all non-static methods (including constructors)
         ctx.classIdMap.variables.localSize = 1;
       }
+      ctx.classIdMap.variables.localSizeMax = ctx.classIdMap.variables.localSize;
       ctx.memberProc.processMethodArgs(method);
       ctx.memberProc.processLocalVars(method);
       ctx.methodGen.generate(out, method, clazz);

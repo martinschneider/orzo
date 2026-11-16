@@ -6,6 +6,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.IfBlock;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -34,6 +35,14 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
     List<DynamicByteArray> condOutputs = new ArrayList<>();
     List<Integer> bodyEtStarts = new ArrayList<>();
     List<Integer> bodyEtEnds = new ArrayList<>();
+    // Snapshot local-variable scope once for the whole if/else-if chain: each block's body is
+    // generated before its own condition (needed to size the branch jump below), so a variable
+    // declared inside one block's body must not leak into that same block's condition (which
+    // precedes it in source), into a sibling else-if's condition/body, or past the if-statement
+    // altogether — restoring after each body generation keeps every block isolated.
+    java.util.Map<String, VariableInfo> localMapSnapshot =
+        new java.util.HashMap<>(ctx.classIdMap.variables.localMap);
+    int localSizeSnapshot = ctx.classIdMap.variables.localSize;
     for (int i = 0; i < ifStmt.ifBlks.size(); i++) {
       IfBlock ifBlock = ifStmt.ifBlks.get(i);
       int etStart = ctx.exceptionTable.size();
@@ -43,6 +52,9 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
       }
       bodyEtStarts.add(etStart);
       bodyEtEnds.add(ctx.exceptionTable.size());
+      ctx.classIdMap.variables.localMap.clear();
+      ctx.classIdMap.variables.localMap.putAll(localMapSnapshot);
+      ctx.classIdMap.variables.localSize = localSizeSnapshot;
       DynamicByteArray conditionOut = new DynamicByteArray();
       if (ifBlock.cond != null) { // null for else blocks
         boolean bodyReturns = blockAlwaysReturns(ifBlock.body);

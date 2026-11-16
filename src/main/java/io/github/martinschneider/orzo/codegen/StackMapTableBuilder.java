@@ -446,7 +446,12 @@ public class StackMapTableBuilder {
     int paramSlots = paramSlotCount(method);
     boolean isStatic = method.accFlags.contains(AccessFlag.ACC_STATIC);
 
-    List<VariableInfo> sorted = new ArrayList<>(ctx.classIdMap.variables.localMap.values());
+    // Use allLocalsBySlot, not localMap: localMap is scope-restored after a nested block (e.g.
+    // IfGenerator restores it per if-block so a block-local doesn't leak into resolution of
+    // code outside its block), so by the time this runs — once, after the whole method's
+    // bytecode is generated — localMap may no longer contain a local that's very much still
+    // live in portions of the bytecode we're building frames for.
+    List<VariableInfo> sorted = new ArrayList<>(ctx.classIdMap.variables.allLocalsBySlot.values());
     sorted.sort(Comparator.comparingInt(v -> v.idx));
 
     Map<Integer, VariableInfo> slotToVar = new HashMap<>();

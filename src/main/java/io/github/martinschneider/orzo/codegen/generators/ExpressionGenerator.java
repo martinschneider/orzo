@@ -632,7 +632,22 @@ public class ExpressionGenerator {
         } else if ("this".equals(curr.val.toString()) || "super".equals(curr.val.toString())) {
           ctx.loadGen.loadReference(out, (short) 0);
           ctx.opStack.push(REF);
-          returnType = REF;
+          // Track the real class name here, not the generic REF marker (used for opStack
+          // bookkeeping elsewhere) — a following ".fieldName" segment resolves its instance
+          // field via FieldProcessor.getInstanceFieldMap(returnType, ...), which can't look
+          // anything up for a type literally named "REF". With it left as REF, that lookup
+          // silently found nothing and fell back to whatever classIdMap.variables.get() found
+          // instead — the right field normally (fieldMap has no shadowing local), but silently
+          // the wrong LOCAL variable whenever one happened to shadow the field by name (e.g.
+          // "this.character" inside a method that also declares a local "character").
+          returnType =
+              "super".equals(curr.val.toString())
+                  ? (ctx.clazz != null
+                          && ctx.clazz.baseClass != null
+                          && !"java.lang.Object".equals(ctx.clazz.baseClass)
+                      ? ctx.clazz.baseClass
+                      : "java.lang.Object")
+                  : (ctx.clazz != null ? ctx.clazz.fqn() : REF);
           prevLoadedRef = true;
         } else {
           VariableInfo varInfo = ctx.classIdMap.variables.get(curr);

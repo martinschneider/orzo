@@ -156,7 +156,13 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
 
   public HasOutput assign(
       DynamicByteArray out, IdentifierMap variables, String type, Identifier id) {
-    if (!variables.containsKey(id)) {
+    // This registers a NEW local variable (called only from declaration-generating code —
+    // DeclarationGenerator, ForEachGenerator), so the check must be against localMap only: a
+    // field of the same name existing elsewhere must not stop a shadowing local from getting
+    // its own slot, or every reference to it inside this scope silently falls back to the field
+    // (containsKey() checks fieldMap too, which did exactly that for e.g. a local "char
+    // character;" in a method of a class that also has a field "character").
+    if (!variables.localMap.containsKey(id.val.toString())) {
       variables.putLocal(
           id,
           new VariableInfo(

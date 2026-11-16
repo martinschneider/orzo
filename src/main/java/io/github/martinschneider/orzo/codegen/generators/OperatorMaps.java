@@ -181,7 +181,7 @@ public class OperatorMaps {
                   entry(INT, new byte[] {IF_ICMPNE}),
                   entry(BYTE, new byte[] {IF_ICMPNE}),
                   entry(SHORT, new byte[] {IF_ICMPNE}),
-                  entry(CHAR, new byte[] {IF_ICMPEQ}),
+                  entry(CHAR, new byte[] {IF_ICMPNE}),
                   entry(BOOLEAN, new byte[] {IF_ICMPNE}),
                   entry(LONG, new byte[] {LCMP, IFNE}),
                   entry(FLOAT, new byte[] {FCMPL, IFNE}),
