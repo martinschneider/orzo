@@ -123,6 +123,40 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
           method = findMethodViaReflection(resolvedClassName, simpleMethod, types.size());
         }
       }
+      // Handle a bare statically-imported field used as a receiver (e.g. "import static
+      // Type.BASIC_TYPES;" then "BASIC_TYPES.contains(x)") — receiverName has no dot here since
+      // the source never names the declaring class, unlike the ClassName.FIELD.method() case
+      // below.
+      if (method == null && receiverVar == null && ctx.staticFieldMap != null) {
+        io.github.martinschneider.orzo.codegen.FieldProcessor.StaticField staticField =
+            ctx.staticFieldMap.get(receiverName);
+        if (staticField != null) {
+          method = findMethodViaReflectionTyped(staticField.fieldType, simpleMethod, types);
+          if (method == null) {
+            method = findMethodViaReflection(staticField.fieldType, simpleMethod, types.size());
+          }
+          if (method != null) {
+            String jvmClass = staticField.className.replace('.', '/');
+            String fieldDescr = TypeUtils.descr(staticField.fieldType);
+            ctx.constPool.addClass(jvmClass);
+            ctx.constPool.addFieldRef(jvmClass, staticField.fieldName, fieldDescr);
+            out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC);
+            out.write(
+                ctx.constPool.indexOf(
+                    io.github.martinschneider.orzo.codegen.constants.ConstantTypes
+                        .CONSTANT_FIELDREF,
+                    jvmClass,
+                    staticField.fieldName,
+                    fieldDescr));
+            ctx.opStack.push(staticField.fieldType);
+            return generateChained(
+                out,
+                classIdMap,
+                new MethodCall(simpleMethod, methodCall.params),
+                staticField.fieldType);
+          }
+        }
+      }
       // Resolve receiver as a dotted field chain (e.g., "id.val" → load id, getfield val)
       if (method == null
           && receiverVar == null

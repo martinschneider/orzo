@@ -414,6 +414,9 @@ public class Lexer {
     if ((character == '\'')) {
       int c;
       if ((c = inputReader.read()) != -1) {
+        if (c == '\\') {
+          c = unescape(inputReader.read());
+        }
         tokenList.add(chr((char) c));
       }
       if ((c = (char) inputReader.read()) != '\'') {
@@ -424,10 +427,35 @@ public class Lexer {
     buffer.setLength(0);
   }
 
+  // Resolves the character after a backslash in a char/string literal escape sequence.
+  private char unescape(int c) {
+    switch (c) {
+      case 'n':
+        return '\n';
+      case 't':
+        return '\t';
+      case 'r':
+        return '\r';
+      case 'b':
+        return '\b';
+      case 'f':
+        return '\f';
+      case '0':
+        return '\0';
+      default:
+        return (char) c;
+    }
+  }
+
   private void scanStr() throws IOException {
     if ((character == '"')) {
       int c;
       while ((c = inputReader.read()) != -1) {
+        if (c == '\\') {
+          character = unescape(inputReader.read());
+          buffer.append(character);
+          continue;
+        }
         if ((character = (char) c) == '"') {
           break;
         }

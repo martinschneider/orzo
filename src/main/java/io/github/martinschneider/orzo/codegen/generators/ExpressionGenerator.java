@@ -4,6 +4,8 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ANEWARRAY;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2_X1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP_X1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_1;
@@ -100,10 +102,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class ExpressionGenerator {
   private static final String LOGGER_NAME = "expression code generator";
@@ -285,7 +285,7 @@ public class ExpressionGenerator {
     byte lastBranchOpCode = 0;
     // Pre-scan: find assignment expressions (var = expr) where lhs is a simple local variable.
     // These need special handling: skip loading lhs old value; DUP+STORE rhs at ASSIGN.
-    Set<Integer> skipLoad = new HashSet<>();
+    Map<Integer, VariableInfo> skipLoad = new HashMap<>();
     Map<Integer, VariableInfo> assignTargets = findAssignmentTargets(tokens, skipLoad);
     // True right after processing an array-element access (e.g. "arr[0]"): the element type
     // (e.g. "byte") just got assigned to `type` below for codegen purposes, but it must not be
@@ -301,8 +301,15 @@ public class ExpressionGenerator {
         // operands in
         // a different order. Therefore, we skip processing them here.
       } else if (token instanceof Identifier) {
-        if (skipLoad.contains(i)) {
-          // LHS of assignment expression: skip loading old value; ASSIGN handler will DUP+STORE
+        if (skipLoad.containsKey(i)) {
+          // LHS of assignment expression: skip loading old value; ASSIGN handler will DUP+STORE.
+          // An instance field target additionally needs its "this" reference pushed now (before
+          // the RHS is evaluated) so PUTFIELD sees [this, rhsValue] in the right order later.
+          VariableInfo skipTarget = skipLoad.get(i);
+          if (skipTarget.isField && !skipTarget.accFlags.contains(AccessFlag.ACC_STATIC)) {
+            ctx.loadGen.loadReference(out, (short) 0);
+            ctx.opStack.push(REF);
+          }
         } else {
           type = handleId(out, ctx.classIdMap, tokens, i, token, type);
           exprTypeStack.push(type);
@@ -414,10 +421,22 @@ public class ExpressionGenerator {
             VariableInfo target = assignTargets.get(i);
             String rhsType = ctx.opStack.type();
             boolean isWide = LONG.equals(rhsType) || DOUBLE.equals(rhsType);
-            out.write(isWide ? DUP2 : DUP);
+            boolean instanceField =
+                target.isField && !target.accFlags.contains(AccessFlag.ACC_STATIC);
+            if (instanceField) {
+              // Stack is [this, rhsValue] (loadReference(this) was emitted when the LHS token
+              // was skipped). DUP_X1/DUP2_X1 duplicates rhsValue below "this" so PUTFIELD sees
+              // [this, rhsValue] and the duplicate is left as the expression's value.
+              out.write(isWide ? DUP2_X1 : DUP_X1);
+            } else {
+              out.write(isWide ? DUP2 : DUP);
+            }
             ctx.opStack.push(rhsType != null ? rhsType : REF);
             ctx.storeGen.store(out, target);
             ctx.opStack.pop();
+            if (instanceField) {
+              ctx.opStack.pop(); // the "this" reference, consumed by PUTFIELD
+            }
             type = rhsType != null ? rhsType : REF;
           }
           // else: complex LHS (field/array) — fall through, do nothing (unsupported)
@@ -518,7 +537,13 @@ public class ExpressionGenerator {
           }
           if (opCode != null) {
             ctx.opStack.pop2();
-            ctx.opStack.push(type);
+            // A reverseComp comparator emits a bare branch opcode (its 2-byte offset is patched
+            // in later by the caller — If/While/For/ternary) that consumes both operands and
+            // leaves no value on the real JVM stack; only push a tracked value for the other
+            // cases (arithmetic ops, and value-context comparators materialized via evalAsValue).
+            if (!(reverseComp && COMPARATORS.contains(op))) {
+              ctx.opStack.push(type);
+            }
             exprTypeStack.pop2();
             exprTypeStack.push(type);
             if (COMPARATORS.contains(op)) {
@@ -1263,6 +1288,11 @@ public class ExpressionGenerator {
       Token t = tokens.get(i);
       if (t instanceof InstanceofToken) {
         // instanceof is postfix unary: consumes 1, produces 1 → no net stack change
+      } else if (t instanceof io.github.martinschneider.orzo.lexer.tokens.Type) {
+        // A bare cast type marker (e.g. "char" in "(char) expr"), emitted immediately before
+        // the expression it casts. The main eval() loop has no case for it at all — it's a
+        // pure no-op there (the narrowing/widening happens via the target-type hint passed to
+        // eval(), not by processing this token) — so it must not count as a leaf here either.
       } else if (t instanceof Operator) {
         Operators opType = ((Operator) t).opValue();
         if (opType == NEGATE
@@ -1277,17 +1307,26 @@ public class ExpressionGenerator {
       } else {
         balance++; // leaf token (identifier, literal, etc.)
       }
-      if (balance == 1) return i;
+      if (balance == 1) {
+        // A cast's Type marker always sits immediately before the expression it casts, as one
+        // glued-together unit — swallow it into this operand's start too, since the backward
+        // scan above stops at the inner expression's own leaf without ever looking at it.
+        while (i > 0
+            && tokens.get(i - 1) instanceof io.github.martinschneider.orzo.lexer.tokens.Type) {
+          i--;
+        }
+        return i;
+      }
     }
     return 0;
   }
 
   // Scan the postfix token list for ASSIGN operators where the LHS is a single simple local
-  // variable. Returns a map from ASSIGN token index to the target VariableInfo, and populates
-  // skipLoad with the indices of LHS tokens that should NOT be loaded (since the assignment
-  // handler will DUP+STORE the RHS instead).
+  // variable or field. Returns a map from ASSIGN token index to the target VariableInfo, and
+  // populates skipLoad with the indices of LHS tokens that should NOT be loaded (since the
+  // assignment handler will DUP+STORE the RHS instead).
   private Map<Integer, VariableInfo> findAssignmentTargets(
-      List<Token> tokens, Set<Integer> skipLoad) {
+      List<Token> tokens, Map<Integer, VariableInfo> skipLoad) {
     Map<Integer, VariableInfo> result = new HashMap<>();
     for (int i = 0; i < tokens.size(); i++) {
       if (!(tokens.get(i) instanceof Operator)) continue;
@@ -1302,9 +1341,9 @@ public class ExpressionGenerator {
       Identifier lhsId = (Identifier) tokens.get(lStart);
       if (lhsId.next != null || lhsId.arrSel != null) continue;
       VariableInfo vi = ctx.classIdMap.variables.get(lhsId);
-      if (vi == null || vi.isField) continue;
+      if (vi == null) continue;
       result.put(i, vi);
-      skipLoad.add(lStart);
+      skipLoad.put(lStart, vi);
     }
     return result;
   }

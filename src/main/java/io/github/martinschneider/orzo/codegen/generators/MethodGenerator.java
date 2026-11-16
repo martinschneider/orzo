@@ -22,6 +22,7 @@ import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import io.github.martinschneider.orzo.parser.productions.SwitchCase;
 import io.github.martinschneider.orzo.parser.productions.SwitchStatement;
+import io.github.martinschneider.orzo.parser.productions.ThrowStatement;
 import io.github.martinschneider.orzo.parser.productions.TryStatement;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,7 +61,7 @@ public class MethodGenerator {
         }
         for (Statement stmt : method.body) {
           generateCode(methodOut, method, stmt);
-          if (stmt instanceof ReturnStatement) {
+          if (stmt instanceof ReturnStatement || stmt instanceof ThrowStatement) {
             returned = true;
           } else if (stmt instanceof TryStatement) {
             returned = tryStatementAlwaysReturns((TryStatement) stmt);
@@ -161,7 +162,8 @@ public class MethodGenerator {
     if (body == null || body.isEmpty()) {
       return false;
     }
-    return body.get(body.size() - 1) instanceof ReturnStatement;
+    Statement last = body.get(body.size() - 1);
+    return last instanceof ReturnStatement || last instanceof ThrowStatement;
   }
 
   public boolean startsWithCallToSuper(List<Statement> body) {

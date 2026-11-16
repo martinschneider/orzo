@@ -235,6 +235,7 @@ public class MethodParser implements ProdParser<Method> {
     body = null;
     if (!isInterface) {
       tokens.next();
+      skipThrowsClause(tokens);
       if (!tokens.curr().eq(sym(LBRACE))) {
         for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
         ctx.errors.tokenIdx = tokens.idx();
@@ -260,6 +261,7 @@ public class MethodParser implements ProdParser<Method> {
       body = new ArrayList<>();
     }
     tokens.next();
+    skipThrowsClause(tokens);
     if (tokens.curr().eq(sym(SEMICOLON))) {
       tokens.next();
     }
@@ -361,5 +363,25 @@ public class MethodParser implements ProdParser<Method> {
       }
     }
     return arguments.isEmpty() ? null : arguments;
+  }
+
+  // Orzo does not check exceptions, so a method's "throws T1, T2, ..." clause is parsed only to
+  // be discarded. "throws" lexes as a plain Identifier (there is no THROWS keyword token).
+  private void skipThrowsClause(TokenList tokens) {
+    if (tokens.curr() instanceof Identifier && "throws".equals(tokens.curr().val.toString())) {
+      tokens.next();
+      while (tokens.curr() instanceof Identifier) {
+        tokens.next();
+        while (tokens.curr().eq(sym(DOT))) {
+          tokens.next();
+          tokens.next();
+        }
+        if (tokens.curr().eq(sym(COMMA))) {
+          tokens.next();
+        } else {
+          break;
+        }
+      }
+    }
   }
 }
