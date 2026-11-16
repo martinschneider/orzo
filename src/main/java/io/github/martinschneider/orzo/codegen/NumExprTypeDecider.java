@@ -199,6 +199,13 @@ public class NumExprTypeDecider {
     if (arrayType != null) {
       return arrayType;
     }
+    // A string literal/value can only appear in Java mixed with other operand types via "+"
+    // string concatenation (e.g. "x=" + intVar) — there's no other valid combination — so its
+    // presence always means the overall expression is a String, regardless of what other
+    // numeric-looking types got collected from the individual tokens.
+    if (types.contains(STRING)) {
+      return STRING;
+    }
     if (types.contains(CHAR)) {
       return CHAR;
     } else if (types.contains(BOOLEAN)) {
@@ -215,8 +222,6 @@ public class NumExprTypeDecider {
       return SHORT;
     } else if (types.contains(BYTE)) {
       return BYTE;
-    } else if (types.contains(STRING)) {
-      return STRING;
     }
     // For reference types not matched above, return as-is rather than defaulting to INT
     for (String type : types) {

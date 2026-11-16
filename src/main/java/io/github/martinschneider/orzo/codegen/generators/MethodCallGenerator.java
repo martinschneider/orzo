@@ -767,46 +767,57 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       javaClassName = resolveClassName(javaClassName);
       Class<?> clazz = Class.forName(javaClassName);
       java.lang.reflect.Method bridgeCandidate = null;
-      for (java.lang.reflect.Method m : getMethodsIncludingNonPublic(clazz)) {
-        if (!m.getName().equals(methodName) || m.getParameterCount() != argTypes.size()) {
-          continue;
-        }
-        boolean compatible = true;
-        for (int i = 0; i < argTypes.size(); i++) {
-          if (!isArgTypeCompatible(argTypes.get(i), m.getParameters()[i].getType())) {
-            compatible = false;
-            break;
+      // Two passes: Class.getMethods() order is unspecified, so with only a widening-compatible
+      // check (e.g. char is also compatible with an int parameter, for "StringBuffer.append(C)"
+      // vs "append(I)") the FIRST compatible overload found could be the wrong one whenever an
+      // exact match also exists. Prefer an exact-type match on every parameter first; only fall
+      // back to widening-compatible matching if no exact match exists for any overload.
+      for (boolean exactOnly : new boolean[] {true, false}) {
+        for (java.lang.reflect.Method m : getMethodsIncludingNonPublic(clazz)) {
+          if (!m.getName().equals(methodName) || m.getParameterCount() != argTypes.size()) {
+            continue;
           }
+          boolean compatible = true;
+          for (int i = 0; i < argTypes.size(); i++) {
+            boolean ok =
+                exactOnly
+                    ? isExactTypeMatch(argTypes.get(i), m.getParameters()[i].getType())
+                    : isArgTypeCompatible(argTypes.get(i), m.getParameters()[i].getType());
+            if (!ok) {
+              compatible = false;
+              break;
+            }
+          }
+          if (!compatible) {
+            continue;
+          }
+          if (m.isBridge()) {
+            if (bridgeCandidate == null) bridgeCandidate = m;
+            continue;
+          }
+          List<Argument> args = new ArrayList<>();
+          for (java.lang.reflect.Parameter p : m.getParameters()) {
+            args.add(
+                new Argument(
+                    p.getType().getName(),
+                    io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
+          }
+          String returnType = m.getReturnType().getName();
+          if ("java.lang.String".equals(returnType)) {
+            returnType = STRING;
+          }
+          List<AccessFlag> accFlags = new ArrayList<>();
+          if (java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
+            accFlags.add(AccessFlag.ACC_STATIC);
+          }
+          return new Method(
+              javaClassName,
+              accFlags,
+              returnType,
+              io.github.martinschneider.orzo.lexer.tokens.Token.id(methodName),
+              args,
+              null);
         }
-        if (!compatible) {
-          continue;
-        }
-        if (m.isBridge()) {
-          if (bridgeCandidate == null) bridgeCandidate = m;
-          continue;
-        }
-        List<Argument> args = new ArrayList<>();
-        for (java.lang.reflect.Parameter p : m.getParameters()) {
-          args.add(
-              new Argument(
-                  p.getType().getName(),
-                  io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
-        }
-        String returnType = m.getReturnType().getName();
-        if ("java.lang.String".equals(returnType)) {
-          returnType = STRING;
-        }
-        List<AccessFlag> accFlags = new ArrayList<>();
-        if (java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
-          accFlags.add(AccessFlag.ACC_STATIC);
-        }
-        return new Method(
-            javaClassName,
-            accFlags,
-            returnType,
-            io.github.martinschneider.orzo.lexer.tokens.Token.id(methodName),
-            args,
-            null);
       }
       // Fall back to bridge methods (e.g. StringBuilder.length() is a bridge on Java 21)
       if (bridgeCandidate != null) {
@@ -909,9 +920,15 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       case "int":
       case "byte":
       case "short":
-      case "char":
         return paramClass == int.class
             || paramClass == long.class
+            || paramClass == Integer.class
+            || paramClass == Object.class;
+      case "char":
+        return paramClass == char.class
+            || paramClass == int.class
+            || paramClass == long.class
+            || paramClass == Character.class
             || paramClass == Integer.class
             || paramClass == Object.class;
       case "long":
@@ -985,6 +1002,36 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       return paramClass.isAssignableFrom(argClass);
     } catch (ClassNotFoundException e) {
       return true; // unknown type: assume compatible
+    }
+  }
+
+  // Exact-type check used to prefer a precise overload (e.g. "char" -> append(char)) over a
+  // merely widening-compatible one (e.g. append(int)) when Class.getMethods() happens to return
+  // the latter first. Primitives must match their exact wrapper-free class; everything else
+  // falls back to isArgTypeCompatible's broader (reference-assignability) notion of a match.
+  private boolean isExactTypeMatch(String argType, Class<?> paramClass) {
+    if (argType == null) {
+      return false;
+    }
+    switch (argType) {
+      case "boolean":
+        return paramClass == boolean.class;
+      case "byte":
+        return paramClass == byte.class;
+      case "char":
+        return paramClass == char.class;
+      case "short":
+        return paramClass == short.class;
+      case "int":
+        return paramClass == int.class;
+      case "long":
+        return paramClass == long.class;
+      case "float":
+        return paramClass == float.class;
+      case "double":
+        return paramClass == double.class;
+      default:
+        return isArgTypeCompatible(argType, paramClass);
     }
   }
 

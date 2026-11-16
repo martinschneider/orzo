@@ -85,6 +85,9 @@ public class OrzoTest {
         args(list("tests/ChainedConstructorStatement")),
         args(list("tests/EmbeddedFieldAssignment")),
         args(list("tests/StaticImportMethodCall", "tests/StaticImportFieldHolder")),
+        args(list("tests/CharOverloadResolution")),
+        args(list("tests/AssignmentAsArgument")),
+        args(list("tests/StringConcatOverload")),
         args(list("tests/BitOperators")),
         args(list("examples/RussianPeasant")),
         args(list("tests/IntArrays")),
@@ -147,6 +150,8 @@ public class OrzoTest {
         args(list("tests/ArrayLength")),
         // TODO: support infinite loops
         // args(list("tests/InfiniteRepeat")),
+        // TODO: a local variable shadowing a field of the same name resolves inconsistently
+        // args(list("tests/VariableShadowsField")),
         args(list("tests/ArrayReturnType")),
         // Constructor call examples
         args(list("tests/Constructor")),

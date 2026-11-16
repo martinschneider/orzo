@@ -1331,9 +1331,11 @@ public class ExpressionGenerator {
     for (int i = 0; i < tokens.size(); i++) {
       if (!(tokens.get(i) instanceof Operator)) continue;
       if (((Operator) tokens.get(i)).opValue() != ASSIGN) continue;
-      // If ASSIGN is the last token, it's an outermost statement-level assignment whose result
-      // is not consumed by any outer operator. Storage is handled by AssignmentGenerator; skip.
-      if (i == tokens.size() - 1) continue;
+      // Note: an outer assignment statement's own "=" is never part of these tokens — it's
+      // consumed by AssignmentParser/DeclarationParser before the RHS expression is even parsed.
+      // So an ASSIGN found here — even as the last token (e.g. chained "a = b = c;", or an
+      // assignment used as a method argument like "f(x = g())") — always needs an explicit
+      // store; nothing else will perform it.
       int rStart = findRightOperandStart(tokens, i);
       int lStart = (rStart > 0) ? findRightOperandStart(tokens, rStart) : 0;
       if (lStart != rStart - 1) continue;
