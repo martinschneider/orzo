@@ -40,9 +40,7 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.16.0</version>
         <configuration>
-          <!-- TODO: Orzo compiles for Java 6. Either support newer JVM versions or reduce the source version too -->
-          <source>8</source>
-          <target>8</target>
+          <release>27</release>
         </configuration>
       </plugin>
       <plugin>
