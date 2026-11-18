@@ -28,6 +28,7 @@ public class ParserContext {
   public ForEachParser forEachParser;
   public ForParser forParser;
   public IfParser ifParser;
+  public LambdaParser lambdaParser;
   public MethodCallParser methodCallParser;
   public MethodParser methodParser;
   public PostIncrementParser postIncrementParser;
@@ -62,6 +63,7 @@ public class ParserContext {
     ctx.forEachParser = new ForEachParser(ctx);
     ctx.forParser = new ForParser(ctx);
     ctx.ifParser = new IfParser(ctx);
+    ctx.lambdaParser = new LambdaParser(ctx);
     ctx.methodCallParser = new MethodCallParser(ctx);
     ctx.methodParser = new MethodParser(ctx);
     ctx.postIncrementParser = new PostIncrementParser(ctx);

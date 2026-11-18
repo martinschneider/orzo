@@ -5,6 +5,7 @@ import static io.github.martinschneider.orzo.util.FactoryHelper.list;
 import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.martinschneider.orzo.codegen.Output;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
@@ -19,6 +20,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -208,7 +211,55 @@ public class OrzoTest {
         args(list("tests/IfSlotReuseLoop")),
         args(list("tests/CharNotEqualAssignment")),
         args(list("tests/SuperFieldShadowing", "tests/ParentFieldShadow")),
-        args(list("tests/CharLessEqual")));
+        args(list("tests/CharLessEqual")),
+        args(list("tests/LambdaStreamMap")),
+        args(list("tests/LambdaComputeIfAbsent")));
+  }
+
+  // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the
+  // caller had already pre-supplied one at that index (the exact pattern every test in this class
+  // uses) - duplicating it and leaving `outputs` one longer than `clazzes`. Dormant until
+  // CodeGenerator started appending classes mid-generation (e.g. a lambda's synthetic
+  // implementation, via ctx.addSyntheticClazz()), which assumes the two lists stay index-aligned:
+  // the duplicate entry meant a later-appended class's Output landed at the wrong list index,
+  // and the class actually read at that index was a second reference to an EARLIER class's
+  // Output - so the two classes' bytecode got concatenated into one buffer ("Extra bytes at the
+  // end of class file").
+  @Test
+  public void testCompileKeepsClazzesAndOutputsAligned() throws IOException {
+    List<File> inputs =
+        list(
+            new File(
+                this.getClass()
+                    .getResource("examples" + File.separator + "HelloWorld.java")
+                    .getPath()));
+    List<Output> outputs =
+        new ArrayList<>(list(new Output(new PrintStream(new ByteArrayOutputStream()))));
+    Orzo orzo = new Orzo(inputs, null, 0);
+    orzo.compile(outputs);
+    assertEquals(outputs.size(), orzo.clazzes.size());
+  }
+
+  // CLI-style compilation (no caller-supplied outputs, so Orzo writes .class files to disk
+  // itself): a synthetic class discovered mid-generation (e.g. a lambda's functional-interface
+  // implementation) has no file-backed Output yet, unlike the ones from the original input
+  // files - Orzo.compile() must persist it to its own file too, not just the main class's.
+  @Test
+  public void testCompileWritesSyntheticClassFilesToDisk(@TempDir File outputDir)
+      throws IOException {
+    List<File> inputs =
+        list(
+            new File(
+                this.getClass()
+                    .getResource("tests" + File.separator + "LambdaStreamMap.java")
+                    .getPath()));
+    Orzo orzo = new Orzo(inputs, outputDir.getAbsolutePath(), 0);
+    orzo.compile();
+    File packageDir =
+        new File(
+            outputDir, "io/github/martinschneider/orzo/tests".replace('/', File.separatorChar));
+    assertTrue(new File(packageDir, "LambdaStreamMap.class").isFile());
+    assertTrue(new File(packageDir, "LambdaStreamMap$$Lambda$1.class").isFile());
   }
 
   @ParameterizedTest
@@ -243,6 +294,12 @@ public class OrzoTest {
     }
     for (int i = 0; i < programs.size(); i++) {
       classLoader.put(classNames.get(i), streams.get(i).toByteArray());
+    }
+    // Classes discovered during codegen beyond the original input files (e.g. a lambda
+    // expression's synthetic functional-interface implementation) have no entry in `streams` -
+    // Output always buffers its own bytes internally, so read them straight from `outputs`.
+    for (int i = programs.size(); i < classNames.size(); i++) {
+      classLoader.put(classNames.get(i), outputs.get(i).getBytes());
     }
     // First class should have main method
     Class<?> clazz = classLoader.loadClass(classNames.get(0));

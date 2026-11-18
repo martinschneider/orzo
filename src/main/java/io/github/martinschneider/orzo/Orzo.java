@@ -99,7 +99,8 @@ public class Orzo {
         System.out.println("Parser output: " + clazz);
       }
       Output output = null;
-      if (outputs != null && outputs.size() > i) {
+      boolean preSupplied = outputs != null && outputs.size() > i;
+      if (preSupplied) {
         output = outputs.get(i);
       }
       if (output == null) {
@@ -111,13 +112,37 @@ public class Orzo {
       }
       clazz.sourceFile = inputs.get(i).getName();
       clazzes.add(clazz);
-      outputs.add(output);
+      // Only append a new entry when none existed at this index yet - appending unconditionally
+      // duplicated a pre-supplied output (every caller that pre-populates `outputs`, e.g. the
+      // test harness), desyncing clazzes/outputs indices. That went unnoticed until classes
+      // appended mid-codegen (e.g. a lambda's synthetic implementation, via
+      // ctx.addSyntheticClazz()) started relying on the two lists staying index-aligned.
+      if (!preSupplied) {
+        outputs.add(output);
+      }
       ctx = parser.ctx;
     }
+    int inputCount = inputs.size();
     CodeGenerator codeGen = new CodeGenerator(clazzes, outputs, ctx.errors);
     codeGen.generate();
     if (!codeGen.getErrors().errors.isEmpty()) {
       System.err.println(String.format("%s", codeGen.getErrors().toString(verbose)));
+    }
+    // Persist classes discovered during codegen that weren't part of the original input files
+    // (e.g. a lambda expression's synthetic functional-interface implementation) and so have no
+    // file-backed Output yet. Output always buffers its bytes internally (getBytes()) regardless
+    // of backing PrintStreams, so an in-memory caller (e.g. the test harness, which passes
+    // outputPath == null) can already read them straight out of `outputs` without this.
+    if (outputPath != null) {
+      for (int i = inputCount; i < clazzes.size(); i++) {
+        File outputFile = new File(classPath(outputPath, clazzes.get(i)));
+        if (!outputFile.getParentFile().exists()) {
+          outputFile.getParentFile().mkdirs();
+        }
+        try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+          fos.write(outputs.get(i).getBytes());
+        }
+      }
     }
   }
 

@@ -14,8 +14,11 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PRIVATE;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PROTECTED;
 import static io.github.martinschneider.orzo.lexer.tokens.Scopes.PUBLIC;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.ARROW;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.fp;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
@@ -120,7 +123,19 @@ public class LexerTest {
         args("!x", new TokenList(list(op(NEGATE), id("x")))),
         args(
             "System.out.println",
-            new TokenList(list(id("System"), sym(DOT), id("out"), sym(DOT), id("println")))));
+            new TokenList(list(id("System"), sym(DOT), id("out"), sym(DOT), id("println")))),
+        args(
+            "x -> x.toString()",
+            new TokenList(
+                list(
+                    id("x"),
+                    sym(ARROW),
+                    id("x"),
+                    sym(DOT),
+                    id("toString"),
+                    sym(LPAREN),
+                    sym(RPAREN)))),
+        args("5-1", new TokenList(list(integer(5), op(MINUS), integer(1)))));
   }
 
   @MethodSource

@@ -98,12 +98,15 @@ public class CodeGenerator {
 
   private void init(int idx) {
     out = outputs.get(idx);
-    ctx.init(errors, idx, clazzes);
+    ctx.init(errors, idx, clazzes, outputs);
     ctx.constPool.addUtf8("SourceFile");
     ctx.constPool.addUtf8(ctx.clazz.sourceFile);
   }
 
   public void generate() {
+    // clazzes.size() is re-read every iteration, so a class appended mid-loop via
+    // ctx.addSyntheticClazz() (e.g. a lambda's synthetic functional-interface implementation) is
+    // picked up and generated in a later iteration of this same loop — no separate pass needed.
     for (int i = 0; i < clazzes.size(); i++) {
       Clazz clazz = clazzes.get(i);
       init(i);

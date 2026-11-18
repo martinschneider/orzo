@@ -18,6 +18,8 @@ import io.github.martinschneider.orzo.codegen.identifier.MemberProcessor;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +28,15 @@ import java.util.Map;
 public class CGContext {
   public Clazz clazz;
   public List<Clazz> allClazzes;
+  // Same list CodeGenerator iterates with "for (int i = 0; i < clazzes.size(); i++)" (shared by
+  // reference, not copied) — appending here mid-generation (e.g. a lambda's synthetic
+  // implementing class) is picked up automatically since the loop bound is re-read every
+  // iteration. Kept 1:1 and in lockstep with allOutputs by addSyntheticClazz().
+  public List<Output> allOutputs;
+  // Monotonically increasing, never reset per-class (ctx.init() doesn't touch it) so synthetic
+  // class names (e.g. a lambda's functional-interface implementation) stay unique across the
+  // whole compilation, not just within one class.
+  public int syntheticClassCounter;
   public ConstantPool constPool;
   public Map<String, Method> methodMap;
   public Map<String, FieldProcessor.StaticField> staticFieldMap;
@@ -50,11 +61,12 @@ public class CGContext {
   // Maps handlerPc → JVM class name (e.g. "java/lang/Exception") for StackMapTable
   public Map<Integer, String> exceptionHandlerType;
 
-  public void init(CompilerErrors errors, int idx, List<Clazz> clazzes) {
+  public void init(CompilerErrors errors, int idx, List<Clazz> clazzes, List<Output> outputs) {
     exceptionTable = new ArrayList<>();
     exceptionHandlerType = new HashMap<>();
     clazz = clazzes.get(idx);
     allClazzes = clazzes;
+    allOutputs = outputs;
     this.errors = errors;
     constPoolProc = new ConstantPoolProcessor(this);
     constPool = constPoolProc.processConstantPool(clazz);
@@ -78,5 +90,22 @@ public class CGContext {
     delegator.ctx = this;
     exprGen.ctx = this;
     delegator.init();
+  }
+
+  // Registers a new class to be generated once the current class-list loop reaches it — used for
+  // classes discovered mid-generation rather than present in the original input/clazzes list
+  // (e.g. a lambda expression's synthetic implementation of its target functional interface).
+  // CodeGenerator.generate()'s "for (int i = 0; i < clazzes.size(); i++)" picks this up on its
+  // own since allClazzes/allOutputs are the SAME list objects it iterates over.
+  public void addSyntheticClazz(Clazz clazz) {
+    allClazzes.add(clazz);
+    // A throwaway in-memory sink, same pattern the test harness uses - Output always buffers
+    // everything written to it internally (getBytes()) regardless of what PrintStreams are
+    // attached, so this PrintStream's own destination is irrelevant. Avoids needing a no-arg
+    // Output constructor or an empty PrintStream array, both of which (separately) ran into a
+    // pre-existing orzo codegen bug when this file self-compiles (an array-typed field's
+    // null-check, or a zero-length array literal, each produced a malformed class file - see
+    // docs/TODO.md).
+    allOutputs.add(new Output(new PrintStream(new ByteArrayOutputStream())));
   }
 }

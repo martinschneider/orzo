@@ -873,6 +873,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     if (argType == null) {
       return true;
     }
+    // A lambda has no type of its own (see LambdaExpr.PSEUDO_TYPE) - it's compatible with any
+    // functional-interface-shaped parameter, determined from the TARGET side instead.
+    if (io.github.martinschneider.orzo.lexer.tokens.LambdaExpr.PSEUDO_TYPE.equals(argType)) {
+      return paramClass.isInterface();
+    }
     // Orzo represents array types as "[" + <element type word>, e.g. "[byte" for byte[]
     // (see NumExprTypeDecider), not a JVM array descriptor. Class.forName can't resolve that
     // directly, so match against the parameter's component type instead of falling through
@@ -1012,6 +1017,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   private boolean isExactTypeMatch(String argType, Class<?> paramClass) {
     if (argType == null) {
       return false;
+    }
+    // A lambda has no type of its own (see LambdaExpr.PSEUDO_TYPE) - it's compatible with any
+    // functional-interface-shaped parameter, determined from the TARGET side instead.
+    if (io.github.martinschneider.orzo.lexer.tokens.LambdaExpr.PSEUDO_TYPE.equals(argType)) {
+      return paramClass.isInterface();
     }
     switch (argType) {
       case "boolean":

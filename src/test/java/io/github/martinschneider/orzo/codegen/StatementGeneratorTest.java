@@ -61,7 +61,8 @@ public abstract class StatementGeneratorTest<T extends Statement> {
                 emptyList(),
                 Clazz.JAVA_LANG_OBJECT,
                 list(method),
-                emptyList())));
+                emptyList())),
+        list(new Output()));
   }
 
   @BeforeEach

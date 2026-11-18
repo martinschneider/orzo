@@ -262,6 +262,8 @@ public class Lexer {
         }
       } else if (character == '=') {
         tokenList.add(op(MINUS_ASSIGN));
+      } else if (character == '>') {
+        tokenList.add(sym(ARROW));
       } else {
         inputReader.unread(character);
         tokenList.add(op(MINUS));

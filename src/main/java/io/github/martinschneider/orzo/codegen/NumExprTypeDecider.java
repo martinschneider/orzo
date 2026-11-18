@@ -62,6 +62,8 @@ public class NumExprTypeDecider {
         types.add(BOOLEAN);
       } else if (token instanceof Str) {
         types.add(STRING);
+      } else if (token instanceof io.github.martinschneider.orzo.lexer.tokens.LambdaExpr) {
+        types.add(io.github.martinschneider.orzo.lexer.tokens.LambdaExpr.PSEUDO_TYPE);
       } else if (token instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) token;
         List<String> argTypes = new ArrayList<>();

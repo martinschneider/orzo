@@ -14,5 +14,6 @@ public enum Symbols {
   LFLOOR,
   RFLOOR,
   QUESTION,
-  COLON
+  COLON,
+  ARROW
 }

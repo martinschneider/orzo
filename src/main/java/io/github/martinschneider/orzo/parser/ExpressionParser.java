@@ -52,6 +52,9 @@ public class ExpressionParser implements ProdParser<Expression> {
     if ((expr = ctx.arrayInitParser.parse(tokens)) != null) {
       return expr;
     }
+    if ((expr = ctx.lambdaParser.parse(tokens)) != null) {
+      return expr;
+    }
     Type cast = ctx.castParser.parse(tokens);
     List<Token> exprTokens = new ArrayList<>();
     // Number of synthetic ')' tokens (closing a "(-1) * (" rewrite of a unary minus applied to a

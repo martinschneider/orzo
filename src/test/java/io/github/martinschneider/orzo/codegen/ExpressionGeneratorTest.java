@@ -27,6 +27,7 @@ import io.github.martinschneider.orzo.parser.CastParser;
 import io.github.martinschneider.orzo.parser.ConstructorCallParser;
 import io.github.martinschneider.orzo.parser.ExpressionParser;
 import io.github.martinschneider.orzo.parser.FloorParser;
+import io.github.martinschneider.orzo.parser.LambdaParser;
 import io.github.martinschneider.orzo.parser.MethodCallParser;
 import io.github.martinschneider.orzo.parser.ParserContext;
 import io.github.martinschneider.orzo.parser.SqrtParser;
@@ -254,7 +255,8 @@ public class ExpressionGeneratorTest {
                 emptyList(),
                 Clazz.JAVA_LANG_OBJECT,
                 list(method),
-                emptyList())));
+                emptyList())),
+        list(new Output()));
     target.ctx = ctx;
     ParserContext ctx = new ParserContext();
     ctx.arrayInitParser = new ArrayInitParser(ctx);
@@ -264,6 +266,7 @@ public class ExpressionGeneratorTest {
     ctx.floorParser = new FloorParser(ctx);
     ctx.sqrtParser = new SqrtParser(ctx);
     ctx.constrCallParser = new ConstructorCallParser(ctx);
+    ctx.lambdaParser = new LambdaParser(ctx);
     ctx.exprParser = new ExpressionParser(ctx);
     ctx.errors = new CompilerErrors();
     parser = new ExpressionParser(ctx);

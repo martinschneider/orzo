@@ -84,18 +84,25 @@ import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.InstanceofToken;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.LambdaExpr;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
+import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
+import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
+import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
+import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
+import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -384,6 +391,9 @@ public class ExpressionGenerator {
         exprTypeStack.push(BOOLEAN);
       } else if (token instanceof TernaryExpression) {
         type = generateTernary(out, type, (TernaryExpression) token);
+        exprTypeStack.push(type);
+      } else if (token instanceof LambdaExpr) {
+        type = generateLambda(out, type, (LambdaExpr) token);
         exprTypeStack.push(type);
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
@@ -1037,6 +1047,117 @@ public class ExpressionGenerator {
     out.write(falseOut.getBytes());
 
     return resultType;
+  }
+
+  // Generates a lambda expression as a synthetic class implementing `targetType`'s single
+  // abstract method (SAM), registered via ctx.addSyntheticClazz() so CodeGenerator's main
+  // class-list loop generates it like any other class, then instantiates it here (NEW+DUP+
+  // INVOKESPECIAL <init>) so the resulting reference is left on the stack as this expression's
+  // value - exactly how a real Java lambda becomes an object.
+  //
+  // Limitations (documented, not yet needed by any real caller): no captured variables from the
+  // enclosing scope (the body may only reference its own parameters and static members), and no
+  // "{ ... }" block body (only a single expression, via LambdaParser).
+  private String generateLambda(DynamicByteArray out, String targetType, LambdaExpr lambda) {
+    Class<?> iface;
+    try {
+      iface = Class.forName(targetType);
+    } catch (ClassNotFoundException | NullPointerException e) {
+      ctx.errors.addError(
+          "lambda expression",
+          "cannot resolve target functional interface: " + targetType,
+          new RuntimeException().getStackTrace());
+      return targetType;
+    }
+    java.lang.reflect.Method sam = findSingleAbstractMethod(iface);
+    if (sam == null) {
+      ctx.errors.addError(
+          "lambda expression",
+          targetType + " is not a functional interface (no single abstract method found)",
+          new RuntimeException().getStackTrace());
+      return targetType;
+    }
+    if (sam.getParameterCount() != lambda.params.size()) {
+      ctx.errors.addError(
+          "lambda expression",
+          String.format(
+              "lambda has %d parameter(s) but %s.%s expects %d",
+              lambda.params.size(), targetType, sam.getName(), sam.getParameterCount()),
+          new RuntimeException().getStackTrace());
+      return targetType;
+    }
+    if (sam.getReturnType() == void.class) {
+      ctx.errors.addError(
+          "lambda expression",
+          "void-returning functional interfaces (e.g. Consumer) are not yet supported",
+          new RuntimeException().getStackTrace());
+      return targetType;
+    }
+
+    String syntheticName = ctx.clazz.name + "$$Lambda$" + (++ctx.syntheticClassCounter);
+    List<Argument> args = new ArrayList<>();
+    for (int i = 0; i < lambda.params.size(); i++) {
+      args.add(
+          new Argument(sam.getParameterTypes()[i].getName(), new Identifier(lambda.params.get(i))));
+    }
+    String returnType = sam.getReturnType().getName();
+    Method samImpl =
+        new Method(
+            ctx.clazz.packageName + "." + syntheticName,
+            List.of(AccessFlag.ACC_PUBLIC),
+            returnType,
+            Token.id(sam.getName()),
+            args,
+            List.of((Statement) new ReturnStatement(lambda.body)));
+    Method ctor =
+        new Method(
+            ctx.clazz.packageName + "." + syntheticName,
+            List.of(AccessFlag.ACC_PUBLIC),
+            VOID,
+            Token.id(Method.CONSTRUCTOR_NAME),
+            emptyList(),
+            List.of((Statement) new MethodCall("super", emptyList())));
+    Clazz syntheticClazz =
+        new Clazz(
+            ctx.clazz.packageName,
+            // Same imports as the enclosing class, so simple names in the lambda body (e.g. "new
+            // ArrayList<>()") still resolve - ctx.clazz is still the ENCLOSING class here, since
+            // the synthetic class itself hasn't been generated yet.
+            ctx.clazz.imports,
+            new Scope(Scopes.PUBLIC),
+            syntheticName,
+            false,
+            false,
+            List.of(iface.getName()),
+            Clazz.JAVA_LANG_OBJECT,
+            List.of(ctor, samImpl),
+            emptyList(),
+            ctx.clazz.sourceFile);
+    ctx.addSyntheticClazz(syntheticClazz);
+
+    String jvmClassName = syntheticClazz.fqn('/');
+    ctx.constPool.addClass(jvmClassName);
+    ctx.invokeGen.newInstance(out, jvmClassName);
+    out.write(DUP);
+    ctx.opStack.push(REF);
+    ctx.invokeGen.invokeSpecial(out, ctor);
+    return targetType;
+  }
+
+  // The single non-default, non-static abstract method of a functional interface, or null if
+  // zero or more than one such method exists (not a valid functional interface).
+  private java.lang.reflect.Method findSingleAbstractMethod(Class<?> iface) {
+    java.lang.reflect.Method found = null;
+    for (java.lang.reflect.Method m : iface.getMethods()) {
+      int mods = m.getModifiers();
+      if (java.lang.reflect.Modifier.isAbstract(mods) && !m.isDefault()) {
+        if (found != null) {
+          return null; // more than one abstract method — not a SAM interface
+        }
+        found = m;
+      }
+    }
+    return found;
   }
 
   String generateConstructorCall(
