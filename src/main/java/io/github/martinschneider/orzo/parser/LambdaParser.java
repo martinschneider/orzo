@@ -43,7 +43,9 @@ public class LambdaParser implements ProdParser<Expression> {
       tokens.setIdx(idx);
       return null;
     }
-    return new Expression(List.of(new LambdaExpr(params, body)));
+    List<Token> bodyTokens = new ArrayList<>();
+    bodyTokens.add(new LambdaExpr(params, body));
+    return new Expression(bodyTokens);
   }
 
   // Recognises either a bare identifier ("x") or a parenthesized, comma-separated, untyped
@@ -53,12 +55,18 @@ public class LambdaParser implements ProdParser<Expression> {
   // expression "(x)"), so the caller still checks for "->" before committing.
   private List<String> tryParseParams(TokenList tokens) {
     int idx = tokens.idx();
-    if (tokens.curr() instanceof Identifier && ((Identifier) tokens.curr()).next == null) {
-      String name = ((Identifier) tokens.curr()).id();
-      tokens.next();
-      List<String> params = new ArrayList<>();
-      params.add(name);
-      return params;
+    // Local-first, not "(Identifier) tokens.curr()).next" inline: a cast immediately followed by
+    // a field access, nested inside a parenthesized boolean condition, isn't parsed correctly by
+    // ExpressionParser yet when it's not the condition's very first operand (see docs/TODO.md).
+    if (tokens.curr() instanceof Identifier) {
+      Identifier curr = (Identifier) tokens.curr();
+      if (curr.next == null) {
+        String name = curr.id();
+        tokens.next();
+        List<String> params = new ArrayList<>();
+        params.add(name);
+        return params;
+      }
     }
     if (!tokens.curr().eq(sym(LPAREN))) {
       return null;
@@ -69,13 +77,23 @@ public class LambdaParser implements ProdParser<Expression> {
       tokens.next();
       return params;
     }
-    while (true) {
+    // Not "while (true)": every path inside returns, but orzo's codegen (unlike javac) doesn't
+    // recognize that and adds its own trailing bare "return;" after a literal "while (true)"
+    // regardless, breaking verification for a non-void method. A boolean-variable condition isn't
+    // provably infinite to either compiler, so both expect (and get) the explicit return below.
+    boolean more = true;
+    while (more) {
       Token t = tokens.curr();
-      if (!(t instanceof Identifier) || ((Identifier) t).next != null) {
+      if (!(t instanceof Identifier)) {
         tokens.setIdx(idx);
         return null;
       }
-      params.add(((Identifier) t).id());
+      Identifier ident = (Identifier) t;
+      if (ident.next != null) {
+        tokens.setIdx(idx);
+        return null;
+      }
+      params.add(ident.id());
       tokens.next();
       if (tokens.curr().eq(sym(COMMA))) {
         tokens.next();
@@ -88,5 +106,6 @@ public class LambdaParser implements ProdParser<Expression> {
       tokens.setIdx(idx);
       return null;
     }
+    return null;
   }
 }

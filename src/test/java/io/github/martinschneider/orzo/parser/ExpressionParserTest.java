@@ -12,6 +12,7 @@ import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
+import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -86,7 +87,20 @@ public class ExpressionParserTest {
         args("x>3", expr(list(id("x"), integer("3"), op(GREATER)))),
         args("x>=4", expr(list(id("x"), integer("4"), op(GREATEREQ)))),
         args("x!=5", expr(list(id("x"), integer("5"), op(NOTEQUAL)))),
-        args("!a", expr(list(id("a"), op(NEGATE)))));
+        args("!a", expr(list(id("a"), op(NEGATE)))),
+        args("((Foo) x).next == 5", castFieldEqExpr()));
+  }
+
+  // "((Type) expr).field" followed by a binary operator (e.g. "== 5") used to be dropped: once
+  // ExpressionParser recognized the cast+field chain, it returned immediately without checking
+  // whether more of the same expression (the operator and its RHS) was still unconsumed. Found
+  // self-compiling LambdaParser.java, whose tryParseParams() has exactly this shape -
+  // "((Identifier) tokens.curr()).next == null" - and silently lost the "== null" part, leaving
+  // IfParser to choke on the leftover tokens.
+  private static Expression castFieldEqExpr() throws IOException {
+    CastMethodCall castCall = new CastMethodCall("Foo", expr("x"));
+    castCall.next = id("next");
+    return expr(list(castCall, integer(5), op(EQUAL)));
   }
 
   @MethodSource

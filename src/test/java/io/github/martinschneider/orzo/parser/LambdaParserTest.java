@@ -26,7 +26,10 @@ public class LambdaParserTest {
         args("x + 1", null),
         args("x -> x.toString()", expr(list(new LambdaExpr(list("x"), expr("x.toString()"))))),
         args("(a, b) -> a", expr(list(new LambdaExpr(list("a", "b"), expr("a"))))),
-        args("() -> 1", expr(list(new LambdaExpr(list(), expr("1"))))));
+        args("() -> 1", expr(list(new LambdaExpr(list(), expr("1"))))),
+        // Not a valid untyped lambda param list - "a.b" is a dotted identifier chain, not a bare
+        // name - so this isn't a lambda at all; must leave `tokens` untouched.
+        args("(a.b, c) -> a", null));
   }
 
   @ParameterizedTest
