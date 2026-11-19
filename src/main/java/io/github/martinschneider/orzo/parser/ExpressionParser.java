@@ -87,10 +87,14 @@ public class ExpressionParser implements ProdParser<Expression> {
             || tokens.curr() instanceof Chr
             || tokens.curr() instanceof Identifier
             || (tokens.curr() instanceof Type && parenthesis < 0)
-            || (tokens.curr() instanceof Type
-                && parenthesis == 0
-                && exprTokens.isEmpty()
-                && tokens.peekNext().eq(sym(DOT)))
+            // Dotted static access on a built-in type name (e.g. "String.valueOf(x)",
+            // "String.class") - previously only accepted as the very FIRST thing in the
+            // expression ("exprTokens.isEmpty()"), an intentionally narrow scope from when this
+            // was added (see commit history, "Add Type.class literal support"). That meant
+            // "String.valueOf(x)" as a non-first operand (e.g. "a + String.valueOf(x)") wasn't
+            // an accepted continuation token at all, so the outer loop exited early mid-
+            // expression, silently dropping everything from there on for the caller.
+            || (tokens.curr() instanceof Type && parenthesis == 0 && tokens.peekNext().eq(sym(DOT)))
             || tokens.curr() instanceof Operator
             || tokens.curr().eq(sym(SQRT))
             || tokens.curr().eq(sym(LPAREN))

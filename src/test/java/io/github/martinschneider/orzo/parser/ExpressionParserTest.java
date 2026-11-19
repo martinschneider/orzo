@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -88,7 +89,22 @@ public class ExpressionParserTest {
         args("x>=4", expr(list(id("x"), integer("4"), op(GREATEREQ)))),
         args("x!=5", expr(list(id("x"), integer("5"), op(NOTEQUAL)))),
         args("!a", expr(list(id("a"), op(NEGATE)))),
-        args("((Foo) x).next == 5", castFieldEqExpr()));
+        args("((Foo) x).next == 5", castFieldEqExpr()),
+        // A built-in type token (e.g. "String") followed by "." was only accepted as a
+        // continuation token when it was the VERY FIRST thing in the expression
+        // ("exprTokens.isEmpty()"). "x + String.valueOf(5)" has it as the second operand of a
+        // "+" - the outer loop didn't recognize "String" as continuable there at all, so it
+        // exited mid-expression, silently dropping "+ String.valueOf(5)".
+        args("x + String.valueOf(5)", stringValueOfChainExpr()));
+  }
+
+  // "String.valueOf(5)" is represented the same way as any other dotted call chain (e.g.
+  // "obj.method()"): a plain Identifier for the receiver ("String"), with its `.next` pointing
+  // at the MethodCall ("valueOf", [5]) - not a MethodCall at the top level.
+  private static Expression stringValueOfChainExpr() throws IOException {
+    Identifier stringId = (Identifier) id("String");
+    stringId.next = (Identifier) methodCall("valueOf", list(expr("5")));
+    return expr(list(id("x"), stringId, op(PLUS)));
   }
 
   // "((Type) expr).field" followed by a binary operator (e.g. "== 5") used to be dropped: once

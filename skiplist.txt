@@ -33,6 +33,5 @@ src/main/java/io/github/martinschneider/orzo/parser/MethodParser.java
 src/main/java/io/github/martinschneider/orzo/util/FactoryHelper.java
 src/main/java/io/github/martinschneider/orzo/parser/ConstructorCallParser.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/SwitchGenerator.java
-src/main/java/io/github/martinschneider/orzo/lexer/tokens/LambdaExpr.java
 src/main/java/io/github/martinschneider/orzo/codegen/CGContext.java
 
