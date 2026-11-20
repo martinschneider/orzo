@@ -37,6 +37,12 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
   }
 
   private HasOutput ret(DynamicByteArray out, String type, Expression retValue) {
+    if (retValue == null) {
+      // "return;" - nothing to evaluate or convert (the operand-stack model's top entry, if any,
+      // belongs to an earlier statement)
+      out.write(RETURN);
+      return out;
+    }
     ctx.exprGen.eval(out, type, retValue);
     ctx.basicGen.convert1(out, ctx.opStack.type(), type);
     switch (type) {

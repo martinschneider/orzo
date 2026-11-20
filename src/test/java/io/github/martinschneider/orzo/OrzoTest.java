@@ -240,7 +240,10 @@ public class OrzoTest {
         args(list("tests/GenericStaticField", "tests/GenericStaticFieldHolder")),
         args(list("tests/GenericArrayTypeArgs")),
         args(list("tests/ForEachArrayElements")),
-        args(list("tests/StaticImportPrecedence", "tests/StaticImportPrecedenceEnum")));
+        args(list("tests/StaticImportPrecedence", "tests/StaticImportPrecedenceEnum")),
+        args(list("tests/JdkEnumSwitch")),
+        args(list("tests/FieldChainConstructorArg", "tests/GenericChainHolder")),
+        args(list("tests/VoidReturnAfterCall")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

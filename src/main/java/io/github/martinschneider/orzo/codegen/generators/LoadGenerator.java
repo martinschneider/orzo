@@ -267,6 +267,7 @@ public class LoadGenerator {
         ctx.loadGen.loadReference(out, varInfo.objectRef);
         getField(out, varInfo.idx);
       }
+      ctx.opStack.push(varInfo.type); // like a local variable load below
     } else {
       load(out, varInfo.type, varInfo.idx);
     }

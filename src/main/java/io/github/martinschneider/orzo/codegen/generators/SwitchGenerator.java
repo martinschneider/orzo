@@ -18,6 +18,7 @@ import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
+import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -89,7 +90,19 @@ public class SwitchGenerator implements StatementGenerator<SwitchStatement> {
           // enum (or other reference-typed) switch: compare the loaded references directly
           // with if_acmpeq instead.
           ctx.loadGen.load(out, ctx.classIdMap.variables.get(id(tmpName)));
-          ctx.exprGen.eval(out, switchType, label);
+          if (isRefSwitch
+              && label.tokens.size() == 1
+              && label.tokens.get(0) instanceof Identifier
+              && ((Identifier) label.tokens.get(0)).next == null) {
+            // enum switch: a label is the bare name of a constant of the switch type
+            String owner = switchType.replace('.', '/');
+            ctx.constPool.addClass(owner);
+            ctx.constPool.addFieldRef(owner, label.tokens.get(0).val.toString(), "L" + owner + ";");
+            ctx.invokeGen.getStatic(
+                out, owner, label.tokens.get(0).val.toString(), "L" + owner + ";");
+          } else {
+            ctx.exprGen.eval(out, switchType, label);
+          }
           checkPatches.add(new int[] {out.size(), i});
           out.write(isRefSwitch ? IF_ACMPEQ : IF_ICMPEQ);
           out.write((short) 0); // placeholder
