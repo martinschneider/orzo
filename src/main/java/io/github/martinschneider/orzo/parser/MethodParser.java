@@ -351,6 +351,12 @@ public class MethodParser implements ProdParser<Method> {
       }
       if (tokens.next() instanceof Identifier) {
         name = (Identifier) tokens.curr();
+        // C-style array parameter, e.g. "String args[]"
+        while (tokens.peekNext().eq(sym(LBRAK)) && tokens.get(tokens.idx() + 2).eq(sym(RBRAK))) {
+          tokens.next();
+          tokens.next();
+          type = "[" + type;
+        }
       }
       if (type != null && name != null) {
         Argument arg = new Argument(type, name);

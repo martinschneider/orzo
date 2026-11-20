@@ -69,7 +69,9 @@ public class ExpressionParser implements ProdParser<Expression> {
     int parenthesis = 0;
     // Track the index in exprTokens where the last depth-0->(-1) LPAREN was added,
     // and the position in exprTokens just after that LPAREN (where the condition starts).
-    int ternaryOuterParenIdx = -1; // index of the '(' token in exprTokens
+    // indices in exprTokens of the currently open '(' tokens, innermost first: a '?' inside
+    // parentheses makes the innermost one the opening paren of a ternary
+    java.util.Deque<Integer> openParens = new java.util.ArrayDeque<>();
     // Re-entry loop: a resolved "((Type) expr).field"/"((Type) expr).method()" chain replaces
     // exprTokens with a single CastMethodCall token (below) and leaves `tokens` positioned right
     // after it - which may be mid-expression (e.g. "== 5" still unconsumed in
@@ -110,7 +112,8 @@ public class ExpressionParser implements ProdParser<Expression> {
             stripGenericCastArgs(tokens);
           }
           // Handle ternary: when we see '?' at depth -1, parse it as a ternary expression
-          if (tokens.curr().eq(sym(QUESTION)) && parenthesis == -1 && ternaryOuterParenIdx >= 0) {
+          if (tokens.curr().eq(sym(QUESTION)) && parenthesis < 0 && !openParens.isEmpty()) {
+            int ternaryOuterParenIdx = openParens.pop();
             // conditionTokens = exprTokens from ternaryOuterParenIdx+1 to end (exclude the '(')
             List<Token> condTokens =
                 new ArrayList<>(exprTokens.subList(ternaryOuterParenIdx + 1, exprTokens.size()));
@@ -135,8 +138,7 @@ public class ExpressionParser implements ProdParser<Expression> {
             // Reset: prefix + ternary as a single token
             exprTokens = prefixTokens;
             exprTokens.add(ternary);
-            parenthesis = 0;
-            ternaryOuterParenIdx = -1;
+            parenthesis++; // its closing ')' was consumed above
             // Continue collecting the rest of the outer expression
             continue;
           } else if (tokens.curr().eq(sym(QUESTION)) && parenthesis == 0 && !exprTokens.isEmpty()) {
@@ -152,7 +154,6 @@ public class ExpressionParser implements ProdParser<Expression> {
             TernaryExpression ternary = new TernaryExpression(condition, trueBranch, falseBranch);
             exprTokens = new ArrayList<>();
             exprTokens.add(ternary);
-            ternaryOuterParenIdx = -1;
             continue;
           }
 
@@ -184,16 +185,13 @@ public class ExpressionParser implements ProdParser<Expression> {
             } else {
               tokens.setIdx(idx);
               if (tokens.curr().eq(sym(LPAREN))) {
-                if (parenthesis == 0) {
-                  // Record where this potential ternary-opening '(' goes in exprTokens
-                  ternaryOuterParenIdx = exprTokens.size();
-                }
+                // Record where this potential ternary-opening '(' goes in exprTokens
+                openParens.push(exprTokens.size());
                 parenthesis--;
               } else if (tokens.curr().eq(sym(RPAREN))) {
                 parenthesis++;
-                if (parenthesis == 0) {
-                  // Closing the tracked ternary paren without a '?' → not a ternary
-                  ternaryOuterParenIdx = -1;
+                if (!openParens.isEmpty()) {
+                  openParens.pop(); // closed without a '?' → not a ternary
                 }
               }
               if (parenthesis > 0) {
@@ -259,9 +257,7 @@ public class ExpressionParser implements ProdParser<Expression> {
             new ArrayList<>(exprTokens.subList(castStart + 4, exprTokens.size() - 1));
         Expression innerExpr = new Expression(postfix(innerTokens), null);
         exprTokens = new ArrayList<>(exprTokens.subList(0, castStart));
-        if (ternaryOuterParenIdx >= castStart) {
-          ternaryOuterParenIdx = -1;
-        }
+        openParens.removeIf(parenIdx -> parenIdx >= castStart);
         tokens.next(); // skip DOT
         List<Identifier> chainSelectors = new ArrayList<>();
         do {
