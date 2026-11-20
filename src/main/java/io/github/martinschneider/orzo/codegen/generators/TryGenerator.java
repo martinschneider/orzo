@@ -86,7 +86,7 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
       ctx.classIdMap.variables.putLocal(
           Token.id(catchBlock.varName),
           new VariableInfo(
-              catchBlock.varName, "ref", null, emptyList(), false, catchVarSlot, null));
+              catchBlock.varName, jvmExType, null, emptyList(), false, catchVarSlot, null));
 
       // Store exception object in the catch variable slot
       storeRef(out, catchVarSlot);

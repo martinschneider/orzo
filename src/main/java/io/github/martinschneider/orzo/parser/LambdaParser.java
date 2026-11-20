@@ -77,12 +77,7 @@ public class LambdaParser implements ProdParser<Expression> {
       tokens.next();
       return params;
     }
-    // Not "while (true)": every path inside returns, but orzo's codegen (unlike javac) doesn't
-    // recognize that and adds its own trailing bare "return;" after a literal "while (true)"
-    // regardless, breaking verification for a non-void method. A boolean-variable condition isn't
-    // provably infinite to either compiler, so both expect (and get) the explicit return below.
-    boolean more = true;
-    while (more) {
+    while (true) {
       Token t = tokens.curr();
       if (!(t instanceof Identifier)) {
         tokens.setIdx(idx);
@@ -106,6 +101,5 @@ public class LambdaParser implements ProdParser<Expression> {
       tokens.setIdx(idx);
       return null;
     }
-    return null;
   }
 }

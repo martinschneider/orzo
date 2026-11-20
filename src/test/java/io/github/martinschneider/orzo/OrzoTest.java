@@ -153,10 +153,9 @@ public class OrzoTest {
         args(list("tests/ArrayLength")),
         // TODO: support infinite loops
         // args(list("tests/InfiniteRepeat")),
-        // TODO: a non-void method ending in "while (true) { ...; return x; }" (no code after the
-        // loop) fails to verify two different ways - see docs/TODO.md. Found self-compiling
-        // LambdaParser.java (worked around there by using "while (more)" instead).
-        // args(list("tests/WhileTrueTrailingReturn")),
+        args(list("tests/WhileTrueTrailingReturn")),
+        args(list("tests/WhileTrueBreakInTry")),
+        args(list("tests/WhileTrueBreakInCatch")),
         args(list("tests/VariableShadowsField")),
         args(list("tests/ArrayReturnType")),
         // Constructor call examples

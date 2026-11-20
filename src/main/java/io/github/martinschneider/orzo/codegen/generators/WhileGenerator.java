@@ -25,9 +25,15 @@ public class WhileGenerator implements StatementGenerator<WhileStatement> {
       ctx.delegator.generate(bodyOut, method, innerStmt);
     }
     DynamicByteArray conditionOut = new DynamicByteArray();
-    short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
-    ctx.exprGen.eval(conditionOut, null, whileStmt.cond, false, true);
-    conditionOut.write(branchBytes);
+    // A literal-"true" condition can never branch out, so skip emitting a runtime check for it
+    // entirely (matching javac) - unlike a real condition, it has no exit branch target, which
+    // would otherwise land out of bounds when nothing follows the loop (e.g. "while (true) { ...;
+    // return x; }" as a method's last statement).
+    if (!MethodGenerator.isLiteralTrue(whileStmt.cond)) {
+      short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
+      ctx.exprGen.eval(conditionOut, null, whileStmt.cond, false, true);
+      conditionOut.write(branchBytes);
+    }
     // Fix up ET entries: body starts after condition
     TryGenerator.adjustExceptionTableEntries(
         ctx, etStart, ctx.exceptionTable.size(), out.size() + conditionOut.getBytes().length);

@@ -8,11 +8,14 @@ import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.StackMapTableBuilder;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
+import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
+import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.CatchBlock;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
+import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.IfBlock;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -24,6 +27,7 @@ import io.github.martinschneider.orzo.parser.productions.SwitchCase;
 import io.github.martinschneider.orzo.parser.productions.SwitchStatement;
 import io.github.martinschneider.orzo.parser.productions.ThrowStatement;
 import io.github.martinschneider.orzo.parser.productions.TryStatement;
+import io.github.martinschneider.orzo.parser.productions.WhileStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -69,6 +73,8 @@ public class MethodGenerator {
             returned = ifStatementAlwaysReturns((IfStatement) stmt);
           } else if (stmt instanceof SwitchStatement) {
             returned = switchStatementAlwaysReturns((SwitchStatement) stmt);
+          } else if (stmt instanceof WhileStatement) {
+            returned = whileStatementAlwaysReturns((WhileStatement) stmt);
           } else {
             returned = false;
           }
@@ -164,6 +170,50 @@ public class MethodGenerator {
     }
     Statement last = body.get(body.size() - 1);
     return last instanceof ReturnStatement || last instanceof ThrowStatement;
+  }
+
+  // "while (true) { ... }" with no reachable "break" cannot complete normally (JLS 14.21), so
+  // javac requires no trailing return after it. Only the literal-"true" condition case is
+  // recognized - any other condition could exit normally and needs a real trailing return.
+  private boolean whileStatementAlwaysReturns(WhileStatement stmt) {
+    return isLiteralTrue(stmt.cond) && !containsBreak(stmt.body);
+  }
+
+  public static boolean isLiteralTrue(Expression cond) {
+    return cond != null
+        && cond.tokens.size() == 1
+        && cond.tokens.get(0) instanceof BoolLiteral
+        && Boolean.TRUE.equals(((BoolLiteral) cond.tokens.get(0)).val);
+  }
+
+  // Looks for a "break" that would target THIS loop - does not recurse into nested
+  // loops/switches, since a break inside one of those targets that construct instead.
+  private boolean containsBreak(List<Statement> body) {
+    if (body == null) {
+      return false;
+    }
+    for (Statement stmt : body) {
+      if (stmt instanceof Break) {
+        return true;
+      } else if (stmt instanceof IfStatement) {
+        for (IfBlock block : ((IfStatement) stmt).ifBlks) {
+          if (containsBreak(block.body)) {
+            return true;
+          }
+        }
+      } else if (stmt instanceof TryStatement) {
+        TryStatement tryStmt = (TryStatement) stmt;
+        if (containsBreak(tryStmt.tryBody)) {
+          return true;
+        }
+        for (CatchBlock cb : tryStmt.catchBlocks) {
+          if (containsBreak(cb.body)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   public boolean startsWithCallToSuper(List<Statement> body) {
