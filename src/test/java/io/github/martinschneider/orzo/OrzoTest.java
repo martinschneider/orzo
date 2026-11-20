@@ -228,7 +228,10 @@ public class OrzoTest {
         args(list("tests/GenericCast")),
         args(list("tests/ArrayElementReceiver")),
         args(list("tests/ChainedArgumentTypes", "tests/GenericChainHolder")),
-        args(list("tests/TernaryArgument")));
+        args(list("tests/TernaryArgument")),
+        args(list("tests/MultipleStaticBlocks")),
+        args(list("tests/GenericArrayValue")),
+        args(list("tests/ArrayElementDeclaration")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

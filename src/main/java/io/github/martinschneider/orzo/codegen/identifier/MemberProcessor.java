@@ -175,11 +175,21 @@ public class MemberProcessor {
         }
       }
     }
+    // Merge all static initializer blocks (in source order) into the first one: a class file may
+    // only contain a single <clinit>.
     Method userClinit = null;
-    for (Method m : methods) {
+    for (int i = 0; i < methods.size(); i++) {
+      Method m = methods.get(i);
       if ("<clinit>".equals(m.name.val.toString())) {
-        userClinit = m;
-        break;
+        if (userClinit == null) {
+          userClinit = m;
+        } else {
+          List<Statement> merged = new ArrayList<>(userClinit.body);
+          merged.addAll(m.body);
+          userClinit.body = merged;
+          methods.remove(i);
+          i--;
+        }
       }
     }
     if (!staticInits.isEmpty() || userClinit != null) {

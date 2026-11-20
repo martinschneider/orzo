@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ANEWARRAY;
+import static io.github.martinschneider.orzo.codegen.OpCodes.CHECKCAST;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
@@ -99,6 +100,16 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
     }
     if (!(decl.val instanceof ArrayInit)) {
       ctx.exprGen.eval(out, decl.type, decl.val);
+      String actualType = ctx.opStack.type();
+      if (actualType != null && !actualType.startsWith("[") && !REF.equals(actualType)) {
+        // e.g. an erased generic return (Map<K, V[]>.get() returns Object): cast to the array
+        String arrayClass = TypeUtils.descr(decl.type, decl.arrDim);
+        ctx.constPool.addClass(arrayClass);
+        out.write(CHECKCAST);
+        out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, arrayClass));
+        ctx.opStack.pop();
+        ctx.opStack.push(REF);
+      }
       ctx.assignGen.assignArray(out, classIdMap, decl.type, decl.arrDim, decl.name);
       return out;
     }

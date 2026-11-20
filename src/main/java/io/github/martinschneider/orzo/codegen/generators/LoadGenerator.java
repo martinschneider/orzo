@@ -52,6 +52,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
@@ -150,6 +151,9 @@ public class LoadGenerator {
       ctx.exprGen.eval(out, INT, arrIdx);
     }
     out.write(getLoadOpCode(type.replace("[", "")));
+    // xALOAD consumes the array reference and the index, leaving the element
+    ctx.opStack.pop(indices.size() + 1);
+    ctx.opStack.push(TypeUtils.jvmDescriptorToTypeName(type.replace("[", "")));
     return out;
   }
 

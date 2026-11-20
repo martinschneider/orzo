@@ -299,6 +299,9 @@ public class ClassParser implements ProdParser<Clazz> {
       if (tokens.curr().eq(sym(LBRACE))) {
         tokens.next();
         List<Statement> body = ctx.stmtParser.parseStmtSeq(tokens);
+        if (body == null) {
+          body = new ArrayList<>(); // empty block
+        }
         if (tokens.curr().eq(sym(RBRACE))) {
           tokens.next();
         }
