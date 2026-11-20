@@ -4,6 +4,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
@@ -12,6 +13,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -40,8 +42,18 @@ public class ConstructorCallParser implements ProdParser<ConstructorCall> {
     tokens.next();
     String typeName = null;
     if (tokens.curr() instanceof Identifier) {
-      typeName = ((Identifier) tokens.curr()).id();
+      StringBuilder fqn = new StringBuilder(((Identifier) tokens.curr()).id());
       tokens.next();
+      // Fully-qualified type name, e.g. "new java.util.HashMap<>()". The last segment of a
+      // built-in-sounding name (e.g. "java.lang.String") lexes as a Type token.
+      while (tokens.curr().eq(sym(DOT))
+          && (tokens.peekNext() instanceof Identifier || tokens.peekNext() instanceof Type)) {
+        tokens.next();
+        Token seg = tokens.curr();
+        fqn.append('.').append(seg instanceof Type ? ((Type) seg).name : seg.val.toString());
+        tokens.next();
+      }
+      typeName = fqn.toString();
     } else if (tokens.curr() instanceof Type) {
       typeName = ((Type) tokens.curr()).name;
       tokens.next();
@@ -73,7 +85,7 @@ public class ConstructorCallParser implements ProdParser<ConstructorCall> {
       // (saveSemicolon=true) already processes the following ".method()" tokens itself.
       if (!saveSemicolon) {
         Identifier last = result;
-        while (tokens.curr().eq(sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT))) {
+        while (tokens.curr().eq(sym(DOT))) {
           int chainIdx = tokens.idx();
           tokens.next(); // consume '.'
           if (!(tokens.curr() instanceof Identifier)) {

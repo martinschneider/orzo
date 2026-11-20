@@ -217,7 +217,8 @@ public class OrzoTest {
         args(list("tests/SuperFieldShadowing", "tests/ParentFieldShadow")),
         args(list("tests/CharLessEqual")),
         args(list("tests/LambdaStreamMap")),
-        args(list("tests/LambdaComputeIfAbsent")));
+        args(list("tests/LambdaComputeIfAbsent")),
+        args(list("tests/FullyQualifiedGenericDeclaration")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

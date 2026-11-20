@@ -9,6 +9,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV_ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
@@ -74,10 +75,11 @@ public class AssignmentParser implements ProdParser<Assignment> {
         tokens.next(); // move to the next segment
       }
       String lastSegment = tokens.curr().toString();
+      // "Type name" or "Type<Args> name" (a statement can't start with a "<" comparison).
       boolean looksLikeDeclaration =
           !lastSegment.isEmpty()
               && Character.isUpperCase(lastSegment.charAt(0))
-              && tokens.peekNext() instanceof Identifier;
+              && (tokens.peekNext() instanceof Identifier || tokens.peekNext().eq(op(LESS)));
       tokens.setIdx(scanIdx);
       if (looksLikeDeclaration) {
         return null;

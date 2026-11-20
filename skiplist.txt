@@ -20,7 +20,6 @@ src/main/java/io/github/martinschneider/orzo/codegen/MethodProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/NumExprTypeDecider.java
 src/main/java/io/github/martinschneider/orzo/codegen/StackMapTableBuilder.java
 src/main/java/io/github/martinschneider/orzo/codegen/TypeUtils.java
-src/main/java/io/github/martinschneider/orzo/lexer/TokenList.java
 src/main/java/io/github/martinschneider/orzo/Orzo.java
 src/main/java/io/github/martinschneider/orzo/parser/ArrayInitParser.java
 src/main/java/io/github/martinschneider/orzo/parser/AssignmentParser.java

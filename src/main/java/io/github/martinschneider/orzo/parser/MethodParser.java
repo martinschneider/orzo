@@ -248,7 +248,10 @@ public class MethodParser implements ProdParser<Method> {
         // Recovery: body parsing stopped before the closing brace.
         // Skip forward to the matching } rather than resetting — this preserves the method
         // signature even when the body contains syntax Orzo cannot yet parse.
+        // Still report it: silently compiling a truncated method body produces wrong bytecode.
         ctx.errors.tokenIdx = tokens.idx();
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
         int depth = 1;
         while (depth > 0 && !(tokens.curr() instanceof EOF)) {
           tokens.next();
