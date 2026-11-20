@@ -292,6 +292,20 @@ public class ExpressionGenerator {
       ctx.opStack.push(BOOLEAN);
       return new ExpressionResult(BOOLEAN, null);
     }
+    // "!(a && b)", "!(a | b)" etc.: evaluate the (short-circuiting) operand as a 0/1 value and
+    // invert it, rather than processing its tokens one by one below.
+    if (tokens.size() > 1 && tokens.get(tokens.size() - 1).eq(op(NEGATE))) {
+      List<Token> operand = new ArrayList<>(tokens.subList(0, tokens.size() - 1));
+      if (findOutermostLogicalOp(operand) >= 0 || findOutermostBooleanBitOp(operand) != null) {
+        out.write(evalAsValue(null, new Expression(operand)).getBytes());
+        out.write(ICONST_1);
+        out.write(IXOR);
+        if (reverseComp) {
+          out.write(IFEQ);
+        }
+        return new ExpressionResult(BOOLEAN, null);
+      }
+    }
     // Non-short-circuit boolean &, |, ^ (e.g. "a != null & b != null"): both operands are
     // evaluated to 0/1 values first, then combined bitwise.
     Operators boolOp = findOutermostBooleanBitOp(tokens);

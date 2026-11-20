@@ -211,7 +211,8 @@ public class ExpressionGeneratorTest {
             BOOLEAN,
             list(varInfo("a", "boolean", 100), varInfo("b", "boolean", 101)),
             emptyList(),
-            list("iload 100", "iload 101", "ior", "iconst_1", "ixor")),
+            // short-circuit "a || b" as a value, then inverted
+            list("iload 100", "ifne 8", "iload 101", "goto 4", "iconst_1", "iconst_1", "ixor")),
         // ternary operator: (a > b ? a : b)
         // condOut=[iload_1, iload_2, if_icmple], trueOut=[iload_1], falseOut=[iload_2]
         // ifeqOffset = trueLen(1) + 6 = 7, gotoOffset = falseLen(1) + 3 = 4

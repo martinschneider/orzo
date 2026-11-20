@@ -251,11 +251,17 @@ public class ExpressionParser implements ProdParser<Expression> {
         exprTokens = new ArrayList<>(exprTokens.subList(4, exprTokens.size() - 1));
       }
       // Handle ((Type) inner).method() — DOT after balanced parenthesized cast expression
-      if (tokens.curr().eq(sym(DOT)) && parenthesis == 0 && isCastMethodChainPattern(exprTokens)) {
-        String castType = resolveCastType(exprTokens.get(2).val.toString());
-        List<Token> innerTokens = new ArrayList<>(exprTokens.subList(4, exprTokens.size() - 1));
+      // (also as a later operand, e.g. "a && ((Type) expr).method()")
+      int castStart = tokens.curr().eq(sym(DOT)) ? castChainStart(exprTokens) : -1;
+      if (castStart >= 0) {
+        String castType = resolveCastType(exprTokens.get(castStart + 2).val.toString());
+        List<Token> innerTokens =
+            new ArrayList<>(exprTokens.subList(castStart + 4, exprTokens.size() - 1));
         Expression innerExpr = new Expression(postfix(innerTokens), null);
-        exprTokens = new ArrayList<>();
+        exprTokens = new ArrayList<>(exprTokens.subList(0, castStart));
+        if (ternaryOuterParenIdx >= castStart) {
+          ternaryOuterParenIdx = -1;
+        }
         tokens.next(); // skip DOT
         List<Identifier> chainSelectors = new ArrayList<>();
         do {
@@ -326,6 +332,42 @@ public class ExpressionParser implements ProdParser<Expression> {
     for (int k = i; k >= start; k--) {
       tokens.remove(k);
     }
+  }
+
+  // If exprTokens ends with a parenthesized cast expression "((Type) inner)", returns the index of
+  // its opening parenthesis, otherwise -1.
+  private int castChainStart(List<Token> exprTokens) {
+    int last = exprTokens.size() - 1;
+    if (last < 0 || !exprTokens.get(last).eq(sym(RPAREN))) {
+      return -1;
+    }
+    int depth = 0;
+    int start = last;
+    for (; start >= 0; start--) {
+      Token t = exprTokens.get(start);
+      if (t.eq(sym(RPAREN))) {
+        depth++;
+      } else if (t.eq(sym(LPAREN))) {
+        depth--;
+        if (depth == 0) {
+          break;
+        }
+      }
+    }
+    if (start < 0 || last - start < 5 || !exprTokens.get(start + 1).eq(sym(LPAREN))) {
+      return -1;
+    }
+    Token type = exprTokens.get(start + 2);
+    if (!(type instanceof Identifier) && !(type instanceof Type)) {
+      return -1;
+    }
+    String name = type.val.toString();
+    if (name.isEmpty()
+        || !Character.isUpperCase(name.charAt(0))
+        || !exprTokens.get(start + 3).eq(sym(RPAREN))) {
+      return -1;
+    }
+    return start;
   }
 
   private boolean isCastMethodChainPattern(List<Token> exprTokens) {
