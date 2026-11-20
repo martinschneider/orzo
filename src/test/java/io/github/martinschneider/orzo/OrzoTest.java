@@ -156,6 +156,7 @@ public class OrzoTest {
         args(list("tests/WhileTrueTrailingReturn")),
         args(list("tests/WhileTrueBreakInTry")),
         args(list("tests/WhileTrueBreakInCatch")),
+        args(list("tests/NestedConstructorArg")),
         args(list("tests/VariableShadowsField")),
         args(list("tests/ArrayReturnType")),
         // Constructor call examples
