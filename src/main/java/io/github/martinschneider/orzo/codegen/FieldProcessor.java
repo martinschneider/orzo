@@ -18,6 +18,8 @@ public class FieldProcessor {
     public final String fieldName;
     public final String fieldType;
     public final boolean isEnum;
+    // full generic type, e.g. "java.util.List<a.b.Foo>" (null if not generic or unknown)
+    public String genericType;
 
     public StaticField(String className, String fieldName, String fieldType, boolean isEnum) {
       this.className = className;
@@ -137,6 +139,7 @@ public class FieldProcessor {
           boolean isEnum = clazz.isEnum && hasPublicStaticFinalFlags(decl);
 
           StaticField field = new StaticField(clazz.fqn(), fieldName, fieldType, isEnum);
+          field.genericType = decl.genericType;
 
           // Add with simple field name for direct access
           fieldMap.put(fieldName, field);
@@ -183,6 +186,7 @@ public class FieldProcessor {
               String fieldName = field.getName();
               String fieldType = field.getType().getName();
               StaticField staticField = new StaticField(className, fieldName, fieldType, false);
+              staticField.genericType = GenericTypes.fieldType(field);
               fieldMap.putIfAbsent(fieldName, staticField);
               fieldMap.put(clazz.getSimpleName() + "." + fieldName, staticField);
             }
@@ -199,6 +203,7 @@ public class FieldProcessor {
         if (Modifier.isPublic(field.getModifiers()) && Modifier.isStatic(field.getModifiers())) {
           String fieldType = field.getType().getName();
           StaticField staticField = new StaticField(className, memberName, fieldType, false);
+          staticField.genericType = GenericTypes.fieldType(field);
           fieldMap.put(memberName, staticField);
           fieldMap.put(clazz.getSimpleName() + "." + memberName, staticField);
           fieldMap.put(className + "." + memberName, staticField);

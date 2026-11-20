@@ -5,7 +5,6 @@ src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantPool.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/TryGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/AssignmentGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/BasicGenerator.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/IncrementGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/DeclarationGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ExpressionGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodCallGenerator.java

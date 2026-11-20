@@ -154,6 +154,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
                     staticField.fieldName,
                     fieldDescr));
             ctx.opStack.push(staticField.fieldType);
+            lastGenericType = staticField.genericType;
             return generateChained(
                 out,
                 classIdMap,

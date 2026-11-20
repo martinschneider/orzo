@@ -236,7 +236,8 @@ public class OrzoTest {
         args(list("tests/NonShortCircuitBoolean")),
         args(list("tests/ForEachArrayFieldInIf")),
         args(list("tests/CastChainOperand")),
-        args(list("tests/NegatedLogicalOp")));
+        args(list("tests/NegatedLogicalOp")),
+        args(list("tests/GenericStaticField", "tests/GenericStaticFieldHolder")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

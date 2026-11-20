@@ -98,7 +98,14 @@ public class NumExprTypeDecider {
           if (receiverVar == null) receiverVar = classIdMap.variables.fieldMap.get(parts[0]);
           String resolvedClass = className;
           String receiverGeneric = null;
-          if (receiverVar != null && receiverVar.type != null) {
+          FieldProcessor.StaticField staticField =
+              (receiverVar == null && ctx.staticFieldMap != null)
+                  ? ctx.staticFieldMap.get(parts[0])
+                  : null;
+          if (staticField != null && parts.length == 1) {
+            resolvedClass = staticField.fieldType;
+            receiverGeneric = staticField.genericType;
+          } else if (receiverVar != null && receiverVar.type != null) {
             resolvedClass = receiverVar.type;
             receiverGeneric = receiverVar.genericType;
             for (int p = 1; p < parts.length && resolvedClass != null; p++) {
