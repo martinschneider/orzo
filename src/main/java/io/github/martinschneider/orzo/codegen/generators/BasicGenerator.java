@@ -1,15 +1,18 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.ANEWARRAY;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ARRAYLENGTH;
 import static io.github.martinschneider.orzo.codegen.OpCodes.CHECKCAST;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKESTATIC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKEVIRTUAL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
 import static io.github.martinschneider.orzo.codegen.OpCodes.WIDE;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.CAST_OPS;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.CAST_OPS_1;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
@@ -64,6 +67,25 @@ public class BasicGenerator {
     }
     ctx.opStack.pop();
     ctx.opStack.push(to);
+  }
+
+  /** Creates a one-dimensional array of the given element type; the length is on the stack. */
+  public void newArray(DynamicByteArray out, String elemType) {
+    if (TypeUtils.isPrimitive(elemType)) {
+      out.write(NEWARRAY);
+      out.write(TypeUtils.getArrayType(elemType));
+    } else {
+      String descr = TypeUtils.descr(elemType);
+      String jvmClass =
+          (descr.startsWith("L") && descr.endsWith(";"))
+              ? descr.substring(1, descr.length() - 1)
+              : descr;
+      ctx.constPool.addClass(jvmClass);
+      out.write(ANEWARRAY);
+      out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmClass));
+    }
+    ctx.opStack.pop();
+    ctx.opStack.push(REF);
   }
 
   public void convert1(DynamicByteArray out, String from, String to) {

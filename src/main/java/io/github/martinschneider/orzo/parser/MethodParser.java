@@ -287,6 +287,7 @@ public class MethodParser implements ProdParser<Method> {
       String type = null;
       Identifier name = null;
       String qualifiedName;
+      boolean varargs = false;
       if (tokens.curr() instanceof Type && !tokens.curr().eq("VOID")) {
         type = tokens.curr().toString();
       } else if (tokens.curr() instanceof Identifier
@@ -342,8 +343,9 @@ public class MethodParser implements ProdParser<Method> {
       } else if (tokens.curr().eq(sym(DOT))
           && tokens.next().eq(sym(DOT))
           && tokens.next().eq(sym(DOT))) {
-        // varargs (e.g. PrintStream... outputs) — treat as array parameter
+        // varargs (e.g. PrintStream... outputs) — an array parameter
         type = "[" + type;
+        varargs = true;
       } else {
         tokens.prev();
       }
@@ -352,6 +354,7 @@ public class MethodParser implements ProdParser<Method> {
       }
       if (type != null && name != null) {
         Argument arg = new Argument(type, name);
+        arg.varargs = varargs;
         if (typeArgs != null && !type.startsWith("[")) {
           arg.genericType = type + typeArgs;
         }

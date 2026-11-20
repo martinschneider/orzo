@@ -7,6 +7,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2_X1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP_X1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IAND;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IFEQ;
@@ -24,6 +25,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLT;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPNE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INSTANCEOF;
+import static io.github.martinschneider.orzo.codegen.OpCodes.IOR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IXOR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SWAP;
@@ -34,6 +36,9 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.ARITHMETIC_OPS;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.COMPARE_TO_ZERO_OPS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_AND;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_OR;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.EQUAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
@@ -279,6 +284,26 @@ public class ExpressionGenerator {
         out.write((short) 4);
         out.write(ICONST_1);
       }
+      if (reverseComp) {
+        out.write(IFEQ);
+      }
+      ctx.opStack.pop();
+      ctx.opStack.pop();
+      ctx.opStack.push(BOOLEAN);
+      return new ExpressionResult(BOOLEAN, null);
+    }
+    // Non-short-circuit boolean &, |, ^ (e.g. "a != null & b != null"): both operands are
+    // evaluated to 0/1 values first, then combined bitwise.
+    Operators boolOp = findOutermostBooleanBitOp(tokens);
+    if (boolOp != null) {
+      int opIdx = tokens.size() - 1;
+      int rStart = findRightOperandStart(tokens, opIdx);
+      out.write(
+          evalAsValue(null, new Expression(new ArrayList<>(tokens.subList(0, rStart)))).getBytes());
+      out.write(
+          evalAsValue(null, new Expression(new ArrayList<>(tokens.subList(rStart, opIdx))))
+              .getBytes());
+      out.write(boolOp == BITWISE_AND ? IAND : (boolOp == BITWISE_OR ? IOR : IXOR));
       if (reverseComp) {
         out.write(IFEQ);
       }
@@ -1207,6 +1232,10 @@ public class ExpressionGenerator {
       constructor = ctx.methodCallGen.findConstructorViaReflectionTyped(jvmClassName, argTypes);
     }
     if (constructor == null) {
+      String simpleName = jvmClassName.substring(jvmClassName.lastIndexOf('/') + 1);
+      constructor = ctx.methodCallGen.findVarargsMethod(simpleName + ".<init>", argTypes);
+    }
+    if (constructor == null) {
       constructor = ctx.methodCallGen.findConstructorViaReflection(jvmClassName, argTypes.size());
     }
     if (constructor == null) {
@@ -1218,14 +1247,7 @@ public class ExpressionGenerator {
     }
 
     // Phase 2: eval each argument and box if needed
-    for (int i = 0; i < constructorCall.args.size(); i++) {
-      String srcType = argTypes.get(i);
-      String tgtType = constructor.args.get(i).type;
-      String evalType =
-          TypeUtils.isPrimitive(srcType) && !TypeUtils.isPrimitive(tgtType) ? srcType : tgtType;
-      ExpressionResult exprResult = ctx.exprGen.eval(out, evalType, constructorCall.args.get(i));
-      ctx.basicGen.convert1(out, exprResult.type, tgtType);
-    }
+    ctx.methodCallGen.pushArgs(out, constructorCall.args, argTypes, constructor);
 
     // Generate INVOKESPECIAL <init>
     ctx.invokeGen.invokeSpecial(out, constructor);
@@ -1389,6 +1411,36 @@ public class ExpressionGenerator {
       }
     }
     return subOut;
+  }
+
+  // Returns the outermost operator of a postfix token list if it's a &, | or ^ applied to boolean
+  // operands (e.g. comparisons), otherwise null.
+  private Operators findOutermostBooleanBitOp(List<Token> tokens) {
+    if (tokens.isEmpty() || !(tokens.get(tokens.size() - 1) instanceof Operator)) {
+      return null;
+    }
+    Operators op = ((Operator) tokens.get(tokens.size() - 1)).opValue();
+    if (op != BITWISE_AND && op != BITWISE_OR && op != BITWISE_XOR) {
+      return null;
+    }
+    int rStart = findRightOperandStart(tokens, tokens.size() - 1);
+    List<Token> left = tokens.subList(0, rStart);
+    List<Token> right = tokens.subList(rStart, tokens.size() - 1);
+    return (isBooleanOperand(left) || isBooleanOperand(right)) ? op : null;
+  }
+
+  private boolean isBooleanOperand(List<Token> operand) {
+    if (operand.isEmpty()) {
+      return false;
+    }
+    Token last = operand.get(operand.size() - 1);
+    if (last instanceof Operator) {
+      Operators op = ((Operator) last).opValue();
+      return COMPARATORS.contains(op) || op == LOGICAL_AND || op == LOGICAL_OR || op == NEGATE;
+    }
+    return BOOLEAN.equals(
+        new NumExprTypeDecider(ctx)
+            .getType(ctx.classIdMap, new Expression(new ArrayList<>(operand))));
   }
 
   // Returns the index of the outermost LOGICAL_AND or LOGICAL_OR in a postfix token list,

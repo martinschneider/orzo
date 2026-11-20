@@ -8,7 +8,6 @@ src/main/java/io/github/martinschneider/orzo/codegen/generators/BasicGenerator.j
 src/main/java/io/github/martinschneider/orzo/codegen/generators/IncrementGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/DeclarationGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ExpressionGenerator.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/InvokeGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodCallGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/OperatorMaps.java
@@ -21,12 +20,9 @@ src/main/java/io/github/martinschneider/orzo/Orzo.java
 src/main/java/io/github/martinschneider/orzo/parser/ArrayInitParser.java
 src/main/java/io/github/martinschneider/orzo/parser/ClassParser.java
 src/main/java/io/github/martinschneider/orzo/parser/DeclarationParser.java
-src/main/java/io/github/martinschneider/orzo/parser/EnumParser.java
 src/main/java/io/github/martinschneider/orzo/parser/ExpressionParser.java
-src/main/java/io/github/martinschneider/orzo/parser/IfParser.java
 src/main/java/io/github/martinschneider/orzo/parser/MethodParser.java
 src/main/java/io/github/martinschneider/orzo/util/FactoryHelper.java
 src/main/java/io/github/martinschneider/orzo/parser/ConstructorCallParser.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/SwitchGenerator.java
-src/main/java/io/github/martinschneider/orzo/codegen/CGContext.java
 

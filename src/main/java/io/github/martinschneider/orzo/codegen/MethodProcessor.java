@@ -152,7 +152,9 @@ public class MethodProcessor {
   private List<Argument> mapArgs(Parameter[] params) {
     List<Argument> args = new ArrayList<>();
     for (Parameter param : params) {
-      args.add(new Argument(param.getType().getName(), id(param.getName())));
+      Argument arg = new Argument(param.getType().getName(), id(param.getName()));
+      arg.varargs = param.isVarArgs();
+      args.add(arg);
     }
     return args;
   }

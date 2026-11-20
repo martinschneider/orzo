@@ -9,6 +9,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.DOUBLE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
@@ -312,16 +313,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         ctx.loadGen.loadReference(out, (short) 0); // push 'this' for invokevirtual
       }
     }
-    for (int i = 0; i < types.size(); i++) {
-      String srcType = types.get(i);
-      String tgtType = method.args.get(i).type;
-      // When autoboxing (primitive → reference): use source type for eval so that
-      // PushGenerator emits correct bytecode for numeric literals
-      String evalType =
-          TypeUtils.isPrimitive(srcType) && !TypeUtils.isPrimitive(tgtType) ? srcType : tgtType;
-      ExpressionResult exprResult = ctx.exprGen.eval(out, evalType, methodCall.params.get(i));
-      ctx.basicGen.convert1(out, exprResult.type, tgtType);
-    }
+    pushArgs(out, methodCall.params, types, method);
     if (isStatic) {
       ctx.invokeGen.invokeStatic(out, method);
     } else if ("super".equals(receiverName)) {
@@ -463,14 +455,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
               null);
     }
     // Phase 2: eval each argument and box if needed
-    for (int i = 0; i < methodCall.params.size(); i++) {
-      String srcType = exprTypes.get(i);
-      String tgtType = superConstr.args.get(i).type;
-      String evalType =
-          TypeUtils.isPrimitive(srcType) && !TypeUtils.isPrimitive(tgtType) ? srcType : tgtType;
-      ExpressionResult exprResult = ctx.exprGen.eval(out, evalType, methodCall.params.get(i));
-      ctx.basicGen.convert1(out, exprResult.type, tgtType);
-    }
+    pushArgs(out, methodCall.params, exprTypes, superConstr);
     ctx.invokeGen.invokeSpecial(out, superConstr);
     return out;
   }
@@ -503,14 +488,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
               constrArgs,
               null);
     }
-    for (int i = 0; i < methodCall.params.size(); i++) {
-      String srcType = exprTypes.get(i);
-      String tgtType = thisConstr.args.get(i).type;
-      String evalType =
-          TypeUtils.isPrimitive(srcType) && !TypeUtils.isPrimitive(tgtType) ? srcType : tgtType;
-      ExpressionResult exprResult = ctx.exprGen.eval(out, evalType, methodCall.params.get(i));
-      ctx.basicGen.convert1(out, exprResult.type, tgtType);
-    }
+    pushArgs(out, methodCall.params, exprTypes, thisConstr);
     ctx.invokeGen.invokeSpecial(out, thisConstr);
     return out;
   }
@@ -527,6 +505,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
                     p.getType().getName(),
                     io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
           }
+          markVarargs(args, c.isVarArgs());
           return new Method(
               jvmClassName.replace('/', '.'),
               List.of(AccessFlag.ACC_PUBLIC),
@@ -545,37 +524,110 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   Method findConstructorViaReflectionTyped(String jvmClassName, List<String> argTypes) {
     try {
       Class<?> clazz = Class.forName(jvmClassName.replace('/', '.'));
-      for (java.lang.reflect.Constructor<?> c : clazz.getConstructors()) {
-        if (!Modifier.isPublic(c.getModifiers()) || c.getParameterCount() != argTypes.size()) {
-          continue;
-        }
-        boolean compatible = true;
-        for (int i = 0; i < argTypes.size(); i++) {
-          if (!isArgTypeCompatible(argTypes.get(i), c.getParameters()[i].getType())) {
-            compatible = false;
-            break;
+      for (int pass = 0; pass < 2; pass++) {
+        for (java.lang.reflect.Constructor<?> c : clazz.getConstructors()) {
+          if (!Modifier.isPublic(c.getModifiers())) {
+            continue;
           }
+          // second pass: a varargs constructor called with its trailing arguments unpacked
+          boolean compatible =
+              (pass == 0)
+                  ? c.getParameterCount() == argTypes.size()
+                  : isVarargsCompatible(c.isVarArgs(), c.getParameterTypes(), argTypes);
+          for (int i = 0; compatible && pass == 0 && i < argTypes.size(); i++) {
+            compatible = isArgTypeCompatible(argTypes.get(i), c.getParameters()[i].getType());
+          }
+          if (!compatible) continue;
+          List<Argument> args = new ArrayList<>();
+          for (java.lang.reflect.Parameter p : c.getParameters()) {
+            args.add(
+                new Argument(
+                    p.getType().getName(),
+                    io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
+          }
+          markVarargs(args, c.isVarArgs());
+          return new Method(
+              jvmClassName.replace('/', '.'),
+              List.of(AccessFlag.ACC_PUBLIC),
+              "void",
+              io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
+              args,
+              null);
         }
-        if (!compatible) continue;
-        List<Argument> args = new ArrayList<>();
-        for (java.lang.reflect.Parameter p : c.getParameters()) {
-          args.add(
-              new Argument(
-                  p.getType().getName(),
-                  io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
-        }
-        return new Method(
-            jvmClassName.replace('/', '.'),
-            List.of(AccessFlag.ACC_PUBLIC),
-            "void",
-            io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
-            args,
-            null);
       }
     } catch (ClassNotFoundException e) {
       // not on classpath, fall through
     }
     return null;
+  }
+
+  private static void markVarargs(List<Argument> args, boolean isVarArgs) {
+    if (isVarArgs && !args.isEmpty()) {
+      args.get(args.size() - 1).varargs = true;
+    }
+  }
+
+  // Whether the given argument types match a varargs signature with the trailing arguments
+  // unpacked, e.g. (String, int, int) for format(String, Object...)
+  private boolean isVarargsCompatible(
+      boolean isVarArgs, Class<?>[] paramTypes, List<String> argTypes) {
+    int fixed = paramTypes.length - 1;
+    if (!isVarArgs || argTypes.size() < fixed) {
+      return false;
+    }
+    for (int i = 0; i < fixed; i++) {
+      if (!isArgTypeCompatible(argTypes.get(i), paramTypes[i])) {
+        return false;
+      }
+    }
+    Class<?> elemType = paramTypes[fixed].getComponentType();
+    for (int i = fixed; i < argTypes.size(); i++) {
+      if (!isArgTypeCompatible(argTypes.get(i), elemType)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Evaluates the arguments of a call to the given method, converting (e.g. boxing) each one to the
+   * parameter type. For a varargs method called with its trailing arguments unpacked, those are
+   * packed into a new array.
+   */
+  public void pushArgs(
+      DynamicByteArray out, List<Expression> params, List<String> types, Method method) {
+    int paramCount = method.args.size();
+    boolean pack =
+        paramCount > 0
+            && method.args.get(paramCount - 1).varargs
+            && !(types.size() == paramCount && types.get(paramCount - 1).startsWith("["));
+    int direct = pack ? paramCount - 1 : types.size();
+    for (int i = 0; i < direct; i++) {
+      pushArg(out, params.get(i), types.get(i), method.args.get(i).type);
+    }
+    if (pack) {
+      String elemType =
+          TypeUtils.jvmDescriptorToTypeName(method.args.get(paramCount - 1).type.substring(1));
+      ctx.pushGen.push(out, INT, types.size() - direct);
+      ctx.basicGen.newArray(out, elemType);
+      for (int i = direct; i < types.size(); i++) {
+        out.write(io.github.martinschneider.orzo.codegen.OpCodes.DUP);
+        ctx.opStack.push(REF);
+        ctx.pushGen.push(out, INT, i - direct);
+        pushArg(out, params.get(i), types.get(i), elemType);
+        out.write(TypeUtils.getStoreOpCode(elemType));
+        ctx.opStack.pop(3);
+      }
+    }
+  }
+
+  private void pushArg(DynamicByteArray out, Expression param, String srcType, String tgtType) {
+    // When autoboxing (primitive → reference): use source type for eval so that
+    // PushGenerator emits correct bytecode for numeric literals
+    String evalType =
+        TypeUtils.isPrimitive(srcType) && !TypeUtils.isPrimitive(tgtType) ? srcType : tgtType;
+    ExpressionResult exprResult = ctx.exprGen.eval(out, evalType, param);
+    ctx.basicGen.convert1(out, exprResult.type, tgtType);
   }
 
   /**
@@ -648,6 +700,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
                     p.getType().getName(),
                     io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
           }
+          markVarargs(args, m.isVarArgs());
           String returnType = m.getReturnType().getName();
           // Normalize common return types
           if ("java.lang.String".equals(returnType)) {
@@ -669,6 +722,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
                   p.getType().getName(),
                   io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
         }
+        markVarargs(args, bridgeCandidate.isVarArgs());
         String returnType = bridgeCandidate.getReturnType().getName();
         if ("java.lang.String".equals(returnType)) {
           returnType = STRING;
@@ -783,14 +837,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       return "";
     }
     // Receiver is already on the operand stack from the previous method call
-    for (int i = 0; i < types.size(); i++) {
-      String srcType = types.get(i);
-      String tgtType = method.args.get(i).type;
-      String evalType =
-          TypeUtils.isPrimitive(srcType) && !TypeUtils.isPrimitive(tgtType) ? srcType : tgtType;
-      ExpressionResult exprResult = ctx.exprGen.eval(out, evalType, methodCall.params.get(i));
-      ctx.basicGen.convert1(out, exprResult.type, tgtType);
-    }
+    pushArgs(out, methodCall.params, types, method);
     boolean isStatic = method.accFlags != null && method.accFlags.contains(AccessFlag.ACC_STATIC);
     if (isStatic) {
       ctx.invokeGen.invokeStatic(out, method);
@@ -820,21 +867,22 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       // vs "append(I)") the FIRST compatible overload found could be the wrong one whenever an
       // exact match also exists. Prefer an exact-type match on every parameter first; only fall
       // back to widening-compatible matching if no exact match exists for any overload.
-      for (boolean exactOnly : new boolean[] {true, false}) {
+      // Third pass: a varargs method called with its trailing arguments unpacked
+      for (int pass = 0; pass < 3; pass++) {
+        boolean exactOnly = pass == 0;
         for (java.lang.reflect.Method m : getMethodsIncludingNonPublic(clazz)) {
-          if (!m.getName().equals(methodName) || m.getParameterCount() != argTypes.size()) {
+          if (!m.getName().equals(methodName)) {
             continue;
           }
-          boolean compatible = true;
-          for (int i = 0; i < argTypes.size(); i++) {
-            boolean ok =
+          boolean compatible =
+              (pass < 2)
+                  ? m.getParameterCount() == argTypes.size()
+                  : isVarargsCompatible(m.isVarArgs(), m.getParameterTypes(), argTypes);
+          for (int i = 0; compatible && pass < 2 && i < argTypes.size(); i++) {
+            compatible =
                 exactOnly
                     ? isExactTypeMatch(argTypes.get(i), m.getParameters()[i].getType())
                     : isArgTypeCompatible(argTypes.get(i), m.getParameters()[i].getType());
-            if (!ok) {
-              compatible = false;
-              break;
-            }
           }
           if (!compatible) {
             continue;
@@ -850,6 +898,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
                     p.getType().getName(),
                     io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
           }
+          markVarargs(args, m.isVarArgs());
           String returnType = m.getReturnType().getName();
           if ("java.lang.String".equals(returnType)) {
             returnType = STRING;
@@ -876,6 +925,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
                   p.getType().getName(),
                   io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
         }
+        markVarargs(args, bridgeCandidate.isVarArgs());
         String returnType = bridgeCandidate.getReturnType().getName();
         if ("java.lang.String".equals(returnType)) {
           returnType = STRING;
@@ -1130,6 +1180,46 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         break;
       }
     }
+    if (method == null) {
+      method = findVarargsMethod(methodName, types);
+    }
     return method;
+  }
+
+  /**
+   * Finds a varargs method in the method map (e.g. a method of a class compiled in the same run)
+   * that matches a call with its trailing arguments unpacked, e.g. sum(1, 2, 3) for sum(int...).
+   */
+  public Method findVarargsMethod(String methodName, List<String> types) {
+    for (java.util.Map.Entry<String, Method> entry : ctx.methodMap.entrySet()) {
+      Method candidate = entry.getValue();
+      int paramCount = candidate.args.size();
+      if (!entry.getKey().startsWith(methodName + "(")
+          || paramCount == 0
+          || !candidate.args.get(paramCount - 1).varargs
+          || types.size() < paramCount - 1) {
+        continue;
+      }
+      String elemType = candidate.args.get(paramCount - 1).type.substring(1);
+      boolean compatible = true;
+      for (int i = 0; compatible && i < types.size(); i++) {
+        String paramType = (i < paramCount - 1) ? candidate.args.get(i).type : elemType;
+        compatible = isAssignable(types.get(i), paramType);
+      }
+      if (compatible) {
+        return candidate;
+      }
+    }
+    return null;
+  }
+
+  private boolean isAssignable(String argType, String paramType) {
+    String paramDescr = TypeUtils.descr(TypeUtils.jvmDescriptorToTypeName(paramType));
+    for (String assignable : TypeUtils.assignableTo(argType)) {
+      if (TypeUtils.descr(assignable).equals(paramDescr)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

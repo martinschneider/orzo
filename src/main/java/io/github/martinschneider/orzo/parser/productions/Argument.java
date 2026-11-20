@@ -8,6 +8,8 @@ public class Argument {
   public String type;
   // full generic type, e.g. "java.util.List<a.b.Foo>" (null if not generic)
   public String genericType;
+  // true for a trailing varargs parameter (its type is the array type, e.g. "[java.lang.String")
+  public boolean varargs;
 
   public Argument(String type, Identifier name) {
     this.name = name;
