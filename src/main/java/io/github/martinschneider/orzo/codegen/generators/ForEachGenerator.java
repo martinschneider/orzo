@@ -202,8 +202,14 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
     ctx.loadGen.load(bodyOut, ctx.classIdMap.variables.get(iterId));
     ctx.invokeGen.invokeInterface(bodyOut, nextMethod);
 
-    String[] unboxInfo = UNBOX.get(stmt.elemType);
-    if (unboxInfo != null) {
+    String[] unboxInfo = (stmt.elemArrDim > 0) ? null : UNBOX.get(stmt.elemType);
+    if (stmt.elemArrDim > 0) {
+      // Array element type, e.g. "for (int[] row : listOfRows)": cast to the array class
+      String arrayClass = TypeUtils.descr(stmt.elemType, stmt.elemArrDim);
+      ctx.constPool.addClass(arrayClass);
+      bodyOut.write(CHECKCAST);
+      bodyOut.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, arrayClass));
+    } else if (unboxInfo != null) {
       // Primitive element type: CHECKCAST to boxed class, then unbox
       String boxedClass = unboxInfo[0];
       String unboxMethodName = unboxInfo[1];
@@ -226,7 +232,12 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
     }
 
     // Store the cast/unboxed element into the loop variable (allocates slot if needed)
-    ctx.assignGen.assign(bodyOut, ctx.classIdMap.variables, stmt.elemType, stmt.elemVar);
+    if (stmt.elemArrDim > 0) {
+      ctx.assignGen.assignArray(
+          bodyOut, ctx.classIdMap, stmt.elemType, stmt.elemArrDim, stmt.elemVar);
+    } else {
+      ctx.assignGen.assign(bodyOut, ctx.classIdMap.variables, stmt.elemType, stmt.elemVar);
+    }
 
     // Emit body statements
     for (Statement innerStmt : stmt.body) {

@@ -10,5 +10,8 @@ public class GenericArrayValue {
     if (a != null) {
       System.out.println(a[1]);
     }
+    boolean skip = false;
+    String[] b = skip ? null : m.get("k");
+    System.out.println(b[0]);
   }
 }

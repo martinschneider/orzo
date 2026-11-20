@@ -101,8 +101,9 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
     if (!(decl.val instanceof ArrayInit)) {
       ctx.exprGen.eval(out, decl.type, decl.val);
       String actualType = ctx.opStack.type();
-      if (actualType != null && !actualType.startsWith("[") && !REF.equals(actualType)) {
+      if (actualType != null && !actualType.startsWith("[")) {
         // e.g. an erased generic return (Map<K, V[]>.get() returns Object): cast to the array
+        // (harmless for null or a value that already is such an array)
         String arrayClass = TypeUtils.descr(decl.type, decl.arrDim);
         ctx.constPool.addClass(arrayClass);
         out.write(CHECKCAST);

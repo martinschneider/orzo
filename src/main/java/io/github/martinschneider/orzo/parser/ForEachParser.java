@@ -75,6 +75,8 @@ public class ForEachParser implements ProdParser<ForEachStatement> {
     }
     ParallelDeclaration decl = (ParallelDeclaration) initialization;
     Declaration first = decl.declarations.get(0);
-    return new ForEachStatement(first.type, first.name, iterable, body);
+    ForEachStatement forEach = new ForEachStatement(first.type, first.name, iterable, body);
+    forEach.elemArrDim = first.arrDim;
+    return forEach;
   }
 }

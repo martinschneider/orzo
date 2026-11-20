@@ -232,6 +232,8 @@ public class StackMapTableBuilder {
   // Stack type of an object created by NEW whose constructor hasn't run yet:
   // UNINITIALIZED + <offset of the NEW> + ":" + <class name>
   private static final String UNINITIALIZED = "uninitialized@";
+  // Stack type of the null reference (Null_variable_info)
+  private static final String NULL = "null";
 
   private static final class Frame {
     final List<String> locals;
@@ -665,7 +667,9 @@ public class StackMapTableBuilder {
     while (i < code.length) {
       // At a branch target with a previously-recorded stack, reinitialize
       if (result.containsKey(i)) {
-        stack = new ArrayList<>(result.get(i));
+        // a branch target reached by falling through as well: merge both incoming stacks
+        stack = dead ? new ArrayList<>(result.get(i)) : mergeStacks(result.get(i), stack);
+        result.put(i, new ArrayList<>(stack));
         dead = false;
       } else if (dead) {
         stack = new ArrayList<>();
@@ -683,7 +687,7 @@ public class StackMapTableBuilder {
           if (!targetStack.isEmpty()) {
             targetStack.remove(targetStack.size() - 1);
           }
-          result.putIfAbsent(target, targetStack);
+          recordStack(result, target, targetStack);
           if (!stack.isEmpty()) {
             stack.remove(stack.size() - 1);
           }
@@ -698,7 +702,7 @@ public class StackMapTableBuilder {
             targetStack.remove(targetStack.size() - 1);
             targetStack.remove(targetStack.size() - 1);
           }
-          result.putIfAbsent(target, targetStack);
+          recordStack(result, target, targetStack);
           if (stack.size() >= 2) {
             stack.remove(stack.size() - 1);
             stack.remove(stack.size() - 1);
@@ -708,11 +712,11 @@ public class StackMapTableBuilder {
         if (i + 2 < code.length) {
           short off = (short) (((code[i + 1] & 0xFF) << 8) | (code[i + 2] & 0xFF));
           int target = i + off;
-          result.putIfAbsent(target, new ArrayList<>(stack));
+          recordStack(result, target, new ArrayList<>(stack));
           // Instruction after GOTO is dead code; record empty stack
           int next = i + 3;
           if (next < code.length) {
-            result.putIfAbsent(next, new ArrayList<>());
+            recordStack(result, next, new ArrayList<>());
           }
           dead = true;
         }
@@ -724,10 +728,10 @@ public class StackMapTableBuilder {
                   | ((code[i + 3] & 0xFF) << 8)
                   | (code[i + 4] & 0xFF);
           int target = i + off;
-          result.putIfAbsent(target, new ArrayList<>(stack));
+          recordStack(result, target, new ArrayList<>(stack));
           int next = i + 5;
           if (next < code.length) {
-            result.putIfAbsent(next, new ArrayList<>());
+            recordStack(result, next, new ArrayList<>());
           }
           dead = true;
         }
@@ -736,7 +740,7 @@ public class StackMapTableBuilder {
         applyStackEffect(op, code, i, stack, constPool, localTypes);
         int next = i + 1;
         if (next < code.length) {
-          result.putIfAbsent(next, new ArrayList<>());
+          recordStack(result, next, new ArrayList<>());
         }
         dead = true;
       } else {
@@ -747,6 +751,28 @@ public class StackMapTableBuilder {
       i += opcodeLength(code, i);
     }
     return result;
+  }
+
+  // Records the stack at a branch target, merging with a stack recorded from another branch
+  private static void recordStack(
+      Map<Integer, List<String>> result, int target, List<String> stack) {
+    List<String> existing = result.get(target);
+    result.put(target, existing == null ? new ArrayList<>(stack) : mergeStacks(existing, stack));
+  }
+
+  // Merges the stacks of two paths joining at the same instruction: a null reference on one path
+  // takes the type the other path has in that position (e.g. "cond ? null : (String[]) x").
+  private static List<String> mergeStacks(List<String> a, List<String> b) {
+    List<String> merged = new ArrayList<>(a);
+    if (a.size() != b.size()) {
+      return merged;
+    }
+    for (int k = 0; k < merged.size(); k++) {
+      if (NULL.equals(merged.get(k))) {
+        merged.set(k, b.get(k));
+      }
+    }
+    return merged;
   }
 
   /**
@@ -766,8 +792,11 @@ public class StackMapTableBuilder {
       case IINC:
         break;
 
-      // Push ref
       case ACONST_NULL:
+        stack.add(NULL);
+        break;
+
+      // Push ref
       case ALOAD_0:
       case ALOAD_1:
       case ALOAD_2:
@@ -788,11 +817,15 @@ public class StackMapTableBuilder {
             stack.add("Ljava/lang/Object;");
           }
         } else if (op == AALOAD) {
+          String elemType = "Ljava/lang/Object;";
           if (stack.size() >= 2) {
             stack.remove(stack.size() - 1);
-            stack.remove(stack.size() - 1);
+            String arrayType = stack.remove(stack.size() - 1);
+            if (arrayType.startsWith("[")) {
+              elemType = arrayType.substring(1); // "[Ljava/lang/String;" → "Ljava/lang/String;"
+            }
           }
-          stack.add("Ljava/lang/Object;");
+          stack.add(elemType);
         } else {
           int slot;
           if (op == ALOAD) {
@@ -1186,7 +1219,16 @@ public class StackMapTableBuilder {
 
       // checkcast: no stack change (just verifies)
       case CHECKCAST:
-        break;
+        {
+          // narrows the type of the reference on top of the stack
+          int cpIdx = ((code[pos + 1] & 0xFF) << 8) | (code[pos + 2] & 0xFF);
+          String className = constPool.getClassName(cpIdx);
+          if (className != null && !stack.isEmpty()) {
+            stack.set(
+                stack.size() - 1, className.startsWith("[") ? className : "L" + className + ";");
+          }
+          break;
+        }
 
       // new: push an uninitialized reference (Uninitialized_variable_info, remembering the
       // offset of the NEW instruction and the class, see INVOKESPECIAL)
@@ -1675,6 +1717,10 @@ public class StackMapTableBuilder {
   private void writeVerificationType(DynamicByteArray out, String type, ConstantPool constPool) {
     if (type == null) {
       out.write((byte) 0); // Top_variable_info
+      return;
+    }
+    if (NULL.equals(type)) {
+      out.write((byte) 5); // Null_variable_info
       return;
     }
     if (type.startsWith(UNINITIALIZED)) {

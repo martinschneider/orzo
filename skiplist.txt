@@ -7,7 +7,6 @@ src/main/java/io/github/martinschneider/orzo/codegen/generators/AssignmentGenera
 src/main/java/io/github/martinschneider/orzo/codegen/generators/DeclarationGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ExpressionGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodCallGenerator.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/OperatorMaps.java
 src/main/java/io/github/martinschneider/orzo/codegen/identifier/MemberProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/MethodProcessor.java
@@ -20,5 +19,4 @@ src/main/java/io/github/martinschneider/orzo/parser/DeclarationParser.java
 src/main/java/io/github/martinschneider/orzo/parser/ExpressionParser.java
 src/main/java/io/github/martinschneider/orzo/parser/MethodParser.java
 src/main/java/io/github/martinschneider/orzo/util/FactoryHelper.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/SwitchGenerator.java
 

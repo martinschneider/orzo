@@ -7,6 +7,7 @@ import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,8 +47,10 @@ public class FieldProcessor {
   public Map<String, StaticField> getStaticFieldMap(Clazz currentClazz, List<Clazz> clazzes) {
     Map<String, StaticField> fieldMap = new HashMap<>();
 
-    // Add fields from current class
-    addFieldsFromClass(fieldMap, currentClazz);
+    // Later registrations take precedence for the same simple name: the current class's own
+    // fields shadow statically imported ones, which in turn shadow same-named fields of other
+    // classes (e.g. a static import of OpCodes.* must win over the enum constant
+    // Keywords.RETURN for a bare "RETURN").
 
     // Add fields from imported classes
     addImportedFields(fieldMap, currentClazz, clazzes);
@@ -57,6 +60,9 @@ public class FieldProcessor {
 
     // Add fields from static imports (e.g. import static Type.VOID)
     addStaticImportFields(fieldMap, currentClazz);
+
+    // Add fields from current class
+    addFieldsFromClass(fieldMap, currentClazz);
 
     return fieldMap;
   }
@@ -165,10 +171,18 @@ public class FieldProcessor {
     if (currentClazz.imports == null) {
       return;
     }
+    // wildcard imports first, so that explicit single-member imports take precedence
+    List<Import> staticImports = new ArrayList<>();
     for (Import imp : currentClazz.imports) {
-      if (!imp.isStatic) {
-        continue;
+      if (imp.isStatic && imp.id != null) {
+        if (imp.id.endsWith(".*")) {
+          staticImports.add(0, imp);
+        } else {
+          staticImports.add(imp);
+        }
       }
+    }
+    for (Import imp : staticImports) {
       String importPath = imp.id;
       int lastDot = importPath.lastIndexOf('.');
       if (lastDot < 0) {
@@ -187,7 +201,7 @@ public class FieldProcessor {
               String fieldType = field.getType().getName();
               StaticField staticField = new StaticField(className, fieldName, fieldType, false);
               staticField.genericType = GenericTypes.fieldType(field);
-              fieldMap.putIfAbsent(fieldName, staticField);
+              fieldMap.put(fieldName, staticField);
               fieldMap.put(clazz.getSimpleName() + "." + fieldName, staticField);
             }
           }
