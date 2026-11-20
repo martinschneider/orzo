@@ -64,6 +64,33 @@ public class TypeUtils {
     }
   }
 
+  // "I" → "int", "Ljava/lang/String;" → "java.lang.String"; anything else is returned as-is
+  public static String jvmDescriptorToTypeName(String descriptor) {
+    switch (descriptor) {
+      case "I":
+        return INT;
+      case "B":
+        return BYTE;
+      case "S":
+        return SHORT;
+      case "J":
+        return LONG;
+      case "D":
+        return DOUBLE;
+      case "F":
+        return FLOAT;
+      case "C":
+        return CHAR;
+      case "Z":
+        return BOOLEAN;
+      default:
+        if (descriptor.startsWith("L") && descriptor.endsWith(";")) {
+          return descriptor.substring(1, descriptor.length() - 1).replace('/', '.');
+        }
+        return descriptor;
+    }
+  }
+
   public static String descr(String type) {
     return descr(type, 0);
   }

@@ -28,7 +28,9 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES_ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
@@ -75,11 +77,15 @@ public class AssignmentParser implements ProdParser<Assignment> {
         tokens.next(); // move to the next segment
       }
       String lastSegment = tokens.curr().toString();
-      // "Type name" or "Type<Args> name" (a statement can't start with a "<" comparison).
+      // "Type name", "Type<Args> name" (a statement can't start with a "<" comparison) or
+      // "Type[] name" (an empty "[]" can't be an array access).
       boolean looksLikeDeclaration =
           !lastSegment.isEmpty()
               && Character.isUpperCase(lastSegment.charAt(0))
-              && (tokens.peekNext() instanceof Identifier || tokens.peekNext().eq(op(LESS)));
+              && (tokens.peekNext() instanceof Identifier
+                  || tokens.peekNext().eq(op(LESS))
+                  || (tokens.peekNext().eq(sym(LBRAK))
+                      && tokens.get(tokens.idx() + 2).eq(sym(RBRAK))));
       tokens.setIdx(scanIdx);
       if (looksLikeDeclaration) {
         return null;

@@ -15,6 +15,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] String
 - [X] interfaces
 - [ ] [reference types](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.4) (partially supported)
+- [ ] generics (partially supported: type arguments of locals, parameters and fields are tracked for calls on JDK generic types, e.g. `list.get(i).length()`)
 - [X] [enums](https://docs.oracle.com/javase/specs/jls/se18/html/jls-8.html#jls-8.9)
 - [ ] class inheritance
 - [X] [exceptions](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.10) (try-catch and throw; exception table + StackMapTable emitted)
@@ -57,7 +58,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] [return](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.17)
 - [ ] method and constructor calls (partially supported)
 - [X] [continue](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.16)
-- [X] [try](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.20) (try-catch; finally is parsed but not emitted)
+- [X] [try](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.20) (try-catch incl. multi-catch `catch (A | B e)`; finally is parsed but not emitted)
 - [X] static initializer blocks `static { }`
 - [X] [switch](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.11) (String and integral types; no fall-through)
 - [ ] [lambdas](https://docs.oracle.com/javase/specs/jls/se18/html/jls-15.html#jls-15.27)
@@ -66,7 +67,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 ## Notes
 
 - array defintions must be of the form `int[] a`, `int a[]` is not supported
-- Orzo creates class files with major version 65 (Java 21) and emits a [StackMapTable attribute](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4) for methods with branch targets, as required by the JVM spec.
+- Orzo creates class files with major version 71 (Java 27) and emits a [StackMapTable attribute](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4) for methods with branch targets, as required by the JVM spec.
 - fields and variables share the same namespace
 
 # Example
@@ -101,4 +102,4 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
-Self-compilation progress: █████████████▎░░░░░░░░░░░░░░░░░░░░░░░░░░ 33.2%
+Self-compilation progress: █████████████▉░░░░░░░░░░░░░░░░░░░░░░░░░░ 34.8%

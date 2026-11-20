@@ -1,6 +1,10 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
@@ -102,6 +106,9 @@ public class ExpressionParser implements ProdParser<Expression> {
             || tokens.curr().eq(sym(QUESTION))
             || isNewKeyword(tokens.curr())
             || isInstanceofKeyword(tokens.curr())) {
+          if (tokens.curr().eq(sym(LPAREN))) {
+            stripGenericCastArgs(tokens);
+          }
           // Handle ternary: when we see '?' at depth -1, parse it as a ternary expression
           if (tokens.curr().eq(sym(QUESTION)) && parenthesis == -1 && ternaryOuterParenIdx >= 0) {
             // conditionTokens = exprTokens from ternaryOuterParenIdx+1 to end (exclude the '(')
@@ -168,6 +175,7 @@ public class ExpressionParser implements ProdParser<Expression> {
             idx = tokens.idx();
           }
           List<Identifier> selectors = new ArrayList<>();
+          boolean strReceiver = false;
           do {
             idx = tokens.idx();
             MethodCall methodCall = parseMethod(tokens);
@@ -223,11 +231,18 @@ public class ExpressionParser implements ProdParser<Expression> {
                   if (!(curr instanceof Str)) {
                     break;
                   }
+                  strReceiver = true;
                 }
               }
             }
           } while (tokens.curr().eq(sym(DOT)) && tokens.next() != null);
-          if (!selectors.isEmpty()) exprTokens.add(flattenId(selectors));
+          if (!selectors.isEmpty()) {
+            Token flat = flattenId(selectors);
+            if (strReceiver && flat instanceof MethodCall) {
+              ((MethodCall) flat).literalReceiver = true;
+            }
+            exprTokens.add(flat);
+          }
         }
       }
       // Handle ((Type) inner) — balanced parenthesized cast expression without following DOT
@@ -270,6 +285,47 @@ public class ExpressionParser implements ProdParser<Expression> {
       }
     }
     return (exprTokens.size() > 0) ? new Expression(postfix(exprTokens), cast) : null;
+  }
+
+  // "(Type<Args>)" can only be a cast: drop the (erased) type arguments from the token stream, so
+  // the cast patterns below don't need to know about them (and a "?" wildcard isn't mistaken for
+  // a ternary). Expects the current token to be "(".
+  private void stripGenericCastArgs(TokenList tokens) {
+    int i = tokens.idx() + 1;
+    if (!(tokens.get(i) instanceof Identifier) && !(tokens.get(i) instanceof Type)) {
+      return;
+    }
+    i++;
+    while (tokens.get(i).eq(sym(DOT))
+        && (tokens.get(i + 1) instanceof Identifier || tokens.get(i + 1) instanceof Type)) {
+      i += 2;
+    }
+    if (!tokens.get(i).eq(op(LESS))) {
+      return;
+    }
+    int start = i;
+    int depth = 1;
+    while (depth > 0) {
+      i++;
+      Token t = tokens.get(i);
+      if (t.eq(eof())) {
+        return;
+      } else if (t.eq(op(LESS))) {
+        depth++;
+      } else if (t.eq(op(GREATER))) {
+        depth--;
+      } else if (t.eq(op(RSHIFT))) {
+        depth -= 2;
+      } else if (t.eq(op(RSHIFTU))) {
+        depth -= 3;
+      }
+    }
+    if (depth < 0 || !tokens.get(i + 1).eq(sym(RPAREN))) {
+      return;
+    }
+    for (int k = i; k >= start; k--) {
+      tokens.remove(k);
+    }
   }
 
   private boolean isCastMethodChainPattern(List<Token> exprTokens) {

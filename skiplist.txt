@@ -9,12 +9,10 @@ src/main/java/io/github/martinschneider/orzo/codegen/generators/ForEachGenerator
 src/main/java/io/github/martinschneider/orzo/codegen/generators/IncrementGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/DeclarationGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ExpressionGenerator.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/IfGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/InvokeGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodCallGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/OperatorMaps.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/StatementDelegator.java
 src/main/java/io/github/martinschneider/orzo/codegen/identifier/MemberProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/MethodProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/NumExprTypeDecider.java

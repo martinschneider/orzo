@@ -9,6 +9,8 @@ import java.util.List;
 public class MethodCall extends Identifier implements Statement {
   public String name;
   public List<Expression> params;
+  // true for a call on the preceding string literal, e.g. "abc".length()
+  public boolean literalReceiver;
 
   public MethodCall(String name, List<Expression> params) {
     super(name, null);

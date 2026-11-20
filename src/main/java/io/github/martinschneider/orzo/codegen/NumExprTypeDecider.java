@@ -18,8 +18,11 @@ import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
+import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
+import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -64,6 +67,18 @@ public class NumExprTypeDecider {
         types.add(STRING);
       } else if (token instanceof io.github.martinschneider.orzo.lexer.tokens.LambdaExpr) {
         types.add(io.github.martinschneider.orzo.lexer.tokens.LambdaExpr.PSEUDO_TYPE);
+      } else if (token instanceof TernaryExpression) {
+        // cond ? a : b - the type of its branches (combined like any other operands)
+        TernaryExpression ternary = (TernaryExpression) token;
+        types.add(new NumExprTypeDecider(ctx).getType(classIdMap, ternary.trueBranch));
+        types.add(new NumExprTypeDecider(ctx).getType(classIdMap, ternary.falseBranch));
+      } else if (token instanceof CastMethodCall) {
+        // ((Type) expr).method()...
+        CastMethodCall castCall = (CastMethodCall) token;
+        String chainType = followChain(classIdMap, castCall.castType, null, castCall.next);
+        if (chainType != null) {
+          types.add(chainType);
+        }
       } else if (token instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) token;
         List<String> argTypes = new ArrayList<>();
@@ -71,22 +86,52 @@ public class NumExprTypeDecider {
           argTypes.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
         }
         Method method = ctx.methodCallGen.findMatchingMethod(methodCall.name.toString(), argTypes);
+        String methodType = (method != null) ? method.type : null;
+        String genericType = null;
         if (method == null && methodCall.name.contains(".")) {
           int dot = methodCall.name.lastIndexOf('.');
           String className = methodCall.name.substring(0, dot);
           String simpleName = methodCall.name.substring(dot + 1);
-          VariableInfo receiverVar = classIdMap.variables.localMap.get(className);
-          if (receiverVar == null) receiverVar = classIdMap.variables.fieldMap.get(className);
-          String resolvedClass =
-              (receiverVar != null && receiverVar.type != null) ? receiverVar.type : className;
-          method =
-              ctx.methodCallGen.findMethodViaReflection(resolvedClass, simpleName, argTypes.size());
+          // receiver: a variable, optionally followed by a field chain (e.g. "stmt.blocks")
+          String[] parts = className.split("\\.");
+          VariableInfo receiverVar = classIdMap.variables.localMap.get(parts[0]);
+          if (receiverVar == null) receiverVar = classIdMap.variables.fieldMap.get(parts[0]);
+          String resolvedClass = className;
+          String receiverGeneric = null;
+          if (receiverVar != null && receiverVar.type != null) {
+            resolvedClass = receiverVar.type;
+            receiverGeneric = receiverVar.genericType;
+            for (int p = 1; p < parts.length && resolvedClass != null; p++) {
+              FieldProcessor.InstanceField field =
+                  new FieldProcessor()
+                      .getInstanceFieldMap(resolvedClass, ctx.allClazzes)
+                      .get(parts[p]);
+              resolvedClass = (field != null) ? field.fieldType : null;
+              receiverGeneric = (field != null) ? field.genericType : null;
+            }
+          }
+          if (resolvedClass != null) {
+            method =
+                ctx.methodCallGen.findMethodViaReflection(
+                    resolvedClass, simpleName, argTypes.size());
+          }
+          if (method != null) {
+            methodType = genericReturnType(method, receiverGeneric);
+            genericType = lastGeneric;
+          }
         }
-        if (method != null) {
+        if (methodType != null) {
           if (methodCall.arrSel != null) {
-            types.add(method.type.substring(methodCall.arrSel.exprs.size()));
-          } else {
-            types.add(method.type);
+            methodType =
+                TypeUtils.jvmDescriptorToTypeName(
+                    methodType.substring(methodCall.arrSel.exprs.size()));
+            genericType = null;
+          }
+          if (methodCall.next != null) {
+            methodType = followChain(classIdMap, methodType, genericType, methodCall.next);
+          }
+          if (methodType != null) {
+            types.add(methodType);
           }
         }
       } else if (token instanceof ConstructorCall) {
@@ -105,7 +150,13 @@ public class NumExprTypeDecider {
           VariableInfo var = ctx.classIdMap.variables.get(token);
           if (var != null) {
             if (id.arrSel != null) {
-              types.add(var.arrType);
+              String elemType =
+                  (id.next != null)
+                      ? followChain(classIdMap, var.arrType, null, id.next)
+                      : var.arrType;
+              if (elemType != null) {
+                types.add(elemType);
+              }
             } else if (var.arrType != null) {
               if (id.next != null && "length".equals(id.next.val.toString())) {
                 types.add(INT);
@@ -158,6 +209,78 @@ public class NumExprTypeDecider {
       }
     }
     return getSmallestType(types);
+  }
+
+  // Generic type of the most recent genericReturnType() result (null if not generic)
+  private String lastGeneric;
+
+  // The return type of a reflectively resolved method, taking the receiver's generic type
+  // arguments into account (e.g. List<Foo>.get() returns Foo, not Object).
+  private String genericReturnType(Method method, String receiverGeneric) {
+    lastGeneric = null;
+    if (receiverGeneric == null
+        || TypeUtils.isPrimitive(method.type)
+        || method.type.startsWith("[")) {
+      return method.type;
+    }
+    List<String> paramTypes = new ArrayList<>();
+    for (Argument arg : method.args) {
+      paramTypes.add(arg.type);
+    }
+    String generic =
+        GenericTypes.returnType(receiverGeneric, method.name.val.toString(), paramTypes);
+    if (generic == null) {
+      return method.type;
+    }
+    if (generic.indexOf('<') >= 0) {
+      lastGeneric = generic;
+    }
+    String erased = GenericTypes.erasure(generic);
+    return "java.lang.String".equals(erased) ? STRING : erased;
+  }
+
+  // Follows a selector chain (".method(...)" / ".field") starting from a value of the given type.
+  // Returns null if any link can't be resolved.
+  private String followChain(
+      GlobalIdentifierMap classIdMap, String type, String generic, Identifier link) {
+    while (link != null && type != null) {
+      if (link instanceof MethodCall) {
+        MethodCall call = (MethodCall) link;
+        List<String> argTypes = new ArrayList<>();
+        for (Expression exp : call.params) {
+          argTypes.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
+        }
+        int lastDot = type.lastIndexOf('.');
+        String simpleType = (lastDot >= 0) ? type.substring(lastDot + 1) : type;
+        Method method =
+            ctx.methodCallGen.findMatchingMethod(simpleType + "." + call.name, argTypes);
+        if (method != null) {
+          type = method.type;
+          generic = null;
+        } else {
+          method = ctx.methodCallGen.findMethodViaReflection(type, call.name, argTypes.size());
+          if (method == null) {
+            return null;
+          }
+          type = genericReturnType(method, generic);
+          generic = lastGeneric;
+        }
+      } else {
+        FieldProcessor.InstanceField field =
+            new FieldProcessor().getInstanceFieldMap(type, ctx.allClazzes).get(link.val.toString());
+        if (field == null) {
+          return null;
+        }
+        type = field.fieldType;
+        generic = field.genericType;
+      }
+      if (link.arrSel != null && type.startsWith("[")) {
+        type = TypeUtils.jvmDescriptorToTypeName(type.substring(link.arrSel.exprs.size()));
+        generic = null;
+      }
+      link = link.next;
+    }
+    return type;
   }
 
   private String resolveChainedType(String className, String fieldName) {

@@ -5,8 +5,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
@@ -29,6 +27,7 @@ import io.github.martinschneider.orzo.lexer.tokens.EOF;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Scopes;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
@@ -80,6 +79,7 @@ public class MethodParser implements ProdParser<Method> {
     boolean isConstr = false;
     List<Argument> arguments = new ArrayList<>();
     List<Statement> body;
+    String qualifiedName;
     if (tokens.curr() instanceof Scope) {
       scope = (Scope) tokens.curr();
       try {
@@ -173,6 +173,11 @@ public class MethodParser implements ProdParser<Method> {
       type = new Type(ctx.classTypeParams.get(id));
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
+    } else if ((qualifiedName = parseQualifiedName(tokens)) != null) {
+      // Fully-qualified return type, e.g. "java.lang.reflect.Method"
+      type = new Type(qualifiedName);
+      tokens.next();
+      type.arr = ctx.arrayDefParser.parse(tokens);
     } else if (tokens.curr() instanceof Identifier
         && !tokens.curr().toString().isEmpty()
         && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
@@ -201,15 +206,7 @@ public class MethodParser implements ProdParser<Method> {
     }
     // Skip generic type arguments on return type e.g. List<Statement>
     if (tokens.curr().eq(op(LESS))) {
-      int depth = 1;
-      while (depth > 0) {
-        tokens.next();
-        if (tokens.curr().eq(op(LESS))) depth++;
-        else if (tokens.curr().eq(op(GREATER))) depth--;
-        else if (tokens.curr().eq(op(RSHIFT))) depth = Math.max(0, depth - 2);
-        else if (tokens.curr().eq(op(RSHIFTU))) depth = Math.max(0, depth - 3);
-      }
-      tokens.next();
+      ctx.typeArgsParser.parse(tokens);
     }
     if (tokens.curr() instanceof Identifier) {
       name = (Identifier) tokens.curr();
@@ -289,6 +286,7 @@ public class MethodParser implements ProdParser<Method> {
     while (!tokens.curr().eq(sym(RPAREN))) {
       String type = null;
       Identifier name = null;
+      String qualifiedName;
       if (tokens.curr() instanceof Type && !tokens.curr().eq("VOID")) {
         type = tokens.curr().toString();
       } else if (tokens.curr() instanceof Identifier
@@ -301,6 +299,9 @@ public class MethodParser implements ProdParser<Method> {
           && ctx.classTypeParams.containsKey(tokens.curr().toString())) {
         // Type variable (e.g. S in StatementGenerator<S extends Statement>) → erase to bound
         type = ctx.classTypeParams.get(tokens.curr().toString());
+      } else if ((qualifiedName = parseQualifiedName(tokens)) != null) {
+        // Fully-qualified parameter type, e.g. "java.util.List<String> items"
+        type = qualifiedName;
       } else if (tokens.curr() instanceof Identifier
           && !tokens.curr().toString().isEmpty()
           && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
@@ -324,17 +325,10 @@ public class MethodParser implements ProdParser<Method> {
       } else {
         break;
       }
+      // generic type arguments e.g. List<Token> or List<List<Token>>
+      String typeArgs = null;
       if (tokens.next().eq(op(LESS))) {
-        // skip generic type arguments e.g. List<Token> or List<List<Token>>
-        int depth = 1;
-        while (depth > 0) {
-          tokens.next();
-          if (tokens.curr().eq(op(LESS))) depth++;
-          else if (tokens.curr().eq(op(GREATER))) depth--;
-          else if (tokens.curr().eq(op(RSHIFT))) depth = Math.max(0, depth - 2);
-          else if (tokens.curr().eq(op(RSHIFTU))) depth = Math.max(0, depth - 3);
-        }
-        tokens.next();
+        typeArgs = ctx.typeArgsParser.parse(tokens);
       }
       if (tokens.curr().eq(sym(LBRAK))) {
         if (tokens.next().eq(sym(RBRAK))) {
@@ -357,7 +351,11 @@ public class MethodParser implements ProdParser<Method> {
         name = (Identifier) tokens.curr();
       }
       if (type != null && name != null) {
-        arguments.add(new Argument(type, name));
+        Argument arg = new Argument(type, name);
+        if (typeArgs != null && !type.startsWith("[")) {
+          arg.genericType = type + typeArgs;
+        }
+        arguments.add(arg);
       }
       if (tokens.next().eq(sym(COMMA))) {
         tokens.next();
@@ -366,6 +364,32 @@ public class MethodParser implements ProdParser<Method> {
       }
     }
     return arguments.isEmpty() ? null : arguments;
+  }
+
+  // A fully-qualified type name, e.g. "java.lang.reflect.Method": returns the name and leaves the
+  // current token at its last segment, or returns null (and leaves the index unchanged) if the
+  // current token doesn't start a dotted chain ending in an uppercase segment.
+  private String parseQualifiedName(TokenList tokens) {
+    if (!(tokens.curr() instanceof Identifier) || !tokens.peekNext().eq(sym(DOT))) {
+      return null;
+    }
+    int start = tokens.idx();
+    StringBuilder fqn = new StringBuilder(tokens.curr().toString());
+    while (tokens.peekNext().eq(sym(DOT))) {
+      tokens.next();
+      Token seg = tokens.next();
+      if (!(seg instanceof Identifier) && !(seg instanceof Type)) {
+        tokens.setIdx(start);
+        return null;
+      }
+      fqn.append('.').append(seg instanceof Type ? ((Type) seg).name : seg.toString());
+    }
+    String last = tokens.curr().toString();
+    if (last.isEmpty() || !Character.isUpperCase(last.charAt(0))) {
+      tokens.setIdx(start);
+      return null;
+    }
+    return fqn.toString();
   }
 
   // Orzo does not check exceptions, so a method's "throws T1, T2, ..." clause is parsed only to

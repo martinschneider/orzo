@@ -339,6 +339,7 @@ public class ExpressionGenerator {
         typeFromArrayElement = false;
         // look ahead for <<, >> or >>> operators which require the second argument to
         // be an integer
+        boolean pushed = true;
         if (i + 1 < tokens.size()
             && ((tokens.get(i + 1).eq(op(LSHIFT))
                 || (tokens.get(i + 1).eq(op(RSHIFT)))
@@ -346,9 +347,13 @@ public class ExpressionGenerator {
           ctx.pushGen.push(out, INT, BigDecimal.valueOf(intValue));
         } else if (!literalType.equals(INT) || intValue != 0 || pushIfZero) {
           ctx.pushGen.push(out, literalType, BigDecimal.valueOf(intValue));
+        } else {
+          pushed = false;
         }
-        // special handling for 0 because there are different opcodes to compare to 0
-        if ((literalType.equals(INT)
+        // special handling for an (unpushed) 0 because there are different opcodes to compare to
+        // 0 - a 0 that *was* pushed must be compared like any other operand
+        if (!pushed
+            && (literalType.equals(INT)
                 || literalType.equals(SHORT)
                 || literalType.equals(BYTE)
                 || literalType.equals(CHAR))
@@ -604,16 +609,23 @@ public class ExpressionGenerator {
         ctx.basicGen.convert(out, innerResult.type, castCall.castType);
         returnType = castCall.castType;
         prevLoadedRef = true;
+        ctx.methodCallGen.lastGenericType = null;
       } else if (curr instanceof ConstructorCall) {
         ConstructorCall constructorCall = (ConstructorCall) curr;
         returnType = generateConstructorCall(out, classIdMap, constructorCall);
+        ctx.methodCallGen.lastGenericType = null;
       } else if (curr instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) curr;
         if (prev instanceof MethodCall
             || prev instanceof ConstructorCall
             || prev instanceof CastMethodCall) {
           returnType = ctx.methodCallGen.generateChained(out, classIdMap, methodCall, returnType);
-        } else if (prev == null && i > 0 && tokens.get(i - 1) instanceof Str) {
+        } else if (prev != null && prevLoadedRef) {
+          // Call on a reference loaded by the previous selector, e.g. "arr[i].length()" or
+          // "make().field.method()"
+          ctx.methodCallGen.lastGenericType = null;
+          returnType = ctx.methodCallGen.generateChained(out, classIdMap, methodCall, returnType);
+        } else if (prev == null && methodCall.literalReceiver) {
           // String literal method chain: "literal".method(arg) — receiver already on stack
           returnType =
               ctx.methodCallGen.generateChained(out, classIdMap, methodCall, "java.lang.String");
@@ -623,8 +635,11 @@ public class ExpressionGenerator {
         if (curr.arrSel != null) {
           ctx.loadGen.loadValueFromArrayOnStack(out, classIdMap, curr.arrSel.exprs, returnType);
           if (!returnType.isEmpty()) {
-            // remove leading '[' from type
-            returnType = returnType.substring(methodCall.arrSel.exprs.size());
+            // remove leading '[' from type (a reflected array type is a JVM descriptor, e.g.
+            // "[Ljava.lang.reflect.Type;")
+            returnType =
+                TypeUtils.jvmDescriptorToTypeName(
+                    returnType.substring(methodCall.arrSel.exprs.size()));
           }
         }
         // A trailing non-call selector (e.g. make().val) is an instance field access on the
@@ -689,7 +704,7 @@ public class ExpressionGenerator {
                 ctx.loadGen.loadValueFromArrayOnStack(
                     out, classIdMap, curr.arrSel.exprs, elemDescriptor);
                 ctx.opStack.pop();
-                String elemType = jvmDescriptorToTypeName(elemDescriptor);
+                String elemType = TypeUtils.jvmDescriptorToTypeName(elemDescriptor);
                 ctx.opStack.push(elemType);
                 returnType = elemType;
                 prevLoadedRef = isNonPrimitive(elemType);
@@ -785,7 +800,10 @@ public class ExpressionGenerator {
             if (deferNarrowing) {
               returnType = varType;
             }
-            prevLoadedRef = isNonPrimitive(varType) && curr.arrSel == null;
+            prevLoadedRef =
+                (curr.arrSel == null)
+                    ? isNonPrimitive(varType)
+                    : (arrType != null && isNonPrimitive(arrType));
           }
         }
       }
@@ -1337,32 +1355,6 @@ public class ExpressionGenerator {
     return convertToJVMClassName(typeName);
   }
 
-  private static String jvmDescriptorToTypeName(String descriptor) {
-    switch (descriptor) {
-      case "I":
-        return INT;
-      case "B":
-        return BYTE;
-      case "S":
-        return SHORT;
-      case "J":
-        return LONG;
-      case "D":
-        return DOUBLE;
-      case "F":
-        return FLOAT;
-      case "C":
-        return CHAR;
-      case "Z":
-        return BOOLEAN;
-      default:
-        if (descriptor.startsWith("L") && descriptor.endsWith(";")) {
-          return descriptor.substring(1, descriptor.length() - 1).replace('/', '.');
-        }
-        return descriptor;
-    }
-  }
-
   private static boolean isNonPrimitive(String type) {
     return type != null
         && !INT.equals(type)
@@ -1429,6 +1421,8 @@ public class ExpressionGenerator {
         // the expression it casts. The main eval() loop has no case for it at all — it's a
         // pure no-op there (the narrowing/widening happens via the target-type hint passed to
         // eval(), not by processing this token) — so it must not count as a leaf here either.
+      } else if (t instanceof MethodCall && ((MethodCall) t).literalReceiver) {
+        // "lit".method(): consumes the preceding Str operand, produces 1 → no net stack change
       } else if (t instanceof Operator) {
         Operators opType = ((Operator) t).opValue();
         if (opType == NEGATE

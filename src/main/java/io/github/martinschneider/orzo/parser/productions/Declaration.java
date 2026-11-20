@@ -11,6 +11,8 @@ public class Declaration {
   public int arrDim;
   public String type;
   public Expression val;
+  // full generic type, e.g. "java.util.List<a.b.Foo>" (null if not generic)
+  public String genericType;
 
   public Declaration(
       List<AccessFlag> accFlags, String type, int arrDim, Identifier name, Expression val) {

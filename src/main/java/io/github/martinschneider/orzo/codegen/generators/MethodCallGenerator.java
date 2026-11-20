@@ -17,6 +17,7 @@ import static io.github.martinschneider.orzo.util.FactoryHelper.defaultConstr;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
+import io.github.martinschneider.orzo.codegen.GenericTypes;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
@@ -37,6 +38,9 @@ import java.util.List;
 public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   private static final String LOGGER_NAME = "method call code generator";
   public CGContext ctx;
+  // Generic return type of the most recently generated call, e.g. "java.util.List<a.b.Foo>"
+  // (null if unknown/not generic). Consumed by generateChained() for the next call in a chain.
+  public String lastGenericType;
 
   public MethodCallGenerator(CGContext ctx) {
     this.ctx = ctx;
@@ -251,6 +255,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       return "";
     }
     boolean isStatic = method.accFlags != null && method.accFlags.contains(AccessFlag.ACC_STATIC);
+    String receiverGeneric = null;
     if (!isStatic) {
       if (receiverName != null) {
         // Load the explicit receiver variable
@@ -261,6 +266,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         }
         if (receiverVar != null) {
           ctx.loadGen.load(out, receiverVar);
+          receiverGeneric = receiverVar.genericType;
         } else if (receiverChainParts != null) {
           io.github.martinschneider.orzo.codegen.identifier.VariableInfo chainVar =
               classIdMap.variables.localMap.get(receiverChainParts[0]);
@@ -297,6 +303,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
             ctx.opStack.pop();
             ctx.opStack.push(cf.fieldType);
             chainType = cf.fieldType;
+            receiverGeneric = cf.genericType;
           }
         } else {
           ctx.loadGen.loadReference(out, (short) 0);
@@ -324,7 +331,43 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     } else {
       ctx.invokeGen.invokeVirtual(out, method);
     }
-    return method.type;
+    return applyGenericReturnType(out, method, receiverGeneric);
+  }
+
+  // If the receiver's generic type is known, replace an erased return type (e.g. Object for
+  // List<Foo>.get()) with the real one, emitting the CHECKCAST javac would emit.
+  private String applyGenericReturnType(
+      DynamicByteArray out, Method method, String receiverGeneric) {
+    lastGenericType = null;
+    String type = method.type;
+    if (receiverGeneric == null
+        || type == null
+        || TypeUtils.isPrimitive(type)
+        || type.startsWith("[")
+        || VOID.equals(type)) {
+      return type;
+    }
+    List<String> paramTypes = new ArrayList<>();
+    for (Argument arg : method.args) {
+      paramTypes.add(arg.type);
+    }
+    String generic =
+        GenericTypes.returnType(receiverGeneric, method.name.val.toString(), paramTypes);
+    if (generic == null) {
+      return type;
+    }
+    if (generic.indexOf('<') >= 0) {
+      lastGenericType = generic;
+    }
+    String erased = GenericTypes.erasure(generic);
+    if ("java.lang.String".equals(erased)) {
+      erased = STRING;
+    }
+    if (erased.equals(type) || "java.lang.Object".equals(erased)) {
+      return type;
+    }
+    ctx.basicGen.convert1(out, type, erased);
+    return erased;
   }
 
   @Override
@@ -647,6 +690,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       GlobalIdentifierMap classIdMap,
       MethodCall methodCall,
       String receiverType) {
+    String receiverGeneric =
+        (lastGenericType != null && GenericTypes.erasure(lastGenericType).equals(receiverType))
+            ? lastGenericType
+            : null;
+    lastGenericType = null;
     List<String> types = new ArrayList<>();
     for (Expression exp : methodCall.params) {
       types.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
@@ -751,7 +799,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     } else {
       ctx.invokeGen.invokeVirtual(out, method);
     }
-    return method.type;
+    return applyGenericReturnType(out, method, receiverGeneric);
   }
 
   private Method findMethodViaReflectionTyped(

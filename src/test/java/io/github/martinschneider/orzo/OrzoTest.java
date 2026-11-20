@@ -218,7 +218,17 @@ public class OrzoTest {
         args(list("tests/CharLessEqual")),
         args(list("tests/LambdaStreamMap")),
         args(list("tests/LambdaComputeIfAbsent")),
-        args(list("tests/FullyQualifiedGenericDeclaration")));
+        args(list("tests/FullyQualifiedGenericDeclaration")),
+        args(list("tests/GenericChainCalls", "tests/GenericChainHolder")),
+        args(list("tests/TryCatchAfterBlockLocals")),
+        args(list("tests/StringLiteralReceiverInLogicalOp")),
+        args(list("tests/MultiCatch")),
+        args(list("tests/StringConcatWithCall")),
+        args(list("tests/FullyQualifiedMethodSignature")),
+        args(list("tests/GenericCast")),
+        args(list("tests/ArrayElementReceiver")),
+        args(list("tests/ChainedArgumentTypes", "tests/GenericChainHolder")),
+        args(list("tests/TernaryArgument")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

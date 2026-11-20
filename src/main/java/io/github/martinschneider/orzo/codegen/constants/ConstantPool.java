@@ -274,13 +274,15 @@ public class ConstantPool {
   public void addLong(Long val) {
     int idx = add(new ConstantLong(val));
     longMap.put(val, idx);
-    ldcTypeByIdx.put(idx, "J");
+    // add() returns the slot after a 2-slot constant; LDC2_W references idx - 1
+    ldcTypeByIdx.put(idx - 1, "J");
   }
 
   public void addDouble(Double val) {
     int idx = add(new ConstantDouble(val));
     doubleMap.put(val, idx);
-    ldcTypeByIdx.put(idx, "D");
+    // add() returns the slot after a 2-slot constant; LDC2_W references idx - 1
+    ldcTypeByIdx.put(idx - 1, "D");
   }
 
   public void addFloat(Float val) {
@@ -313,6 +315,16 @@ public class ConstantPool {
   public String getMethodDescriptor(int cpIdx) {
     String d = methodDescByIdx.get(cpIdx);
     return d != null ? d : interfaceMethodDescByIdx.get(cpIdx);
+  }
+
+  /** Returns the class name (e.g. "java/lang/String") at the given CP index, or null. */
+  public String getClassName(int cpIdx) {
+    for (Map.Entry<String, Integer> entry : classMap.entrySet()) {
+      if (entry.getValue() == cpIdx) {
+        return entry.getKey();
+      }
+    }
+    return null;
   }
 
   /** Returns the field type descriptor for the given CP index, or {@code null} if not found. */

@@ -83,6 +83,8 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
         }
       } else {
         ctx.assignGen.assign(out, ctx.classIdMap.variables, decl.type, decl.name);
+        ctx.classIdMap.variables.localMap.get(decl.name.val.toString()).genericType =
+            decl.genericType;
       }
     }
     return out;

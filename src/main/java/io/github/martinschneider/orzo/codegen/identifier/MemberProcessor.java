@@ -51,6 +51,8 @@ public class MemberProcessor {
                     decl.name.id().toString(),
                     TypeUtils.descr(decl.type, decl.arrDim)),
                 decl.val));
+        ctx.classIdMap.variables.fieldMap.get(decl.name.id().toString()).genericType =
+            decl.genericType;
         if (decl.accFlags.contains(AccessFlag.ACC_FINAL) && decl.val != null) {
           ctx.constPool.addUtf8("ConstantValue");
           ctx.constPool.addByType(decl.type, decl.val.getConstantValue(decl.type));
@@ -68,8 +70,7 @@ public class MemberProcessor {
         if (!ctx.classIdMap.variables.fieldMap.containsKey(fieldName)) {
           FieldProcessor.InstanceField inheritedField = entry.getValue();
           String fieldType = inheritedField.fieldType;
-          ctx.classIdMap.variables.putInheritedField(
-              fieldName,
+          VariableInfo inheritedVar =
               new VariableInfo(
                   fieldName,
                   fieldType,
@@ -78,7 +79,9 @@ public class MemberProcessor {
                   true,
                   ctx.constPool.indexOf(
                       CONSTANT_FIELDREF, ctx.clazz.fqn('/'), fieldName, TypeUtils.descr(fieldType)),
-                  null));
+                  null);
+          inheritedVar.genericType = inheritedField.genericType;
+          ctx.classIdMap.variables.putInheritedField(fieldName, inheritedVar);
         }
       }
     }
@@ -93,8 +96,7 @@ public class MemberProcessor {
           if (decl.isField) {
             continue; // field declarations are in fieldMap, not localMap
           }
-          ctx.classIdMap.variables.putLocal(
-              decl.name,
+          VariableInfo localVar =
               new VariableInfo(
                   decl.name.id().toString(),
                   (decl.arrDim > 0) ? REF : decl.type,
@@ -102,7 +104,9 @@ public class MemberProcessor {
                   decl.accFlags,
                   false,
                   (byte) ctx.classIdMap.variables.localSize,
-                  decl.val));
+                  decl.val);
+          localVar.genericType = decl.genericType;
+          ctx.classIdMap.variables.putLocal(decl.name, localVar);
         }
       }
     }
@@ -118,8 +122,7 @@ public class MemberProcessor {
         type = REF;
         arrayType = arg.type.replaceAll("\\[", "");
       }
-      ctx.classIdMap.variables.putLocal(
-          arg.name,
+      VariableInfo argVar =
           new VariableInfo(
               arg.name.val.toString(),
               type,
@@ -127,7 +130,9 @@ public class MemberProcessor {
               emptyList(),
               false,
               (byte) ctx.classIdMap.variables.localSize,
-              null));
+              null);
+      argVar.genericType = arg.genericType;
+      ctx.classIdMap.variables.putLocal(arg.name, argVar);
     }
   }
 

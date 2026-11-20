@@ -1,17 +1,22 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.NEW;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -26,6 +31,34 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
     this.ctx = ctx;
   }
 
+  // A class name followed by an array dimension, e.g. "StringBuilder[" or "java.util.List<?>[":
+  // returns the resolved name and leaves the current token at the "[", or returns null (index
+  // unchanged) for anything else (e.g. a constructor call "Foo(").
+  private String parseReferenceElementType(TokenList tokens) {
+    if (!(tokens.curr() instanceof Identifier)) {
+      return null;
+    }
+    int start = tokens.idx();
+    String name = tokens.curr().toString();
+    boolean qualified = false;
+    tokens.next();
+    while (tokens.curr().eq(sym(DOT))
+        && (tokens.peekNext() instanceof Identifier || tokens.peekNext() instanceof Type)) {
+      Token seg = tokens.next();
+      name += "." + (seg instanceof Type ? ((Type) seg).name : seg.toString());
+      qualified = true;
+      tokens.next();
+    }
+    if (tokens.curr().eq(op(LESS))) {
+      ctx.typeArgsParser.parse(tokens); // erased
+    }
+    if (!tokens.curr().eq(sym(LBRAK))) {
+      tokens.setIdx(start);
+      return null;
+    }
+    return qualified ? name : ctx.typeArgsParser.resolve(name);
+  }
+
   @Override
   public ArrayInit parse(TokenList tokens) {
     int idx = tokens.idx();
@@ -36,6 +69,8 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
       if (tokens.curr() instanceof Type) {
         type = ((Type) tokens.curr()).name;
         tokens.next();
+      } else if ((type = parseReferenceElementType(tokens)) != null) {
+        // e.g. new StringBuilder[n], new java.util.List[n], new Class<?>[] {...}
       } else {
         // Not an array init (could be a constructor call like new ArrayList<>())
         tokens.setIdx(idx);

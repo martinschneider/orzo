@@ -6,6 +6,8 @@ import io.github.martinschneider.orzo.util.ObjectUtils;
 public class Argument {
   public Identifier name;
   public String type;
+  // full generic type, e.g. "java.util.List<a.b.Foo>" (null if not generic)
+  public String genericType;
 
   public Argument(String type, Identifier name) {
     this.name = name;

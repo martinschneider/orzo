@@ -229,6 +229,9 @@ import java.util.TreeSet;
  * Orzo's structured-control-flow output.
  */
 public class StackMapTableBuilder {
+  // Stack type of an object created by NEW whose constructor hasn't run yet:
+  // UNINITIALIZED + <offset of the NEW> + ":" + <class name>
+  private static final String UNINITIALIZED = "uninitialized@";
 
   private static final class Frame {
     final List<String> locals;
@@ -558,6 +561,12 @@ public class StackMapTableBuilder {
         branchTargetStacks.put(handlerPc, handlerStack);
       }
       handlerToTryStart.merge(handlerPc, tryStart, Math::min);
+    }
+    // A handler is entered from (anywhere in) its try range: record that as an edge, so the
+    // definite-assignment analysis below also sees paths into code *after* a handler (e.g. a
+    // local first stored inside an earlier block that the try range's start can bypass).
+    for (Map.Entry<Integer, Integer> e : handlerToTryStart.entrySet()) {
+      branchesToTarget.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
     }
 
     // Build frames
@@ -1179,10 +1188,18 @@ public class StackMapTableBuilder {
       case CHECKCAST:
         break;
 
-      // new: push ref
+      // new: push an uninitialized reference (Uninitialized_variable_info, remembering the
+      // offset of the NEW instruction and the class, see INVOKESPECIAL)
       case NEW:
+        {
+          int cpIdx = ((code[pos + 1] & 0xFF) << 8) | (code[pos + 2] & 0xFF);
+          String className = constPool.getClassName(cpIdx);
+          stack.add(
+              UNINITIALIZED + pos + ":" + (className != null ? className : "java/lang/Object"));
+          break;
+        }
       case ANEWARRAY:
-        if (!stack.isEmpty() && op == ANEWARRAY) {
+        if (!stack.isEmpty()) {
           stack.remove(stack.size() - 1); // pop count
         }
         stack.add("Ljava/lang/Object;");
@@ -1275,7 +1292,25 @@ public class StackMapTableBuilder {
         {
           int cpIdx = ((code[pos + 1] & 0xFF) << 8) | (code[pos + 2] & 0xFF);
           String desc = constPool.getMethodDescriptor(cpIdx);
+          // the receiver of a constructor call: once <init> returns, every copy of this
+          // uninitialized reference (e.g. from NEW+DUP) is initialized
+          String receiver = null;
+          if (op == INVOKESPECIAL && desc != null && desc.endsWith(")V")) {
+            int receiverIdx =
+                stack.size() - 1 - countDescriptorArgs(desc.substring(1, desc.indexOf(')')));
+            if (receiverIdx >= 0 && stack.get(receiverIdx).startsWith(UNINITIALIZED)) {
+              receiver = stack.get(receiverIdx);
+            }
+          }
           applyInvokeEffect(stack, desc, true);
+          if (receiver != null) {
+            String initialized = "L" + receiver.substring(receiver.indexOf(':') + 1) + ";";
+            for (int k = 0; k < stack.size(); k++) {
+              if (receiver.equals(stack.get(k))) {
+                stack.set(k, initialized);
+              }
+            }
+          }
           break;
         }
 
@@ -1640,6 +1675,12 @@ public class StackMapTableBuilder {
   private void writeVerificationType(DynamicByteArray out, String type, ConstantPool constPool) {
     if (type == null) {
       out.write((byte) 0); // Top_variable_info
+      return;
+    }
+    if (type.startsWith(UNINITIALIZED)) {
+      out.write((byte) 8); // Uninitialized_variable_info: tag 8 + u2 offset of the NEW
+      out.write(
+          (short) Integer.parseInt(type.substring(UNINITIALIZED.length(), type.indexOf(':'))));
       return;
     }
     switch (type) {

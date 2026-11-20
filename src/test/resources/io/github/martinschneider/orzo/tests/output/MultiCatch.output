@@ -1,0 +1,5 @@
+ok 12
+caught NumberFormatException
+caught StringIndexOutOfBoundsException
+npe
+end

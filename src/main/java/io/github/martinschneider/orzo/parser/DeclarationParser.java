@@ -3,10 +3,7 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
@@ -155,17 +152,13 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
     if (type != null) {
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
-      // Skip generic type arguments e.g. List<Statement>
+      // Generic type arguments e.g. List<Statement>, kept alongside the erased type
+      String typeArgs = null;
       if (tokens.curr().eq(op(LESS))) {
-        int depth = 1;
-        while (depth > 0) {
-          tokens.next();
-          if (tokens.curr().eq(op(LESS))) depth++;
-          else if (tokens.curr().eq(op(GREATER))) depth--;
-          else if (tokens.curr().eq(op(RSHIFT))) depth = Math.max(0, depth - 2);
-          else if (tokens.curr().eq(op(RSHIFTU))) depth = Math.max(0, depth - 3);
+        typeArgs = ctx.typeArgsParser.parse(tokens);
+        if (type.arr == 0) {
+          type.arr = ctx.arrayDefParser.parse(tokens); // e.g. TypeVariable<?>[] params
         }
-        tokens.next();
       }
       while (tokens.curr() instanceof Identifier || tokens.curr().eq(sym(COMMA))) {
         if (tokens.curr() instanceof Identifier) {
@@ -199,7 +192,11 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       List<Declaration> declarations = new ArrayList<>();
       for (int i = 0; i < names.size(); i++) {
         Expression val = (values.size() <= i) ? null : values.get(i);
-        declarations.add(new Declaration(accFlags, type.name, type.arr, names.get(i), val));
+        Declaration decl = new Declaration(accFlags, type.name, type.arr, names.get(i), val);
+        if (typeArgs != null && type.arr == 0) {
+          decl.genericType = type.name.replace('/', '.') + typeArgs;
+        }
+        declarations.add(decl);
       }
       return new ParallelDeclaration(declarations);
     }

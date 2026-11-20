@@ -42,6 +42,7 @@ public class ParserContext {
   public SwitchParser switchParser;
   public ThrowParser throwParser;
   public TryParser tryParser;
+  public TypeArgsParser typeArgsParser;
   public TypeMap typeMap;
 
   public static ParserContext build(CompilerErrors errors) {
@@ -77,6 +78,7 @@ public class ParserContext {
     ctx.switchParser = new SwitchParser(ctx);
     ctx.throwParser = new ThrowParser(ctx);
     ctx.tryParser = new TryParser(ctx);
+    ctx.typeArgsParser = new TypeArgsParser(ctx);
     ctx.typeMap = new TypeMap();
     return ctx;
   }

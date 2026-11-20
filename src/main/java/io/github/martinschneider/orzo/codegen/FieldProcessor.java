@@ -31,6 +31,8 @@ public class FieldProcessor {
     public final String className;
     public final String fieldName;
     public final String fieldType;
+    // full generic type, e.g. "java.util.List<a.b.Foo>" (null if not generic or unknown)
+    public String genericType;
 
     public InstanceField(String className, String fieldName, String fieldType) {
       this.className = className;
@@ -86,6 +88,7 @@ public class FieldProcessor {
                 decl.arrDim > 0 ? TypeUtils.descr(decl.type, decl.arrDim) : decl.type;
 
             InstanceField field = new InstanceField(targetClass.fqn(), fieldName, fieldType);
+            field.genericType = decl.genericType;
             fieldMap.put(fieldName, field);
           }
         }
@@ -108,9 +111,10 @@ public class FieldProcessor {
           for (Field field : reflClass.getDeclaredFields()) {
             if (!Modifier.isStatic(field.getModifiers())
                 && !fieldMap.containsKey(field.getName())) {
-              fieldMap.put(
-                  field.getName(),
-                  new InstanceField(cleanClassName, field.getName(), field.getType().getName()));
+              InstanceField instanceField =
+                  new InstanceField(cleanClassName, field.getName(), field.getType().getName());
+              instanceField.genericType = GenericTypes.fieldType(field);
+              fieldMap.put(field.getName(), instanceField);
             }
           }
           reflClass = reflClass.getSuperclass();

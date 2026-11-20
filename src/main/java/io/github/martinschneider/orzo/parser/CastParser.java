@@ -1,7 +1,9 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
@@ -44,6 +46,9 @@ public class CastParser implements ProdParser<Type> {
         ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
+      }
+      if (tokens.curr().eq(op(LESS))) {
+        ctx.typeArgsParser.parse(tokens); // generic cast, e.g. (Class<?>) obj - erased
       }
       if (tokens.curr().eq(sym(RPAREN))) {
         tokens.next();

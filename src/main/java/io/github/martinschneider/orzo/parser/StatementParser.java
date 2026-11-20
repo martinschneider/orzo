@@ -1,6 +1,13 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
+
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.ExpressionStatement;
+import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +45,30 @@ public class StatementParser implements ProdParser<Statement> {
       lastIdx = currIdx;
     }
     return (stmtSequence.size() == 0) ? null : stmtSequence;
+  }
+
+  // A call chain none of the parsers above handle, e.g. "arr[i].append(x);"
+  private Statement parseExpressionStatement(TokenList tokens) {
+    if (!(tokens.curr() instanceof Identifier)) {
+      return null;
+    }
+    int idx = tokens.idx();
+    Expression expr = ctx.exprParser.parse(tokens);
+    if (expr != null
+        && expr.tokens.size() == 1
+        && expr.tokens.get(0) instanceof Identifier
+        && tokens.curr().eq(sym(SEMICOLON))) {
+      Identifier last = (Identifier) expr.tokens.get(0);
+      while (last.next != null) {
+        last = last.next;
+      }
+      if (last instanceof MethodCall) {
+        tokens.next();
+        return new ExpressionStatement(expr);
+      }
+    }
+    tokens.setIdx(idx);
+    return null;
   }
 
   @Override
@@ -81,7 +112,7 @@ public class StatementParser implements ProdParser<Statement> {
     } else if ((stmt = ctx.continueParser.parse(tokens)) != null) {
       return stmt;
     } else {
-      return null;
+      return parseExpressionStatement(tokens);
     }
   }
 }

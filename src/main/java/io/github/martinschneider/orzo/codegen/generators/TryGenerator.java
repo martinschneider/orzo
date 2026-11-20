@@ -76,10 +76,15 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
       CatchBlock catchBlock = stmt.catchBlocks.get(ci);
       int handlerPc = out.size();
 
-      // Resolve exception class name
-      String jvmExType = resolveExceptionType(catchBlock.exceptionType);
-      ctx.constPool.addClass(jvmExType);
-      short catchTypeIdx = ctx.constPool.indexOf(CONSTANT_CLASS, jvmExType);
+      // Resolve exception class names (several for a multi-catch)
+      List<String> jvmExTypes = new ArrayList<>();
+      for (String exceptionType : catchBlock.exceptionTypes) {
+        String jvmType = resolveExceptionType(exceptionType);
+        ctx.constPool.addClass(jvmType);
+        jvmExTypes.add(jvmType);
+      }
+      // the catch variable's type: the closest common superclass of all caught types
+      String jvmExType = commonSuperclass(jvmExTypes);
 
       // Allocate local variable slot for the catch variable
       short catchVarSlot = (short) ctx.classIdMap.variables.localSize;
@@ -103,8 +108,11 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
         out.write((short) 0);
       }
 
-      // Record exception table entry: {startPc, endPc, handlerPc, catchTypeIdx}
-      ctx.exceptionTable.add(new int[] {startPc, endPc, handlerPc, catchTypeIdx & 0xFFFF});
+      // Record exception table entries: {startPc, endPc, handlerPc, catchTypeIdx}
+      for (String jvmType : jvmExTypes) {
+        short catchTypeIdx = ctx.constPool.indexOf(CONSTANT_CLASS, jvmType);
+        ctx.exceptionTable.add(new int[] {startPc, endPc, handlerPc, catchTypeIdx & 0xFFFF});
+      }
       ctx.exceptionHandlerType.put(handlerPc, jvmExType);
     }
 
@@ -152,6 +160,25 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
       default:
         out.write(ASTORE);
         out.write((byte) slot);
+    }
+  }
+
+  private String commonSuperclass(List<String> jvmTypes) {
+    String result = jvmTypes.get(0);
+    if (jvmTypes.size() == 1) {
+      return result;
+    }
+    try {
+      Class<?> common = Class.forName(result.replace('/', '.'));
+      for (int i = 1; i < jvmTypes.size(); i++) {
+        Class<?> other = Class.forName(jvmTypes.get(i).replace('/', '.'));
+        while (!common.isAssignableFrom(other)) {
+          common = common.getSuperclass();
+        }
+      }
+      return common.getName().replace('.', '/');
+    } catch (ClassNotFoundException e) {
+      return "java/lang/Throwable";
     }
   }
 

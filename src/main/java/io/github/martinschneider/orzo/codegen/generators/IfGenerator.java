@@ -40,9 +40,11 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
     // declared inside one block's body must not leak into that same block's condition (which
     // precedes it in source), into a sibling else-if's condition/body, or past the if-statement
     // altogether — restoring after each body generation keeps every block isolated.
+    // Only the name scope is restored, not localSize: reusing a block-local's slot for a later
+    // variable of a different type would break StackMapTableBuilder, which types each slot by a
+    // single variable.
     java.util.Map<String, VariableInfo> localMapSnapshot =
         new java.util.HashMap<>(ctx.classIdMap.variables.localMap);
-    int localSizeSnapshot = ctx.classIdMap.variables.localSize;
     for (int i = 0; i < ifStmt.ifBlks.size(); i++) {
       IfBlock ifBlock = ifStmt.ifBlks.get(i);
       int etStart = ctx.exceptionTable.size();
@@ -54,7 +56,6 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
       bodyEtEnds.add(ctx.exceptionTable.size());
       ctx.classIdMap.variables.localMap.clear();
       ctx.classIdMap.variables.localMap.putAll(localMapSnapshot);
-      ctx.classIdMap.variables.localSize = localSizeSnapshot;
       DynamicByteArray conditionOut = new DynamicByteArray();
       if (ifBlock.cond != null) { // null for else blocks
         boolean bodyReturns = blockAlwaysReturns(ifBlock.body);

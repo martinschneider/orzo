@@ -3,11 +3,13 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CATCH;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINALLY;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.TRY;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_OR;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
@@ -57,8 +59,14 @@ public class TryParser implements ProdParser<TryStatement> {
         return null;
       }
       tokens.next(); // consume '('
-      String exceptionType = tokens.curr().val.toString();
+      List<String> exceptionTypes = new ArrayList<>();
+      exceptionTypes.add(tokens.curr().val.toString());
       tokens.next(); // consume exception type
+      while (tokens.curr().eq(op(BITWISE_OR))) { // multi-catch
+        tokens.next();
+        exceptionTypes.add(tokens.curr().val.toString());
+        tokens.next();
+      }
       String varName = tokens.curr().val.toString();
       tokens.next(); // consume variable name
       if (!tokens.curr().eq(sym(RPAREN))) {
@@ -83,7 +91,7 @@ public class TryParser implements ProdParser<TryStatement> {
         return null;
       }
       tokens.next(); // consume '}'
-      catchBlocks.add(new CatchBlock(exceptionType, varName, catchBody));
+      catchBlocks.add(new CatchBlock(exceptionTypes, varName, catchBody));
     }
 
     // Skip finally block (not yet supported - just parse and discard)

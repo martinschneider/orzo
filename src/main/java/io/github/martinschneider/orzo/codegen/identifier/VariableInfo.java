@@ -15,6 +15,8 @@ public class VariableInfo implements IdentifierInfo {
   // TODO: support other objects than this
   public short objectRef = 0;
   public Expression val;
+  // full generic type, e.g. "java.util.List<a.b.Foo>" (null if not generic or unknown)
+  public String genericType;
 
   public VariableInfo(
       String name,
