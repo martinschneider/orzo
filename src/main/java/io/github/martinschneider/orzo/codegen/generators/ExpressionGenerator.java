@@ -245,7 +245,7 @@ public class ExpressionGenerator {
     if (expr instanceof ArrayInit) {
       ArrayInit arrInit = (ArrayInit) expr;
       generateArray(out, ctx.classIdMap, arrInit);
-      return new ExpressionResult(arrInit.type, null);
+      return new ExpressionResult(arrInit.typeDescr(), null); // the array type, e.g. "[byte"
     }
     if (type == null) {
       type = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, expr);
@@ -1270,42 +1270,25 @@ public class ExpressionGenerator {
   }
 
   Method findMatchingConstructor(String className, List<String> argTypes) {
-    // Look for constructors in the context's method map
-    // Constructors have the method name "<init>"
-    List<List<String>> typesList = new ArrayList<>();
-    for (int i = 0; i < argTypes.size(); i++) {
-      typesList.add(TypeUtils.assignableTo(argTypes.get(i)));
-    }
-
-    Method constructor = null;
+    // Constructors are registered under "<init>" (current class / java.lang classes) and
+    // "SimpleName.<init>" (classes of the same compilation run)
     String simpleName =
         className.contains("/") ? className.substring(className.lastIndexOf('/') + 1) : className;
-    for (List<String> assignTypes : TypeUtils.combinations(typesList)) {
-      String argsDescr = TypeUtils.typesDescr(assignTypes);
-      // Try bare key (for constructors in current class or java.lang classes)
-      String constructorKey = "<init>" + argsDescr;
-      Method candidate = ctx.methodMap.get(constructorKey);
-      if (candidate != null
-          && (candidate.fqClassName.equals(className)
-              || candidate.fqClassName.endsWith("." + className)
-              || candidate.fqClassName.replace('.', '/').equals(className))) {
-        constructor = candidate;
-        break;
-      }
-      // Try class-prefixed key (for constructors of same-compilation-unit classes)
-      candidate = ctx.methodMap.get(simpleName + ".<init>" + argsDescr);
-      if (candidate != null) {
-        constructor = candidate;
-        break;
-      }
+    Method constructor =
+        ctx.methodCallGen.findBestMatch(
+            "<init>",
+            argTypes,
+            c ->
+                c.fqClassName.equals(className)
+                    || c.fqClassName.endsWith("." + className)
+                    || c.fqClassName.replace('.', '/').equals(className));
+    if (constructor == null) {
+      constructor = ctx.methodCallGen.findBestMatch(simpleName + ".<init>", argTypes, null);
     }
-
     // If no constructor found, create a default constructor for basic types
     if (constructor == null && argTypes.isEmpty()) {
-      // Default no-arg constructor
       constructor = new Method(className, "<init>", "void", argTypes);
     }
-
     return constructor;
   }
 

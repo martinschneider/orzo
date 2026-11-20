@@ -413,6 +413,10 @@ public class ExpressionParser implements ProdParser<Expression> {
     Identifier id = selectors.get(0);
     Identifier root = id;
     for (int i = 1; i < selectors.size(); i++) {
+      // a selector may already carry a chain, e.g. "a.get(1).get(2)" parsed as one MethodCall
+      while (id.next != null) {
+        id = id.next;
+      }
       id.next = selectors.get(i);
       id = id.next;
     }

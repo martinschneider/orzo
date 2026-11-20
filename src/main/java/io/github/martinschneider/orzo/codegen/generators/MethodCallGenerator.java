@@ -986,7 +986,8 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       if (!paramClass.isArray()) {
         return paramClass == Object.class;
       }
-      String elemType = argType.substring(1);
+      // "[byte" (orzo) or "[B" / "[Ljava.lang.String;" (Class.getName() form)
+      String elemType = TypeUtils.jvmDescriptorToTypeName(argType.substring(1));
       Class<?> elemParam = paramClass.getComponentType();
       // Primitive array element types must match exactly (unlike scalar args, arrays aren't
       // covariant/widening in Java: byte[] is not assignable to int[]).
@@ -1169,22 +1170,49 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   }
 
   public Method findMatchingMethod(String methodName, List<String> types) {
-    List<List<String>> typesList = new ArrayList<>();
-    for (int i = 0; i < types.size(); i++) {
-      typesList.add(TypeUtils.assignableTo(types.get(i)));
-    }
-    Method method = null;
-    for (List<String> assignTypes : TypeUtils.combinations(typesList)) {
-      String methodKey = methodName + TypeUtils.typesDescr(assignTypes);
-      method = ctx.methodMap.get(methodKey);
-      if (method != null) {
-        break;
-      }
-    }
+    Method method = findBestMatch(methodName, types, null);
     if (method == null) {
       method = findVarargsMethod(methodName, types);
     }
     return method;
+  }
+
+  /**
+   * Finds the most specific method in the method map registered as keyPrefix + "(...)" (e.g.
+   * "foo(", "Clazz.foo(" or "<init>(") whose parameters the given argument types are assignable to,
+   * optionally restricted by a filter. Specificity: the sum, over all arguments, of the parameter
+   * type's position in TypeUtils.assignableTo(argument type) - lower is more specific.
+   */
+  public Method findBestMatch(
+      String keyPrefix, List<String> types, java.util.function.Predicate<Method> filter) {
+    List<List<String>> assignableDescrs = new ArrayList<>();
+    for (String type : types) {
+      List<String> descrs = new ArrayList<>();
+      for (String assignable : TypeUtils.assignableTo(type)) {
+        descrs.add(TypeUtils.descr(assignable));
+      }
+      assignableDescrs.add(descrs);
+    }
+    Method best = null;
+    int bestScore = Integer.MAX_VALUE;
+    for (java.util.Map.Entry<String, Method> entry : ctx.methodMap.entrySet()) {
+      Method candidate = entry.getValue();
+      if (!entry.getKey().startsWith(keyPrefix + "(")
+          || candidate.args.size() != types.size()
+          || (filter != null && !filter.test(candidate))) {
+        continue;
+      }
+      int score = 0;
+      for (int i = 0; score >= 0 && i < types.size(); i++) {
+        int pos = assignableDescrs.get(i).indexOf(TypeUtils.descr(candidate.args.get(i).type));
+        score = (pos < 0) ? -1 : score + pos;
+      }
+      if (score >= 0 && score < bestScore) {
+        best = candidate;
+        bestScore = score;
+      }
+    }
+    return best;
   }
 
   /**

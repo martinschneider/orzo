@@ -7,7 +7,9 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.QUESTION;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
@@ -17,6 +19,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.Import;
+import java.util.Map;
 
 /**
  * Parses generic type arguments, e.g. {@code <String, List<Statement>>}, into a string of
@@ -24,6 +27,10 @@ import io.github.martinschneider.orzo.parser.productions.Import;
  */
 public class TypeArgsParser {
   private static final String OBJECT = "java.lang.Object";
+  private static final Map<String, String> PRIMITIVE_ARRAY_CODES =
+      Map.of(
+          "boolean", "[Z", "byte", "[B", "char", "[C", "short", "[S", "int", "[I", "long", "[J",
+          "float", "[F", "double", "[D");
   private ParserContext ctx;
 
   public TypeArgsParser(ParserContext ctx) {
@@ -33,7 +40,7 @@ public class TypeArgsParser {
   /**
    * Expects the current token to be "<". Consumes everything up to and including the matching
    * closing bracket. Returns the resolved type arguments, or null if they contain anything this
-   * parser doesn't model (e.g. array type arguments) - the tokens are consumed either way.
+   * parser doesn't model - the tokens are consumed either way.
    */
   public String parse(TokenList tokens) {
     StringBuilder str = new StringBuilder("<");
@@ -77,10 +84,20 @@ public class TypeArgsParser {
             Token seg = tokens.next();
             fqn.append('.').append(seg instanceof Type ? ((Type) seg).name : seg.val.toString());
           }
-          str.append(fqn);
-        } else {
-          str.append(resolve(name));
+          name = fqn.toString();
+        } else if (!PRIMITIVE_ARRAY_CODES.containsKey(name)) {
+          name = resolve(name);
         }
+        // array type argument, e.g. Map<String, byte[]>: use the Class.getName() form ("[B")
+        while (tokens.peekNext().eq(sym(LBRAK)) && tokens.get(tokens.idx() + 2).eq(sym(RBRAK))) {
+          tokens.next();
+          tokens.next();
+          name =
+              name.startsWith("[")
+                  ? "[" + name
+                  : PRIMITIVE_ARRAY_CODES.getOrDefault(name, "[L" + name + ";");
+        }
+        str.append(name);
       } else {
         supported = false;
       }

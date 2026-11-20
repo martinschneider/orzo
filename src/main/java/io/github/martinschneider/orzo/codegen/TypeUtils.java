@@ -41,7 +41,6 @@ import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -334,30 +333,5 @@ public class TypeUtils {
       return assignables;
     }
     return emptyList();
-  }
-
-  // cartesian product
-  // see:
-  // https://codereview.stackexchange.com/questions/67804/generate-cartesian-product-of-list-in-java
-  // input: a list of possible types for each argument of a method, for example if
-  // the method call is `m(a,b)` with `a` being float and `b` being `int`, typesList = {{float,
-  // double}, {int, long}}.
-  // output: a list of all possible combinations of types these arguments can be matched
-  // to, in the given example: {{float, int}, {float, long}, {double, int}, {double, long}}
-  // this can be used to find methods signatures that match input argument types
-  public static <T> List<List<T>> combinations(List<List<T>> lists) {
-    List<List<T>> combinations = Arrays.asList(Arrays.asList());
-    for (List<T> list : lists) {
-      List<List<T>> extraColumnCombinations = new ArrayList<>();
-      for (List<T> combination : combinations) {
-        for (T element : list) {
-          List<T> newCombination = new ArrayList<>(combination);
-          newCombination.add(element);
-          extraColumnCombinations.add(newCombination);
-        }
-      }
-      combinations = extraColumnCombinations;
-    }
-    return combinations;
   }
 }
