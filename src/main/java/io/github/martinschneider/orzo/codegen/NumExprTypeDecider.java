@@ -250,15 +250,33 @@ public class NumExprTypeDecider {
         for (Expression exp : call.params) {
           argTypes.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
         }
+        // a dotted name is a field chain followed by the call, e.g. "val.toString"
+        String[] segments = call.name.split("\\.");
+        for (int f = 0; f < segments.length - 1 && type != null; f++) {
+          FieldProcessor.InstanceField field =
+              new FieldProcessor().getInstanceFieldMap(type, ctx.allClazzes).get(segments[f]);
+          type = (field != null) ? field.fieldType : null;
+          generic = (field != null) ? field.genericType : null;
+        }
+        if (type == null) {
+          return null;
+        }
+        String methodName = segments[segments.length - 1];
         int lastDot = type.lastIndexOf('.');
         String simpleType = (lastDot >= 0) ? type.substring(lastDot + 1) : type;
         Method method =
-            ctx.methodCallGen.findMatchingMethod(simpleType + "." + call.name, argTypes);
+            ctx.methodCallGen.findMatchingMethod(simpleType + "." + methodName, argTypes);
         if (method != null) {
           type = method.type;
           generic = null;
         } else {
-          method = ctx.methodCallGen.findMethodViaReflection(type, call.name, argTypes.size());
+          method = ctx.methodCallGen.findMethodViaReflection(type, methodName, argTypes.size());
+          if (method == null) {
+            // e.g. toString() on an interface type (Class.getMethods() omits Object's methods)
+            method =
+                ctx.methodCallGen.findMethodViaReflection(
+                    "java.lang.Object", methodName, argTypes.size());
+          }
           if (method == null) {
             return null;
           }

@@ -2,3 +2,4 @@ java.lang.String
 class List
 string xyz
 int 3
+string [xyz]

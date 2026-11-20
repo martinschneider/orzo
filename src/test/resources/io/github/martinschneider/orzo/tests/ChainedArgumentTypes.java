@@ -28,5 +28,8 @@ public class ChainedArgumentTypes {
     holder.items.add("xyz");
     System.out.println(describe(holder.items.get(0)));
     System.out.println(describe(holder.items.get(0).length()));
+    // cast chain followed by a field and a call
+    Object h = holder;
+    System.out.println(describe(((GenericChainHolder) h).items.toString()));
   }
 }
