@@ -849,7 +849,20 @@ public class ExpressionGenerator {
       prev = curr;
       curr = curr.next;
     } while (curr != null);
+    // A call result used in a wider numeric context (e.g. "longVar != list.size()"): widen it
+    // like a variable load is widened above.
+    if (prev instanceof MethodCall && isWideningPrimitive(returnType, type)) {
+      ctx.basicGen.convert1(out, returnType, type);
+      returnType = type;
+    }
     return returnType;
+  }
+
+  private static boolean isWideningPrimitive(String from, String to) {
+    List<String> order = List.of(BYTE, SHORT, CHAR, INT, LONG, FLOAT, DOUBLE);
+    int fromIdx = order.indexOf(from);
+    int toIdx = order.indexOf(to);
+    return fromIdx >= 0 && toIdx > fromIdx && toIdx >= order.indexOf(LONG);
   }
 
   private String handleStaticInstanceChain(DynamicByteArray out, Identifier curr, String type) {

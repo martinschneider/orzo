@@ -18,4 +18,3 @@ src/main/java/io/github/martinschneider/orzo/parser/ExpressionParser.java
 src/main/java/io/github/martinschneider/orzo/parser/MethodParser.java
 src/main/java/io/github/martinschneider/orzo/util/FactoryHelper.java
 
-src/main/java/io/github/martinschneider/orzo/parser/ArrayInitParser.java

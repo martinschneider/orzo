@@ -245,7 +245,8 @@ public class OrzoTest {
         args(list("tests/FieldChainConstructorArg", "tests/GenericChainHolder")),
         args(list("tests/VoidReturnAfterCall")),
         args(list("tests/CStyleArrayParam")),
-        args(list("tests/NestedTernary")));
+        args(list("tests/NestedTernary")),
+        args(list("tests/WidenCallResult")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the
