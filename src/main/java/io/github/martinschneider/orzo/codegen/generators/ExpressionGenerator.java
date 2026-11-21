@@ -192,6 +192,16 @@ public class ExpressionGenerator {
     // Writes directly to the caller's `out` throughout (not a sub-buffer): several internal
     // branch-offset computations are relative to `out`'s absolute size, which an isolated
     // sub-buffer would get wrong whenever `out` already has prior content.
+    if (type != null
+        && !TypeUtils.isPrimitive(type)
+        && !STRING.equals(type)
+        && expr.cast == null
+        && expr.tokens.stream().anyMatch(t -> t instanceof Operator)
+        && STRING.equals(new NumExprTypeDecider(ctx).getType(ctx.classIdMap, expr))) {
+      // a string concatenation for a general reference type, e.g. "Object o = s + i;" or
+      // "list.add(s + i)": evaluated as a String (not with its operands converted to Object)
+      type = STRING;
+    }
     int startPos = out.size();
     ExpressionResult result = eval(out, type, expr, true, false);
     if (out.size() > startPos) {
