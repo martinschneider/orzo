@@ -70,6 +70,7 @@ public class ForEachParser implements ProdParser<ForEachStatement> {
       Declaration first = decl.declarations.get(0);
       ForEachStatement forEach = new ForEachStatement(first.type, first.name, iterable, body);
       forEach.elemArrDim = first.arrDim;
+      forEach.elemGenericType = first.genericType;
       return forEach;
     }
     tokens.next();
@@ -88,6 +89,7 @@ public class ForEachParser implements ProdParser<ForEachStatement> {
     Declaration first = decl.declarations.get(0);
     ForEachStatement forEach = new ForEachStatement(first.type, first.name, iterable, body);
     forEach.elemArrDim = first.arrDim;
+    forEach.elemGenericType = first.genericType;
     return forEach;
   }
 }

@@ -238,6 +238,8 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
           bodyOut, ctx.classIdMap, stmt.elemType, stmt.elemArrDim, stmt.elemVar);
     } else {
       ctx.assignGen.assign(bodyOut, ctx.classIdMap.variables, stmt.elemType, stmt.elemVar);
+      ctx.classIdMap.variables.localMap.get(stmt.elemVar.val.toString()).genericType =
+          stmt.elemGenericType;
     }
 
     // Emit body statements

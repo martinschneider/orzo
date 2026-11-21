@@ -1,5 +1,5 @@
 src/main/java/io/github/martinschneider/orzo/codegen/FieldProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ExpressionGenerator.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodCallGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/StackMapTableBuilder.java
 
+src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodCallGenerator.java

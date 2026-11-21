@@ -13,6 +13,8 @@ public class ForEachStatement implements Statement {
   public int elemArrDim;
   // the loop's label (e.g. "outer" in "outer: for (...)"), null if it has none
   public String label;
+  // the loop variable's generic type, e.g. "java.util.Map$Entry<K,V>" (null if not generic)
+  public String elemGenericType;
 
   public ForEachStatement(
       String elemType, Identifier elemVar, Expression iterable, List<Statement> body) {

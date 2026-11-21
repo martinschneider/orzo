@@ -279,7 +279,8 @@ public class OrzoTest {
         args(list("tests/BoxingOverloadAndNewChain")),
         args(list("tests/MostSpecificOverload")),
         args(list("tests/ArrayInitializerShorthand")),
-        args(list("tests/UnboxGenericReturn")));
+        args(list("tests/UnboxGenericReturn")),
+        args(list("tests/ForEachGenericVar")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the
