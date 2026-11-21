@@ -90,6 +90,19 @@ public class SwitchParser implements ProdParser<SwitchStatement> {
         && !tokens.curr().eq(keyword(CASE))
         && !tokens.curr().eq(scope(DEFAULT))
         && !tokens.curr().eq(sym(RBRACE))) {
+      if (tokens.curr().eq(sym(LBRACE))) {
+        // a braced block, e.g. "case X: { ... }"
+        tokens.next();
+        List<Statement> block = ctx.stmtParser.parseStmtSeq(tokens);
+        if (block != null) {
+          body.addAll(block);
+        }
+        if (!tokens.curr().eq(sym(RBRACE))) {
+          break;
+        }
+        tokens.next();
+        continue;
+      }
       Statement stmt = ctx.stmtParser.parse(tokens);
       if (stmt == null) {
         break;

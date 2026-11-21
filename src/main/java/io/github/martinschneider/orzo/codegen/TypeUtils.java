@@ -195,6 +195,29 @@ public class TypeUtils {
         }
       }
     }
+    // a (reflectively loadable) class of the same package, a wildcard import or java.lang
+    List<String> candidates = new ArrayList<>();
+    if (currentClazz != null) {
+      if (currentClazz.packageName != null && !currentClazz.packageName.isEmpty()) {
+        candidates.add(currentClazz.packageName + "." + type);
+      }
+      if (currentClazz.imports != null) {
+        for (Import imp : currentClazz.imports) {
+          if (!imp.isStatic && imp.id != null && imp.id.endsWith(".*")) {
+            candidates.add(imp.id.substring(0, imp.id.length() - 1) + type);
+          }
+        }
+      }
+    }
+    candidates.add("java.lang." + type);
+    for (String candidate : candidates) {
+      try {
+        Class.forName(candidate);
+        return candidate;
+      } catch (ClassNotFoundException | LinkageError e) {
+        // try the next one
+      }
+    }
     return type;
   }
 

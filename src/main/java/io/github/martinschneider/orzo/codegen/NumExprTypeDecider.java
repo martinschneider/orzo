@@ -399,12 +399,8 @@ public class NumExprTypeDecider {
       }
     }
     if (fqn == null) {
-      try {
-        Class.forName("java.lang." + className);
-        fqn = "java.lang." + className;
-      } catch (ClassNotFoundException e) {
-        // not in java.lang
-      }
+      // java.lang, the same package, ...
+      fqn = TypeUtils.resolveSimpleType(className, ctx.allClazzes, ctx.clazz);
     }
     if (fqn == null) return null;
     try {
