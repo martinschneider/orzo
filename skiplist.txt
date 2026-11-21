@@ -1,3 +1,2 @@
-src/main/java/io/github/martinschneider/orzo/codegen/FieldProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/StackMapTableBuilder.java
 
