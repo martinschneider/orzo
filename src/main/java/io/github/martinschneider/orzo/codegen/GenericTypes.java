@@ -38,6 +38,52 @@ public class GenericTypes {
     return sig.append(';').toString();
   }
 
+  /**
+   * The JVM signature of a method with generic parameter types (e.g.
+   * "(Ljava/util/List<Ljava/lang/String;>;)V"), or null if it has none (or one that uses a type
+   * variable or a wildcard, as type parameter declarations aren't tracked).
+   */
+  public static String methodSignature(
+      io.github.martinschneider.orzo.parser.productions.Method method,
+      List<io.github.martinschneider.orzo.parser.productions.Clazz> allClazzes,
+      io.github.martinschneider.orzo.parser.productions.Clazz clazz) {
+    boolean generic = false;
+    StringBuilder sig = new StringBuilder("(");
+    for (io.github.martinschneider.orzo.parser.productions.Argument arg : method.args) {
+      if (arg.genericType != null) {
+        if (!isFullyResolved(arg.genericType)) {
+          return null;
+        }
+        sig.append(toSignature(arg.genericType));
+        generic = true;
+      } else {
+        sig.append(TypeUtils.descr(TypeUtils.resolveSimpleType(arg.type, allClazzes, clazz)));
+      }
+    }
+    if (!generic) {
+      return null;
+    }
+    sig.append(')');
+    sig.append(TypeUtils.descr(TypeUtils.resolveSimpleType(method.type, allClazzes, clazz)));
+    return sig.toString();
+  }
+
+  // no type variables or wildcards, e.g. "java.util.Map<java.lang.String,[B>"
+  private static boolean isFullyResolved(String genericType) {
+    if (genericType.startsWith("[")) {
+      return true;
+    }
+    if (!erasure(genericType).contains(".")) {
+      return false;
+    }
+    for (String arg : typeArgs(genericType)) {
+      if (!isFullyResolved(arg)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /** "java.util.List<a.b.Foo>" → "java.util.List" */
   public static String erasure(String genericType) {
     int lt = genericType.indexOf('<');

@@ -66,6 +66,12 @@ public class ConstantPoolProcessor {
       }
     }
     for (Method method : clazz.methods) {
+      String signature = GenericTypes.methodSignature(method, ctx.allClazzes, ctx.clazz);
+      if (signature != null) {
+        // for the method's Signature attribute (so reflection sees its generic parameter types)
+        constPool.addUtf8("Signature");
+        constPool.addUtf8(signature);
+      }
       if (clazz.isInterface) {
         constPool.addUtf8(method.name.val.toString());
         constPool.addUtf8(TypeUtils.methodDescr(method, ctx.allClazzes, ctx.clazz));

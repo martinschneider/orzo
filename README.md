@@ -15,7 +15,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] String
 - [X] interfaces
 - [ ] [reference types](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.4) (partially supported)
-- [ ] generics (partially supported: type arguments of locals, parameters and fields are tracked for calls on JDK generic types, e.g. `list.get(i).length()`)
+- [ ] generics (partially supported: type arguments of locals, parameters and fields are tracked for calls on JDK generic types, e.g. `list.get(i).length()`, and emitted as field/method `Signature` attributes)
 - [X] [enums](https://docs.oracle.com/javase/specs/jls/se18/html/jls-8.html#jls-8.9)
 - [ ] class inheritance
 - [X] [exceptions](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-2.html#jvms-2.10) (try-catch and throw; exception table + StackMapTable emitted)
@@ -102,4 +102,4 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
-Self-compilation progress: ████████████████████████████████▋░░░░░░░ 81.5%
+Self-compilation progress: ████████████████████████████████████▎░░░ 90.5%

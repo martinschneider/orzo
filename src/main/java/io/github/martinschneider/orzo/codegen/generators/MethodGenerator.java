@@ -5,6 +5,7 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.*;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
+import io.github.martinschneider.orzo.codegen.GenericTypes;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.StackMapTableBuilder;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
@@ -49,8 +50,10 @@ public class MethodGenerator {
     DynamicByteArray methodOut = new DynamicByteArray();
     ctx.exceptionTable.clear();
     ctx.exceptionHandlerType.clear();
+    String signature = GenericTypes.methodSignature(method, ctx.allClazzes, ctx.clazz);
     if (!clazz.isInterface) {
-      out.write((short) 1); // attribute size
+      out.write((short) (signature != null ? 2 : 1)); // attribute size
+      writeSignature(out, signature);
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Code"));
       boolean returned = false;
 
@@ -120,11 +123,21 @@ public class MethodGenerator {
         out.write((short) 0); // no attributes
       }
     } else {
-      out.write((short) 0); // attribute size
+      out.write((short) (signature != null ? 1 : 0)); // attribute size
+      writeSignature(out, signature);
       out.write(methodOut.flush());
     }
     ctx.opStack.reset();
     return out;
+  }
+
+  // https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.9
+  private void writeSignature(HasOutput out, String signature) {
+    if (signature != null) {
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Signature"));
+      out.write(2);
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, signature));
+    }
   }
 
   private static boolean ifStatementAlwaysReturns(IfStatement stmt) {

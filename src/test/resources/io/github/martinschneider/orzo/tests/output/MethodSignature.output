@@ -1,0 +1,2 @@
+static int io.github.martinschneider.orzo.tests.MethodSignature.count(java.util.List<java.lang.String>,java.util.function.Predicate<java.lang.String>)
+static int io.github.martinschneider.orzo.tests.MethodSignature.size(java.util.Map<java.lang.String, int[]>,int)
