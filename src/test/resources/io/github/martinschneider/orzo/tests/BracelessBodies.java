@@ -12,5 +12,10 @@ public class BracelessBodies {
     int total = 0;
     for (int i = 0; i < 4; i++) total += i;
     System.out.println(total);
+    int start = 3;
+    for (; start >= 0; start--) {
+      total += start;
+    }
+    System.out.println(total + " " + start);
   }
 }

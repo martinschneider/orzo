@@ -6,6 +6,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
@@ -13,10 +15,12 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
+import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Import;
@@ -174,7 +178,7 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       Expression value = null;
       if (tokens.curr().eq(op(ASSIGN))) {
         tokens.next();
-        while ((value = parseExpOrArrInit(tokens)) != null || tokens.curr().eq(sym(COMMA))) {
+        while ((value = parseExpOrArrInit(tokens, type)) != null || tokens.curr().eq(sym(COMMA))) {
           if (value != null) {
             values.add(value);
             arrDims.add(type.arr);
@@ -202,6 +206,33 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       return new ParallelDeclaration(declarations);
     }
     return null;
+  }
+
+  Expression parseExpOrArrInit(TokenList tokens, Type type) {
+    if (type.arr == 1 && tokens.curr().eq(sym(LBRACE))) {
+      // array initializer shorthand, e.g. "int[] a = {1, 2};"
+      int idx = tokens.idx();
+      tokens.next();
+      List<Expression> vals = new ArrayList<>();
+      Expression val;
+      while ((val = ctx.exprParser.parse(tokens)) != null) {
+        vals.add(val);
+        if (tokens.curr().eq(sym(COMMA))) {
+          tokens.next();
+        }
+      }
+      if (!tokens.curr().eq(sym(RBRACE))) {
+        tokens.setIdx(idx);
+        return null;
+      }
+      tokens.next();
+      List<Expression> dims = new ArrayList<>();
+      dims.add(new Expression(new ArrayList<>(List.of(new IntLiteral(vals.size(), false)))));
+      List<List<Expression>> allVals = new ArrayList<>();
+      allVals.add(vals);
+      return new ArrayInit(type.name, dims, allVals);
+    }
+    return parseExpOrArrInit(tokens);
   }
 
   Expression parseExpOrArrInit(TokenList tokens) {

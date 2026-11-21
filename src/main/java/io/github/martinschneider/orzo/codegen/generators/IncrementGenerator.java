@@ -49,8 +49,9 @@ public class IncrementGenerator implements StatementGenerator<IncrementStatement
     }
     Identifier id = (Identifier) incr.expr.tokens.get(0);
     Operators op = ((Operator) incr.expr.tokens.get(1)).opValue();
-    if (id.next != null) {
-      // a field of another object, e.g. "a.b.count++": generate "a.b.count = a.b.count + 1"
+    if (id.next != null || id.arrSel != null) {
+      // a field of another object or an array element, e.g. "a.b.count++" / "a[i]++":
+      // generate "a.b.count = a.b.count + 1"
       Operators arith = (op == PRE_DECREMENT || op == POST_DECREMENT) ? MINUS : PLUS;
       Expression rhs =
           new Expression(new ArrayList<>(List.of(id, new IntLiteral(1, false), Token.op(arith))));

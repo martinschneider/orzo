@@ -2,13 +2,16 @@ package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ExpressionStatement;
@@ -107,6 +110,19 @@ public class StatementParser implements ProdParser<Statement> {
       String label = tokens.curr().val.toString();
       tokens.next();
       tokens.next();
+      if (tokens.curr().eq(sym(LBRACE))) {
+        // a labeled block, e.g. "outer: { ... break outer; ... }"
+        tokens.next();
+        List<Statement> body = parseStmtSeq(tokens);
+        if (tokens.curr().eq(sym(RBRACE))) {
+          tokens.next();
+          Block block = new Block((body != null) ? body : new ArrayList<>());
+          block.label = label;
+          return block;
+        }
+        tokens.setIdx(idx);
+        return null;
+      }
       stmt = parse(tokens);
       if (stmt instanceof LoopStatement) {
         ((LoopStatement) stmt).label = label;

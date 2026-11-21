@@ -65,7 +65,12 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
                 && !actualType.equals(decl.type)
                 && !TypeUtils.isPrimitive(actualType)
                 && !TypeUtils.isPrimitive(decl.type);
-        if (needsAutobox || needsRefCast) {
+        // unboxing, e.g. "int x = deque.pop();" on a Deque<Integer>
+        boolean needsUnbox =
+            actualType != null
+                && !TypeUtils.isPrimitive(actualType)
+                && TypeUtils.isPrimitive(decl.type);
+        if (needsAutobox || needsRefCast || needsUnbox) {
           ctx.basicGen.convert1(out, actualType, decl.type);
         }
       } else {

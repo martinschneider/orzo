@@ -4,6 +4,7 @@ import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
+import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Continue;
@@ -51,6 +52,7 @@ public class StatementDelegator {
     reg.put(Continue.class, new ContinueGenerator(ctx));
     reg.put(ExpressionStatement.class, new ExpressionStatementGenerator(ctx));
     reg.put(FieldAssignment.class, new FieldAssignmentGenerator(ctx));
+    reg.put(Block.class, new BlockGenerator(ctx));
   }
 
   public HasOutput generate(DynamicByteArray out, Method method, Statement stmt) {

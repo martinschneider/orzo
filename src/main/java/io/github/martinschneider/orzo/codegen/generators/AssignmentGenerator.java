@@ -139,7 +139,12 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
                       && !actualType.equals(type)
                       && !TypeUtils.isPrimitive(actualType)
                       && !TypeUtils.isPrimitive(type);
-              if (needsAutobox || needsRefCast) {
+              // unboxing, e.g. "int x = deque.pop();" on a Deque<Integer>
+              boolean needsUnbox =
+                  actualType != null
+                      && !TypeUtils.isPrimitive(actualType)
+                      && TypeUtils.isPrimitive(type);
+              if (needsAutobox || needsRefCast || needsUnbox) {
                 ctx.basicGen.convert1(out, actualType, type);
               }
               ctx.storeGen.store(out, varInfo);

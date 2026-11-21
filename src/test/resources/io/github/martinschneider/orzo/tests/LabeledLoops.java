@@ -31,5 +31,19 @@ public class LabeledLoops {
       n++;
     }
     System.out.println("n=" + n);
+    // break out of a labeled block from an inner loop
+    int found = -1;
+    block:
+    {
+      int k = 0;
+      while (true) {
+        if (k * k > 20) {
+          found = k;
+          break block;
+        }
+        k++;
+      }
+    }
+    System.out.println("found=" + found);
   }
 }

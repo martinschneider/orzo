@@ -49,7 +49,7 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
     VariableInfo tmp = null;
     if (retStmt.retValue != null) {
       ctx.exprGen.eval(out, evalType(method.type), retStmt.retValue);
-      ctx.basicGen.convert1(out, ctx.opStack.type(), method.type);
+      convertReturnValue(out, method.type);
       String tmpName = "$ret_" + ctx.classIdMap.variables.localSize;
       tmp =
           new VariableInfo(
@@ -89,8 +89,16 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
       return out;
     }
     ctx.exprGen.eval(out, evalType(type), retValue);
-    ctx.basicGen.convert1(out, ctx.opStack.type(), type);
+    convertReturnValue(out, type);
     return returnOpcode(out, type);
+  }
+
+  private void convertReturnValue(DynamicByteArray out, String type) {
+    String actual = ctx.opStack.type();
+    if (BOOLEAN.equals(type) && INT.equals(actual)) {
+      return; // e.g. a comparison's 0/1 result: a boolean is an int on the JVM
+    }
+    ctx.basicGen.convert1(out, actual, type);
   }
 
   // The type to evaluate a returned expression in: a general reference return type (e.g. Object)

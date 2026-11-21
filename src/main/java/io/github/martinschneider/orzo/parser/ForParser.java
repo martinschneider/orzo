@@ -5,10 +5,12 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.parser.productions.EmptyStatement;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
@@ -40,7 +42,13 @@ public class ForParser implements ProdParser<ForStatement> {
             LOG_NAME, sym(LPAREN), tokens, new RuntimeException().getStackTrace());
       }
       tokens.next();
-      initialization = ctx.stmtParser.parse(tokens);
+      if (tokens.curr().eq(sym(SEMICOLON))) {
+        // no initialization, e.g. "for (; i < n; i++)"
+        tokens.next();
+        initialization = new EmptyStatement();
+      } else {
+        initialization = ctx.stmtParser.parse(tokens);
+      }
       if (initialization == null) {
         tokens.next(sym(RBRACE));
         ctx.errors.addError(
