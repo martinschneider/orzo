@@ -838,6 +838,7 @@ public class ExpressionGenerator {
         ConstructorCall constructorCall = (ConstructorCall) curr;
         returnType = generateConstructorCall(out, classIdMap, constructorCall);
         ctx.methodCallGen.lastGenericType = null;
+        prevLoadedRef = true; // e.g. "new Foo().field"
       } else if (curr instanceof MethodCall) {
         MethodCall methodCall = (MethodCall) curr;
         if (prev instanceof MethodCall

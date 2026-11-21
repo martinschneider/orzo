@@ -73,18 +73,11 @@ public class LambdaParser implements ProdParser<Expression> {
   // expression "(x)"), so the caller still checks for "->" before committing.
   private List<String> tryParseParams(TokenList tokens) {
     int idx = tokens.idx();
-    // Local-first, not "(Identifier) tokens.curr()).next" inline: a cast immediately followed by
-    // a field access, nested inside a parenthesized boolean condition, isn't parsed correctly by
-    // ExpressionParser yet when it's not the condition's very first operand (see docs/TODO.md).
-    if (tokens.curr() instanceof Identifier) {
-      Identifier curr = (Identifier) tokens.curr();
-      if (curr.next == null) {
-        String name = curr.id();
-        tokens.next();
-        List<String> params = new ArrayList<>();
-        params.add(name);
-        return params;
-      }
+    if (tokens.curr() instanceof Identifier && ((Identifier) tokens.curr()).next == null) {
+      List<String> params = new ArrayList<>();
+      params.add(((Identifier) tokens.curr()).id());
+      tokens.next();
+      return params;
     }
     if (!tokens.curr().eq(sym(LPAREN))) {
       return null;
@@ -97,16 +90,11 @@ public class LambdaParser implements ProdParser<Expression> {
     }
     while (true) {
       Token t = tokens.curr();
-      if (!(t instanceof Identifier)) {
+      if (!(t instanceof Identifier) || ((Identifier) t).next != null) {
         tokens.setIdx(idx);
         return null;
       }
-      Identifier ident = (Identifier) t;
-      if (ident.next != null) {
-        tokens.setIdx(idx);
-        return null;
-      }
-      params.add(ident.id());
+      params.add(((Identifier) t).id());
       tokens.next();
       if (tokens.curr().eq(sym(COMMA))) {
         tokens.next();
