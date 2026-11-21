@@ -203,9 +203,16 @@ public class NumExprTypeDecider {
             FieldProcessor.StaticField sf = ctx.staticFieldMap.get(id.val.toString());
             if (sf != null) {
               types.add(sf.fieldType);
-            } else if (id.next != null && "class".equals(id.next.val.toString())) {
-              // Class literal, e.g. String.class
-              types.add("java.lang.Class");
+            } else if (classLiteralLink(id) != null) {
+              // Class literal, e.g. String.class or a.b.Foo.class, possibly followed by calls
+              String classType =
+                  followChain(classIdMap, "java.lang.Class", null, classLiteralLink(id).next);
+              if (classType != null) {
+                types.add(classType);
+              }
+            } else if (qualifiedStaticFieldType(id) != null) {
+              // e.g. java.lang.Integer.MAX_VALUE
+              types.add(qualifiedStaticFieldType(id));
             } else if (id.next instanceof MethodCall) {
               // static call on a class name, e.g. String.valueOf(1)
               String className = ctx.methodCallGen.resolveClassName(id.val.toString());
@@ -315,6 +322,39 @@ public class NumExprTypeDecider {
       link = link.next;
     }
     return type;
+  }
+
+  // The "class" link of a class literal chain, e.g. in String.class.getName(), or null
+  private static Identifier classLiteralLink(Identifier id) {
+    for (Identifier link = id.next; link != null; link = link.next) {
+      if ("class".equals(link.val.toString())) {
+        return link;
+      }
+    }
+    return null;
+  }
+
+  // The type of a fully-qualified static field reference like "java.lang.Integer.MAX_VALUE"
+  private static String qualifiedStaticFieldType(Identifier id) {
+    List<String> parts = new ArrayList<>();
+    for (Identifier link = id; link != null; link = link.next) {
+      if (link instanceof MethodCall) {
+        return null;
+      }
+      parts.add(link.val.toString());
+    }
+    if (parts.size() < 3) {
+      return null;
+    }
+    try {
+      java.lang.reflect.Field field =
+          Class.forName(String.join(".", parts.subList(0, parts.size() - 1)))
+              .getField(parts.get(parts.size() - 1));
+      String type = field.getType().getName();
+      return "java.lang.String".equals(type) ? STRING : type;
+    } catch (ClassNotFoundException | NoSuchFieldException | LinkageError e) {
+      return null;
+    }
   }
 
   private String resolveChainedType(String className, String fieldName) {

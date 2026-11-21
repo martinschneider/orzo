@@ -975,12 +975,53 @@ public class ExpressionGenerator {
       return staticField.fieldType;
     }
 
-    // Try Type.class literal
-    if (identifierParts.size() == 2 && "class".equals(identifierParts.get(1))) {
-      String jvmClass = resolveJvmClassName(identifierParts.get(0));
+    // Class literal, e.g. "String.class" or "java.util.List.class", possibly followed by calls
+    // ("Foo.class.getName()")
+    int classIdx = identifierParts.indexOf("class");
+    if (classIdx > 0) {
+      String className = String.join(".", identifierParts.subList(0, classIdx));
+      String jvmClass =
+          (classIdx == 1) ? resolveJvmClassName(className) : className.replace('.', '/');
       ctx.constPool.addClass(jvmClass);
       ctx.loadGen.ldc(out, CONSTANT_CLASS, jvmClass);
-      return "java.lang.Class";
+      String returnType = "java.lang.Class";
+      Identifier link = curr;
+      for (int i = 0; i <= classIdx; i++) {
+        link = link.next;
+      }
+      for (; link instanceof MethodCall; link = link.next) {
+        returnType =
+            ctx.methodCallGen.generateChained(out, ctx.classIdMap, (MethodCall) link, returnType);
+      }
+      return returnType;
+    }
+    // Fully-qualified static field, e.g. "java.lang.Integer.MAX_VALUE"
+    for (int split = identifierParts.size() - 1; split >= 2; split--) {
+      String fqnClass = String.join(".", identifierParts.subList(0, split));
+      try {
+        java.lang.reflect.Field reflField =
+            Class.forName(fqnClass).getField(identifierParts.get(split));
+        if (!java.lang.reflect.Modifier.isStatic(reflField.getModifiers())
+            || split != identifierParts.size() - 1) {
+          break;
+        }
+        String jvmClass = fqnClass.replace('.', '/');
+        String fieldType = reflField.getType().getName();
+        String descr = TypeUtils.descr(fieldType);
+        ctx.constPool.addClass(jvmClass);
+        ctx.constPool.addFieldRef(jvmClass, reflField.getName(), descr);
+        out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC);
+        out.write(
+            ctx.constPool.indexOf(
+                io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF,
+                jvmClass,
+                reflField.getName(),
+                descr));
+        ctx.opStack.push(fieldType);
+        return "java.lang.String".equals(fieldType) ? STRING : fieldType;
+      } catch (ClassNotFoundException | NoSuchFieldException e) {
+        // try a shorter class name
+      }
     }
     // Try to resolve as ImportedClass.fieldName (e.g. Operators.LESS, Byte.MAX_VALUE)
     if (identifierParts.size() == 2) {

@@ -251,7 +251,8 @@ public class OrzoTest {
         args(list("tests/ImplicitThisCallArg")),
         args(list("tests/StaticCallOnClassName")),
         args(list("tests/QualifiedInstanceof")),
-        args(list("tests/NullArgument")));
+        args(list("tests/NullArgument")),
+        args(list("tests/ClassLiteralChains")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

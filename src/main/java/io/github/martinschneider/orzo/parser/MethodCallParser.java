@@ -11,6 +11,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.ArraySelector;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
@@ -74,7 +75,10 @@ public class MethodCallParser implements ProdParser<MethodCall> {
         name.append(tokens.curr());
         tokens.next();
         name.append('.');
-      } while ((tokens.curr().eq(sym(DOT)) && !tokens.next().eq(eof())));
+        // a dotted name only continues with another name, not e.g. "class" in "Foo.class.x()"
+      } while (tokens.curr().eq(sym(DOT))
+          && (tokens.peekNext() instanceof Identifier || tokens.peekNext() instanceof Type)
+          && !tokens.next().eq(eof()));
       name.deleteCharAt(name.length() - 1);
       parameters = parseArgs(tokens);
       ArraySelector arrSel = ctx.arraySelectorParser.parse(tokens);

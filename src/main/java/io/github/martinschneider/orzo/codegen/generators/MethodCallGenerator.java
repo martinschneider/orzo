@@ -206,8 +206,13 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         }
         // Handle ClassName.STATIC_FIELD.method() via reflection (e.g.
         // ConstantPool.INT_CONSTANT_TYPES.contains(type))
-        if (method == null && chainFirstVar == null && parts.length == 2) {
-          String resolvedClass = resolveClassName(parts[0]);
+        // (also with a fully-qualified class name, e.g. java.io.File.separator.length())
+        if (method == null && chainFirstVar == null && parts.length >= 2) {
+          String resolvedClass =
+              (parts.length == 2)
+                  ? resolveClassName(parts[0])
+                  : String.join(".", java.util.Arrays.copyOf(parts, parts.length - 1));
+          parts = new String[] {resolvedClass, parts[parts.length - 1]};
           try {
             Class<?> reflClass = Class.forName(resolvedClass);
             java.lang.reflect.Field reflField = reflClass.getField(parts[1]);
