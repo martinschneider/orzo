@@ -95,16 +95,22 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
 
   private void convertReturnValue(DynamicByteArray out, String type) {
     String actual = ctx.opStack.type();
-    if (BOOLEAN.equals(type) && INT.equals(actual)) {
-      return; // e.g. a comparison's 0/1 result: a boolean is an int on the JVM
+    if (BOOLEAN.equals(type) && List.of(INT, BYTE, SHORT, CHAR).contains(actual)) {
+      // e.g. a comparison's 0/1 result, typed as its operands' type (e.g. "return b - 1 == x;"
+      // with a byte b): a boolean is an int on the JVM
+      return;
     }
     ctx.basicGen.convert1(out, actual, type);
   }
 
   // The type to evaluate a returned expression in: a general reference return type (e.g. Object)
-  // must not be imposed on the expression ("return a + b;" is still a String concatenation).
+  // must not be imposed on the expression ("return a + b;" is still a String concatenation), and
+  // neither must boolean (the operands of "return a - b == c;" are ints).
   private static String evalType(String returnType) {
-    return (TypeUtils.isPrimitive(returnType) || STRING.equals(returnType)) ? returnType : null;
+    return ((TypeUtils.isPrimitive(returnType) && !BOOLEAN.equals(returnType))
+            || STRING.equals(returnType))
+        ? returnType
+        : null;
   }
 
   private HasOutput returnOpcode(DynamicByteArray out, String type) {

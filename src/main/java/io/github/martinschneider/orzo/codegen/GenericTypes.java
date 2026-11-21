@@ -217,7 +217,8 @@ public class GenericTypes {
       String className,
       String methodName,
       List<String> paramTypes,
-      int index) {
+      int index,
+      String expectedReturn) {
     try {
       Class<?> clazz =
           Class.forName(
@@ -235,10 +236,41 @@ public class GenericTypes {
           return null;
         }
       }
+      if (expectedReturn != null) {
+        // the method's own type variables, inferred from the call's target type, e.g. T=Foo for
+        // "Comparator.comparingInt(...)" passed as a Comparator<Foo>
+        unify(method.getGenericReturnType(), expectedReturn, bindings);
+      }
       String type = resolve(method.getGenericParameterTypes()[index], bindings);
       return (type.indexOf('<') >= 0) ? type : null;
     } catch (ClassNotFoundException | LinkageError e) {
       return null;
+    }
+  }
+
+  // Binds the type variables in a (generic) type by matching it against a generic type string,
+  // e.g. T=a.Foo for "Comparator<T>" and "java.util.Comparator<a.Foo>"
+  private static void unify(Type type, String generic, Map<String, String> bindings) {
+    if (type instanceof TypeVariable) {
+      bindings.putIfAbsent(((TypeVariable<?>) type).getName(), generic);
+    } else if (type instanceof ParameterizedType) {
+      ParameterizedType pt = (ParameterizedType) type;
+      if (!((Class<?>) pt.getRawType()).getName().equals(erasure(generic))) {
+        return;
+      }
+      Type[] actual = pt.getActualTypeArguments();
+      List<String> args = typeArgs(generic);
+      for (int i = 0; i < actual.length && i < args.size(); i++) {
+        unify(actual[i], args.get(i), bindings);
+      }
+    } else if (type instanceof WildcardType) {
+      WildcardType wildcard = (WildcardType) type;
+      unify(
+          (wildcard.getLowerBounds().length > 0)
+              ? wildcard.getLowerBounds()[0]
+              : wildcard.getUpperBounds()[0],
+          generic,
+          bindings);
     }
   }
 

@@ -42,6 +42,7 @@ import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class TypeUtils {
@@ -343,23 +344,50 @@ public class TypeUtils {
       assignables.add(type);
       try {
         Class<?> clazz = Class.forName(type.replace('/', '.'));
-        for (Class<?> iface : clazz.getInterfaces()) {
-          assignables.add(iface.getName());
-          assignables.add(iface.getSimpleName());
+        // superclasses first, then all (also inherited and super-) interfaces
+        List<Class<?>> interfaces = new ArrayList<>();
+        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
+          if (c != clazz && !c.getName().equals("java.lang.Object")) {
+            assignables.add(c.getName());
+            assignables.add(c.getSimpleName());
+          }
+          interfaces.addAll(List.of(c.getInterfaces()));
         }
-        Class<?> superClass = clazz.getSuperclass();
-        while (superClass != null && !superClass.getName().equals("java.lang.Object")) {
-          assignables.add(superClass.getName());
-          assignables.add(superClass.getSimpleName());
-          superClass = superClass.getSuperclass();
+        for (int i = 0; i < interfaces.size(); i++) {
+          Class<?> iface = interfaces.get(i);
+          if (!assignables.contains(iface.getName())) {
+            assignables.add(iface.getName());
+            assignables.add(iface.getSimpleName());
+            interfaces.addAll(List.of(iface.getInterfaces()));
+          }
         }
       } catch (ClassNotFoundException e) {
         // not on classpath
       }
       assignables.add("java.lang.Object");
       assignables.add("Object");
+      String primitive = UNBOXED.get(type);
+      if (primitive != null) {
+        // unboxing (and widening), e.g. an Integer argument for an int or long parameter
+        for (String unboxed : assignableTo(primitive)) {
+          if (isPrimitive(unboxed)) {
+            assignables.add(unboxed);
+          }
+        }
+      }
       return assignables;
     }
     return emptyList();
   }
+
+  private static final Map<String, String> UNBOXED =
+      Map.of(
+          "java.lang.Integer", INT,
+          "java.lang.Long", LONG,
+          "java.lang.Double", DOUBLE,
+          "java.lang.Float", FLOAT,
+          "java.lang.Byte", BYTE,
+          "java.lang.Short", SHORT,
+          "java.lang.Character", CHAR,
+          "java.lang.Boolean", BOOLEAN);
 }

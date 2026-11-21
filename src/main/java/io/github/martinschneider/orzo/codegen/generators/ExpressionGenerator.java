@@ -129,6 +129,10 @@ public class ExpressionGenerator {
   // generic type of the functional interface a lambda argument is passed as (set by
   // MethodCallGenerator.pushArgs(), null if unknown), e.g. "java.util.function.Function<a.Foo,R>"
   public String lambdaTargetGeneric;
+  // The generic type the method call being evaluated as an argument is expected to have (its
+  // parameter's type, set by MethodCallGenerator.pushArgs(), null if unknown), e.g.
+  // "java.util.Comparator<a.Foo>": used to infer the called method's type variables
+  public String callTargetGeneric;
   private static final Map<String, String> PRIMITIVE_WRAPPERS =
       Map.of(
           "void", "java/lang/Void",
@@ -1352,6 +1356,36 @@ public class ExpressionGenerator {
   // Limitations (documented, not yet needed by any real caller): no captured variables from the
   // enclosing scope (the body may only reference its own parameters and static members), and no
   // "{ ... }" block body (only a single expression, via LambdaParser).
+  // "Owner::method" as a lambda with the given number of parameters: "(a, b) -> Owner.method(a, b)"
+  // for a static method, "(a, b) -> a.method(b)" for an instance method of Owner
+  private LambdaExpr methodRefAsLambda(LambdaExpr ref, int arity) {
+    boolean isStatic = true;
+    try {
+      Class<?> owner = Class.forName(resolveJvmClassName(ref.methodRefOwner).replace('/', '.'));
+      isStatic = false;
+      for (java.lang.reflect.Method m : owner.getMethods()) {
+        if (m.getName().equals(ref.methodRefName)
+            && m.getParameterCount() == arity
+            && java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
+          isStatic = true;
+        }
+      }
+    } catch (ClassNotFoundException | LinkageError e) {
+      // e.g. a class of this compilation run: assume a static method
+    }
+    List<String> params = new ArrayList<>();
+    List<Expression> args = new ArrayList<>();
+    for (int i = 0; i < arity; i++) {
+      params.add("$ref" + i);
+      if (isStatic || i > 0) {
+        args.add(new Expression(new ArrayList<>(List.of(new Identifier("$ref" + i)))));
+      }
+    }
+    String callee = (isStatic ? ref.methodRefOwner : params.get(0)) + "." + ref.methodRefName;
+    return new LambdaExpr(
+        params, new Expression(new ArrayList<>(List.of(new MethodCall(callee, args)))));
+  }
+
   private String generateLambda(DynamicByteArray out, String targetType, LambdaExpr lambda) {
     Class<?> iface;
     try {
@@ -1370,6 +1404,9 @@ public class ExpressionGenerator {
           targetType + " is not a functional interface (no single abstract method found)",
           new RuntimeException().getStackTrace());
       return targetType;
+    }
+    if (lambda.methodRefName != null) {
+      lambda = methodRefAsLambda(lambda, sam.getParameterCount());
     }
     if (sam.getParameterCount() != lambda.params.size()) {
       ctx.errors.addError(

@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.lexer.tokens;
 
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import java.util.ArrayList;
 import java.util.List;
 
 // A lambda expression (e.g. "x -> x.toString()"), parsed as a single leaf token wherever a value
@@ -16,11 +17,22 @@ public class LambdaExpr extends Token {
 
   public List<String> params;
   public Expression body;
+  // a method reference, e.g. "Math::min" (owner "Math", method "min"): expanded into a lambda once
+  // the target functional interface's arity is known (params and body are empty until then)
+  public String methodRefOwner;
+  public String methodRefName;
 
   public LambdaExpr(List<String> params, Expression body) {
     super("->");
     this.params = params;
     this.body = body;
+  }
+
+  public static LambdaExpr methodRef(String owner, String method) {
+    LambdaExpr ref = new LambdaExpr(new ArrayList<>(), new Expression(new ArrayList<>()));
+    ref.methodRefOwner = owner;
+    ref.methodRefName = method;
+    return ref;
   }
 
   @Override
@@ -29,7 +41,10 @@ public class LambdaExpr extends Token {
     if (obj == null) return false;
     if (getClass() != obj.getClass()) return false;
     LambdaExpr other = (LambdaExpr) obj;
-    return params.equals(other.params) && body.equals(other.body);
+    return params.equals(other.params)
+        && body.equals(other.body)
+        && java.util.Objects.equals(methodRefOwner, other.methodRefOwner)
+        && java.util.Objects.equals(methodRefName, other.methodRefName);
   }
 
   @Override
@@ -43,6 +58,9 @@ public class LambdaExpr extends Token {
 
   @Override
   public String toString() {
+    if (methodRefName != null) {
+      return methodRefOwner + "::" + methodRefName;
+    }
     return "(" + String.join(", ", params) + ") -> " + body;
   }
 }

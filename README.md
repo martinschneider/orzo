@@ -62,7 +62,7 @@ It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorz
 - [X] [try](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.20) (try-catch incl. multi-catch `catch (A | B e)`; finally is parsed but not emitted)
 - [X] static initializer blocks `static { }`
 - [X] [switch](https://docs.oracle.com/javase/specs/jls/se18/html/jls-14.html#jls-14.11) (String and integral types; no fall-through)
-- [ ] [lambdas](https://docs.oracle.com/javase/specs/jls/se18/html/jls-15.html#jls-15.27)
+- [ ] [lambdas](https://docs.oracle.com/javase/specs/jls/se18/html/jls-15.html#jls-15.27) (partially supported: expression bodies; static and unbound method references `Owner::method`)
 - [X] [unless](https://www.perltutorial.org/perl-unless/) ✨
 
 ## Notes
@@ -103,4 +103,4 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
-Self-compilation progress: ████████████████████████████████████▊░░░ 91.7%
+Self-compilation progress: ████████████████████████████████████▊░░░ 91.8%

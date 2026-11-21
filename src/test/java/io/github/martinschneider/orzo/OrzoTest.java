@@ -288,7 +288,10 @@ public class OrzoTest {
         args(list("tests/ArrayInitAssignment")),
         args(list("tests/MethodSignature")),
         args(list("tests/NestedClasses")),
-        args(list("tests/NestedUser", "tests/NestedClasses")));
+        args(list("tests/NestedUser", "tests/NestedClasses")),
+        args(list("tests/MethodReference")),
+        args(list("tests/GenericTargetTyping")),
+        args(list("tests/BooleanReturnArithmetic")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

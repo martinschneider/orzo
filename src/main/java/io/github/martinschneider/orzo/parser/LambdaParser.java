@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.ARROW;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
@@ -10,6 +11,7 @@ import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.LambdaExpr;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +33,22 @@ public class LambdaParser implements ProdParser<Expression> {
   @Override
   public Expression parse(TokenList tokens) {
     int idx = tokens.idx();
+    if (((tokens.curr() instanceof Identifier && ((Identifier) tokens.curr()).next == null)
+            || tokens.curr() instanceof Type)
+        && tokens.peekNext().eq(sym(COLON))
+        && tokens.get(idx + 2).eq(sym(COLON))
+        && tokens.get(idx + 3) instanceof Identifier) {
+      // a method reference, e.g. "Math::min", "String::length"
+      String owner =
+          (tokens.curr() instanceof Type)
+              ? ((Type) tokens.curr()).name
+              : ((Identifier) tokens.curr()).id();
+      String method = ((Identifier) tokens.get(idx + 3)).id();
+      tokens.setIdx(idx + 4);
+      List<Token> refTokens = new ArrayList<>();
+      refTokens.add(LambdaExpr.methodRef(owner, method));
+      return new Expression(refTokens);
+    }
     List<String> params = tryParseParams(tokens);
     if (params == null || !tokens.curr().eq(sym(ARROW))) {
       tokens.setIdx(idx);

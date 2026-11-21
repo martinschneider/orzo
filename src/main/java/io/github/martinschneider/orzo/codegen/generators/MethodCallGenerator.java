@@ -45,6 +45,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   // Generic type of the receiver of the call whose arguments pushArgs() is evaluating (null if
   // unknown); used to give a lambda argument typed parameters
   private String argsReceiverGeneric;
+  // the generic type the result of the call whose arguments pushArgs() is evaluating is expected
+  // to have (see ExpressionGenerator.callTargetGeneric)
+  private String argsExpectedGeneric;
 
   public MethodCallGenerator(CGContext ctx) {
     this.ctx = ctx;
@@ -52,6 +55,8 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
 
   public String generate(
       DynamicByteArray out, GlobalIdentifierMap classIdMap, MethodCall methodCall) {
+    String expectedGeneric = ctx.exprGen.callTargetGeneric;
+    ctx.exprGen.callTargetGeneric = null;
     List<String> types = new ArrayList<>();
     for (Expression exp : methodCall.params) {
       types.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
@@ -325,8 +330,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       }
     }
     argsReceiverGeneric = receiverGeneric;
+    argsExpectedGeneric = expectedGeneric;
     pushArgs(out, methodCall.params, types, method);
     argsReceiverGeneric = null;
+    argsExpectedGeneric = null;
     if (isStatic) {
       ctx.invokeGen.invokeStatic(out, method);
     } else if ("super".equals(receiverName)) {
@@ -614,27 +621,43 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   public void pushArgs(
       DynamicByteArray out, List<Expression> params, List<String> types, Method method) {
     String receiverGeneric = argsReceiverGeneric; // (nested calls among the args overwrite it)
+    String expectedGeneric = argsExpectedGeneric;
+    argsExpectedGeneric = null;
     int paramCount = method.args.size();
     boolean pack =
         paramCount > 0
             && method.args.get(paramCount - 1).varargs
             && !(types.size() == paramCount && types.get(paramCount - 1).startsWith("["));
     int direct = pack ? paramCount - 1 : types.size();
+    List<String> paramTypes = new ArrayList<>();
+    for (Argument arg : method.args) {
+      paramTypes.add(arg.type);
+    }
     for (int i = 0; i < direct; i++) {
-      if (params.get(i).tokens.size() == 1
-          && params.get(i).tokens.get(0)
-              instanceof io.github.martinschneider.orzo.lexer.tokens.LambdaExpr) {
-        // the functional interface's generic type, so the lambda's parameters get real types
-        List<String> paramTypes = new ArrayList<>();
-        for (Argument arg : method.args) {
-          paramTypes.add(arg.type);
-        }
-        ctx.exprGen.lambdaTargetGeneric =
+      List<Token> argTokens = params.get(i).tokens;
+      boolean isLambda =
+          argTokens.size() == 1
+              && argTokens.get(0) instanceof io.github.martinschneider.orzo.lexer.tokens.LambdaExpr;
+      if (isLambda || (argTokens.size() == 1 && argTokens.get(0) instanceof MethodCall)) {
+        // the parameter's generic type: a lambda's parameters get real types from it, a generic
+        // method called for the argument can infer its type variables from it
+        String paramGeneric =
             GenericTypes.parameterType(
-                receiverGeneric, method.fqClassName, method.name.val.toString(), paramTypes, i);
+                receiverGeneric,
+                method.fqClassName,
+                method.name.val.toString(),
+                paramTypes,
+                i,
+                expectedGeneric);
+        if (isLambda) {
+          ctx.exprGen.lambdaTargetGeneric = paramGeneric;
+        } else {
+          ctx.exprGen.callTargetGeneric = paramGeneric;
+        }
       }
       pushArg(out, params.get(i), types.get(i), method.args.get(i).type);
       ctx.exprGen.lambdaTargetGeneric = null;
+      ctx.exprGen.callTargetGeneric = null;
     }
     if (pack) {
       String elemType =
@@ -952,7 +975,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         Class<?>[] mine = candidate.getParameterTypes();
         Class<?>[] theirs = other.getParameterTypes();
         for (int i = 0; mostSpecific && i < mine.length && i < theirs.length; i++) {
-          mostSpecific = theirs[i].isAssignableFrom(mine[i]) || theirs[i] == mine[i];
+          mostSpecific =
+              theirs[i].isAssignableFrom(mine[i])
+                  || theirs[i] == mine[i]
+                  || isPrimitiveWidening(mine[i], theirs[i]);
         }
       }
       if (mostSpecific) {
@@ -960,6 +986,19 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       }
     }
     return methods.get(0);
+  }
+
+  private static final List<Class<?>> NUMERIC_PRIMITIVES =
+      List.of(byte.class, short.class, int.class, long.class, float.class, double.class);
+
+  // e.g. int -> long, char -> int (JLS 5.1.2)
+  private static boolean isPrimitiveWidening(Class<?> from, Class<?> to) {
+    if (from == char.class) {
+      // char widens to int and beyond (but not to short or byte)
+      return NUMERIC_PRIMITIVES.indexOf(to) > NUMERIC_PRIMITIVES.indexOf(short.class);
+    }
+    int fromIdx = NUMERIC_PRIMITIVES.indexOf(from);
+    return fromIdx >= 0 && NUMERIC_PRIMITIVES.indexOf(to) > fromIdx;
   }
 
   private Method reflectedMethod(
