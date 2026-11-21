@@ -67,7 +67,15 @@ public class Token {
       if (hexValue.isEmpty()) {
         throw new NumberFormatException("Invalid hexadecimal literal: " + val);
       }
-      return new IntLiteral(new BigInteger(hexValue, 16), isLong);
+      BigInteger value = new BigInteger(hexValue, 16);
+      // A hex literal denotes the bits of a 32-bit int (64-bit long), e.g. 0xCAFEBABE is the
+      // negative int -889275714, not the long 3405691582.
+      if (!isLong && value.bitLength() <= 32) {
+        value = BigInteger.valueOf(value.intValue());
+      } else if (isLong && value.bitLength() <= 64) {
+        value = BigInteger.valueOf(value.longValue());
+      }
+      return new IntLiteral(value, isLong);
     }
     return new IntLiteral(new BigInteger(val), isLong);
   }

@@ -12,5 +12,8 @@ public class ClassLiteralChains {
     int max = java.lang.Integer.MAX_VALUE;
     System.out.println(max);
     System.out.println(java.io.File.separator.length());
+    Class<?> v = void.class;
+    System.out.println(v == Void.TYPE);
+    System.out.println(int.class.getName());
   }
 }

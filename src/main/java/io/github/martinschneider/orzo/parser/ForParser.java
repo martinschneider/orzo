@@ -67,9 +67,17 @@ public class ForParser implements ProdParser<ForStatement> {
       }
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
-        tokens.next(sym(RBRACE));
-        ctx.errors.missingExpected(
-            LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
+        // single-statement body without braces, e.g. "for (...) total += i;"
+        Statement stmt = ctx.stmtParser.parse(tokens);
+        if (stmt == null) {
+          tokens.next(sym(RBRACE));
+          ctx.errors.missingExpected(
+              LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
+          return null;
+        }
+        body = new ArrayList<>();
+        body.add(stmt);
+        return new ForStatement(initialization, condition, loopStatement, body);
       }
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);

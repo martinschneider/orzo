@@ -52,9 +52,16 @@ public class WhileParser implements ProdParser<WhileStatement> {
       }
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
-        tokens.prev();
-        ctx.errors.missingExpected(
-            LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
+        // single-statement body without braces, e.g. "while (i < n) i++;"
+        Statement stmt = ctx.stmtParser.parse(tokens);
+        if (stmt == null) {
+          ctx.errors.missingExpected(
+              LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
+          return null;
+        }
+        body = new ArrayList<>();
+        body.add(stmt);
+        return new WhileStatement(condition, body);
       }
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);

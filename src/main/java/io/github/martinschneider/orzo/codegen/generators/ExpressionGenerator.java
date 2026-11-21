@@ -128,6 +128,17 @@ public class ExpressionGenerator {
   // generic type of the functional interface a lambda argument is passed as (set by
   // MethodCallGenerator.pushArgs(), null if unknown), e.g. "java.util.function.Function<a.Foo,R>"
   public String lambdaTargetGeneric;
+  private static final Map<String, String> PRIMITIVE_WRAPPERS =
+      Map.of(
+          "void", "java/lang/Void",
+          "boolean", "java/lang/Boolean",
+          "byte", "java/lang/Byte",
+          "char", "java/lang/Character",
+          "short", "java/lang/Short",
+          "int", "java/lang/Integer",
+          "long", "java/lang/Long",
+          "float", "java/lang/Float",
+          "double", "java/lang/Double");
 
   private static final List<Operators> COMPARATORS =
       List.of(EQUAL, NOTEQUAL, GREATER, LESS, LESSEQ, GREATEREQ);
@@ -765,9 +776,10 @@ public class ExpressionGenerator {
           prevLoadedRef = true;
         } else {
           VariableInfo varInfo = ctx.classIdMap.variables.get(curr);
-          // When a ref is on the stack, instance field access on that object takes priority
-          // over any local variable with the same name (but not over known class fields).
-          if (prevLoadedRef && (varInfo == null || !varInfo.isField)) {
+          // When a ref is on the stack, the selector is a field of that object, even if a local
+          // variable or a field of the current class has the same name (e.g. "ctx.errors" in a
+          // class with its own "errors" field).
+          if (prevLoadedRef) {
             java.util.Map<String, FieldProcessor.InstanceField> fields =
                 new FieldProcessor().getInstanceFieldMap(returnType, ctx.allClazzes);
             FieldProcessor.InstanceField instanceField = fields.get(curr.val.toString());
@@ -1038,10 +1050,18 @@ public class ExpressionGenerator {
     int classIdx = identifierParts.indexOf("class");
     if (classIdx > 0) {
       String className = String.join(".", identifierParts.subList(0, classIdx));
-      String jvmClass =
-          (classIdx == 1) ? resolveJvmClassName(className) : className.replace('.', '/');
-      ctx.constPool.addClass(jvmClass);
-      ctx.loadGen.ldc(out, CONSTANT_CLASS, jvmClass);
+      String wrapper = PRIMITIVE_WRAPPERS.get(className);
+      if (wrapper != null) {
+        // a primitive type's Class object, e.g. int.class: Integer.TYPE
+        ctx.constPool.addClass(wrapper);
+        ctx.constPool.addFieldRef(wrapper, "TYPE", "Ljava/lang/Class;");
+        ctx.invokeGen.getStatic(out, wrapper, "TYPE", "Ljava/lang/Class;");
+      } else {
+        String jvmClass =
+            (classIdx == 1) ? resolveJvmClassName(className) : className.replace('.', '/');
+        ctx.constPool.addClass(jvmClass);
+        ctx.loadGen.ldc(out, CONSTANT_CLASS, jvmClass);
+      }
       String returnType = "java.lang.Class";
       Identifier link = curr;
       for (int i = 0; i <= classIdx; i++) {

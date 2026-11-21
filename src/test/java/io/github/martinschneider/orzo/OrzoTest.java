@@ -270,7 +270,10 @@ public class OrzoTest {
         args(list("tests/SwitchCaseBlocks")),
         args(list("tests/StaticFieldChain")),
         args(list("tests/SiblingBlockLocals")),
-        args(list("tests/LabeledLoops")));
+        args(list("tests/LabeledLoops")),
+        args(list("tests/BracelessBodies")),
+        args(list("tests/HexIntLiterals")),
+        args(list("tests/SameNamedFieldChain", "tests/ChainedFieldIncrement")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the
