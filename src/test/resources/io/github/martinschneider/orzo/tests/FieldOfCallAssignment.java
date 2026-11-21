@@ -15,5 +15,8 @@ public class FieldOfCallAssignment {
     System.out.println(list.get(0).count);
     System.out.println(list.get(0).name);
     for (FieldOfCallAssignment f : list) System.out.println(f.count + 1);
+    Object o = list.get(0);
+    ((FieldOfCallAssignment) o).count = 9;
+    System.out.println(list.get(0).count);
   }
 }

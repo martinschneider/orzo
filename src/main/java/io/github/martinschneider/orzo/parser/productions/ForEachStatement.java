@@ -11,6 +11,8 @@ public class ForEachStatement implements Statement {
   public List<Statement> body;
   // array dimensions of the loop variable, e.g. 1 for "for (int[] row : rows)"
   public int elemArrDim;
+  // the loop's label (e.g. "outer" in "outer: for (...)"), null if it has none
+  public String label;
 
   public ForEachStatement(
       String elemType, Identifier elemVar, Expression iterable, List<Statement> body) {

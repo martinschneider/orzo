@@ -23,7 +23,13 @@ public class BreakGenerator implements StatementGenerator<Break> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, Break stmt) {
-    out.pendingBreaks.add(out.size());
+    if (stmt.label != null) {
+      out.labeledBreaks
+          .computeIfAbsent(stmt.label, k -> new java.util.ArrayList<>())
+          .add(out.size());
+    } else {
+      out.pendingBreaks.add(out.size());
+    }
     out.write(GOTO);
     out.write((short) 0); // placeholder, patched by the enclosing loop/switch generator
     return out;

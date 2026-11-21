@@ -1,15 +1,20 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ExpressionStatement;
 import io.github.martinschneider.orzo.parser.productions.FieldAssignment;
+import io.github.martinschneider.orzo.parser.productions.ForEachStatement;
+import io.github.martinschneider.orzo.parser.productions.LoopStatement;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
@@ -52,8 +57,8 @@ public class StatementParser implements ProdParser<Statement> {
 
   // A call chain none of the parsers above handle, e.g. "arr[i].append(x);"
   private Statement parseExpressionStatement(TokenList tokens) {
-    if (!(tokens.curr() instanceof Identifier)) {
-      return null;
+    if (!(tokens.curr() instanceof Identifier) && !tokens.curr().eq(sym(LPAREN))) {
+      return null; // (a parenthesized start, e.g. "((Foo) x).count = 1;")
     }
     int idx = tokens.idx();
     Expression expr = ctx.exprParser.parse(tokens);
@@ -62,7 +67,8 @@ public class StatementParser implements ProdParser<Statement> {
     if (expr != null
         && expr.tokens.size() >= 3
         && expr.tokens.get(expr.tokens.size() - 1).eq(op(ASSIGN))
-        && expr.tokens.get(0) instanceof MethodCall
+        && (expr.tokens.get(0) instanceof MethodCall
+            || expr.tokens.get(0) instanceof CastMethodCall)
         && tokens.curr().eq(sym(SEMICOLON))) {
       Identifier last = (Identifier) expr.tokens.get(0);
       while (last.next != null) {
@@ -95,6 +101,22 @@ public class StatementParser implements ProdParser<Statement> {
   @Override
   public Statement parse(TokenList tokens) {
     Statement stmt;
+    // a labeled loop, e.g. "outer: for (...) {...}"
+    if (tokens.curr() instanceof Identifier && tokens.peekNext().eq(sym(COLON))) {
+      int idx = tokens.idx();
+      String label = tokens.curr().val.toString();
+      tokens.next();
+      tokens.next();
+      stmt = parse(tokens);
+      if (stmt instanceof LoopStatement) {
+        ((LoopStatement) stmt).label = label;
+        return stmt;
+      } else if (stmt instanceof ForEachStatement) {
+        ((ForEachStatement) stmt).label = label;
+        return stmt;
+      }
+      tokens.setIdx(idx);
+    }
     // Check constructor calls first to avoid conflicts with other parsers
     if ((stmt = ctx.constrCallParser.parse(tokens)) != null) {
       return stmt;

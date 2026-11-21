@@ -42,16 +42,17 @@ public class WhileGenerator implements StatementGenerator<WhileStatement> {
     int condLen = conditionOut.getBytes().length;
     // break -> past the trailing backward GOTO (loop exit); continue -> top of loop (condition
     // check, which is condLen bytes before the body)
-    for (int pos : bodyOut.pendingBreaks) {
+    for (int pos : bodyOut.breaksFor(whileStmt.label)) {
       byte[] off = shortToByteArray((short) (bodyBytes.length - pos + 3));
       bodyBytes[pos + 1] = off[0];
       bodyBytes[pos + 2] = off[1];
     }
-    for (int pos : bodyOut.pendingContinues) {
+    for (int pos : bodyOut.continuesFor(whileStmt.label)) {
       byte[] off = shortToByteArray((short) (-condLen - pos));
       bodyBytes[pos + 1] = off[0];
       bodyBytes[pos + 2] = off[1];
     }
+    out.mergeLabeled(bodyOut, out.size()); // breaks/continues to outer loops
     out.write(bodyBytes);
     out.write(GOTO);
     out.write(shortToByteArray((short) (-(bodyBytes.length + condLen))));

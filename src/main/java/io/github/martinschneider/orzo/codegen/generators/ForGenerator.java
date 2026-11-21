@@ -38,16 +38,17 @@ public class ForGenerator implements StatementGenerator<ForStatement> {
     out.write(conditionOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     // break -> past the trailing backward GOTO (loop exit); continue -> increment step
-    for (int pos : bodyOut.pendingBreaks) {
+    for (int pos : bodyOut.breaksFor(forStmt.label)) {
       byte[] off = shortToByteArray((short) (bodyBytes.length - pos + 3));
       bodyBytes[pos + 1] = off[0];
       bodyBytes[pos + 2] = off[1];
     }
-    for (int pos : bodyOut.pendingContinues) {
+    for (int pos : bodyOut.continuesFor(forStmt.label)) {
       byte[] off = shortToByteArray((short) (incStart - pos));
       bodyBytes[pos + 1] = off[0];
       bodyBytes[pos + 2] = off[1];
     }
+    out.mergeLabeled(bodyOut, out.size()); // breaks/continues to outer loops
     out.write(bodyBytes);
     out.write(GOTO);
     out.write(

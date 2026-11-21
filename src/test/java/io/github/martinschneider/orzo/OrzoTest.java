@@ -269,7 +269,8 @@ public class OrzoTest {
         args(list("tests/OwnMethodPrecedence", "tests/OwnMethodPrecedenceOther")),
         args(list("tests/SwitchCaseBlocks")),
         args(list("tests/StaticFieldChain")),
-        args(list("tests/SiblingBlockLocals")));
+        args(list("tests/SiblingBlockLocals")),
+        args(list("tests/LabeledLoops")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

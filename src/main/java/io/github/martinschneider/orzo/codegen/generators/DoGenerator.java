@@ -43,16 +43,17 @@ public class DoGenerator implements StatementGenerator<DoStatement> {
     byte[] bodyBytes = bodyOut.getBytes();
     int condLen = conditionOut.getBytes().length;
     // break -> past the condition check (loop exit); continue -> start of condition check
-    for (int pos : bodyOut.pendingBreaks) {
+    for (int pos : bodyOut.breaksFor(doStmt.label)) {
       byte[] off = shortToByteArray((short) (bodyBytes.length + condLen - pos));
       bodyBytes[pos + 1] = off[0];
       bodyBytes[pos + 2] = off[1];
     }
-    for (int pos : bodyOut.pendingContinues) {
+    for (int pos : bodyOut.continuesFor(doStmt.label)) {
       byte[] off = shortToByteArray((short) (bodyBytes.length - pos));
       bodyBytes[pos + 1] = off[0];
       bodyBytes[pos + 2] = off[1];
     }
+    out.mergeLabeled(bodyOut, out.size()); // breaks/continues to outer loops
     out.write(bodyBytes);
     out.write(conditionOut.getBytes());
     return out;

@@ -161,16 +161,17 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
     out.write(condOut.getBytes());
     byte[] bodyBytes = bodyOut.getBytes();
     // break -> past the trailing backward GOTO (loop exit); continue -> index increment
-    for (int pos : bodyOut.pendingBreaks) {
+    for (int pos : bodyOut.breaksFor(stmt.label)) {
       byte[] off = shortToByteArray((short) (bodyBytes.length - pos + 3));
       bodyBytes[pos + 1] = off[0];
       bodyBytes[pos + 2] = off[1];
     }
-    for (int pos : bodyOut.pendingContinues) {
+    for (int pos : bodyOut.continuesFor(stmt.label)) {
       byte[] off = shortToByteArray((short) (incStart - pos));
       bodyBytes[pos + 1] = off[0];
       bodyBytes[pos + 2] = off[1];
     }
+    out.mergeLabeled(bodyOut, out.size()); // breaks/continues to outer loops
     out.write(bodyBytes);
     out.write(GOTO);
     out.write(shortToByteArray((short) -(condOut.getBytes().length + bodyBytes.length)));
@@ -263,16 +264,17 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
     byte[] bodyBytes = bodyOut.getBytes();
     int condLen = condOut.getBytes().length;
     // break -> past the trailing backward GOTO (loop exit); continue -> top of loop (hasNext check)
-    for (int pos : bodyOut.pendingBreaks) {
+    for (int pos : bodyOut.breaksFor(stmt.label)) {
       byte[] off = shortToByteArray((short) (bodyBytes.length - pos + 3));
       bodyBytes[pos + 1] = off[0];
       bodyBytes[pos + 2] = off[1];
     }
-    for (int pos : bodyOut.pendingContinues) {
+    for (int pos : bodyOut.continuesFor(stmt.label)) {
       byte[] off = shortToByteArray((short) (-condLen - pos));
       bodyBytes[pos + 1] = off[0];
       bodyBytes[pos + 2] = off[1];
     }
+    out.mergeLabeled(bodyOut, out.size()); // breaks/continues to outer loops
     out.write(bodyBytes);
     out.write(GOTO);
     out.write(shortToByteArray((short) -(condLen + bodyBytes.length)));

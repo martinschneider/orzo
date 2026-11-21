@@ -24,7 +24,13 @@ public class ContinueGenerator implements StatementGenerator<Continue> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, Continue stmt) {
-    out.pendingContinues.add(out.size());
+    if (stmt.label != null) {
+      out.labeledContinues
+          .computeIfAbsent(stmt.label, k -> new java.util.ArrayList<>())
+          .add(out.size());
+    } else {
+      out.pendingContinues.add(out.size());
+    }
     out.write(GOTO);
     out.write((short) 0); // placeholder, patched by the enclosing loop generator
     return out;

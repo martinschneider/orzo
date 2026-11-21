@@ -20,6 +20,46 @@ public class DynamicByteArray implements HasOutput {
   // enclosing loop generator can still find and patch them.
   public List<Integer> pendingBreaks = new ArrayList<>();
   public List<Integer> pendingContinues = new ArrayList<>();
+  // positions of labeled breaks/continues ("break outer;"), by label: they may target a loop
+  // further out than the innermost one
+  public java.util.Map<String, List<Integer>> labeledBreaks = new java.util.HashMap<>();
+  public java.util.Map<String, List<Integer>> labeledContinues = new java.util.HashMap<>();
+
+  // The breaks a loop with the given label (null if unlabeled) must patch: the unlabeled ones and
+  // those targeting its label (which are removed from the labeled ones).
+  public List<Integer> breaksFor(String label) {
+    List<Integer> result = new ArrayList<>(pendingBreaks);
+    List<Integer> labeled = (label != null) ? labeledBreaks.remove(label) : null;
+    if (labeled != null) {
+      result.addAll(labeled);
+    }
+    return result;
+  }
+
+  // The continues a loop with the given label (null if unlabeled) must patch, see breaksFor()
+  public List<Integer> continuesFor(String label) {
+    List<Integer> result = new ArrayList<>(pendingContinues);
+    List<Integer> labeled = (label != null) ? labeledContinues.remove(label) : null;
+    if (labeled != null) {
+      result.addAll(labeled);
+    }
+    return result;
+  }
+
+  // Takes over the child's labeled breaks/continues targeting an outer loop; the child's bytes
+  // are written to this buffer starting at position base.
+  public void mergeLabeled(DynamicByteArray child, int base) {
+    for (java.util.Map.Entry<String, List<Integer>> entry : child.labeledBreaks.entrySet()) {
+      for (int pos : entry.getValue()) {
+        labeledBreaks.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(pos + base);
+      }
+    }
+    for (java.util.Map.Entry<String, List<Integer>> entry : child.labeledContinues.entrySet()) {
+      for (int pos : entry.getValue()) {
+        labeledContinues.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(pos + base);
+      }
+    }
+  }
 
   // Imports another buffer's unresolved break/continue positions, shifting them by this buffer's
   // current length. Call this right before appending that buffer's bytes with write(byte[]).
@@ -31,6 +71,7 @@ public class DynamicByteArray implements HasOutput {
     for (int pos : child.pendingContinues) {
       pendingContinues.add(pos + base);
     }
+    mergeLabeled(child, base);
   }
 
   @Override
