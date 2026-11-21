@@ -1,12 +1,15 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ExpressionStatement;
+import io.github.martinschneider.orzo.parser.productions.FieldAssignment;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
@@ -54,6 +57,24 @@ public class StatementParser implements ProdParser<Statement> {
     }
     int idx = tokens.idx();
     Expression expr = ctx.exprParser.parse(tokens);
+    // "<call chain>.field = value;", e.g. "map.get(k).count = 1;" (parsed as an embedded
+    // assignment: [target, value..., ASSIGN])
+    if (expr != null
+        && expr.tokens.size() >= 3
+        && expr.tokens.get(expr.tokens.size() - 1).eq(op(ASSIGN))
+        && expr.tokens.get(0) instanceof MethodCall
+        && tokens.curr().eq(sym(SEMICOLON))) {
+      Identifier last = (Identifier) expr.tokens.get(0);
+      while (last.next != null) {
+        last = last.next;
+      }
+      if (!(last instanceof MethodCall) && last != expr.tokens.get(0)) {
+        tokens.next();
+        Expression value =
+            new Expression(new ArrayList<>(expr.tokens.subList(1, expr.tokens.size() - 1)));
+        return new FieldAssignment((Identifier) expr.tokens.get(0), value);
+      }
+    }
     if (expr != null
         && expr.tokens.size() == 1
         && expr.tokens.get(0) instanceof Identifier

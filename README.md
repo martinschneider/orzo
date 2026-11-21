@@ -102,4 +102,4 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
-Self-compilation progress: ███████████████████████▎░░░░░░░░░░░░░░░░ 58.3%
+Self-compilation progress: █████████████████████████▍░░░░░░░░░░░░░░ 63.4%

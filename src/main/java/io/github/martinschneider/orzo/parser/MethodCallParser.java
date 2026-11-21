@@ -111,6 +111,11 @@ public class MethodCallParser implements ProdParser<MethodCall> {
         last.next = next;
         last = next;
       }
+      if (!saveSemicolon && tokens.curr().eq(sym(DOT))) {
+        // not a call statement, e.g. "list.get(0).count = 5;" (see StatementParser)
+        tokens.setIdx(idx);
+        return null;
+      }
       if (tokens.curr().eq(sym(SEMICOLON)) && !saveSemicolon) {
         tokens.next();
       }

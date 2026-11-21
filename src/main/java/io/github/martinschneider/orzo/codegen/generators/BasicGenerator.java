@@ -258,7 +258,9 @@ public class BasicGenerator {
       Class<?> toClass = resolveClass(to);
       return fromClass.isAssignableFrom(toClass) && !toClass.isAssignableFrom(fromClass);
     } catch (ClassNotFoundException e) {
-      return false;
+      // e.g. a class compiled in the same run (not loadable yet): anything is narrower than
+      // Object (an erased generic return)
+      return "java.lang.Object".equals(from) || "Object".equals(from);
     }
   }
 

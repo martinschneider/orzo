@@ -57,9 +57,20 @@ public class ForEachParser implements ProdParser<ForEachStatement> {
     }
     tokens.next();
     if (!tokens.curr().eq(sym(LBRACE))) {
-      tokens.next(sym(RBRACE));
-      ctx.errors.missingExpected(
-          LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
+      // single-statement body without braces, e.g. "for (String s : list) process(s);"
+      Statement stmt = ctx.stmtParser.parse(tokens);
+      if (stmt == null) {
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
+        return null;
+      }
+      List<Statement> body = new ArrayList<>();
+      body.add(stmt);
+      ParallelDeclaration decl = (ParallelDeclaration) initialization;
+      Declaration first = decl.declarations.get(0);
+      ForEachStatement forEach = new ForEachStatement(first.type, first.name, iterable, body);
+      forEach.elemArrDim = first.arrDim;
+      return forEach;
     }
     tokens.next();
     List<Statement> body = ctx.stmtParser.parseStmtSeq(tokens);
