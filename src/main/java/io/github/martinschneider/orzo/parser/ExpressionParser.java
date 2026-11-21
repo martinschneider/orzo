@@ -8,8 +8,10 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.QUESTION;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SQRT;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.eof;
@@ -101,6 +103,10 @@ public class ExpressionParser implements ProdParser<Expression> {
             // an accepted continuation token at all, so the outer loop exited early mid-
             // expression, silently dropping everything from there on for the caller.
             || (tokens.curr() instanceof Type && parenthesis == 0 && tokens.peekNext().eq(sym(DOT)))
+            // an array class literal, e.g. "int[].class"
+            || (tokens.curr() instanceof Type
+                && tokens.peekNext().eq(sym(LBRAK))
+                && tokens.get(tokens.idx() + 2).eq(sym(RBRAK)))
             || tokens.curr() instanceof Operator
             || tokens.curr().eq(sym(SQRT))
             || tokens.curr().eq(sym(LPAREN))
@@ -213,6 +219,19 @@ public class ExpressionParser implements ProdParser<Expression> {
                 if (curr instanceof Identifier) {
                   selectors.add((Identifier) curr);
                   tokens.next();
+                } else if (selectors.isEmpty()
+                    && (curr instanceof Type || curr instanceof Identifier)
+                    && tokens.peekNext().eq(sym(LBRAK))
+                    && tokens.get(tokens.idx() + 2).eq(sym(RBRAK))) {
+                  // an array class literal, e.g. "int[].class"
+                  String name = (curr instanceof Type) ? ((Type) curr).name : curr.val.toString();
+                  tokens.next();
+                  while (tokens.curr().eq(sym(LBRAK)) && tokens.peekNext().eq(sym(RBRAK))) {
+                    name += "[]";
+                    tokens.next();
+                    tokens.next();
+                  }
+                  selectors.add(new Identifier(name));
                 } else if (!selectors.isEmpty() && curr instanceof Type) {
                   // last segment of a qualified name, e.g. "String" in "java.lang.String"
                   selectors.add(new Identifier(((Type) curr).name));

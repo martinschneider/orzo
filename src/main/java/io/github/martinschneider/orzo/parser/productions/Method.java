@@ -50,6 +50,9 @@ public class Method implements ClassMember {
         flags += accFlag.val;
       }
     }
+    if (args != null && !args.isEmpty() && args.get(args.size() - 1).varargs) {
+      flags |= AccessFlag.ACC_VARARGS.val; // so reflection (and javac) see a varargs method
+    }
     return flags;
   }
 

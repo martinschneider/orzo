@@ -1051,7 +1051,21 @@ public class ExpressionGenerator {
     if (classIdx > 0) {
       String className = String.join(".", identifierParts.subList(0, classIdx));
       String wrapper = PRIMITIVE_WRAPPERS.get(className);
-      if (wrapper != null) {
+      if (className.endsWith("[]")) {
+        // an array class, e.g. "int[].class": its class name is its descriptor, e.g. "[I"
+        int dims = 0;
+        String element = className;
+        while (element.endsWith("[]")) {
+          element = element.substring(0, element.length() - 2);
+          dims++;
+        }
+        if (!TypeUtils.isPrimitive(element) && !element.contains(".")) {
+          element = resolveJvmClassName(element).replace('/', '.');
+        }
+        String arrayClass = TypeUtils.descr(element, dims);
+        ctx.constPool.addClass(arrayClass);
+        ctx.loadGen.ldc(out, CONSTANT_CLASS, arrayClass);
+      } else if (wrapper != null) {
         // a primitive type's Class object, e.g. int.class: Integer.TYPE
         ctx.constPool.addClass(wrapper);
         ctx.constPool.addFieldRef(wrapper, "TYPE", "Ljava/lang/Class;");

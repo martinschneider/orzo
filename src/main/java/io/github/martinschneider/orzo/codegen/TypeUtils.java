@@ -303,6 +303,9 @@ public class TypeUtils {
     return 0;
   }
 
+  // (boxing conversions come after widening ones: a more specific overload is preferred)
+  private static final String NUMBER = "java.lang.Number";
+
   public static List<String> assignableTo(String type) {
     if (type.contains("[")) {
       return List.of(type, "java.lang.Object", "Object"); // an array is an Object, too
@@ -311,21 +314,23 @@ public class TypeUtils {
       case STRING:
         return List.of("Ljava/lang/String;", "Ljava/lang/Object;", "java.lang.Object", "Object");
       case INT:
-        return List.of(INT, LONG, DOUBLE, "java.lang.Object", "Object");
+        return List.of(
+            INT, LONG, DOUBLE, "java.lang.Integer", NUMBER, "java.lang.Object", "Object");
       case BYTE:
-        return List.of(BYTE, SHORT, INT, LONG, "java.lang.Object", "Object");
+        return List.of(
+            BYTE, SHORT, INT, LONG, "java.lang.Byte", NUMBER, "java.lang.Object", "Object");
       case SHORT:
-        return List.of(SHORT, INT, LONG, "java.lang.Object", "Object");
+        return List.of(SHORT, INT, LONG, "java.lang.Short", NUMBER, "java.lang.Object", "Object");
       case LONG:
-        return List.of(LONG, "java.lang.Object", "Object");
+        return List.of(LONG, "java.lang.Long", NUMBER, "java.lang.Object", "Object");
       case DOUBLE:
-        return List.of(DOUBLE, "java.lang.Object", "Object");
+        return List.of(DOUBLE, "java.lang.Double", NUMBER, "java.lang.Object", "Object");
       case FLOAT:
-        return List.of(FLOAT, DOUBLE, "java.lang.Object", "Object");
+        return List.of(FLOAT, DOUBLE, "java.lang.Float", NUMBER, "java.lang.Object", "Object");
       case CHAR:
-        return List.of(CHAR, INT, LONG, "java.lang.Object", "Object");
+        return List.of(CHAR, INT, LONG, "java.lang.Character", "java.lang.Object", "Object");
       case BOOLEAN:
-        return List.of(BOOLEAN, "java.lang.Object", "Object");
+        return List.of(BOOLEAN, "java.lang.Boolean", "java.lang.Object", "Object");
     }
     // Reference types are assignable to java.lang.Object for method lookup purposes.
     if (type != null && !type.isEmpty()) {

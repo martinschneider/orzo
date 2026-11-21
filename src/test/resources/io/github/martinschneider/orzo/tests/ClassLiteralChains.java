@@ -15,5 +15,7 @@ public class ClassLiteralChains {
     Class<?> v = void.class;
     System.out.println(v == Void.TYPE);
     System.out.println(int.class.getName());
+    System.out.println(int[].class.getName());
+    System.out.println(String[][].class.getSimpleName());
   }
 }

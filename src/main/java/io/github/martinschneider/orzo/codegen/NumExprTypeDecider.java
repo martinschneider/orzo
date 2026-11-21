@@ -156,7 +156,15 @@ public class NumExprTypeDecider {
         // every overload when used as a constructor/method argument (see commit history: picked
         // the wrong PrintStream(String) overload over PrintStream(OutputStream) for
         // "new PrintStream(new ByteArrayOutputStream())").
-        types.add(TypeUtils.resolveSimpleType(token.val.toString(), ctx.allClazzes, ctx.clazz));
+        String constructed =
+            TypeUtils.resolveSimpleType(token.val.toString(), ctx.allClazzes, ctx.clazz);
+        // a call chain on the new object, e.g. "new Lexer().getTokens(input)"
+        if (((ConstructorCall) token).next != null) {
+          constructed = followChain(classIdMap, constructed, null, ((ConstructorCall) token).next);
+        }
+        if (constructed != null) {
+          types.add(constructed);
+        }
       } else if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
         if ("null".equals(id.val.toString()) && id.next == null) {

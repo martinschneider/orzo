@@ -33,5 +33,11 @@ public class Varargs {
     System.out.println(join(",", "p", "q"));
     VarargsHolder h = new VarargsHolder("n1", "n2", "n3");
     System.out.println(h.count);
+    // the class file marks it as a varargs method
+    for (java.lang.reflect.Method m : Varargs.class.getDeclaredMethods()) {
+      if (m.getName().equals("sum")) {
+        System.out.println(m.isVarArgs());
+      }
+    }
   }
 }
