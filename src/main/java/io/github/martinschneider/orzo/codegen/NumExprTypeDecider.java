@@ -75,7 +75,11 @@ public class NumExprTypeDecider {
       } else if (token instanceof CastMethodCall) {
         // ((Type) expr).method()...
         CastMethodCall castCall = (CastMethodCall) token;
-        String chainType = followChain(classIdMap, castCall.castType, null, castCall.next);
+        String startType =
+            (castCall.castType != null)
+                ? castCall.castType
+                : new NumExprTypeDecider(ctx).getType(classIdMap, castCall.innerExpr);
+        String chainType = followChain(classIdMap, startType, null, castCall.next);
         if (chainType != null) {
           types.add(chainType);
         }

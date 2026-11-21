@@ -1,7 +1,6 @@
 src/main/java/io/github/martinschneider/orzo/codegen/CodeGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/FieldProcessor.java
 src/main/java/io/github/martinschneider/orzo/codegen/constants/ConstantPool.java
-src/main/java/io/github/martinschneider/orzo/codegen/generators/TryGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/ExpressionGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/MethodCallGenerator.java
 src/main/java/io/github/martinschneider/orzo/codegen/generators/OperatorMaps.java

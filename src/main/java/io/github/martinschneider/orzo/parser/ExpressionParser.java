@@ -262,13 +262,22 @@ public class ExpressionParser implements ProdParser<Expression> {
       // Handle ((Type) inner).method() — DOT after balanced parenthesized cast expression
       // (also as a later operand, e.g. "a && ((Type) expr).method()")
       int castStart = tokens.curr().eq(sym(DOT)) ? castChainStart(exprTokens) : -1;
-      if (castStart >= 0) {
-        String castType = resolveCastType(castTypeName(exprTokens.get(castStart + 2)));
+      // ...and a parenthesized expression without a cast, e.g. "(a + b).length()" (castType null)
+      int groupStart =
+          (castStart < 0 && tokens.curr().eq(sym(DOT))) ? parenGroupStart(exprTokens) : -1;
+      if (castStart >= 0 || groupStart >= 0) {
+        String castType =
+            (castStart >= 0) ? resolveCastType(castTypeName(exprTokens.get(castStart + 2))) : null;
+        int innerStart = (castStart >= 0) ? castStart + 4 : groupStart + 1;
+        if (castStart < 0) {
+          castStart = groupStart;
+        }
         List<Token> innerTokens =
-            new ArrayList<>(exprTokens.subList(castStart + 4, exprTokens.size() - 1));
+            new ArrayList<>(exprTokens.subList(innerStart, exprTokens.size() - 1));
         Expression innerExpr = new Expression(postfix(innerTokens), null);
         exprTokens = new ArrayList<>(exprTokens.subList(0, castStart));
-        openParens.removeIf(parenIdx -> parenIdx >= castStart);
+        int groupOpen = castStart;
+        openParens.removeIf(parenIdx -> parenIdx >= groupOpen);
         tokens.next(); // skip DOT
         List<Identifier> chainSelectors = new ArrayList<>();
         do {
@@ -339,6 +348,28 @@ public class ExpressionParser implements ProdParser<Expression> {
     for (int k = i; k >= start; k--) {
       tokens.remove(k);
     }
+  }
+
+  // If exprTokens ends with a parenthesized group "(...)" with something inside, returns the index
+  // of its opening parenthesis, otherwise -1.
+  private int parenGroupStart(List<Token> exprTokens) {
+    int last = exprTokens.size() - 1;
+    if (last < 2 || !exprTokens.get(last).eq(sym(RPAREN))) {
+      return -1;
+    }
+    int depth = 0;
+    for (int start = last; start >= 0; start--) {
+      Token t = exprTokens.get(start);
+      if (t.eq(sym(RPAREN))) {
+        depth++;
+      } else if (t.eq(sym(LPAREN))) {
+        depth--;
+        if (depth == 0) {
+          return (last - start >= 2) ? start : -1;
+        }
+      }
+    }
+    return -1;
   }
 
   // If exprTokens ends with a parenthesized cast expression "((Type) inner)", returns the index of

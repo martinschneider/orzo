@@ -130,6 +130,11 @@ public class PushGenerator {
     } else if (number >= Short.MIN_VALUE && number <= Short.MAX_VALUE) {
       sipush(out, number);
     } else {
+      // (added here as well: the constant-pool pre-pass doesn't see every literal, e.g. one inside
+      // an array initializer)
+      if (ctx.constPool.indexOf(CONSTANT_INTEGER, number, true) < 0) {
+        ctx.constPool.addInteger(number);
+      }
       ctx.loadGen.ldc(out, CONSTANT_INTEGER, number);
     }
     return out;

@@ -263,7 +263,10 @@ public class OrzoTest {
         args(list("tests/ChainedFieldIncrement")),
         args(list("tests/NestedAlwaysReturns")),
         args(list("tests/TernaryCommonSuperclass")),
-        args(list("tests/FieldOfCallAssignment")));
+        args(list("tests/FieldOfCallAssignment")),
+        args(list("tests/ParenthesizedReceiver")),
+        args(list("tests/LargeIntInArrayInit")),
+        args(list("tests/OwnMethodPrecedence", "tests/OwnMethodPrecedenceOther")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

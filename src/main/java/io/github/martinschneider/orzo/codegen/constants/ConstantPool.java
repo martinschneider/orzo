@@ -145,68 +145,56 @@ public class ConstantPool {
   }
 
   public short indexOf(byte type, Object key, boolean allowMissing) {
+    Map<?, Integer> map;
+    Object lookupKey = key;
     switch (type) {
       case CONSTANT_CLASS:
-        {
-          Integer id = classMap.get(key);
-          if (id != null) {
-            return id.shortValue();
-          }
-        }
+        map = classMap;
+        break;
       case CONSTANT_UTF8:
-        {
-          Integer id = utf8Map.get(key);
-          if (id != null) {
-            return id.shortValue();
-          }
-        }
+        map = utf8Map;
+        break;
       case CONSTANT_STRING:
-        {
-          Integer id = stringMap.get(key);
-          if (id != null) {
-            return id.shortValue();
-          }
-        }
+        map = stringMap;
+        break;
       case CONSTANT_INTEGER:
-        {
-          Integer id = integerMap.get(key);
-          if (id != null) {
-            return id.shortValue();
-          }
+        map = integerMap;
+        if (key instanceof Number) {
+          lookupKey = ((Number) key).intValue();
         }
+        break;
       case CONSTANT_DOUBLE:
-        {
-          Integer id = doubleMap.get(key);
-          if (id != null) {
-            return id.shortValue();
-          }
+        map = doubleMap;
+        if (key instanceof Number) {
+          lookupKey = ((Number) key).doubleValue();
         }
+        break;
       case CONSTANT_FLOAT:
-        {
-          Integer id = floatMap.get(key);
-          if (id != null) {
-            return id.shortValue();
-          }
+        map = floatMap;
+        if (key instanceof Number) {
+          lookupKey = ((Number) key).floatValue();
         }
+        break;
       case CONSTANT_LONG:
-        {
-          if (key instanceof Integer) {
-            key = Long.valueOf((Integer) (key)).longValue();
-          }
-          Integer id = longMap.get(key);
-          if (id != null) {
-            return id.shortValue();
-          }
+        map = longMap;
+        if (key instanceof Number) {
+          lookupKey = ((Number) key).longValue();
         }
+        break;
       default:
-        if (!allowMissing) {
-          ctx.errors.addError(
-              LOGGER_NAME,
-              String.format("expected key %s of type %s not found in constant pool", key, type),
-              new RuntimeException().getStackTrace());
-        }
-        return -1;
+        map = null;
     }
+    Integer id = (map != null) ? map.get(lookupKey) : null;
+    if (id != null) {
+      return id.shortValue();
+    }
+    if (!allowMissing) {
+      ctx.errors.addError(
+          LOGGER_NAME,
+          String.format("expected key %s of type %s not found in constant pool", key, type),
+          new RuntimeException().getStackTrace());
+    }
+    return -1;
   }
 
   public void addClass(String clazz) {

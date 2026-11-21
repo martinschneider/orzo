@@ -691,8 +691,12 @@ public class ExpressionGenerator {
       if (curr instanceof CastMethodCall) {
         CastMethodCall castCall = (CastMethodCall) curr;
         ExpressionResult innerResult = eval(out, null, castCall.innerExpr);
-        ctx.basicGen.convert(out, innerResult.type, castCall.castType);
-        returnType = castCall.castType;
+        if (castCall.castType != null) {
+          ctx.basicGen.convert(out, innerResult.type, castCall.castType);
+          returnType = castCall.castType;
+        } else {
+          returnType = innerResult.type; // "(expr).method()": no cast
+        }
         prevLoadedRef = true;
         ctx.methodCallGen.lastGenericType = null;
       } else if (curr instanceof ConstructorCall) {

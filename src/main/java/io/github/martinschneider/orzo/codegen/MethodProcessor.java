@@ -18,13 +18,14 @@ import java.util.Map;
 public class MethodProcessor {
   public Map<String, Method> getMethodMap(Clazz currentClazz, List<Clazz> clazzes) {
     Map<String, Method> methodMap = new HashMap<>();
+    addImported(methodMap, currentClazz, clazzes);
+    addJavaLang(methodMap, currentClazz);
+    addStaticImportMethods(methodMap, currentClazz);
+    // last: the class's own methods shadow same-named ones registered under a bare name above
     for (Method method : currentClazz.methods) {
       methodMap.put(getKey(method), method);
       methodMap.put(currentClazz.name + '.' + getKey(method), method);
     }
-    addImported(methodMap, currentClazz, clazzes);
-    addJavaLang(methodMap, currentClazz);
-    addStaticImportMethods(methodMap, currentClazz);
     return methodMap;
   }
 
@@ -35,7 +36,8 @@ public class MethodProcessor {
         for (Method method : clazz.methods) {
           methodMap.put(clazz.name + '.' + getKey(method), method);
           methodMap.put(clazz.fqn() + '.' + getKey(method), method);
-          if (method.accFlags.contains(AccessFlag.ACC_STATIC)) {
+          if (method.accFlags.contains(AccessFlag.ACC_STATIC)
+              && !method.accFlags.contains(AccessFlag.ACC_PRIVATE)) {
             methodMap.put(getKey(method), method);
           }
         }
