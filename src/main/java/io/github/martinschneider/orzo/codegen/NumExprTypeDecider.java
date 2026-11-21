@@ -13,10 +13,13 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.CastOperator;
 import io.github.martinschneider.orzo.lexer.tokens.Chr;
 import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.Operator;
+import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
@@ -40,6 +43,42 @@ public class NumExprTypeDecider {
     this.ctx = ctx;
   }
 
+  // The postfix tokens without the operands of cast operators (whose result type is the cast's)
+  private static List<Token> withoutCastOperands(List<Token> tokens) {
+    if (tokens.stream().noneMatch(t -> t instanceof CastOperator)) {
+      return tokens;
+    }
+    List<Token> result = new ArrayList<>();
+    for (Token token : tokens) {
+      if (token instanceof CastOperator) {
+        // remove the operand: the postfix sub-expression ending before the cast
+        int needed = 1;
+        while (needed > 0 && !result.isEmpty()) {
+          Token last = result.remove(result.size() - 1);
+          needed += arity(last) - 1;
+        }
+      }
+      result.add(token);
+    }
+    return result;
+  }
+
+  // the number of operands a postfix token consumes (0 for a value, including a cast operator
+  // whose operand has already been removed)
+  private static int arity(Token token) {
+    if (!(token instanceof Operator) || token instanceof CastOperator) {
+      return 0;
+    }
+    Operators op = ((Operator) token).opValue();
+    return (op == Operators.NEGATE
+            || op == Operators.POST_INCREMENT
+            || op == Operators.POST_DECREMENT
+            || op == Operators.PRE_INCREMENT
+            || op == Operators.PRE_DECREMENT)
+        ? 1
+        : 2;
+  }
+
   public String getType(GlobalIdentifierMap classIdMap, Expression expr) {
     if (expr == null) return null;
     if (expr.cast != null) {
@@ -49,8 +88,10 @@ public class NumExprTypeDecider {
     if (expr instanceof ArrayInit) {
       types.add(((ArrayInit) expr).typeDescr());
     }
-    for (Token token : expr.tokens) {
-      if (token instanceof IntLiteral) {
+    for (Token token : withoutCastOperands(expr.tokens)) {
+      if (token instanceof CastOperator) {
+        types.add(((CastOperator) token).type); // (its operand has been removed)
+      } else if (token instanceof IntLiteral) {
         long intValue = ((BigInteger) token.val).longValue();
         if (intValue > Integer.MAX_VALUE) {
           types.add(LONG);

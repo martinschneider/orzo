@@ -83,6 +83,16 @@ public class Lexer {
       if (tokenList.size() == tokenCount) {
         scanAnnotation();
       }
+      if (tokenList.size() == tokenCount
+          && !Character.isWhitespace(character)
+          && character != (char) -1 // the end of the input (read ahead by a scanner)
+          && character != '/'
+          && character != '@') {
+        errors.addError(
+            "scan",
+            "unexpected character '" + character + "'",
+            new RuntimeException().getStackTrace());
+      }
     }
     return new TokenList(tokenList);
   }
@@ -387,6 +397,8 @@ public class Lexer {
         inputReader.unread(character);
         tokenList.add(op(BITWISE_XOR));
       }
+    } else if (character == '~') {
+      tokenList.add(op(BITWISE_NOT));
     } else if (character == '√') {
       tokenList.add(sym(SQRT));
     } else if (character == '⌊') {

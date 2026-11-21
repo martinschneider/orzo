@@ -145,6 +145,17 @@ public class LexerTest {
   }
 
   @Test
+  public void unexpectedCharacterTest() throws IOException {
+    Lexer lexer = new Lexer();
+    assertEquals(new TokenList(list(id("a"), op(BITWISE_NOT), id("b"))), lexer.getTokens("a ~b"));
+    assertEquals(0, lexer.getErrors().errors.size());
+    // a character that isn't part of any token is an error (it used to be dropped silently)
+    lexer = new Lexer();
+    lexer.getTokens("a # b");
+    assertEquals(1, lexer.getErrors().errors.size());
+  }
+
+  @Test
   public void randomInputTest() throws IOException {
     final int nrOfChars = 1000000;
     StringBuffer stringBuffer = new StringBuffer();

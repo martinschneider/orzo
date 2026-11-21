@@ -1,8 +1,13 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_NOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
@@ -20,8 +25,10 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.CastOperator;
 import io.github.martinschneider.orzo.lexer.tokens.Chr;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.InstanceofToken;
@@ -180,6 +187,15 @@ public class ExpressionParser implements ProdParser<Expression> {
             exprTokens.add(new InstanceofToken(typeName));
             continue;
           }
+          if (isPrimitiveCast(tokens) && !exprTokens.isEmpty() && isOperandPosition(exprTokens)) {
+            // e.g. the "(int)" in "a + (int) b" or "x != (char) -1"
+            exprTokens.add(new CastOperator(((Type) tokens.peekNext()).name));
+            tokens.next();
+            tokens.next();
+            tokens.next();
+            checkNegative(tokens, exprTokens, pendingNegatedParens);
+            continue;
+          }
           int idx = tokens.idx();
           boolean negative = false;
           Token prevToken = tokens.peekPrev();
@@ -189,7 +205,9 @@ public class ExpressionParser implements ProdParser<Expression> {
             negative = checkNegative(tokens, exprTokens, pendingNegatedParens);
           }
           if (negative) {
-            idx = tokens.idx();
+            // the unary operator and its operand were consumed (or, for "-(", the parenthesis is
+            // next): continue with the next token instead of taking it as part of this operand
+            continue;
           }
           List<Identifier> selectors = new ArrayList<>();
           boolean strReceiver = false;
@@ -522,6 +540,26 @@ public class ExpressionParser implements ProdParser<Expression> {
 
   private boolean checkNegative(
       TokenList tokens, List<Token> exprTokens, int[] pendingNegatedParens) {
+    if (tokens.curr().eq(op(PLUS)) && !tokens.peekNext().eq(op(PLUS))) {
+      tokens.next(); // unary plus, e.g. "+x"
+    }
+    if (tokens.curr().eq(op(BITWISE_NOT))) {
+      // "~x" is "(-1 ^ x)"
+      tokens.next();
+      exprTokens.add(sym(LPAREN));
+      exprTokens.add(integer(-1));
+      exprTokens.add(op(BITWISE_XOR));
+      if (tokens.curr().eq(sym(LPAREN))) {
+        pendingNegatedParens[0]++; // (closed like a negated parenthesized expression, see below)
+        return true;
+      }
+      if (!checkNegative(tokens, exprTokens, pendingNegatedParens)) {
+        exprTokens.add(tokens.curr());
+        tokens.next();
+      }
+      exprTokens.add(sym(RPAREN));
+      return true;
+    }
     if (tokens.curr().eq(op(MINUS))) {
       tokens.next();
       if (tokens.curr() instanceof Num) {
@@ -560,6 +598,24 @@ public class ExpressionParser implements ProdParser<Expression> {
     return false;
   }
 
+  // "(int)", "(char)", ... (a cast to a primitive type)
+  private static boolean isPrimitiveCast(TokenList tokens) {
+    return tokens.curr().eq(sym(LPAREN))
+        && tokens.peekNext() instanceof Type
+        && TypeUtils.isPrimitive(((Type) tokens.peekNext()).name)
+        && tokens.get(tokens.idx() + 2).eq(sym(RPAREN));
+  }
+
+  // Whether the next token starts an operand (after an operator or an opening parenthesis)
+  private static boolean isOperandPosition(List<Token> exprTokens) {
+    Token last = exprTokens.get(exprTokens.size() - 1);
+    return (last instanceof Operator && !isPostfixOperator(last)) || last.eq(sym(LPAREN));
+  }
+
+  private static boolean isPostfixOperator(Token token) {
+    return token.eq(op(POST_INCREMENT)) || token.eq(op(POST_DECREMENT));
+  }
+
   private boolean isHigerPrec(Operator op, Token sub) {
     return (sub instanceof Operator && ((Operator) sub).precedence() >= op.precedence());
   }
@@ -570,7 +626,9 @@ public class ExpressionParser implements ProdParser<Expression> {
     Deque<Token> stack = new LinkedList<>();
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
-      if (token instanceof Operator) {
+      if (token instanceof CastOperator) {
+        stack.push(token); // a prefix unary operator: applies to the operand that follows
+      } else if (token instanceof Operator) {
         while (!stack.isEmpty() && isHigerPrec((Operator) token, stack.peek())) {
           output.add(stack.pop());
         }

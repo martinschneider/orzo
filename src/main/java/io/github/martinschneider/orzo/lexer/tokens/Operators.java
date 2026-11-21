@@ -35,6 +35,8 @@ public enum Operators {
   RSHIFT(10),
   RSHIFTU(10),
   NEGATE(13),
+  BITWISE_NOT(13),
+  CAST(13),
   PRE_INCREMENT(13),
   PRE_DECREMENT(13),
   POST_INCREMENT(14),

@@ -47,6 +47,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_AND;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_OR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.CAST;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.EQUAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATEREQ;
@@ -94,6 +95,7 @@ import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.CastOperator;
 import io.github.martinschneider.orzo.lexer.tokens.Chr;
 import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
@@ -531,8 +533,13 @@ public class ExpressionGenerator {
         Long intValue = bigInt.longValue();
         // When the outer type is String (string-concat context), use the natural numeric type
         // so that int literals generate real bytecode and are available for arithmetic.
+        // (likewise in a boolean context, e.g. a comparison operand, and for the operand of a cast)
         String literalType =
-            (STRING.equals(type) || isNonPrimitive(type) || typeFromArrayElement)
+            (STRING.equals(type)
+                    || isNonPrimitive(type)
+                    || typeFromArrayElement
+                    || BOOLEAN.equals(type)
+                    || (i + 1 < tokens.size() && tokens.get(i + 1) instanceof CastOperator))
                 ? (intValue > Integer.MAX_VALUE ? LONG : INT)
                 : type;
         typeFromArrayElement = false;
@@ -544,6 +551,7 @@ public class ExpressionGenerator {
                 || (tokens.get(i + 1).eq(op(RSHIFT)))
                 || (tokens.get(i + 1).eq(op(RSHIFTU)))))) {
           ctx.pushGen.push(out, INT, BigDecimal.valueOf(intValue));
+          literalType = INT;
         } else if (!literalType.equals(INT) || intValue != 0 || pushIfZero) {
           ctx.pushGen.push(out, literalType, BigDecimal.valueOf(intValue));
         } else {
@@ -572,7 +580,7 @@ public class ExpressionGenerator {
         // Use DOUBLE (natural type) instead of STRING to ensure bytecode is generated.
         ctx.pushGen.push(out, STRING.equals(type) ? DOUBLE : type, bigDec);
         val = bigDec;
-        exprTypeStack.push(DOUBLE);
+        exprTypeStack.push(FLOAT.equals(type) ? FLOAT : DOUBLE);
       } else if (token instanceof Str) {
         ctx.loadGen.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
         // Do NOT set type = STRING here; let exprTypeStack track the actual element type.
@@ -601,6 +609,12 @@ public class ExpressionGenerator {
       } else if (token instanceof LambdaExpr) {
         type = generateLambda(out, type, (LambdaExpr) token);
         exprTypeStack.push(type);
+      } else if (token instanceof CastOperator) {
+        // e.g. "(int) b" in "a + (int) b": converts the operand on top of the stack
+        String castType = ((CastOperator) token).type;
+        ctx.basicGen.convert(out, exprTypeStack.type(), castType);
+        exprTypeStack.pop();
+        exprTypeStack.push(castType);
       } else if (token instanceof Operator) {
         Operators op = ((Operator) token).opValue();
         if (List.of(POST_INCREMENT, POST_DECREMENT, PRE_INCREMENT, PRE_DECREMENT).contains(op)) {
@@ -746,6 +760,10 @@ public class ExpressionGenerator {
                   && TypeUtils.isPrimitive(exprTypeStack.secondType());
           if (numericInStringContext) {
             type = widerNumericType(exprTypeStack.secondType(), exprTypeStack.type());
+          }
+          String promoted = promoteOperands(out, op, exprTypeStack);
+          if (promoted != null) {
+            type = promoted;
           }
           if (COMPARATORS.contains(op) && exprTypeStack.oneOfTopTwoElementsIsZero()) {
             opCode = new byte[] {COMPARE_TO_ZERO_OPS.get(op)};
@@ -1052,6 +1070,56 @@ public class ExpressionGenerator {
       returnType = type;
     }
     return returnType;
+  }
+
+  private static final List<String> NUMERIC = List.of(BYTE, SHORT, CHAR, INT, LONG, FLOAT, DOUBLE);
+
+  // Binary numeric promotion (JLS 5.6) of the two operands of a binary operator when their types
+  // differ, e.g. the int in "x - aLong" becomes a long (for a shift only the left operand is
+  // promoted, the right one becomes an int). Returns the operation's type (the operands' type,
+  // whatever the context's type, e.g. int for "boolean b = x - 1 == y;"), or null if the operands
+  // aren't both numeric.
+  private String promoteOperands(DynamicByteArray out, Operators op, OperandStack exprTypeStack) {
+    String right = exprTypeStack.type();
+    String left = exprTypeStack.secondType();
+    if (left == null
+        || right == null
+        || !NUMERIC.contains(left)
+        || !NUMERIC.contains(right)
+        || !(ARITHMETIC_OPS.containsKey(op) || COMPARATORS.contains(op))) {
+      return null;
+    }
+    boolean shift = op == LSHIFT || op == RSHIFT || op == RSHIFTU;
+    String target = shift ? widerNumericType(left, INT) : widerNumericType(left, right);
+    String rightTarget = shift ? INT : target;
+    String leftType = widerNumericType(left, INT); // (byte, short and char are ints)
+    String rightType = widerNumericType(right, INT);
+    if (leftType.equals(target) && rightType.equals(rightTarget)) {
+      return target;
+    }
+    if (!rightType.equals(rightTarget)) {
+      ctx.basicGen.convert1(out, rightType, rightTarget);
+    }
+    if (!leftType.equals(target)) {
+      // the left operand is below the right one: park the right one in a temporary local
+      String tmpName = "$promote_" + ctx.classIdMap.variables.localSize;
+      VariableInfo tmp =
+          new VariableInfo(
+              tmpName,
+              rightTarget,
+              emptyList(),
+              false,
+              (short) ctx.classIdMap.variables.localSize,
+              null);
+      ctx.classIdMap.variables.putLocal(Token.id(tmpName), tmp);
+      ctx.storeGen.store(out, tmp);
+      ctx.basicGen.convert1(out, leftType, target);
+      ctx.loadGen.load(out, tmp);
+    }
+    exprTypeStack.pop2();
+    exprTypeStack.push(target);
+    exprTypeStack.push(rightTarget);
+    return target;
   }
 
   // The type binary numeric promotion gives two operands, e.g. long for (int, long)
@@ -1976,6 +2044,7 @@ public class ExpressionGenerator {
       } else if (t instanceof Operator) {
         Operators opType = ((Operator) t).opValue();
         if (opType == NEGATE
+            || opType == CAST
             || opType == POST_INCREMENT
             || opType == POST_DECREMENT
             || opType == PRE_INCREMENT
