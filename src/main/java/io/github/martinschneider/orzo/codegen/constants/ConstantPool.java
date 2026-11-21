@@ -29,6 +29,7 @@ public class ConstantPool {
   protected CGContext ctx;
   private List<Constant> entries;
   private Map<String, Integer> classMap;
+  private Map<Integer, String> classNameByIdx;
   private Map<Integer, Integer> integerMap;
   private Map<Double, Integer> doubleMap;
   private Map<Float, Integer> floatMap;
@@ -50,6 +51,7 @@ public class ConstantPool {
     this.ctx = ctx;
     entries = new ArrayList<>();
     classMap = new HashMap<>();
+    classNameByIdx = new HashMap<>();
     stringMap = new HashMap<>();
     integerMap = new HashMap<>();
     doubleMap = new HashMap<>();
@@ -210,6 +212,7 @@ public class ConstantPool {
   public void addClass(String clazz) {
     int idx = add(new ConstantClass((short) (size + 2)));
     classMap.put(clazz, idx);
+    classNameByIdx.put(idx, clazz);
     ldcTypeByIdx.put(idx, "Ljava/lang/Class;");
     addUtf8(clazz);
   }
@@ -319,12 +322,9 @@ public class ConstantPool {
 
   /** Returns the class name (e.g. "java/lang/String") at the given CP index, or null. */
   public String getClassName(int cpIdx) {
-    for (Map.Entry<String, Integer> entry : classMap.entrySet()) {
-      if (entry.getValue() == cpIdx) {
-        return entry.getKey();
-      }
-    }
-    return null;
+    // (not via classMap: adding a class again re-points its entry there to the new index, while
+    // instructions emitted earlier still reference the old one)
+    return classNameByIdx.get(cpIdx);
   }
 
   /** Returns the field type descriptor for the given CP index, or {@code null} if not found. */

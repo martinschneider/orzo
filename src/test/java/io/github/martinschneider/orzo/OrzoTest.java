@@ -255,7 +255,8 @@ public class OrzoTest {
         args(list("tests/ClassLiteralChains")),
         args(list("tests/NestedClassTypes")),
         args(list("tests/GenericMethodInference")),
-        args(list("tests/QualifiedCast")));
+        args(list("tests/QualifiedCast")),
+        args(list("tests/TernaryGenericCast")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the
