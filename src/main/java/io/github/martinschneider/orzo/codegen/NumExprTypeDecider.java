@@ -236,6 +236,11 @@ public class NumExprTypeDecider {
               if (resolvedType != null) {
                 types.add(resolvedType);
               }
+            } else if (id.next != null
+                && id.next.next == null
+                && ctx.staticFieldMap.get(id.val + "." + id.next.val) != null) {
+              // a static field of a class of this compilation run, e.g. an enum constant
+              types.add(ctx.staticFieldMap.get(id.val + "." + id.next.val).fieldType);
             } else if (id.next != null) {
               // ClassName.fieldName pattern (e.g. Operators.LESS, Byte.MAX_VALUE)
               String resolvedType = resolveChainedType(id.val.toString(), id.next.val.toString());

@@ -7,6 +7,11 @@ public class StaticImportFieldHolder
 {
 	public static final List<String> NAMES = buildNames();
 
+	public static String twice(String s)
+	{
+		return s + s;
+	}
+
 	private static List<String> buildNames()
 	{
 		List<String> names = new ArrayList<>();

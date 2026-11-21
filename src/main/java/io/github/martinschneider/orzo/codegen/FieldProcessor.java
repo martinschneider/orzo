@@ -55,14 +55,11 @@ public class FieldProcessor {
     // Add fields from imported classes
     addImportedFields(fieldMap, currentClazz, clazzes);
 
-    // Add fields from java.lang classes
-    addJavaLangFields(fieldMap);
-
     // Add fields from static imports (e.g. import static Type.VOID)
-    addStaticImportFields(fieldMap, currentClazz);
+    addStaticImportFields(fieldMap, currentClazz, clazzes);
 
     // Add fields from current class
-    addFieldsFromClass(fieldMap, currentClazz);
+    addFieldsFromClass(fieldMap, currentClazz, true);
 
     return fieldMap;
   }
@@ -135,39 +132,46 @@ public class FieldProcessor {
     return fieldMap;
   }
 
-  private void addFieldsFromClass(Map<String, StaticField> fieldMap, Clazz clazz) {
-    // Add enum constants and static fields from declarations
+  // (bare field names only for the current class's own fields, others need a static import)
+  private void addFieldsFromClass(
+      Map<String, StaticField> fieldMap, Clazz clazz, boolean bareNames) {
+    for (StaticField field : staticFields(clazz)) {
+      if (bareNames) {
+        fieldMap.put(field.fieldName, field);
+      }
+      fieldMap.put(clazz.name + "." + field.fieldName, field);
+      fieldMap.put(clazz.fqn() + "." + field.fieldName, field);
+    }
+  }
+
+  // The static fields (incl. enum constants) declared by a class of this compilation run
+  private List<StaticField> staticFields(Clazz clazz) {
+    List<StaticField> fields = new ArrayList<>();
     for (ParallelDeclaration parallelDecl : clazz.fields) {
       for (Declaration decl : parallelDecl.declarations) {
         if (isStaticField(decl)) {
-          String fieldName = decl.name.val.toString();
-          String fieldType = decl.type;
           boolean isEnum = clazz.isEnum && hasPublicStaticFinalFlags(decl);
-
-          StaticField field = new StaticField(clazz.fqn(), fieldName, fieldType, isEnum);
+          StaticField field =
+              new StaticField(clazz.fqn(), decl.name.val.toString(), decl.type, isEnum);
           field.genericType = decl.genericType;
-
-          // Add with simple field name for direct access
-          fieldMap.put(fieldName, field);
-
-          // Add with class.field format
-          fieldMap.put(clazz.name + "." + fieldName, field);
-          fieldMap.put(clazz.fqn() + "." + fieldName, field);
+          fields.add(field);
         }
       }
     }
+    return fields;
   }
 
   private void addImportedFields(
       Map<String, StaticField> fieldMap, Clazz currentClazz, List<Clazz> clazzes) {
     for (Clazz clazz : clazzes) {
       if (!currentClazz.equals(clazz)) {
-        addFieldsFromClass(fieldMap, clazz);
+        addFieldsFromClass(fieldMap, clazz, false);
       }
     }
   }
 
-  private void addStaticImportFields(Map<String, StaticField> fieldMap, Clazz currentClazz) {
+  private void addStaticImportFields(
+      Map<String, StaticField> fieldMap, Clazz currentClazz, List<Clazz> clazzes) {
     if (currentClazz.imports == null) {
       return;
     }
@@ -189,6 +193,16 @@ public class FieldProcessor {
         continue;
       }
       String memberName = importPath.substring(lastDot + 1);
+      Clazz sameRun = findClazz(clazzes, importPath.substring(0, lastDot));
+      if (sameRun != null) {
+        // a class of this compilation run
+        for (StaticField field : staticFields(sameRun)) {
+          if ("*".equals(memberName) || field.fieldName.equals(memberName)) {
+            fieldMap.put(field.fieldName, field);
+          }
+        }
+        continue;
+      }
       if ("*".equals(memberName)) {
         // Wildcard static import - resolve all static fields from that class
         String className = importPath.substring(0, lastDot);
@@ -228,34 +242,13 @@ public class FieldProcessor {
     }
   }
 
-  private void addJavaLangFields(Map<String, StaticField> fieldMap) {
-    // Add common static fields from java.lang classes
-    for (Class<?> clazz :
-        List.of(
-            Math.class,
-            Double.class,
-            Float.class,
-            Integer.class,
-            Long.class,
-            Character.class,
-            System.class)) {
-
-      for (Field field : clazz.getFields()) {
-        if (Modifier.isPublic(field.getModifiers()) && Modifier.isStatic(field.getModifiers())) {
-          String fieldName = field.getName();
-          String fieldType = field.getType().getName();
-
-          StaticField staticField = new StaticField(clazz.getName(), fieldName, fieldType, false);
-
-          // Add with class.field format
-          fieldMap.put(clazz.getName() + "." + fieldName, staticField);
-          fieldMap.put(clazz.getSimpleName() + "." + fieldName, staticField);
-
-          // For static imports, add direct field name access
-          fieldMap.put(fieldName, staticField);
-        }
+  private static Clazz findClazz(List<Clazz> clazzes, String fqn) {
+    for (Clazz clazz : clazzes) {
+      if (clazz.fqn().equals(fqn)) {
+        return clazz;
       }
     }
+    return null;
   }
 
   private boolean isStaticField(Declaration decl) {

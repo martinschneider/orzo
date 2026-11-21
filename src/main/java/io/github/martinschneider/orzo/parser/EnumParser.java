@@ -8,7 +8,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import static io.github.martinschneider.orzo.util.FactoryHelper.id;
 import static io.github.martinschneider.orzo.util.FactoryHelper.list;
 
-import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
@@ -72,7 +71,7 @@ public class EnumParser implements ProdParser<ParallelDeclaration> {
     Declaration constant =
         new Declaration(
             list(AccessFlag.ACC_PUBLIC, AccessFlag.ACC_STATIC, AccessFlag.ACC_FINAL),
-            TypeUtils.descr(fqn),
+            fqn,
             id(name),
             null);
     constant.enumArgs = args;

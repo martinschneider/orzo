@@ -19,8 +19,7 @@ public class MethodProcessor {
   public Map<String, Method> getMethodMap(Clazz currentClazz, List<Clazz> clazzes) {
     Map<String, Method> methodMap = new HashMap<>();
     addImported(methodMap, currentClazz, clazzes);
-    addJavaLang(methodMap, currentClazz);
-    addStaticImportMethods(methodMap, currentClazz);
+    addStaticImportMethods(methodMap, currentClazz, clazzes);
     for (Clazz clazz : clazzes) {
       if (!currentClazz.equals(clazz)) {
         addInherited(methodMap, clazz, List.of(clazz.name + '.', clazz.fqn() + '.'));
@@ -75,82 +74,14 @@ public class MethodProcessor {
         for (Method method : clazz.methods) {
           methodMap.put(clazz.name + '.' + getKey(method), method);
           methodMap.put(clazz.fqn() + '.' + getKey(method), method);
-          if (method.accFlags.contains(AccessFlag.ACC_STATIC)
-              && !method.accFlags.contains(AccessFlag.ACC_PRIVATE)) {
-            methodMap.put(getKey(method), method);
-          }
         }
       }
     }
     return methodMap;
   }
 
-  // Java specs Chapter 7 (https://docs.oracle.com/javase/specs/jls/se18/html/jls-7.html):
-  // Code in a compilation unit automatically has access to all types declared in its package
-  // and also automatically imports all of the public types declared in the predefined package
-  // java.lang.
-  private Map<String, Method> addJavaLang(Map<String, Method> methodMap, Clazz currentClazz) {
-    // TODO: This hardcoded list must be replaced with reflection over every class referenced in
-    // currentClazz.imports (and java.lang.* auto-imports). The current approach misses any
-    // imported class not in this list, and unnecessarily adds ALL static methods of every listed
-    // class even when only a subset is used. See docs/TODO.md — "MethodProcessor.addJavaLang()".
-    for (Class<?> clazz :
-        List.of(
-            Math.class,
-            Double.class,
-            Float.class,
-            Character.class,
-            Integer.class,
-            Long.class,
-            String.class,
-            io.github.martinschneider.orzo.util.ObjectUtils.class)) {
-      for (java.lang.reflect.Method m : clazz.getMethods()) {
-        if (Modifier.isPublic(m.getModifiers()) && Modifier.isStatic(m.getModifiers())) {
-          List<Argument> args = mapArgs(m.getParameters());
-          Method method =
-              new Method(
-                  clazz.getName(),
-                  // TODO: process all flags
-                  of(AccessFlag.ACC_PUBLIC, AccessFlag.ACC_STATIC),
-                  m.getReturnType().getTypeName(),
-                  id(m.getName()),
-                  args,
-                  null);
-          methodMap.put(clazz.getName() + '.' + getKey(method), method);
-          methodMap.put(clazz.getSimpleName() + '.' + getKey(method), method);
-          // TODO: only do this for static imports
-          methodMap.put(getKey(method), method);
-        }
-      }
-
-      // Add constructors for basic types
-      for (java.lang.reflect.Constructor<?> c : clazz.getConstructors()) {
-        if (Modifier.isPublic(c.getModifiers())) {
-          List<Argument> args = mapArgs(c.getParameters());
-          Method constructor =
-              new Method(
-                  clazz.getName().replace('.', '/'), // Use JVM class name format
-                  // Constructors are public but not static
-                  of(AccessFlag.ACC_PUBLIC),
-                  "void", // Constructors return void
-                  id("<init>"), // Constructor method name
-                  args,
-                  null);
-          // Add constructor to method map with <init> key
-          String constructorKey =
-              "<init>"
-                  + TypeUtils.typesDescr(
-                      args.stream()
-                          .map(arg -> arg.type)
-                          .collect(java.util.stream.Collectors.toList()));
-          methodMap.put(constructorKey, constructor);
-        }
-      }
-    }
-    return methodMap;
-  }
-
-  private void addStaticImportMethods(Map<String, Method> methodMap, Clazz currentClazz) {
+  private void addStaticImportMethods(
+      Map<String, Method> methodMap, Clazz currentClazz, List<Clazz> clazzes) {
     if (currentClazz.imports == null) {
       return;
     }
@@ -166,6 +97,23 @@ public class MethodProcessor {
       String memberName = importPath.substring(lastDot + 1);
       String className = importPath.substring(0, lastDot);
       boolean isWildcard = "*".equals(memberName);
+      Clazz sameRun = null;
+      for (Clazz clazz : clazzes) {
+        if (clazz.fqn().equals(className)) {
+          sameRun = clazz;
+        }
+      }
+      if (sameRun != null) {
+        // a class of this compilation run
+        for (Method method : sameRun.methods) {
+          if (method.accFlags.contains(AccessFlag.ACC_STATIC)
+              && !method.accFlags.contains(AccessFlag.ACC_PRIVATE)
+              && (isWildcard || method.name.val.toString().equals(memberName))) {
+            methodMap.put(getKey(method), method);
+          }
+        }
+        continue;
+      }
       try {
         Class<?> clazz = Class.forName(className);
         for (java.lang.reflect.Method m : clazz.getMethods()) {
