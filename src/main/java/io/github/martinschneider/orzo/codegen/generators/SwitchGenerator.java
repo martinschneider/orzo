@@ -19,10 +19,8 @@ import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
-import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
-import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import io.github.martinschneider.orzo.parser.productions.SwitchCase;
 import io.github.martinschneider.orzo.parser.productions.SwitchStatement;
@@ -117,7 +115,6 @@ public class SwitchGenerator implements StatementGenerator<SwitchStatement> {
 
     // Emit case bodies
     int[] bodyStarts = new int[switchStmt.cases.size()];
-    List<Integer> gotoEndPositions = new ArrayList<>();
     // Breaks belong to the nearest enclosing loop/switch: snapshot how many are pending before
     // generating this switch's bodies so only breaks introduced here get redirected to its end.
     int pendingBreaksBefore = out.pendingBreaks.size();
@@ -131,11 +128,7 @@ public class SwitchGenerator implements StatementGenerator<SwitchStatement> {
         }
       }
 
-      if (!bodyEndsWithReturn(c.body) && !bodyEndsWithBreak(c.body)) {
-        gotoEndPositions.add(out.size()); // GOTO opcode position
-        out.write(GOTO);
-        out.write((short) 0); // placeholder → end
-      }
+      // (without a break, control falls through into the next case's body)
     }
 
     int endPos = out.size();
@@ -161,11 +154,6 @@ public class SwitchGenerator implements StatementGenerator<SwitchStatement> {
     }
     out.pendingBreaks.subList(pendingBreaksBefore, out.pendingBreaks.size()).clear();
 
-    // Patch body-end GOTOs → end
-    for (int gotoPos : gotoEndPositions) {
-      out.patch(gotoPos + 1, shortToByteArray((short) (endPos - gotoPos)));
-    }
-
     return out;
   }
 
@@ -177,13 +165,5 @@ public class SwitchGenerator implements StatementGenerator<SwitchStatement> {
         ctx.constPool.indexOf(CONSTANT_METHODREF, "java/lang/String", "equals", EQUALS_DESCR));
     ctx.opStack.pop(2);
     ctx.opStack.push(INT);
-  }
-
-  private boolean bodyEndsWithReturn(List<Statement> body) {
-    return body != null && !body.isEmpty() && body.get(body.size() - 1) instanceof ReturnStatement;
-  }
-
-  private boolean bodyEndsWithBreak(List<Statement> body) {
-    return body != null && !body.isEmpty() && body.get(body.size() - 1) instanceof Break;
   }
 }

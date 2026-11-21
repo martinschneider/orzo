@@ -378,6 +378,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       // TODO: System.out.println is hard-coded. Generalise to arbitrary getstatic + invokevirtual
       // chains driven by field type reflection so that other PrintStream methods (print, printf,
       // System.err.println, etc.) also work without special-casing.
+      if (methodCall.params.isEmpty()) {
+        ctx.invokeGen.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
+        ctx.invokeGen.invokeVirtual(
+            out, new Method("java/io/PrintStream", "println", VOID, new ArrayList<>()));
+      }
       for (Expression param : methodCall.params) {
         ctx.invokeGen.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
         ExpressionResult result = ctx.exprGen.eval(out, null, param);

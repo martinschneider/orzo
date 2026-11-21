@@ -300,7 +300,8 @@ public class OrzoTest {
         args(list("tests/FieldArrayAssignment")),
         args(list("tests/UnaryOperators")),
         args(list("tests/NumericPromotion")),
-        args(list("tests/MidExpressionCasts")));
+        args(list("tests/MidExpressionCasts")),
+        args(list("tests/SwitchFallThrough")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the
