@@ -1,144 +1,223 @@
-# Orzo Code Review Tracker
+# Orzo design and architecture review
 
-Tracks the review status of source files relevant to self-compilation.
-Focus: dead code, hardcoded shortcuts, scalability issues.
+State as of November 2026: Orzo compiles all of its own sources (about 21,600 lines in 170 files), and
+its three bootstrap passes produce class files of identical total size. Its output is 4.4x the size of javac's, and it
+compiles about 5x slower than javac (see the metrics in README.md). This review describes how the
+compiler is built, where the design causes recurring bugs, and what to change, roughly ordered by impact.
+Concrete open issues are tracked in [TODO.md](TODO.md).
 
-Status: **REVIEWED** | **PENDING** | **SKIP** (generated/trivial)
+## How it works today
 
----
+```
+source ─► Lexer ─► TokenList ─► recursive-descent ProdParsers ─► Clazz/Method/Statement "productions"
+                                                                  (expressions: postfix lists of tokens)
+        ─► CodeGenerator (per class, CGContext) ─► statement generators ─► ExpressionGenerator
+        ─► raw bytecode in DynamicByteArray ─► StackMapTableBuilder (re-simulates the bytecode)
+        ─► ConstantPool + class file
+```
 
-## Parser
+- **Lexer**: a hand-written scanner producing `Token` subclasses (`Identifier`, `IntLiteral`, `Operator`, ...).
+- **Parser**: one `ProdParser` per construct, with backtracking via `tokens.setIdx(...)`. The
+  `StatementParser` tries the sub-parsers in a fixed order. Expressions are converted to postfix with a
+  shunting-yard algorithm plus many special cases (casts, ternaries, chains, lambdas) in
+  `ExpressionParser`. Dotted names and calls are chains of `Identifier`/`MethodCall` tokens linked via
+  `next`.
+- **Types**: there is no separate semantic analysis. `NumExprTypeDecider` guesses an expression's type
+  for overload resolution. `ExpressionGenerator` tracks types again while emitting code: the requested
+  context `type`, an `exprTypeStack`, and `ctx.opStack`.
+- **Symbols**: string-keyed maps (`methodMap` with keys like `"Foo.bar(I)V"`, `staticFieldMap`, a flat
+  name-to-slot `IdentifierMap`), built per class from the classes in the compilation run plus reflection
+  (`Class.forName`) on the compiler's own classpath.
+- **Code generation**: one generator per statement type, writing bytes into `DynamicByteArray`s. Branch
+  offsets are patched afterwards, and sub-buffers are merged with their exception-table entries rebased.
+  `StackMapTableBuilder` (1,800 lines) then reconstructs stack map frames and the maximum stack depth by
+  simulating the finished bytecode.
 
-|               File                |  Status  |                                                         Findings                                                         |           Fixed            |    TODO ref     |
-|-----------------------------------|----------|--------------------------------------------------------------------------------------------------------------------------|----------------------------|-----------------|
-| `parser/ArraySelectorParser.java` | REVIEWED | Chained call statement + assignment-in-condition prevented Orzo self-parse                                               | Yes — refactored           | —               |
-| `parser/ArrayDefParser.java`      | REVIEWED | No issues found                                                                                                          | —                          | —               |
-| `parser/BreakParser.java`         | REVIEWED | No issues found                                                                                                          | —                          | —               |
-| `parser/FloorParser.java`         | REVIEWED | No issues found                                                                                                          | —                          | —               |
-| `parser/ClassParser.java`         | REVIEWED | Bootstrap workaround for generic type params; annotation skipping (scanAnnotation) could miss annotations with arguments | No                         | TODO #bootstrap |
-| `parser/DeclarationParser.java`   | REVIEWED | Bootstrap `NoSuchFieldError` workaround; no-init reference declarations exposed DeclarationGenerator bug                 | DeclarationGenerator fixed | TODO #bootstrap |
-| `parser/MethodParser.java`        | REVIEWED | Bootstrap `NoSuchFieldError` workaround                                                                                  | No                         | TODO #bootstrap |
-| `parser/StatementParser.java`     | PENDING  | —                                                                                                                        | —                          | —               |
-| `parser/ExpressionParser.java`    | PENDING  | Long complex method, TODO "simplify"                                                                                     | —                          | TODO            |
-| `parser/ParserContext.java`       | PENDING  | —                                                                                                                        | —                          | —               |
-| `parser/ProdParser.java`          | REVIEWED | Interface only, no issues                                                                                                | —                          | —               |
+## What works well
 
-## Parser Productions (data classes)
+- The test suite is large: 270 end-to-end programs and 340 test classes, plus three-pass
+  self-compilation as an integration test. It found most of the bugs fixed during the self-compilation
+  effort.
+- The staged bootstrap (javac-built, then Orzo-built compiler, recompiling itself) is a strong
+  correctness check, and the metrics make progress visible.
+- The code is small and readable per construct (one parser and one generator per statement type), so it
+  is easy to find where a feature lives.
+- The Orzo-only syntax (`repeat`, `unless`, `**`, `√`, parallel assignment) stays in the parser and
+  generators, so it doesn't spread through the code.
 
-|                  File                  |  Status  |                 Findings                  |
-|----------------------------------------|----------|-------------------------------------------|----|------|
-| `productions/AccessFlag.java`          | REVIEWED | No issues                                 |
-| `productions/Argument.java`            | REVIEWED | No issues                                 |
-| `productions/ArrayInit.java`           | REVIEWED | No issues                                 |
-| `productions/ArraySelector.java`       | REVIEWED | No issues                                 |
-| `productions/Assignment.java`          | REVIEWED | No issues                                 |
-| `productions/Break.java`               | REVIEWED | No issues                                 |
-| `productions/ClassMember.java`         | REVIEWED | No issues                                 |
-| `productions/Constructor.java`         | REVIEWED | No issues                                 |
-| `productions/ConstructorCall.java`     | REVIEWED | No issues                                 |
-| `productions/Declaration.java`         | REVIEWED | No issues                                 |
-| `productions/DoStatement.java`         | REVIEWED | No issues                                 |
-| `productions/EmptyStatement.java`      | REVIEWED | No issues                                 |
-| `productions/FieldSelector.java`       | REVIEWED | No issues                                 |
-| `productions/ForStatement.java`        | REVIEWED | No issues                                 |
-| `productions/IfBlock.java`             | REVIEWED | No issues                                 |
-| `productions/IfStatement.java`         | REVIEWED | No issues                                 |
-| `productions/Import.java`              | REVIEWED | No issues                                 |
-| `productions/IncrementStatement.java`  | REVIEWED | No issues                                 |
-| `productions/LoopStatement.java`       | REVIEWED | No issues                                 |
-| `productions/MethodCall.java`          | REVIEWED | No issues                                 |
-| `productions/Method.java`              | REVIEWED | `accessFlags()` has TODO for general case | No | TODO |
-| `productions/ParallelDeclaration.java` | REVIEWED | No issues                                 |
-| `productions/ReturnStatement.java`     | REVIEWED | No issues                                 |
-| `productions/Selector.java`            | REVIEWED | No issues                                 |
-| `productions/Statement.java`           | REVIEWED | No issues                                 |
-| `productions/WhileStatement.java`      | REVIEWED | No issues                                 |
+## Recommendations
 
-## Lexer Tokens
+### 1. Add a semantic analysis (attribution) phase: type every expression once (high)
 
-|              File               |  Status  |                                                        Findings                                                        |
-|---------------------------------|----------|------------------------------------------------------------------------------------------------------------------------|----|------------|
-| `tokens/BoolLiteral.java`       | REVIEWED | No issues                                                                                                              |
-| `tokens/Chr.java`               | REVIEWED | No issues                                                                                                              |
-| `tokens/EOF.java`               | REVIEWED | No issues                                                                                                              |
-| `tokens/Identifier.java`        | REVIEWED | No issues                                                                                                              |
-| `tokens/Keyword.java`           | REVIEWED | No issues                                                                                                              |
-| `tokens/Keywords.java`          | REVIEWED | No issues                                                                                                              |
-| `tokens/Num.java`               | REVIEWED | No issues                                                                                                              |
-| `tokens/Operators.java`         | REVIEWED | No issues                                                                                                              |
-| `tokens/Scope.java`             | REVIEWED | No issues                                                                                                              |
-| `tokens/Scopes.java`            | REVIEWED | `accFlag` field causes `NoSuchFieldError` during bootstrap; the field itself is fine — it's a bootstrap ordering issue |
-| `tokens/Str.java`               | REVIEWED | No issues                                                                                                              |
-| `tokens/Sym.java`               | REVIEWED | No issues                                                                                                              |
-| `tokens/Symbols.java`           | REVIEWED | No issues                                                                                                              |
-| `tokens/TernaryExpression.java` | REVIEWED | No issues                                                                                                              |
-| `tokens/Token.java`             | REVIEWED | No issues                                                                                                              |
-| `tokens/Type.java`              | REVIEWED | TODO in file: "replace this with a simple string"                                                                      | No | TODO #type |
+Most bugs fixed recently had one root cause. Types are inferred twice, in two different ways, and during
+code generation an operand is evaluated "in" the type its *context* asks for instead of its own type.
+Examples: `char + char` printed a `char`; a cast inside an expression was a no-op; `int` literals were
+pushed as `boolean`; `x - aLong` wasn't promoted; a comparison typed as `int` needed
+`RetGenerator.convertReturnValue()` to suppress a bogus error; string concatenations passed as `Object`
+weren't concatenated.
 
-## Codegen
+Introduce an attribution pass between parsing and code generation, like javac's `Attr`. It annotates
+every expression node with its static type. It also applies binary numeric promotion, boxing and
+unboxing, resolves overloads (JLS 15.12, all three phases), infers generic method type arguments from
+argument and target types, and resolves names (local, field, nested or outer class, static import). Code
+generation then only reads these annotations and inserts the conversions the attributed tree prescribes.
 
-|               File                |  Status  |                                                    Findings                                                    |        Fixed         | TODO ref |
-|-----------------------------------|----------|----------------------------------------------------------------------------------------------------------------|----------------------|----------|
-| `codegen/ArrayTypes.java`         | REVIEWED | No issues                                                                                                      | —                    | —        |
-| `codegen/ByteUtils.java`          | REVIEWED | No issues                                                                                                      | —                    | —        |
-| `codegen/CGContext.java`          | REVIEWED | No issues                                                                                                      | —                    | —        |
-| `codegen/CodeGenerator.java`      | REVIEWED | `supportPrint()` unconditionally adds System/PrintStream to const pool; major version 52 without StackMapTable | Documented in README | TODO     |
-| `codegen/DynamicByteArray.java`   | REVIEWED | TODO: "variable declaration with a method call doesn't work"                                                   | No                   | TODO     |
-| `codegen/ExpressionResult.java`   | REVIEWED | No issues                                                                                                      | —                    | —        |
-| `codegen/FieldProcessor.java`     | REVIEWED | Hardcoded java.lang fallback list for simple class names                                                       | No                   | TODO     |
-| `codegen/HasOutput.java`          | REVIEWED | No issues                                                                                                      | —                    | —        |
-| `codegen/MethodProcessor.java`    | REVIEWED | `addJavaLang()` hardcodes specific classes; static methods only; should reflect imports                        | No                   | TODO     |
-| `codegen/NumExprTypeDecider.java` | REVIEWED | Creates new instance recursively — should reuse `this`                                                         | No                   | TODO     |
-| `codegen/OpCodes.java`            | REVIEWED | No issues                                                                                                      | —                    | —        |
-| `codegen/OperandStack.java`       | REVIEWED | TODO: ideally written differently                                                                              | No                   | TODO     |
-| `codegen/TypeUtils.java`          | REVIEWED | TODO: multi-arrays, single check                                                                               | No                   | TODO     |
+Migration path: let `NumExprTypeDecider` store its result on each `Expression`. Make
+`ExpressionGenerator` use the stored types instead of `type`, `exprTypeStack` and `opStack` guesses,
+then delete the guessing code. This also removes the side channels in recommendation 5.
 
-## Codegen Generators
+### 2. Replace postfix token lists with an expression tree and a Pratt parser (high)
 
-|                  File                  |  Status  |                                                              Findings                                                              |          Fixed          | TODO ref |
-|----------------------------------------|----------|------------------------------------------------------------------------------------------------------------------------------------|-------------------------|----------|
-| `generators/BasicGenerator.java`       | REVIEWED | Duplicate PRIMITIVE_TYPES set (same as TypeUtils.isPrimitive); hardcoded autobox/primitiveToString descriptors                     | PRIMITIVE_TYPES removed | TODO     |
-| `generators/DeclarationGenerator.java` | REVIEWED | Null-init reference declarations emitted no bytecode → VerifyError                                                                 | Fixed (aconst_null)     | —        |
-| `generators/DoNothingGenerator.java`   | REVIEWED | No issues                                                                                                                          | —                       | —        |
-| `generators/MethodCallGenerator.java`  | REVIEWED | Dead `isPrimitiveType()` method; hardcoded Object methods; hardcoded System.out.println; findMethodViaReflection/Typed duplication | isPrimitiveType removed | TODO     |
-| `generators/PushGenerator.java`        | REVIEWED | Missing BOOLEAN case in push() → silent stack underflow                                                                            | Fixed                   | —        |
-| `generators/StatementGenerator.java`   | REVIEWED | No issues                                                                                                                          | —                       | —        |
+Expressions are lists of *lexer tokens* in postfix order, so lexer tokens double as AST nodes. `MethodCall`
+is an `Identifier`, a cast is a token, a ternary is a token containing expressions. Consequences:
 
-## Codegen Constants
+- The parser **mutates shared tokens** while backtracking (`Identifier.next`, `arrSel`), and
+  `AssignmentParser` even removes tokens from the list. Failed parse attempts leave stale state behind.
+  Recent bugs: an array selector attached to the first link of `r.small[0]`, a unary minus swallowing the
+  next statement, a nested class re-adding the previous member.
+- Every consumer has to find the operands of an operator by scanning backwards
+  (`findRightOperandStart`, `withoutCastOperands`, the `**` operand skipping). This is fragile: integer
+  `**` swapped its operands for this reason.
+- `ExpressionParser` (650 lines) centers on one `parse()` state machine with re-entry flags.
 
-|                    File                     |  Status  |                         Findings                          | Fixed | TODO ref |
-|---------------------------------------------|----------|-----------------------------------------------------------|-------|----------|
-| `constants/Constant.java`                   | REVIEWED | No issues                                                 | —     | —        |
-| `constants/ConstantClass.java`              | REVIEWED | No issues                                                 | —     | —        |
-| `constants/ConstantDouble.java`             | REVIEWED | No issues                                                 | —     | —        |
-| `constants/ConstantFieldref.java`           | REVIEWED | No issues                                                 | —     | —        |
-| `constants/ConstantFloat.java`              | REVIEWED | No issues                                                 | —     | —        |
-| `constants/ConstantInteger.java`            | REVIEWED | No issues                                                 | —     | —        |
-| `constants/ConstantInterfaceMethodref.java` | REVIEWED | No issues                                                 | —     | —        |
-| `constants/ConstantLong.java`               | REVIEWED | No issues                                                 | —     | —        |
-| `constants/ConstantMethodref.java`          | REVIEWED | No issues                                                 | —     | —        |
-| `constants/ConstantNameAndType.java`        | REVIEWED | No issues                                                 | —     | —        |
-| `constants/ConstantPool.java`               | REVIEWED | L90: Long/Double index may be off by one (size vs size-1) | No    | TODO     |
-| `constants/ConstantString.java`             | REVIEWED | No issues                                                 | —     | —        |
-| `constants/ConstantTypes.java`              | REVIEWED | No issues                                                 | —     | —        |
+Use immutable tree nodes (`Literal`, `Name`, `FieldAccess`, `ArrayAccess`, `MethodInvocation`,
+`NewObject`, `Unary`, `Binary`, `Cast`, `Conditional`, `Lambda`, `Assign`, ...) built by a Pratt
+(precedence-climbing) parser. Precedence and associativity then become a table, and unary, prefix and
+postfix operators are handled uniformly. Keep backtracking limited to the `(Type) expr` cast versus
+`(expr)` grouping decision, and parse that without mutating tokens.
 
-## Codegen Identifiers
+### 3. One symbol table, backed by class files instead of reflection (high)
 
-|                 File                  |  Status  |                       Findings                        | Fixed | TODO ref |
-|---------------------------------------|----------|-------------------------------------------------------|-------|----------|
-| `identifier/GlobalIdentifierMap.java` | REVIEWED | TODO: temporary split between maps, should merge      | No    | TODO     |
-| `identifier/IdentifierInfo.java`      | REVIEWED | No issues                                             | —     | —        |
-| `identifier/IdentifierMap.java`       | REVIEWED | TODO: error handling for duplicate variable names     | No    | TODO     |
-| `identifier/VariableInfo.java`        | REVIEWED | TODO: support objects other than `this` for objectRef | No    | TODO     |
+There are seven separate class-name resolvers: `ClassParser.resolveClassName`,
+`TypeUtils.resolveSimpleType`, `ExpressionGenerator.convertToJVMClassName`,
+`MethodCallGenerator.resolveClassName`, `BasicGenerator.resolveJvmClassName`,
+`ExpressionParser.resolveCastType` and `TypeArgsParser.resolve`. There are also about 50 `Class.forName`
+calls. Each resolver implements a different subset of the scoping rules (nested classes, imports,
+`java.lang`, same package), so the same name can resolve differently in different places. Reflection
+also ties the compiled program to the compiler's own classpath, and there is no `-classpath` option.
+Because later bootstrap passes reflect on Orzo-built classes, Orzo has to emit attributes such as
+`Signature` and `ACC_VARARGS` exactly right just so the next pass can see them.
 
----
+Introduce `ClassSymbol`, `MethodSymbol` and `FieldSymbol` with a single `Scope` lookup chain: block,
+method, class, enclosing classes, single-type imports, same package, on-demand imports, `java.lang`. Back
+it by two sources:
 
-## Not Yet Reviewed (lower priority)
+1. The classes of the current compilation run.
+2. Class files read from a configurable classpath via the JDK's `java.lang.classfile` API.
 
-These files exist but are not currently in the allowlist and were not examined during this review pass:
+Overload resolution, inherited members, interface detection (`TypeUtils.isInterface()`), bridge
+generation and generic signatures then all operate on symbols. String keys like `"Foo.bar(I)V"` go
+away, and so do the bare-name registration bugs fixed in this round.
 
-- All remaining `parser/` files (ExpressionParser, StatementParser, etc.)
-- All remaining `codegen/generators/` files (ExpressionGenerator, AssignmentGenerator, etc.)
-- `lexer/Lexer.java`
-- `Orzo.java` (main entry point)
+### 4. Generate bytecode through a label-based assembler, ideally `java.lang.classfile` (high)
+
+Code generation writes raw bytes, patches branch offsets, merges sub-buffers (rebasing exception tables,
+`labeledBreaks`, `pendingBreaks`) and then rebuilds type information by re-simulating the bytecode in
+`StackMapTableBuilder`. That class re-implements part of the JVM verifier. It had gaps such as all six
+`DUP` forms treated as `DUP` and `POP2` ignoring long/double, and it is the largest source of
+`VerifyError`s.
+
+The JDK's ClassFile API (`java.lang.classfile`, final since Java 24) provides symbolic labels and
+exception handlers, a constant pool with automatic deduplication, and computes stack map frames and the
+maximum stack depth itself. Moving to it would delete `StackMapTableBuilder`, `ConstantPool`,
+`ConstantPoolProcessor`, the patching logic in `DynamicByteArray` and most index bookkeeping. That is
+roughly a quarter of the code generator. If an external dependency is unwanted for a self-hosting
+compiler, the same API ships with the JDK, so Orzo can still compile itself. The alternative is a small
+in-house assembler with `Label` objects and frames computed from the attributed types (recommendation 1)
+instead of from the bytes.
+
+### 5. Make generators stateless and make data flow explicit (medium)
+
+Generators pass information through mutable fields set before a call and read inside it:
+`lastGenericType`, `argsReceiverGeneric`, `argsExpectedGeneric`, `ExpressionGenerator.lambdaTargetGeneric`,
+`callTargetGeneric`, `typeFromArrayElement`, `prevLoadedRef`, and the `skipLoad`/`assignTargets` maps.
+Statement-level and expression-level calls are handled by different `MethodCallGenerator` instances, so
+a field set on one is invisible to the other; this caused the inference bug fixed in this round.
+`CGContext` is a god object with 25 public mutable fields, initialized per class.
+
+Once types are attributed (recommendation 1), most of these side channels are unnecessary. For the rest:
+
+- Pass a small immutable `GenContext` (method, scope, expected type) as a parameter.
+- Create each generator once.
+- Keep per-method state (locals, labels, the exception table) in a `MethodBuilder` object.
+
+### 6. Scoped local variables and a real slot allocator (medium)
+
+`IdentifierMap` is a flat name-to-slot map per method, with no block scopes: two sibling blocks can't
+declare the same name with different types. Temporary locals are allocated ad hoc and never reused
+(`$switch_`, `$concat_`, `$promote_`, `$pow_`). Slot reuse was disabled because `StackMapTableBuilder`
+types each slot by a single variable. With scoped symbols (recommendation 3) and frames computed from
+types (recommendation 4), locals can reuse slots when their scope ends, as javac does.
+
+### 7. Diagnostics with source positions; never emit a class file after an error (medium)
+
+Errors carry a logger name and a Java stack trace, but no line or column. Many code paths log an error
+and keep going: they emit nothing, call a made-up constructor, or produce a truncated class file. Several
+paths produced wrong code without any error at all. Examples fixed in this round: `~x` compiled as `x`,
+text blocks as empty strings, switch fall-through dropped, `System.out.println()` printing nothing.
+
+- Record each token's line and column.
+- Report `file:line:col: message`.
+- Stop generating a class once it has errors, and don't write any class files if there were errors.
+- Treat "silently ignored" as a bug class: every unsupported construct must produce an error.
+
+### 8. Differential testing against javac (medium)
+
+The expected outputs of the end-to-end tests are hand-written, and some encoded Orzo's bugs: `'Z'` for
+`'(' + '2'`, `@` for `64 * chr`, swapped `**` operands in the bytecode tests. Add a harness that compiles
+every test program with both javac and Orzo, runs both, and compares their output. It should also load
+every generated class with full verification. Expected outputs then only need to exist for Orzo-only
+syntax. A small corpus of "probe" programs for unsupported features (one per README checklist item)
+would keep the README honest automatically.
+
+Exact-bytecode unit tests (`ExpressionGeneratorTest` and others) are brittle and test the implementation
+rather than its behaviour. Keep them for peephole decisions (e.g. `IFEQ` versus `IF_ICMPEQ` against 0)
+and use behaviour tests for the rest.
+
+### 9. Turn the self-compilation fixpoint into an invariant (low)
+
+`selfcompile.sh` compares sizes. Byte-compare the class files of passes 2 and 3: a self-hosting compiler
+should reach a fixpoint where they are identical, and any difference points to nondeterminism or a
+miscompiled compiler. Also run pass 3's test suite with the pass-2 compiler.
+
+### 10. Performance and output size (low, after 1–4)
+
+- **Compile time (5x javac)**: reflection is called repeatedly (`getMethods()`, `Class.forName` inside
+  overload resolution) and never cached. The method and field maps are rebuilt per class from all
+  classes, which is O(n²). Expressions are re-typed many times (`new NumExprTypeDecider(...)` in 18
+  places, often on sub-expressions). A symbol table (recommendation 3) and attribution
+  (recommendation 1) fix most of this; profile with JFR first.
+- **Class size (4.4x javac)**: likely full stack map frames everywhere, redundant conversions and
+  `CHECKCAST`s, no constant folding, and constant pool entries added "just in case". A real assembler
+  (recommendation 4) emits compact frames and only the constants that are used. A per-method size
+  comparison against javac would show where the bytes go.
+
+### 11. Smaller cleanups
+
+- `System.out.println` is still special-cased with hand-written bytecode
+  (`MethodCallGenerator.print()`). Removing it requires recommendation 1, because the generic path
+  currently picks wrong overloads for comparisons and booleans; this was tried in this round and
+  reverted.
+- `OperatorMaps` encodes opcode tables per type name string. With attributed types this becomes a
+  function of a `PrimitiveType` enum.
+- `Type` (a token class) and type-name strings (`"int"`, `"java.lang.String"`, `"Ljava/lang/String;"`,
+  `"[I"`) are used interchangeably. `TypeUtils.jvmDescriptorToTypeName()` is called defensively in many
+  places. Use one `TypeRef` value type.
+- `ObjectUtils` implements `equals`, `hashCode` and `toString` of all productions via reflection. This is
+  slow and hides structure. Records would be the natural replacement once Orzo supports them.
+- `FactoryHelper` (test-data builders) lives in production code and is used by the parser; move the
+  test-only parts to `src/test`.
+- Keep the Orzo-only syntax as pure desugarings in the parser (`repeat` to `for`, `unless` to `if (!…)`,
+  `**` to a call, parallel assignment to temporaries), so later phases only see core Java.
+
+## Suggested order
+
+1. Differential testing against javac (8) and errors instead of silent fallbacks (7). These are cheap
+   and catch regressions during the bigger refactorings.
+2. Expression tree (2), then attribution (1). These remove the largest class of bugs and the side
+   channels (5).
+3. Symbol table backed by class files (3), which enables `-classpath` and removes reflection.
+4. ClassFile-API back end (4), which deletes stack map reconstruction and constant pool bookkeeping and
+   enables slot reuse (6).
+5. Then performance and size (10).
 
