@@ -13,5 +13,6 @@ public class ParenthesizedReceiver {
     System.out.println(path("a.b", "C"));
     boolean flag = a.isEmpty();
     System.out.println(((flag ? a : b) + "!").length());
+    System.out.println((flag ? a : b + "x").toUpperCase());
   }
 }

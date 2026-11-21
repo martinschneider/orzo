@@ -350,8 +350,9 @@ public class NumExprTypeDecider {
     return null;
   }
 
-  // The type of a fully-qualified static field reference like "java.lang.Integer.MAX_VALUE"
-  private static String qualifiedStaticFieldType(Identifier id) {
+  // The type of a static field reference of a (possibly fully-qualified) class, optionally
+  // followed by instance fields, e.g. "java.lang.Integer.MAX_VALUE" or "AccessFlag.ACC_PUBLIC.val"
+  private String qualifiedStaticFieldType(Identifier id) {
     List<String> parts = new ArrayList<>();
     for (Identifier link = id; link != null; link = link.next) {
       if (link instanceof MethodCall) {
@@ -359,18 +360,32 @@ public class NumExprTypeDecider {
       }
       parts.add(link.val.toString());
     }
-    if (parts.size() < 3) {
-      return null;
-    }
-    try {
-      java.lang.reflect.Field field =
-          Class.forName(String.join(".", parts.subList(0, parts.size() - 1)))
-              .getField(parts.get(parts.size() - 1));
-      String type = field.getType().getName();
+    for (int split = parts.size() - 1; split >= 1; split--) {
+      if (split == 1 && parts.size() == 2) {
+        continue; // "Class.FIELD": see resolveChainedType()
+      }
+      String className =
+          (split == 1)
+              ? TypeUtils.resolveSimpleType(parts.get(0), ctx.allClazzes, ctx.clazz)
+              : String.join(".", parts.subList(0, split));
+      String type;
+      try {
+        java.lang.reflect.Field field = Class.forName(className).getField(parts.get(split));
+        if (!java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
+          return null;
+        }
+        type = field.getType().getName();
+      } catch (ClassNotFoundException | NoSuchFieldException | LinkageError e) {
+        continue;
+      }
+      for (int i = split + 1; i < parts.size() && type != null; i++) {
+        FieldProcessor.InstanceField field =
+            new FieldProcessor().getInstanceFieldMap(type, ctx.allClazzes).get(parts.get(i));
+        type = (field != null) ? field.fieldType : null;
+      }
       return "java.lang.String".equals(type) ? STRING : type;
-    } catch (ClassNotFoundException | NoSuchFieldException | LinkageError e) {
-      return null;
     }
+    return null;
   }
 
   private String resolveChainedType(String className, String fieldName) {

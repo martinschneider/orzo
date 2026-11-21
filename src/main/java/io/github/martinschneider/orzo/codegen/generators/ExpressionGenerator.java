@@ -1053,33 +1053,68 @@ public class ExpressionGenerator {
       }
       return returnType;
     }
-    // Fully-qualified static field, e.g. "java.lang.Integer.MAX_VALUE"
-    for (int split = identifierParts.size() - 1; split >= 2; split--) {
-      String fqnClass = String.join(".", identifierParts.subList(0, split));
+    // A static field of a (possibly fully-qualified) class, optionally followed by instance
+    // fields, e.g. "java.lang.Integer.MAX_VALUE" or "AccessFlag.ACC_PUBLIC.val"
+    for (int split = identifierParts.size() - 1; split >= 1; split--) {
+      if (split == identifierParts.size() - 1 && split == 1) {
+        continue; // "Class.FIELD" is handled below
+      }
+      String fqnClass =
+          (split == 1)
+              ? resolveJvmClassName(identifierParts.get(0)).replace('/', '.')
+              : String.join(".", identifierParts.subList(0, split));
+      java.lang.reflect.Field reflField;
       try {
-        java.lang.reflect.Field reflField =
-            Class.forName(fqnClass).getField(identifierParts.get(split));
-        if (!java.lang.reflect.Modifier.isStatic(reflField.getModifiers())
-            || split != identifierParts.size() - 1) {
-          break;
+        reflField = Class.forName(fqnClass).getField(identifierParts.get(split));
+      } catch (ClassNotFoundException | NoSuchFieldException | LinkageError e) {
+        continue; // try a shorter class name
+      }
+      if (!java.lang.reflect.Modifier.isStatic(reflField.getModifiers())) {
+        break;
+      }
+      String jvmClass = fqnClass.replace('.', '/');
+      String fieldType = reflField.getType().getName();
+      String descr = TypeUtils.descr(fieldType);
+      ctx.constPool.addClass(jvmClass);
+      ctx.constPool.addFieldRef(jvmClass, reflField.getName(), descr);
+      out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC);
+      out.write(
+          ctx.constPool.indexOf(
+              io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF,
+              jvmClass,
+              reflField.getName(),
+              descr));
+      ctx.opStack.push(fieldType);
+      String currentType = fieldType;
+      for (int i = split + 1; i < identifierParts.size(); i++) {
+        FieldProcessor.InstanceField instanceField =
+            new FieldProcessor()
+                .getInstanceFieldMap(currentType, ctx.allClazzes)
+                .get(identifierParts.get(i));
+        if (instanceField == null) {
+          ctx.errors.addError(
+              LOGGER_NAME,
+              String.format(
+                  "Unknown instance field: %s in type %s", identifierParts.get(i), currentType),
+              new RuntimeException().getStackTrace());
+          return type;
         }
-        String jvmClass = fqnClass.replace('.', '/');
-        String fieldType = reflField.getType().getName();
-        String descr = TypeUtils.descr(fieldType);
-        ctx.constPool.addClass(jvmClass);
-        ctx.constPool.addFieldRef(jvmClass, reflField.getName(), descr);
-        out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC);
+        String owner = instanceField.className.replace('.', '/');
+        String instDescr = TypeUtils.descr(instanceField.fieldType);
+        ctx.constPool.addClass(owner);
+        ctx.constPool.addFieldRef(owner, instanceField.fieldName, instDescr);
+        out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETFIELD);
         out.write(
             ctx.constPool.indexOf(
                 io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF,
-                jvmClass,
-                reflField.getName(),
-                descr));
-        ctx.opStack.push(fieldType);
-        return "java.lang.String".equals(fieldType) ? STRING : fieldType;
-      } catch (ClassNotFoundException | NoSuchFieldException e) {
-        // try a shorter class name
+                owner,
+                instanceField.fieldName,
+                instDescr));
+        ctx.opStack.pop();
+        ctx.opStack.push(instanceField.fieldType);
+        currentType = instanceField.fieldType;
       }
+      return "java.lang.String".equals(currentType) ? STRING : currentType;
     }
     // Try to resolve as ImportedClass.fieldName (e.g. Operators.LESS, Byte.MAX_VALUE)
     if (identifierParts.size() == 2) {

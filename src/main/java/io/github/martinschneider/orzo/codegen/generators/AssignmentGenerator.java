@@ -162,7 +162,11 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
     // its own slot, or every reference to it inside this scope silently falls back to the field
     // (containsKey() checks fieldMap too, which did exactly that for e.g. a local "char
     // character;" in a method of a class that also has a field "character").
-    if (!variables.localMap.containsKey(id.val.toString())) {
+    // (A same-named local of a different type is a variable of another block, e.g. two sibling
+    // blocks each declaring "x": it gets its own slot.)
+    VariableInfo existing = variables.localMap.get(id.val.toString());
+    if (existing == null
+        || (type != null && existing.type != null && !type.equals(existing.type))) {
       variables.putLocal(
           id,
           new VariableInfo(

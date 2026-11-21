@@ -137,7 +137,10 @@ public class ExpressionParser implements ProdParser<Expression> {
             TernaryExpression ternary = new TernaryExpression(condition, trueBranch, falseBranch);
             // Reset: prefix + ternary as a single token
             exprTokens = prefixTokens;
+            // keep the ternary's parentheses: "(c ? a : b).method()" is a parenthesized receiver
+            exprTokens.add(sym(LPAREN));
             exprTokens.add(ternary);
+            exprTokens.add(sym(RPAREN));
             parenthesis++; // its closing ')' was consumed above
             // Continue collecting the rest of the outer expression
             continue;
