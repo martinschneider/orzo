@@ -3,6 +3,7 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CLASS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.ENUM;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.EXTENDS;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IMPLEMENTS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IMPORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INTERFACE;
@@ -33,6 +34,7 @@ import io.github.martinschneider.orzo.lexer.tokens.EOF;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ClassMember;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
@@ -43,7 +45,9 @@ import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ClassParser implements ProdParser<Clazz> {
   public ParserContext ctx;
@@ -55,15 +59,9 @@ public class ClassParser implements ProdParser<Clazz> {
 
   @Override
   public Clazz parse(TokenList tokens) {
-    String name;
-    List<Method> methods;
-    List<ParallelDeclaration> decls;
-    List<ClassMember> members = new ArrayList<>();
     String packageDeclaration = parsePackageDeclaration(tokens);
     ctx.importMap.clear();
     List<Import> imports = parseImports(tokens);
-    List<String> interfaces = new ArrayList<>();
-    String baseClass = JAVA_LANG_OBJECT;
     Scope scope = ctx.scopeParser.parse(tokens);
     boolean isInterface = false;
     boolean isEnum = false;
@@ -74,128 +72,147 @@ public class ClassParser implements ProdParser<Clazz> {
         isEnum = true;
       }
       if (tokens.curr().eq(keyword(CLASS)) || isInterface || isEnum) {
-        tokens.next();
-        if (tokens.curr() instanceof Identifier) {
-          name = tokens.curr().val.toString();
-        } else {
-          name = null;
-          ctx.errors.addError(
-              LOG_NAME, "missing identifier", new RuntimeException().getStackTrace());
-        }
-        tokens.next();
-        // Parse generic type parameters on class/interface declaration e.g. class Foo<T extends
-        // Bound>
-        ctx.classTypeParams.clear();
-        if (tokens.curr().eq(op(LESS))) {
-          tokens.next();
-          while (!tokens.curr().eq(op(GREATER)) && !tokens.curr().eq(op(RSHIFT))) {
-            if (tokens.curr() instanceof Identifier) {
-              String typeVarName = tokens.curr().toString();
-              String erasure = "java.lang.Object";
-              tokens.next();
-              if (tokens.curr().eq(keyword(EXTENDS))) {
-                tokens.next();
-                // Collect bound type (until , or > or &)
-                StringBuilder bound = new StringBuilder();
-                while (!tokens.curr().eq(sym(COMMA))
-                    && !tokens.curr().eq(op(GREATER))
-                    && !tokens.curr().eq(op(RSHIFT))
-                    && !tokens.curr().eq(op(BITWISE_AND))) {
-                  if (bound.length() > 0 && tokens.curr().toString().equals(".")) {
-                    bound.append(".");
-                  } else if (bound.length() > 0) {
-                    bound.append(".");
-                    bound.append(tokens.curr().toString());
-                  } else {
-                    bound.append(tokens.curr().toString());
-                  }
-                  tokens.next();
-                }
-                erasure = ctx.importMap.getOrDefault(bound.toString(), bound.toString());
-              }
-              ctx.classTypeParams.put(typeVarName, erasure);
-            }
-            if (tokens.curr().eq(sym(COMMA))) {
-              tokens.next();
-            } else if (tokens.curr().eq(op(BITWISE_AND))) {
-              // Skip additional bounds (e.g. T extends A & B) - use first bound only
-              while (!tokens.curr().eq(sym(COMMA)) && !tokens.curr().eq(op(GREATER))) {
-                tokens.next();
-              }
-            }
-          }
-          tokens.next(); // consume >
-        }
-        parseInterfaces(tokens, interfaces, packageDeclaration);
-        baseClass = parseBaseClass(tokens, isEnum, packageDeclaration);
-        if (interfaces.isEmpty()) {
-          parseInterfaces(tokens, interfaces, packageDeclaration);
-        }
-        if (!tokens.curr().eq(sym(LBRACE))) {
-          ctx.errors.tokenIdx = tokens.idx();
-          ctx.errors.missingExpected(
-              LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
-          return null;
-        }
-        tokens.next();
-        // set temporary clazz object for the method parser's use
-        ctx.currClazz =
-            new Clazz(
-                packageDeclaration,
-                imports,
-                scope,
-                name,
-                isInterface,
-                isEnum,
-                interfaces,
-                baseClass,
-                null,
-                null,
-                null);
-        if (isEnum) {
-          ctx.enumParser.fqn = ctx.currClazz.fqn();
-          members.add(ctx.enumParser.parse(tokens));
-          // Continue parsing remaining class body (fields, methods, etc.)
-          List<ClassMember> additionalMembers = parseClassBody(tokens, isInterface);
-          members.addAll(additionalMembers);
-        } else {
-          members = parseClassBody(tokens, isInterface);
-        }
-        if (members == null) {
-          ctx.errors.addError(
-              LOG_NAME, "missing class body", new RuntimeException().getStackTrace());
-        }
-        methods = new ArrayList<>();
-        decls = new ArrayList<>();
-        boolean hasConstr = false;
-        for (ClassMember member : members) {
-          if (member instanceof Method) {
-            Method method = (Method) member;
-            hasConstr = hasConstr || method instanceof Constructor;
-            methods.add(method);
-          } else if (member instanceof ParallelDeclaration) {
-            decls.add((ParallelDeclaration) member);
-          }
-        }
-        // TODO: one could argue that this should be handled during code generation rather than
-        // parsing
-        if (!isInterface && !isEnum && !hasConstr) {
-          methods.add(defaultConstr(ctx.currClazz.fqn()));
-        }
-
-        if (!tokens.curr().eq(sym(RBRACE))) {
-          ctx.errors.tokenIdx = tokens.idx();
-          ctx.errors.missingExpected(
-              LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
-        }
-        ctx.currClazz.methods = methods;
-        ctx.currClazz.fields = decls;
-        tokens.next();
-        ctx.currClazz.baseClass = baseClass;
-        return ctx.currClazz;
+        return parseClassDeclaration(
+            tokens, packageDeclaration, imports, scope, isInterface, isEnum, null);
       }
     }
     return null;
+  }
+
+  // "class Name ... { ... }" (the current token is the class/interface/enum keyword)
+  private Clazz parseClassDeclaration(
+      TokenList tokens,
+      String packageDeclaration,
+      List<Import> imports,
+      Scope scope,
+      boolean isInterface,
+      boolean isEnum,
+      String outerName) {
+    String name;
+    List<Method> methods;
+    List<ParallelDeclaration> decls;
+    List<ClassMember> members = new ArrayList<>();
+    List<String> interfaces = new ArrayList<>();
+    String baseClass = JAVA_LANG_OBJECT;
+    tokens.next();
+    if (tokens.curr() instanceof Identifier) {
+      name = tokens.curr().val.toString();
+    } else {
+      name = null;
+      ctx.errors.addError(LOG_NAME, "missing identifier", new RuntimeException().getStackTrace());
+    }
+    tokens.next();
+    // Parse generic type parameters on class/interface declaration e.g. class Foo<T extends
+    // Bound>
+    ctx.classTypeParams.clear();
+    if (tokens.curr().eq(op(LESS))) {
+      tokens.next();
+      while (!tokens.curr().eq(op(GREATER)) && !tokens.curr().eq(op(RSHIFT))) {
+        if (tokens.curr() instanceof Identifier) {
+          String typeVarName = tokens.curr().toString();
+          String erasure = "java.lang.Object";
+          tokens.next();
+          if (tokens.curr().eq(keyword(EXTENDS))) {
+            tokens.next();
+            // Collect bound type (until , or > or &)
+            StringBuilder bound = new StringBuilder();
+            while (!tokens.curr().eq(sym(COMMA))
+                && !tokens.curr().eq(op(GREATER))
+                && !tokens.curr().eq(op(RSHIFT))
+                && !tokens.curr().eq(op(BITWISE_AND))) {
+              if (bound.length() > 0 && tokens.curr().toString().equals(".")) {
+                bound.append(".");
+              } else if (bound.length() > 0) {
+                bound.append(".");
+                bound.append(tokens.curr().toString());
+              } else {
+                bound.append(tokens.curr().toString());
+              }
+              tokens.next();
+            }
+            erasure = ctx.importMap.getOrDefault(bound.toString(), bound.toString());
+          }
+          ctx.classTypeParams.put(typeVarName, erasure);
+        }
+        if (tokens.curr().eq(sym(COMMA))) {
+          tokens.next();
+        } else if (tokens.curr().eq(op(BITWISE_AND))) {
+          // Skip additional bounds (e.g. T extends A & B) - use first bound only
+          while (!tokens.curr().eq(sym(COMMA)) && !tokens.curr().eq(op(GREATER))) {
+            tokens.next();
+          }
+        }
+      }
+      tokens.next(); // consume >
+    }
+    parseInterfaces(tokens, interfaces, packageDeclaration);
+    baseClass = parseBaseClass(tokens, isEnum, packageDeclaration);
+    if (interfaces.isEmpty()) {
+      parseInterfaces(tokens, interfaces, packageDeclaration);
+    }
+    if (!tokens.curr().eq(sym(LBRACE))) {
+      ctx.errors.tokenIdx = tokens.idx();
+      ctx.errors.missingExpected(
+          LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
+      return null;
+    }
+    tokens.next();
+    registerNestedClassNames(tokens, packageDeclaration, outerName, name);
+    // set temporary clazz object for the method parser's use
+    ctx.currClazz =
+        new Clazz(
+            packageDeclaration,
+            imports,
+            scope,
+            name,
+            isInterface,
+            isEnum,
+            interfaces,
+            baseClass,
+            null,
+            null,
+            null);
+    ctx.currClazz.outerName = outerName;
+    if (isEnum) {
+      ctx.enumParser.fqn = ctx.currClazz.fqn();
+      members.add(ctx.enumParser.parse(tokens));
+      // Continue parsing remaining class body (fields, methods, etc.)
+      List<ClassMember> additionalMembers = parseClassBody(tokens, isInterface);
+      members.addAll(additionalMembers);
+    } else {
+      members = parseClassBody(tokens, isInterface);
+    }
+    if (members == null) {
+      ctx.errors.addError(LOG_NAME, "missing class body", new RuntimeException().getStackTrace());
+    }
+    methods = new ArrayList<>();
+    decls = new ArrayList<>();
+    boolean hasConstr = false;
+    for (ClassMember member : members) {
+      if (member instanceof Method) {
+        Method method = (Method) member;
+        hasConstr = hasConstr || method instanceof Constructor;
+        methods.add(method);
+      } else if (member instanceof ParallelDeclaration) {
+        decls.add((ParallelDeclaration) member);
+      }
+    }
+    // TODO: one could argue that this should be handled during code generation rather than
+    // parsing
+    if (!isInterface && !isEnum && !hasConstr) {
+      methods.add(defaultConstr(ctx.currClazz.fqn()));
+    }
+
+    if (!tokens.curr().eq(sym(RBRACE))) {
+      ctx.errors.tokenIdx = tokens.idx();
+      ctx.errors.missingExpected(
+          LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+    }
+    ctx.currClazz.methods = methods;
+    ctx.currClazz.fields = decls;
+    tokens.next();
+    ctx.currClazz.baseClass = baseClass;
+    return ctx.currClazz;
   }
 
   private String parseBaseClass(TokenList tokens, boolean isEnum, String packageDeclaration) {
@@ -274,12 +291,79 @@ public class ClassParser implements ProdParser<Clazz> {
     return interfaces;
   }
 
+  // Makes the class body's nested classes (declared anywhere in it) known by their simple names,
+  // e.g. "Frame" -> "a.b.Outer$Frame" (the current token is the first one of the class body)
+  private void registerNestedClassNames(
+      TokenList tokens, String packageDeclaration, String outerName, String name) {
+    String binaryName =
+        ((packageDeclaration != null && !packageDeclaration.isEmpty())
+                ? packageDeclaration + "."
+                : "")
+            + (outerName != null ? outerName + "$" : "")
+            + name;
+    int depth = 0;
+    for (int i = tokens.idx(); i < tokens.list().size() && depth >= 0; i++) {
+      Token token = tokens.get(i);
+      if (token.eq(sym(LBRACE))) {
+        depth++;
+      } else if (token.eq(sym(RBRACE))) {
+        depth--;
+      } else if (depth == 0
+          && (token.eq(keyword(CLASS)) || token.eq(keyword(INTERFACE)) || token.eq(keyword(ENUM)))
+          && i + 1 < tokens.list().size()
+          && tokens.get(i + 1) instanceof Identifier) {
+        String nestedName = tokens.get(i + 1).val.toString();
+        ctx.importMap.put(nestedName, binaryName + "$" + nestedName);
+      }
+    }
+  }
+
+  // A static nested class, e.g. "private static final class Frame { ... }": parsed into a separate
+  // class "Outer$Frame" (see ParserContext.nestedClazzes)
+  private boolean parseNestedClass(TokenList tokens) {
+    int idx = tokens.idx();
+    Scope scope = ctx.scopeParser.parse(tokens);
+    boolean isStatic = false;
+    while (tokens.curr().eq(keyword(STATIC)) || tokens.curr().eq(keyword(FINAL))) {
+      isStatic = isStatic || tokens.curr().eq(keyword(STATIC));
+      tokens.next();
+    }
+    boolean isInterface = tokens.curr().eq(keyword(INTERFACE));
+    boolean isEnum = tokens.curr().eq(keyword(ENUM));
+    if (!tokens.curr().eq(keyword(CLASS)) && !isInterface && !isEnum) {
+      tokens.setIdx(idx);
+      return false;
+    }
+    if (!isStatic && !isInterface && !isEnum) {
+      ctx.errors.addError(
+          LOG_NAME,
+          "inner (non-static nested) classes are not supported",
+          new RuntimeException().getStackTrace());
+    }
+    Clazz outer = ctx.currClazz;
+    Map<String, String> outerTypeParams = new HashMap<>(ctx.classTypeParams);
+    String outerName = (outer.outerName != null ? outer.outerName + "$" : "") + outer.name;
+    Clazz nested =
+        parseClassDeclaration(
+            tokens, outer.packageName, outer.imports, scope, isInterface, isEnum, outerName);
+    ctx.currClazz = outer;
+    ctx.classTypeParams.clear();
+    ctx.classTypeParams.putAll(outerTypeParams);
+    if (nested != null) {
+      ctx.nestedClazzes.add(nested);
+    }
+    return true;
+  }
+
   List<ClassMember> parseClassBody(TokenList tokens, boolean isInterface) {
     List<ClassMember> classBody = new ArrayList<>();
     ClassMember member = null;
     int lastIdx = -1;
     int stuckCount = 0;
-    while ((member = parserClassMember(tokens, isInterface)) != null) {
+    while (parseNestedClass(tokens) || (member = parserClassMember(tokens, isInterface)) != null) {
+      if (member == null) {
+        continue; // a nested class
+      }
       classBody.add(member);
       int currIdx = tokens.idx();
       if (currIdx == lastIdx) {

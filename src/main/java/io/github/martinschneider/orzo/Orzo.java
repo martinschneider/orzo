@@ -7,6 +7,7 @@ import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.parser.Parser;
 import io.github.martinschneider.orzo.parser.ParserContext;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -81,6 +82,7 @@ public class Orzo {
 
   public void compile(List<Output> outputs) throws IOException {
     clazzes = new ArrayList<>();
+    List<Clazz> nestedClazzes = new ArrayList<>();
     ParserContext ctx = null;
     for (int i = 0; i < inputs.size(); i++) {
       if (verbose > 0) {
@@ -120,9 +122,20 @@ public class Orzo {
       if (!preSupplied) {
         outputs.add(output);
       }
+      for (Clazz nested : parser.ctx.nestedClazzes) {
+        nested.sourceFile = clazz.sourceFile;
+        nestedClazzes.add(nested);
+      }
       ctx = parser.ctx;
     }
     int inputCount = inputs.size();
+    // Static nested classes are compiled like the classes of separate input files. They come after
+    // those (outputs stay index-aligned with the input files) and are written out like synthetic
+    // classes below.
+    for (Clazz nested : nestedClazzes) {
+      clazzes.add(nested);
+      outputs.add(new Output(new PrintStream(new ByteArrayOutputStream())));
+    }
     CodeGenerator codeGen = new CodeGenerator(clazzes, outputs, ctx.errors);
     codeGen.generate();
     if (!codeGen.getErrors().errors.isEmpty()) {
@@ -156,6 +169,9 @@ public class Orzo {
       strBuilder.append(clazz.packageName.replaceAll("\\.", File.separator));
     }
     strBuilder.append(File.separator);
+    if (clazz.outerName != null) {
+      strBuilder.append(clazz.outerName).append('$');
+    }
     strBuilder.append(clazz.name);
     strBuilder.append(".class");
     return strBuilder.toString();

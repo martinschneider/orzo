@@ -18,6 +18,8 @@ public class Clazz {
   public List<String> interfaces;
   public String baseClass;
   public String name;
+  // the enclosing class's binary name (e.g. "Outer" or "Outer$Inner") of a nested class
+  public String outerName;
   public String packageName;
   public Scope scope;
   public String sourceFile;
@@ -66,6 +68,9 @@ public class Clazz {
     if (packageName != null && !packageName.isEmpty()) {
       strBuilder.append(packageName.replace('.', sep));
       strBuilder.append(sep);
+    }
+    if (outerName != null) {
+      strBuilder.append(outerName).append('$');
     }
     strBuilder.append(name);
     return strBuilder.toString();

@@ -1637,6 +1637,11 @@ public class ExpressionGenerator {
                     || c.fqClassName.endsWith("." + className)
                     || c.fqClassName.replace('.', '/').equals(className));
     if (constructor == null) {
+      // by binary name, e.g. "a.b.Outer$Nested.<init>" for a nested class
+      constructor =
+          ctx.methodCallGen.findBestMatch(className.replace('/', '.') + ".<init>", argTypes, null);
+    }
+    if (constructor == null) {
       constructor = ctx.methodCallGen.findBestMatch(simpleName + ".<init>", argTypes, null);
     }
     // If no constructor found, create a default constructor for basic types
@@ -1718,6 +1723,13 @@ public class ExpressionGenerator {
               // not in same package; fall through
             }
           }
+        }
+        int dot = className.indexOf('.');
+        if (dot > 0 && Character.isUpperCase(className.charAt(0))) {
+          // a nested class of a (simply named) class, e.g. "Outer.Inner" -> "a/b/Outer$Inner"
+          return convertToJVMClassName(className.substring(0, dot))
+              + "$"
+              + className.substring(dot + 1).replace('.', '$');
         }
         // For fully qualified names, just replace dots with slashes
         return className.replace('.', '/');

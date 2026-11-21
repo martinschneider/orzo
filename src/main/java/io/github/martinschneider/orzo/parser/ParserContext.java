@@ -2,11 +2,15 @@ package io.github.martinschneider.orzo.parser;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ParserContext {
   public Clazz currClazz;
+  // static nested classes of the parsed file, compiled as separate classes (e.g. "Outer$Inner")
+  public List<Clazz> nestedClazzes = new ArrayList<>();
   // Maps simple class name → fully-qualified name, built from import statements
   public Map<String, String> importMap = new HashMap<>();
   // Maps class-level type variable names to their erasure types (e.g. T → java.lang.Object)
