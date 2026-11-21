@@ -1460,7 +1460,16 @@ public class ExpressionGenerator {
         }
       }
     } catch (ClassNotFoundException | LinkageError e) {
-      // e.g. a class of this compilation run: assume a static method
+      // a class of this compilation run: static if it declares such a method with this arity
+      isStatic = false;
+      for (Map.Entry<String, Method> entry : ctx.methodMap.entrySet()) {
+        Method m = entry.getValue();
+        if (entry.getKey().startsWith(ref.methodRefOwner + "." + ref.methodRefName + "(")
+            && m.args.size() == arity
+            && m.accFlags.contains(AccessFlag.ACC_STATIC)) {
+          isStatic = true;
+        }
+      }
     }
     List<String> params = new ArrayList<>();
     List<Expression> args = new ArrayList<>();
