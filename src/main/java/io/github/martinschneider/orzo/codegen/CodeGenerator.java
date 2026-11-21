@@ -418,17 +418,25 @@ public class CodeGenerator {
     // reference types (e.g. List<String> fields) whose initializers are not constant expressions.
     // TODO: for some reason this still breaks for long and double
     Object constVal = varInfo.val != null ? varInfo.val.getConstantValue(varInfo.type) : null;
-    if (varInfo.accFlags.contains(AccessFlag.ACC_FINAL)
-        && constVal != null
-        && !varInfo.type.startsWith("L")
-        && !varInfo.type.startsWith("[")) {
-      out.write((short) 1); // attribute size
+    boolean constantValue =
+        varInfo.accFlags.contains(AccessFlag.ACC_FINAL)
+            && constVal != null
+            && !varInfo.type.startsWith("L")
+            && !varInfo.type.startsWith("[");
+    boolean signature = varInfo.genericType != null;
+    out.write((short) ((constantValue ? 1 : 0) + (signature ? 1 : 0))); // attribute count
+    if (constantValue) {
       // https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.2
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "ConstantValue"));
       out.write(2);
       out.write(ctx.constPool.indexOf(ctx.constPool.getTypeByte(varInfo.type), constVal));
-    } else {
-      out.write((short) 0); // attribute size
+    }
+    if (signature) {
+      // https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.9
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Signature"));
+      out.write(2);
+      out.write(
+          ctx.constPool.indexOf(CONSTANT_UTF8, GenericTypes.toSignature(varInfo.genericType)));
     }
   }
 

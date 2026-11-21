@@ -8,6 +8,7 @@ import static java.util.List.of;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.FieldProcessor;
+import io.github.martinschneider.orzo.codegen.GenericTypes;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
@@ -53,6 +54,11 @@ public class MemberProcessor {
                 decl.val));
         ctx.classIdMap.variables.fieldMap.get(decl.name.id().toString()).genericType =
             decl.genericType;
+        if (decl.genericType != null) {
+          // for the field's Signature attribute (so reflection/javac see its type arguments)
+          ctx.constPool.addUtf8("Signature");
+          ctx.constPool.addUtf8(GenericTypes.toSignature(decl.genericType));
+        }
         if (decl.accFlags.contains(AccessFlag.ACC_FINAL) && decl.val != null) {
           ctx.constPool.addUtf8("ConstantValue");
           ctx.constPool.addByType(decl.type, decl.val.getConstantValue(decl.type));

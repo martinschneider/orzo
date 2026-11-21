@@ -18,6 +18,26 @@ public class GenericTypes {
 
   private GenericTypes() {}
 
+  /**
+   * The JVM signature (e.g. for a field's Signature attribute) of a generic type string, e.g.
+   * "Ljava/util/Map<Ljava/lang/String;[B>;" for "java.util.Map<java.lang.String,[B>".
+   */
+  public static String toSignature(String genericType) {
+    if (genericType.startsWith("[")) {
+      return genericType.replace('.', '/'); // already a descriptor, e.g. "[B"
+    }
+    String raw = erasure(genericType);
+    StringBuilder sig = new StringBuilder("L").append(raw.replace('.', '/'));
+    if (genericType.indexOf('<') >= 0) {
+      sig.append('<');
+      for (String arg : typeArgs(genericType)) {
+        sig.append(toSignature(arg));
+      }
+      sig.append('>');
+    }
+    return sig.append(';').toString();
+  }
+
   /** "java.util.List<a.b.Foo>" → "java.util.List" */
   public static String erasure(String genericType) {
     int lt = genericType.indexOf('<');

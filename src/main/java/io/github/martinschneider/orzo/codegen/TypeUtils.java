@@ -305,7 +305,7 @@ public class TypeUtils {
 
   public static List<String> assignableTo(String type) {
     if (type.contains("[")) {
-      return List.of(type);
+      return List.of(type, "java.lang.Object", "Object"); // an array is an Object, too
     }
     switch (type) {
       case STRING:
