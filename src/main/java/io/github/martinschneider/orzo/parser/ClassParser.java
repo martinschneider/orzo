@@ -27,6 +27,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import static io.github.martinschneider.orzo.parser.productions.Clazz.JAVA_LANG_ENUM;
 import static io.github.martinschneider.orzo.parser.productions.Clazz.JAVA_LANG_OBJECT;
 import static io.github.martinschneider.orzo.util.FactoryHelper.defaultConstr;
+import static io.github.martinschneider.orzo.util.FactoryHelper.enumMethods;
 import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
@@ -201,6 +202,9 @@ public class ClassParser implements ProdParser<Clazz> {
     // parsing
     if (!isInterface && !isEnum && !hasConstr) {
       methods.add(defaultConstr(ctx.currClazz.fqn()));
+    }
+    if (isEnum) {
+      methods.addAll(enumMethods(ctx.currClazz.fqn()));
     }
 
     if (!tokens.curr().eq(sym(RBRACE))) {

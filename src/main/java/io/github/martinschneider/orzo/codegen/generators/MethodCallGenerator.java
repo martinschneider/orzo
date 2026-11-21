@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.POP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.POP2;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
@@ -23,6 +24,7 @@ import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
+import io.github.martinschneider.orzo.codegen.identifier.MemberProcessor;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
@@ -76,33 +78,15 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         receiverVar = classIdMap.variables.fieldMap.get(receiverName);
       }
       if (receiverVar != null && receiverVar.type != null) {
+        // e.g. "Lpkg/Color;" for an enum constant
+        String receiverType = TypeUtils.jvmDescriptorToTypeName(receiverVar.type);
         // Try simple class name prefix
-        int lastDotInType = receiverVar.type.lastIndexOf('.');
+        int lastDotInType = receiverType.lastIndexOf('.');
         String simpleType =
-            (lastDotInType >= 0) ? receiverVar.type.substring(lastDotInType + 1) : receiverVar.type;
+            (lastDotInType >= 0) ? receiverType.substring(lastDotInType + 1) : receiverType;
         method = findMatchingMethod(simpleType + "." + simpleMethod, types);
         if (method == null) {
-          method = findMatchingMethod(receiverVar.type + "." + simpleMethod, types);
-        }
-        // TODO: the toString/hashCode/getClass/equals fallbacks below are hard-coded and fragile.
-        // All Object methods should be resolved generically via reflection on java.lang.Object
-        // so that new Object methods don't need individual special cases here.
-        // Fall back to java/lang/Object for toString(), hashCode() etc.
-        if (method == null) {
-          if (types.isEmpty()) {
-            if ("toString".equals(simpleMethod)) {
-              method = new Method("java/lang/Object", "toString", STRING, new ArrayList<>());
-            } else if ("hashCode".equals(simpleMethod)) {
-              method = new Method("java/lang/Object", "hashCode", INT, new ArrayList<>());
-            } else if ("getClass".equals(simpleMethod)) {
-              method =
-                  new Method(
-                      "java/lang/Object", "getClass", "Ljava/lang/Class;", new ArrayList<>());
-            }
-          } else if (types.size() == 1 && "equals".equals(simpleMethod)) {
-            method =
-                new Method("java/lang/Object", "equals", BOOLEAN, List.of("Ljava/lang/Object;"));
-          }
+          method = findMatchingMethod(receiverType + "." + simpleMethod, types);
         }
         // Reflection fallback for external Java stdlib methods
         if (method == null) {
@@ -144,31 +128,25 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         io.github.martinschneider.orzo.codegen.FieldProcessor.StaticField staticField =
             ctx.staticFieldMap.get(receiverName);
         if (staticField != null) {
-          method = findMethodViaReflectionTyped(staticField.fieldType, simpleMethod, types);
-          if (method == null) {
-            method = findMethodViaReflection(staticField.fieldType, simpleMethod, types.size());
-          }
-          if (method != null) {
-            String jvmClass = staticField.className.replace('.', '/');
-            String fieldDescr = TypeUtils.descr(staticField.fieldType);
-            ctx.constPool.addClass(jvmClass);
-            ctx.constPool.addFieldRef(jvmClass, staticField.fieldName, fieldDescr);
-            out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC);
-            out.write(
-                ctx.constPool.indexOf(
-                    io.github.martinschneider.orzo.codegen.constants.ConstantTypes
-                        .CONSTANT_FIELDREF,
-                    jvmClass,
-                    staticField.fieldName,
-                    fieldDescr));
-            ctx.opStack.push(staticField.fieldType);
-            lastGenericType = staticField.genericType;
-            return generateChained(
-                out,
-                classIdMap,
-                new MethodCall(simpleMethod, methodCall.params),
-                staticField.fieldType);
-          }
+          // (generateChained() resolves the method on the field's type)
+          String jvmClass = staticField.className.replace('.', '/');
+          String fieldDescr = TypeUtils.descr(staticField.fieldType);
+          ctx.constPool.addClass(jvmClass);
+          ctx.constPool.addFieldRef(jvmClass, staticField.fieldName, fieldDescr);
+          out.write(io.github.martinschneider.orzo.codegen.OpCodes.GETSTATIC);
+          out.write(
+              ctx.constPool.indexOf(
+                  io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF,
+                  jvmClass,
+                  staticField.fieldName,
+                  fieldDescr));
+          ctx.opStack.push(staticField.fieldType);
+          lastGenericType = staticField.genericType;
+          return generateChained(
+              out,
+              classIdMap,
+              new MethodCall(simpleMethod, methodCall.params),
+              staticField.fieldType);
         }
       }
       // Resolve receiver as a dotted field chain (e.g., "id.val" → load id, getfield val)
@@ -486,33 +464,28 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
 
   public HasOutput callThisConstrWithArgs(DynamicByteArray out, MethodCall methodCall) {
     ctx.loadGen.loadReference(out, (short) 0);
-    ctx.opStack.push(SHORT);
+    ctx.opStack.push(REF);
     String thisClass = ctx.clazz.fqn('/');
+    List<Expression> params = new ArrayList<>();
+    if (ctx.clazz.isEnum) {
+      // an enum constructor passes on its implicit name and ordinal parameters
+      params.add(new Expression(new ArrayList<>(List.of(id(MemberProcessor.ENUM_NAME_PARAM)))));
+      params.add(new Expression(new ArrayList<>(List.of(id(MemberProcessor.ENUM_ORDINAL_PARAM)))));
+    }
+    params.addAll(methodCall.params);
     List<String> exprTypes = new ArrayList<>();
-    for (Expression param : methodCall.params) {
+    for (Expression param : params) {
       exprTypes.add(new NumExprTypeDecider(ctx).getType(ctx.classIdMap, param));
     }
     Method thisConstr = ctx.exprGen.findMatchingConstructor(thisClass, exprTypes);
     if (thisConstr == null) {
-      thisConstr = findConstructorViaReflection(thisClass, exprTypes.size());
+      ctx.errors.addError(
+          LOGGER_NAME,
+          String.format("no constructor %s(%s) for this(...)", ctx.clazz.name, exprTypes),
+          new RuntimeException().getStackTrace());
+      return out;
     }
-    if (thisConstr == null) {
-      List<Argument> constrArgs = new ArrayList<>();
-      for (int i = 0; i < exprTypes.size(); i++) {
-        constrArgs.add(
-            new Argument(
-                exprTypes.get(i), io.github.martinschneider.orzo.lexer.tokens.Token.id("p" + i)));
-      }
-      thisConstr =
-          new Method(
-              thisClass.replace('/', '.'),
-              List.of(AccessFlag.ACC_PUBLIC),
-              "void",
-              io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
-              constrArgs,
-              null);
-    }
-    pushArgs(out, methodCall.params, exprTypes, thisConstr);
+    pushArgs(out, params, exprTypes, thisConstr);
     ctx.invokeGen.invokeSpecial(out, thisConstr);
     return out;
   }

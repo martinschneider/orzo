@@ -293,7 +293,8 @@ public class OrzoTest {
         args(list("tests/GenericTargetTyping")),
         args(list("tests/BooleanReturnArithmetic")),
         args(list("tests/ConcatForObject")),
-        args(list("tests/LongDoubleConstants")));
+        args(list("tests/LongDoubleConstants")),
+        args(list("tests/EnumConstructors")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

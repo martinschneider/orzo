@@ -45,5 +45,10 @@ public class LabeledLoops {
       }
     }
     System.out.println("found=" + found);
+    // a plain block
+    {
+      int inBlock = found * 2;
+      System.out.println("block=" + inBlock);
+    }
   }
 }

@@ -11,6 +11,9 @@ public class Declaration {
   public int arrDim;
   public String type;
   public Expression val;
+  // the constructor arguments of an enum constant, e.g. [1, "a"] for "RED(1, "a")" (an empty list
+  // for "RED"), null for any other declaration
+  public List<Expression> enumArgs;
   // full generic type, e.g. "java.util.List<a.b.Foo>" (null if not generic)
   public String genericType;
 

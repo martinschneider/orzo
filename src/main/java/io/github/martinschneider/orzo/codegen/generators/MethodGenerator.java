@@ -2,15 +2,17 @@ package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.*;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.*;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
+import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.GenericTypes;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.StackMapTableBuilder;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
-import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.CatchBlock;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
@@ -34,6 +36,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class MethodGenerator {
+  private static final String LOG_NAME = "method code generator";
 
   public CGContext ctx;
 
@@ -61,7 +64,9 @@ public class MethodGenerator {
       if (clazz.isEnum && generateEnumMethod(methodOut, method, clazz)) {
         returned = true;
       } else {
+        boolean enumPrologue = clazz.isEnum && generateEnumPrologue(methodOut, method, clazz);
         if (method instanceof Constructor
+            && !enumPrologue
             && !startsWithCallToSuper(method.body)
             && !startsWithCallToThis(method.body)) {
           ctx.methodCallGen.callSuperConstr(methodOut);
@@ -102,9 +107,6 @@ public class MethodGenerator {
                   ctx.constPool,
                   ctx.exceptionTable,
                   ctx.exceptionHandlerType);
-      if (clazz.isEnum && generateEnumMethod(new DynamicByteArray(), method, clazz)) {
-        maxStackSize = (short) Math.max(maxStackSize, 6);
-      }
       out.write(maxStackSize); // max stack size
       out.write((short) (ctx.classIdMap.variables.localSizeMax + 1)); // max local var size
       out.write(codeLen);
@@ -282,14 +284,23 @@ public class MethodGenerator {
     } else if ("$values".equals(methodName)) {
       generateDollarValuesMethod(out, clazz);
       return true;
-    } else if ("<clinit>".equals(methodName)) {
-      generateEnumStaticInit(out, clazz);
+    }
+    return false;
+  }
+
+  // The synthesized start of an enum's <clinit> (creating the constants) or constructor (calling
+  // Enum.<init>(name, ordinal)); the method body is generated after it as usual.
+  private boolean generateEnumPrologue(DynamicByteArray out, Method method, Clazz clazz) {
+    String methodName = method.name.val.toString();
+    if ("<clinit>".equals(methodName)) {
+      generateEnumConstants(out, clazz);
       return true;
     } else if ("<init>".equals(methodName)) {
-      generateEnumConstructor(out, method, clazz);
+      if (!startsWithCallToThis(method.body)) {
+        callEnumSuperConstructor(out);
+      }
       return true;
     }
-
     return false;
   }
 
@@ -404,12 +415,21 @@ public class MethodGenerator {
   }
 
   // Generate <clinit> static initializer: create all enum instances and $VALUES array
-  private void generateEnumStaticInit(DynamicByteArray out, Clazz clazz) {
+  private void generateEnumConstants(DynamicByteArray out, Clazz clazz) {
     List<Declaration> enumConstants = getEnumConstants(clazz);
 
     // Create each enum constant
     for (int i = 0; i < enumConstants.size(); i++) {
       Declaration constant = enumConstants.get(i);
+      Method constructor = findEnumConstructor(clazz, constant.enumArgs);
+      if (constructor == null) {
+        ctx.errors.addError(
+            LOG_NAME,
+            String.format(
+                "no constructor for enum constant %s%s", constant.name, constant.enumArgs),
+            new RuntimeException().getStackTrace());
+        continue;
+      }
 
       // Create new enum instance: new EnumType("CONSTANT_NAME", ordinal)
       out.write(NEW);
@@ -437,48 +457,22 @@ public class MethodGenerator {
         out.write((short) i);
       }
 
-      // Push constructor arguments if any (from enum constant declaration)
-      List<String> argTypes = new ArrayList<>();
-      argTypes.add("Ljava/lang/String;"); // name parameter
-      argTypes.add("I"); // ordinal parameter
-
-      if (constant.val != null) {
-        // Generate code for constructor arguments based on actual argument type
-        // Determine the argument type from the enum constructor
-        List<Method> constructors = clazz.getConstructors();
-        if (!constructors.isEmpty()) {
-          Method constructor = constructors.get(0); // Use first constructor
-          if (constructor.args.size() > 2) { // More than name and ordinal
-            String argType = constructor.args.get(2).type; // User-defined parameter type
-            ctx.exprGen.eval(out, argType, constant.val);
-
-            // Add the correct argument type descriptor
-            if ("int".equals(argType)) {
-              argTypes.add("I");
-            } else if ("short".equals(argType)) {
-              argTypes.add("S");
-            } else if ("String".equals(argType)) {
-              argTypes.add("Ljava/lang/String;");
-            } else {
-              argTypes.add("L" + argType.replace('.', '/') + ";"); // Default reference type
-            }
-          }
-        }
+      // the constructor arguments, e.g. RED(1, "r")
+      // (the opStack doesn't track the new instance, its copy, name and ordinal)
+      for (int j = 0; j < constant.enumArgs.size(); j++) {
+        String paramType = constructor.args.get(j + 2).type;
+        ExpressionResult arg = ctx.exprGen.eval(out, paramType, constant.enumArgs.get(j));
+        ctx.basicGen.convert1(out, arg.type, paramType);
+        ctx.opStack.pop();
       }
-
-      // Build constructor signature
-      StringBuilder signature = new StringBuilder("(");
-      for (String argType : argTypes) {
-        signature.append(argType);
-      }
-      signature.append(")V");
-
-      // Call constructor: invokespecial <init>
       out.write(INVOKESPECIAL);
       out.write(
           (short)
               ctx.constPool.indexOf(
-                  CONSTANT_METHODREF, clazz.fqn('/'), "<init>", signature.toString()));
+                  CONSTANT_METHODREF,
+                  clazz.fqn('/'),
+                  "<init>",
+                  TypeUtils.methodDescr(constructor, ctx.allClazzes, ctx.clazz)));
 
       // Store in static field: putstatic CONSTANT_NAME
       out.write(PUTSTATIC);
@@ -502,116 +496,49 @@ public class MethodGenerator {
         (short)
             ctx.constPool.indexOf(
                 CONSTANT_FIELDREF, clazz.fqn('/'), "$VALUES", "[L" + clazz.fqn('/') + ";"));
-
-    out.write(RETURN);
   }
 
-  // Generate enum constructor: calls super(name, ordinal) and initializes instance fields
-  private void generateEnumConstructor(DynamicByteArray out, Method method, Clazz clazz) {
-    // Load this: aload_0
+  // The constructor for an enum constant's arguments (its parameters include name and ordinal)
+  private Method findEnumConstructor(Clazz clazz, List<Expression> args) {
+    List<String> argTypes = new ArrayList<>();
+    argTypes.add("java.lang.String");
+    argTypes.add(INT);
+    for (Expression arg : args) {
+      argTypes.add(new NumExprTypeDecider(ctx).getType(ctx.classIdMap, arg));
+    }
+    Method fallback = null;
+    for (Method constructor : clazz.getConstructors()) {
+      if (constructor.args.size() != argTypes.size()) {
+        continue;
+      }
+      boolean matches = true;
+      for (int i = 2; matches && i < argTypes.size(); i++) {
+        matches =
+            TypeUtils.assignableTo(argTypes.get(i)).contains(constructor.args.get(i).type)
+                || argTypes.get(i).equals(constructor.args.get(i).type);
+      }
+      if (matches) {
+        return constructor;
+      }
+      if (fallback == null) {
+        fallback = constructor; // e.g. an argument type that isn't known exactly
+      }
+    }
+    return fallback;
+  }
+
+  // "super(name, ordinal)" at the start of an enum constructor (its first two parameters)
+  private void callEnumSuperConstructor(DynamicByteArray out) {
     out.write(ALOAD_0);
-
-    // Load name parameter: aload_1 (always String name)
     out.write(ALOAD_1);
-
-    // Load ordinal parameter: iload_2 (always int ordinal)
     out.write(ILOAD_2);
-
-    // Call super constructor: invokespecial java/lang/Enum.<init>(String, int)
     out.write(INVOKESPECIAL);
     out.write(
         (short)
             ctx.constPool.indexOf(
                 CONSTANT_METHODREF, "java/lang/Enum", "<init>", "(Ljava/lang/String;I)V"));
-
-    // Process constructor body to handle field assignments
-    // The user-defined constructor body should handle field initialization
-    // TODO: Fix variable resolution for transformed constructor parameters
-    // for (Statement stmt : method.body) {
-    //   ctx.delegator.generate(out, method, stmt);
-    // }
-
-    // Handle field assignment for enum constructors with parameters
-    if (method.args.size() > 2) { // More than just name and ordinal
-      // Find the field that should be assigned from the constructor parameter
-      // For now, assume there's one non-static field that matches the constructor parameter
-      if (clazz.fields != null) {
-        for (ParallelDeclaration pDecl : clazz.fields) {
-          for (Declaration field : pDecl.declarations) {
-            // Skip static fields (enum constants)
-            if (!field.accFlags.contains(AccessFlag.ACC_STATIC)) {
-
-              // Load this: aload_0
-              out.write(ALOAD_0);
-
-              // Load constructor parameter (index 2 is the user-defined parameter)
-              String paramType = method.args.get(2).type; // User-defined parameter type
-              if ("int".equals(paramType)) {
-                out.write(ILOAD_3); // Load int parameter
-              } else if ("short".equals(paramType)) {
-                out.write(ILOAD_3); // Load short parameter (uses iload like int)
-              } else if ("String".equals(paramType)) {
-                out.write(ALOAD_3); // Load String parameter
-              } else {
-                out.write(ALOAD_3); // Default to reference load
-              }
-
-              // Store in field: putfield
-              out.write(PUTFIELD);
-              out.write(
-                  (short)
-                      ctx.constPool.indexOf(
-                          CONSTANT_FIELDREF,
-                          clazz.fqn('/'),
-                          field.name.id().toString(),
-                          TypeUtils.descr(field.type)));
-              break; // Assume only one field to assign
-            }
-          }
-        }
-      }
-    }
-
-    // Also handle default field values for fields not initialized by constructor
-    if (clazz.fields != null) {
-      for (ParallelDeclaration pDecl : clazz.fields) {
-        for (Declaration decl : pDecl.declarations) {
-          // Skip static fields (enum constants) and fields without default values
-          if (!decl.accFlags.contains(AccessFlag.ACC_STATIC) && decl.val != null) {
-            // Load this: aload_0
-            out.write(ALOAD_0);
-
-            // Load the default value and store it in the field
-            String fieldType = decl.type;
-            if (fieldType.equals("String") || fieldType.equals("java.lang.String")) {
-              // For string constants, load from constant pool
-              String stringValue = decl.val.getConstantValue(fieldType).toString();
-              ctx.loadGen.ldc(out, CONSTANT_STRING, stringValue);
-            } else {
-              // For other types, we'd need to handle them appropriately
-              // For now, just handle String fields
-              continue;
-            }
-
-            // Store in field: putfield
-            out.write(PUTFIELD);
-            out.write(
-                (short)
-                    ctx.constPool.indexOf(
-                        CONSTANT_FIELDREF,
-                        clazz.fqn('/'),
-                        decl.name.id().toString(),
-                        TypeUtils.descr(fieldType)));
-          }
-        }
-      }
-    }
-
-    // Return: return
-    out.write(RETURN);
   }
 
-  // Helper method to get enum constants from the class fields
   private List<Declaration> getEnumConstants(Clazz clazz) {
     if (clazz.fields != null && !clazz.fields.isEmpty()) {
       // Enum constants are stored in the first ParallelDeclaration

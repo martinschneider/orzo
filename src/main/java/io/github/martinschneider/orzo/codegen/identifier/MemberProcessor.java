@@ -24,6 +24,9 @@ import java.util.Map;
 public class MemberProcessor {
 
   public CGContext ctx;
+  // the implicit first parameters of an enum constructor (names a Java parameter can't clash with)
+  public static final String ENUM_NAME_PARAM = "$enum$name";
+  public static final String ENUM_ORDINAL_PARAM = "$enum$ordinal";
 
   public MemberProcessor(CGContext ctx) {
     this.ctx = ctx;
@@ -145,26 +148,27 @@ public class MemberProcessor {
   // add initializer code for fields
   public void addClInit(List<Method> methods) {
     // Handle enum-specific initialization
+    // (the enum constants are created by the synthesized start of <clinit> and the constructors
+    // call Enum.<init>(name, ordinal) first, see MethodGenerator; field initializers, static
+    // blocks and constructor bodies are handled like in any other class)
     if (ctx.clazz.isEnum) {
       addEnumMethods(methods);
-      // Add enum constructor
       if (ctx.clazz.getConstructors().isEmpty()) {
         addEnumConstructor(methods);
       } else {
-        // Transform user-defined enum constructors to include implicit enum parameters
         transformEnumConstructors(methods);
       }
-      addEnumStaticInitializer(methods);
-      return;
     }
 
     List<ParallelDeclaration> staticInits = new ArrayList<>();
     List<ParallelDeclaration> constrInits = new ArrayList<>();
-    if (ctx.clazz.fields == null) {
-      return;
-    }
-    for (ParallelDeclaration pDecl : ctx.clazz.fields) {
+    List<ParallelDeclaration> fields =
+        (ctx.clazz.fields != null) ? ctx.clazz.fields : new ArrayList<>();
+    for (ParallelDeclaration pDecl : fields) {
       for (Declaration decl : pDecl.declarations) {
+        if (decl.enumArgs != null) {
+          continue; // an enum constant
+        }
         // Constant final fields (primitive/String) are initialized via the ConstantValue attribute.
         // Non-constant final fields (e.g. static final List = List.of(...)) need <clinit>.
         boolean isConstantFinal =
@@ -198,7 +202,7 @@ public class MemberProcessor {
         }
       }
     }
-    if (!staticInits.isEmpty() || userClinit != null) {
+    if (!staticInits.isEmpty() || userClinit != null || ctx.clazz.isEnum) {
       if (userClinit != null) {
         List<Statement> merged = new ArrayList<>(staticInits);
         merged.addAll(userClinit.body);
@@ -243,7 +247,7 @@ public class MemberProcessor {
     }
   }
 
-  // Add enum-specific methods: values() and valueOf()
+  // Constant pool entries for the code of the enum methods values(), valueOf() and $values()
   private void addEnumMethods(List<Method> methods) {
     // Add required constants to pool for enum method generation
     String arrayType = "[L" + ctx.clazz.fqn('/') + ";";
@@ -260,63 +264,14 @@ public class MemberProcessor {
     // Add constants needed for $values() method
     ctx.constPool.addClass(ctx.clazz.fqn('/'));
 
-    // Add values() method
-    Method valuesMethod =
-        new Method(
-            ctx.clazz.fqn(),
-            of(AccessFlag.ACC_PUBLIC, AccessFlag.ACC_STATIC),
-            arrayType, // Return array of enum type
-            id("values"),
-            emptyList(),
-            emptyList() // Empty body - will be generated in bytecode
-            );
-    ctx.constPool.addUtf8(valuesMethod.name.val.toString());
-    ctx.constPool.addUtf8(TypeUtils.methodDescr(valuesMethod));
-    methods.add(valuesMethod);
-
-    // Add valueOf(String) method
-    Method valueOfMethod =
-        new Method(
-            ctx.clazz.fqn(),
-            of(AccessFlag.ACC_PUBLIC, AccessFlag.ACC_STATIC),
-            "L" + ctx.clazz.fqn('/') + ";", // Return enum type
-            id("valueOf"),
-            of(new Argument("java.lang.String", id("name"))),
-            emptyList() // Empty body - will be generated in bytecode
-            );
-    ctx.constPool.addUtf8(valueOfMethod.name.val.toString());
-    ctx.constPool.addUtf8(TypeUtils.methodDescr(valueOfMethod));
-    methods.add(valueOfMethod);
-
-    // Add private $values() helper method
-    Method dollarValuesMethod =
-        new Method(
-            ctx.clazz.fqn(),
-            of(AccessFlag.ACC_PRIVATE, AccessFlag.ACC_STATIC),
-            "[L" + ctx.clazz.fqn('/') + ";", // Return array of enum type
-            id("$values"),
-            emptyList(),
-            emptyList() // Empty body - will be generated in bytecode
-            );
-    ctx.constPool.addUtf8(dollarValuesMethod.name.val.toString());
-    ctx.constPool.addUtf8(TypeUtils.methodDescr(dollarValuesMethod));
-    methods.add(dollarValuesMethod);
-  }
-
-  // Add enum static initializer that creates all enum instances
-  private void addEnumStaticInitializer(List<Method> methods) {
-    Method clInit =
-        new Method(
-            ctx.clazz.fqn(),
-            of(AccessFlag.ACC_STATIC),
-            "void",
-            id("<clinit>"),
-            emptyList(),
-            emptyList() // Empty body - will be generated in bytecode
-            );
-    ctx.constPool.addUtf8(clInit.name.val.toString());
-    ctx.constPool.addUtf8(TypeUtils.methodDescr(clInit));
-    methods.add(clInit);
+    // (the methods themselves are declared by ClassParser)
+    for (Method method : methods) {
+      String name = method.name.val.toString();
+      if (List.of("values", "valueOf", "$values").contains(name)) {
+        ctx.constPool.addUtf8(name);
+        ctx.constPool.addUtf8(TypeUtils.methodDescr(method));
+      }
+    }
   }
 
   // Add enum constructor that takes (String name, int ordinal)
@@ -327,7 +282,9 @@ public class MemberProcessor {
             of(AccessFlag.ACC_PRIVATE), // Enum constructors are private
             "void",
             id("<init>"),
-            of(new Argument("java.lang.String", id("name")), new Argument("int", id("ordinal"))),
+            of(
+                new Argument("java.lang.String", id(ENUM_NAME_PARAM)),
+                new Argument("int", id(ENUM_ORDINAL_PARAM))),
             emptyList() // Empty body - will call super constructor
             );
     ctx.constPool.addUtf8(enumConstructor.name.val.toString());
@@ -340,8 +297,8 @@ public class MemberProcessor {
     for (Method constructor : ctx.clazz.getConstructors()) {
       // Prepend the implicit enum parameters (name, ordinal) to the constructor's argument list
       List<Argument> newArgs = new ArrayList<>();
-      newArgs.add(new Argument("java.lang.String", id("name")));
-      newArgs.add(new Argument("int", id("ordinal")));
+      newArgs.add(new Argument("java.lang.String", id(ENUM_NAME_PARAM)));
+      newArgs.add(new Argument("int", id(ENUM_ORDINAL_PARAM)));
       newArgs.addAll(constructor.args);
 
       // Update the constructor's argument list

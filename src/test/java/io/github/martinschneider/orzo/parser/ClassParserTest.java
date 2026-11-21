@@ -121,7 +121,7 @@ public class ClassParserTest {
                 emptyList(),
                 null,
                 "Types",
-                emptyList(),
+                enumMethods("Types"),
                 list(new ParallelDeclaration(emptyList())))));
   }
 

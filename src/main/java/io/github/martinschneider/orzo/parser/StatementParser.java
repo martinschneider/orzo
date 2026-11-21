@@ -104,6 +104,18 @@ public class StatementParser implements ProdParser<Statement> {
   @Override
   public Statement parse(TokenList tokens) {
     Statement stmt;
+    if (tokens.curr().eq(sym(LBRACE))) {
+      // a block, e.g. "{ int x = 1; ... }"
+      int idx = tokens.idx();
+      tokens.next();
+      List<Statement> body = parseStmtSeq(tokens);
+      if (tokens.curr().eq(sym(RBRACE))) {
+        tokens.next();
+        return new Block((body != null) ? body : new ArrayList<>());
+      }
+      tokens.setIdx(idx);
+      return null;
+    }
     // a labeled loop, e.g. "outer: for (...) {...}"
     if (tokens.curr() instanceof Identifier && tokens.peekNext().eq(sym(COLON))) {
       int idx = tokens.idx();
