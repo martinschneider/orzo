@@ -1,14 +1,8 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
-import static io.github.martinschneider.orzo.codegen.OpCodes.ANEWARRAY;
 import static io.github.martinschneider.orzo.codegen.OpCodes.CHECKCAST;
-import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
-import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
-import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
-import static io.github.martinschneider.orzo.codegen.TypeUtils.getStoreOpCode;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
-import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
@@ -20,10 +14,8 @@ import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
-import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
-import java.util.List;
 
 public class DeclarationGenerator implements StatementGenerator<ParallelDeclaration> {
   private static final int ZERO = 0;
@@ -120,7 +112,6 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
       return out;
     }
     String type = decl.type;
-    byte storeOpCode = getStoreOpCode(type);
     ArrayInit arrInit = (ArrayInit) decl.val;
     if (decl.isField) {
       VariableInfo varInfo = ctx.classIdMap.variables.get(decl.name);
@@ -128,50 +119,8 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
         ctx.loadGen.loadReference(out, varInfo.objectRef);
       }
     }
-    createArray(out, classIdMap, type, arrInit.dims);
-    // multi-dim array
-    if (arrInit.vals.size() >= 2) {
-      // TODO
-    }
-    // one-dim array
-    else if (arrInit.vals.size() == 1) {
-      for (int i = 0; i < arrInit.vals.get(0).size(); i++) {
-        out.write(DUP);
-        ctx.pushGen.push(out, INT, i);
-        ctx.exprGen.eval(out, type, arrInit.vals.get(0).get(i));
-        out.write(storeOpCode);
-      }
-    }
+    ctx.exprGen.generateArray(out, classIdMap, arrInit);
     ctx.assignGen.assignArray(out, classIdMap, type, decl.arrDim, decl.name);
     return out;
-  }
-
-  private void createArray(
-      DynamicByteArray out, GlobalIdentifierMap classIdMap, String type, List<Expression> dims) {
-    if (dims.size() == 1) {
-      ctx.exprGen.eval(out, INT, dims.get(0));
-      if (TypeUtils.isPrimitive(type)) {
-        out.write(NEWARRAY);
-        out.write(getArrayType(type));
-      } else {
-        String jvmClass = jvmClassName(type);
-        ctx.constPool.addClass(jvmClass);
-        out.write(ANEWARRAY);
-        out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, jvmClass));
-      }
-      // NEWARRAY/ANEWARRAY consumes the dimension int and produces an array reference;
-      // opStack still had the dimension's int on top, so swap it for the resulting ref type.
-      ctx.opStack.pop();
-      ctx.opStack.push(REF);
-    } else {
-      // TODO:
-    }
-  }
-
-  private String jvmClassName(String type) {
-    String descr = TypeUtils.descr(type);
-    return (descr.startsWith("L") && descr.endsWith(";"))
-        ? descr.substring(1, descr.length() - 1)
-        : descr;
   }
 }

@@ -1263,6 +1263,11 @@ public class ExpressionGenerator {
         out.write(DUP);
         ctx.pushGen.push(out, INT, i);
         ctx.exprGen.eval(out, type, arrInit.vals.get(0).get(i));
+        String valueType = ctx.opStack.type();
+        if (TypeUtils.isPrimitive(type) && valueType != null && !TypeUtils.isPrimitive(valueType)) {
+          // unboxing, e.g. "new byte[] {map.get(key)}" on a Map<K, Byte>
+          ctx.basicGen.convert1(out, valueType, type);
+        }
         out.write(storeOpCode);
       }
     }
