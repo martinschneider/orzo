@@ -161,6 +161,13 @@ public class ExpressionParser implements ProdParser<Expression> {
             tokens.next(); // consume 'instanceof'
             String typeName = tokens.curr().val.toString();
             tokens.next(); // consume type name
+            // fully-qualified type, e.g. "x instanceof java.lang.String"
+            while (tokens.curr().eq(sym(DOT))
+                && (tokens.peekNext() instanceof Identifier || tokens.peekNext() instanceof Type)) {
+              Token seg = tokens.next();
+              typeName += "." + (seg instanceof Type ? ((Type) seg).name : seg.val.toString());
+              tokens.next();
+            }
             exprTokens.add(new InstanceofToken(typeName));
             continue;
           }

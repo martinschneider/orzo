@@ -974,6 +974,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     if (argType == null) {
       return true;
     }
+    if (NumExprTypeDecider.NULL_TYPE.equals(argType)) {
+      return !paramClass.isPrimitive();
+    }
     // A lambda has no type of its own (see LambdaExpr.PSEUDO_TYPE) - it's compatible with any
     // functional-interface-shaped parameter, determined from the TARGET side instead.
     if (io.github.martinschneider.orzo.lexer.tokens.LambdaExpr.PSEUDO_TYPE.equals(argType)) {
@@ -1206,7 +1209,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       }
       int score = 0;
       for (int i = 0; score >= 0 && i < types.size(); i++) {
-        int pos = assignableDescrs.get(i).indexOf(TypeUtils.descr(candidate.args.get(i).type));
+        String paramType = candidate.args.get(i).type;
+        int pos =
+            NumExprTypeDecider.NULL_TYPE.equals(types.get(i))
+                ? (TypeUtils.isPrimitive(paramType) ? -1 : 0)
+                : assignableDescrs.get(i).indexOf(TypeUtils.descr(paramType));
         score = (pos < 0) ? -1 : score + pos;
       }
       if (score >= 0 && score < bestScore) {
@@ -1245,6 +1252,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   }
 
   private boolean isAssignable(String argType, String paramType) {
+    if (NumExprTypeDecider.NULL_TYPE.equals(argType)) {
+      return !TypeUtils.isPrimitive(TypeUtils.jvmDescriptorToTypeName(paramType));
+    }
     String paramDescr = TypeUtils.descr(TypeUtils.jvmDescriptorToTypeName(paramType));
     for (String assignable : TypeUtils.assignableTo(argType)) {
       if (TypeUtils.descr(assignable).equals(paramDescr)) {

@@ -151,7 +151,9 @@ public class NumExprTypeDecider {
         types.add(TypeUtils.resolveSimpleType(token.val.toString(), ctx.allClazzes, ctx.clazz));
       } else if (token instanceof Identifier) {
         Identifier id = (Identifier) token;
-        if ("this".equals(id.val.toString())) {
+        if ("null".equals(id.val.toString()) && id.next == null) {
+          types.add(NULL_TYPE);
+        } else if ("this".equals(id.val.toString())) {
           types.add("java.lang.Object");
         } else {
           VariableInfo var = ctx.classIdMap.variables.get(token);
@@ -357,7 +359,13 @@ public class NumExprTypeDecider {
     }
   }
 
+  /** The type of the null literal: assignable to any reference type (see TypeUtils). */
+  public static final String NULL_TYPE = "null";
+
   private String getSmallestType(Set<String> types) {
+    if (types.size() > 1) {
+      types.remove(NULL_TYPE); // e.g. "x == null": the other operand's type
+    }
     String arrayType = getArrayType(types);
     if (arrayType != null) {
       return arrayType;
