@@ -156,7 +156,8 @@ public class AssignmentParser implements ProdParser<Assignment> {
       } else if (tokens.curr().eq(op(BITWISE_XOR_ASSIGN))) {
         rewriteCompoundAssign(tokens, BITWISE_XOR, left.get(0));
       } else {
-        tokens.prev();
+        // not an assignment (e.g. "++x;"): back to where we started
+        tokens.setIdx(idx);
         return null;
       }
       Expression expression = null;

@@ -10,9 +10,7 @@ import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.IfBlock;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
-import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
-import io.github.martinschneider.orzo.parser.productions.ThrowStatement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,9 +22,7 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
   }
 
   private boolean blockAlwaysReturns(List<Statement> body) {
-    if (body.isEmpty()) return false;
-    Statement last = body.get(body.size() - 1);
-    return last instanceof ReturnStatement || last instanceof ThrowStatement;
+    return MethodGenerator.alwaysReturns(body);
   }
 
   @Override

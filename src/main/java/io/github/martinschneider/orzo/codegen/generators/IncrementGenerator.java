@@ -16,11 +16,17 @@ import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
+import io.github.martinschneider.orzo.parser.productions.Assignment;
+import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 public class IncrementGenerator implements StatementGenerator<IncrementStatement> {
   private CGContext ctx;
@@ -43,6 +49,14 @@ public class IncrementGenerator implements StatementGenerator<IncrementStatement
     }
     Identifier id = (Identifier) incr.expr.tokens.get(0);
     Operators op = ((Operator) incr.expr.tokens.get(1)).opValue();
+    if (id.next != null) {
+      // a field of another object, e.g. "a.b.count++": generate "a.b.count = a.b.count + 1"
+      Operators arith = (op == PRE_DECREMENT || op == POST_DECREMENT) ? MINUS : PLUS;
+      Expression rhs =
+          new Expression(new ArrayList<>(List.of(id, new IntLiteral(1, false), Token.op(arith))));
+      return ctx.delegator.generate(
+          out, method, new Assignment(new ArrayList<>(List.of(id)), new ArrayList<>(List.of(rhs))));
+    }
     VariableInfo varInfo = ctx.classIdMap.variables.get(id);
     inc(out, varInfo, op, true);
     return out;

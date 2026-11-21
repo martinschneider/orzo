@@ -768,11 +768,35 @@ public class StackMapTableBuilder {
       return merged;
     }
     for (int k = 0; k < merged.size(); k++) {
-      if (NULL.equals(merged.get(k))) {
-        merged.set(k, b.get(k));
+      String typeA = merged.get(k);
+      String typeB = b.get(k);
+      if (NULL.equals(typeA)) {
+        merged.set(k, typeB);
+      } else if (typeA != null
+          && typeB != null
+          && !typeA.equals(typeB)
+          && !NULL.equals(typeB)
+          && typeA.startsWith("L")
+          && typeB.startsWith("L")) {
+        // two different reference types (e.g. "cond ? identifier : token"): their common superclass
+        merged.set(k, commonSuperclass(typeA, typeB));
       }
     }
     return merged;
+  }
+
+  // The closest common superclass of two "Lpkg/Name;" types (Object if unknown)
+  private static String commonSuperclass(String typeA, String typeB) {
+    try {
+      Class<?> a = Class.forName(typeA.substring(1, typeA.length() - 1).replace('/', '.'));
+      Class<?> b = Class.forName(typeB.substring(1, typeB.length() - 1).replace('/', '.'));
+      while (a != null && !a.isAssignableFrom(b)) {
+        a = a.getSuperclass();
+      }
+      return (a == null) ? "Ljava/lang/Object;" : "L" + a.getName().replace('.', '/') + ";";
+    } catch (ClassNotFoundException | LinkageError e) {
+      return "Ljava/lang/Object;";
+    }
   }
 
   /**

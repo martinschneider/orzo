@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
@@ -45,7 +46,19 @@ public class PreIncrementParser implements ProdParser<IncrementStatement> {
     if (tokens.curr() instanceof Identifier) {
       id = (Identifier) tokens.curr();
       tokens.next();
-      id.arrSel = ctx.arraySelectorParser.parse(tokens);
+      // a field of another object, e.g. "++a.b.count"
+      Identifier last = id;
+      while (tokens.curr().eq(sym(DOT)) && tokens.peekNext() instanceof Identifier) {
+        tokens.next();
+        last.next = (Identifier) tokens.curr();
+        last = last.next;
+        tokens.next();
+      }
+      last.next = null;
+      last.arrSel = ctx.arraySelectorParser.parse(tokens);
+      if (tokens.curr().eq(sym(SEMICOLON))) {
+        tokens.next();
+      }
       return new IncrementStatement(new Expression(List.of(id, op)));
     } else {
       ctx.errors.tokenIdx = tokens.idx();

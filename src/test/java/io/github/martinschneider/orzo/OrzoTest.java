@@ -259,7 +259,10 @@ public class OrzoTest {
         args(list("tests/TernaryGenericCast")),
         args(list("tests/LambdaTypedParams", "tests/GenericChainHolder")),
         args(list("tests/LambdaCaptures")),
-        args(list("tests/PrimitiveFirstConcat")));
+        args(list("tests/PrimitiveFirstConcat")),
+        args(list("tests/ChainedFieldIncrement")),
+        args(list("tests/NestedAlwaysReturns")),
+        args(list("tests/TernaryCommonSuperclass")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

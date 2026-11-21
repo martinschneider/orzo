@@ -127,7 +127,7 @@ public class MethodGenerator {
     return out;
   }
 
-  private boolean ifStatementAlwaysReturns(IfStatement stmt) {
+  private static boolean ifStatementAlwaysReturns(IfStatement stmt) {
     if (!stmt.hasElse) {
       return false;
     }
@@ -139,7 +139,10 @@ public class MethodGenerator {
     return true;
   }
 
-  private boolean tryStatementAlwaysReturns(TryStatement stmt) {
+  private static boolean tryStatementAlwaysReturns(TryStatement stmt) {
+    if (stmt.finallyBody != null && alwaysReturns(stmt.finallyBody)) {
+      return true;
+    }
     if (!endsWithReturn(stmt.tryBody)) {
       return false;
     }
@@ -151,7 +154,7 @@ public class MethodGenerator {
     return true;
   }
 
-  private boolean switchStatementAlwaysReturns(SwitchStatement stmt) {
+  private static boolean switchStatementAlwaysReturns(SwitchStatement stmt) {
     boolean hasDefault = false;
     for (SwitchCase c : stmt.cases) {
       if (c.labels == null || c.labels.isEmpty()) {
@@ -164,18 +167,35 @@ public class MethodGenerator {
     return hasDefault;
   }
 
-  private boolean endsWithReturn(List<Statement> body) {
+  // Whether a statement sequence never completes normally (ends with a return/throw, or with an
+  // if/else, try, switch or "while (true)" whose every path does), so that no code may follow it.
+  public static boolean alwaysReturns(List<Statement> body) {
     if (body == null || body.isEmpty()) {
       return false;
     }
     Statement last = body.get(body.size() - 1);
-    return last instanceof ReturnStatement || last instanceof ThrowStatement;
+    if (last instanceof ReturnStatement || last instanceof ThrowStatement) {
+      return true;
+    } else if (last instanceof IfStatement) {
+      return ifStatementAlwaysReturns((IfStatement) last);
+    } else if (last instanceof TryStatement) {
+      return tryStatementAlwaysReturns((TryStatement) last);
+    } else if (last instanceof SwitchStatement) {
+      return switchStatementAlwaysReturns((SwitchStatement) last);
+    } else if (last instanceof WhileStatement) {
+      return whileStatementAlwaysReturns((WhileStatement) last);
+    }
+    return false;
+  }
+
+  private static boolean endsWithReturn(List<Statement> body) {
+    return alwaysReturns(body);
   }
 
   // "while (true) { ... }" with no reachable "break" cannot complete normally (JLS 14.21), so
   // javac requires no trailing return after it. Only the literal-"true" condition case is
   // recognized - any other condition could exit normally and needs a real trailing return.
-  private boolean whileStatementAlwaysReturns(WhileStatement stmt) {
+  private static boolean whileStatementAlwaysReturns(WhileStatement stmt) {
     return isLiteralTrue(stmt.cond) && !containsBreak(stmt.body);
   }
 
@@ -188,7 +208,7 @@ public class MethodGenerator {
 
   // Looks for a "break" that would target THIS loop - does not recurse into nested
   // loops/switches, since a break inside one of those targets that construct instead.
-  private boolean containsBreak(List<Statement> body) {
+  private static boolean containsBreak(List<Statement> body) {
     if (body == null) {
       return false;
     }

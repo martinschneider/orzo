@@ -18,9 +18,7 @@ import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.CatchBlock;
 import io.github.martinschneider.orzo.parser.productions.Method;
-import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
-import io.github.martinschneider.orzo.parser.productions.ThrowStatement;
 import io.github.martinschneider.orzo.parser.productions.TryStatement;
 import java.util.ArrayList;
 import java.util.List;
@@ -178,11 +176,7 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
   }
 
   private boolean endsWithReturn(List<Statement> body) {
-    if (body == null || body.isEmpty()) {
-      return false;
-    }
-    Statement last = body.get(body.size() - 1);
-    return last instanceof ReturnStatement || last instanceof ThrowStatement;
+    return MethodGenerator.alwaysReturns(body);
   }
 
   private void storeRef(DynamicByteArray out, short slot) {
