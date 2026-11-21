@@ -301,7 +301,8 @@ public class OrzoTest {
         args(list("tests/UnaryOperators")),
         args(list("tests/NumericPromotion")),
         args(list("tests/MidExpressionCasts")),
-        args(list("tests/SwitchFallThrough")));
+        args(list("tests/SwitchFallThrough")),
+        args(list("tests/QualifiedTypeBound")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

@@ -58,6 +58,11 @@ public class FieldProcessor {
     // Add fields from static imports (e.g. import static Type.VOID)
     addStaticImportFields(fieldMap, currentClazz, clazzes);
 
+    // the static fields of the enclosing classes of a nested class (innermost last, so it wins)
+    for (Clazz outer : enclosingClasses(currentClazz, clazzes)) {
+      addFieldsFromClass(fieldMap, outer, true);
+    }
+
     // Add fields from current class
     addFieldsFromClass(fieldMap, currentClazz, true);
 
@@ -240,6 +245,26 @@ public class FieldProcessor {
         // might be a static method import, not a field - skip
       }
     }
+  }
+
+  // The enclosing classes of a nested class, outermost first
+  public static List<Clazz> enclosingClasses(Clazz clazz, List<Clazz> clazzes) {
+    List<Clazz> outers = new ArrayList<>();
+    String outerName = clazz.outerName;
+    while (outerName != null) {
+      String fqn =
+          ((clazz.packageName != null && !clazz.packageName.isEmpty())
+                  ? clazz.packageName + "."
+                  : "")
+              + outerName;
+      Clazz outer = findClazz(clazzes, fqn);
+      if (outer == null) {
+        break;
+      }
+      outers.add(0, outer);
+      outerName = outer.outerName;
+    }
+    return outers;
   }
 
   private static Clazz findClazz(List<Clazz> clazzes, String fqn) {

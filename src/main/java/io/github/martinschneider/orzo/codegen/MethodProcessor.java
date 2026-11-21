@@ -26,6 +26,14 @@ public class MethodProcessor {
       }
     }
     addInherited(methodMap, currentClazz, List.of("", currentClazz.name + '.'));
+    // the static methods of the enclosing classes of a nested class
+    for (Clazz outer : FieldProcessor.enclosingClasses(currentClazz, clazzes)) {
+      for (Method method : outer.methods) {
+        if (method.accFlags.contains(AccessFlag.ACC_STATIC)) {
+          methodMap.put(getKey(method), method);
+        }
+      }
+    }
     // last: the class's own methods shadow same-named ones registered under a bare name above
     for (Method method : currentClazz.methods) {
       methodMap.put(getKey(method), method);

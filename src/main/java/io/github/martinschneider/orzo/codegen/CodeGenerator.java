@@ -139,7 +139,9 @@ public class CodeGenerator {
     out.write((short) clazz.interfaces.size());
     for (String interfaceName : clazz.interfaces) {
       String ifaceFqn =
-          interfaceName.contains(".") ? interfaceName : (clazz.packageName + "." + interfaceName);
+          (interfaceName.contains(".") || clazz.packageName == null || clazz.packageName.isEmpty())
+              ? interfaceName
+              : (clazz.packageName + "." + interfaceName);
       out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, ifaceFqn.replace('.', '/')));
     }
   }
@@ -188,7 +190,10 @@ public class CodeGenerator {
       String fqn =
           (ifaceName.contains(".")
                   ? ifaceName
-                  : (clazz.packageName != null ? clazz.packageName + "." : "") + ifaceName)
+                  : (clazz.packageName != null && !clazz.packageName.isEmpty()
+                          ? clazz.packageName + "."
+                          : "")
+                      + ifaceName)
               .replace('/', '.');
       try {
         Class<?> iface = Class.forName(fqn);

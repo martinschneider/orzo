@@ -364,9 +364,13 @@ public class ClassParser implements ProdParser<Clazz> {
     ClassMember member = null;
     int lastIdx = -1;
     int stuckCount = 0;
-    while (parseNestedClass(tokens) || (member = parserClassMember(tokens, isInterface)) != null) {
+    while (true) {
+      if (parseNestedClass(tokens)) {
+        continue;
+      }
+      member = parserClassMember(tokens, isInterface);
       if (member == null) {
-        continue; // a nested class
+        break;
       }
       classBody.add(member);
       int currIdx = tokens.idx();

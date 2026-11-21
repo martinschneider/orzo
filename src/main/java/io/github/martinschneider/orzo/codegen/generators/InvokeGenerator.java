@@ -117,14 +117,7 @@ public class InvokeGenerator {
   }
 
   private boolean isInterfaceClass(String className) {
-    if (className == null) {
-      return false;
-    }
-    try {
-      return Class.forName(className.replace('/', '.')).isInterface();
-    } catch (ClassNotFoundException e) {
-      return false;
-    }
+    return TypeUtils.isInterface(className, ctx.allClazzes);
   }
 
   public HasOutput newInstance(DynamicByteArray out, String clazz) {

@@ -218,38 +218,7 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
     }
   }
 
-  private String resolveExceptionType(String simpleType) {
-    if (simpleType.contains(".")) {
-      return simpleType.replace('.', '/');
-    }
-    try {
-      Class.forName("java.lang." + simpleType);
-      return "java/lang/" + simpleType;
-    } catch (ClassNotFoundException e) {
-      // not in java.lang
-    }
-    // Check imports
-    if (ctx.clazz != null && ctx.clazz.imports != null) {
-      for (io.github.martinschneider.orzo.parser.productions.Import imp : ctx.clazz.imports) {
-        if (!imp.isStatic && imp.id != null) {
-          if (imp.id.endsWith(".*")) {
-            String pkg = imp.id.substring(0, imp.id.length() - 2);
-            try {
-              Class.forName(pkg + "." + simpleType);
-              return (pkg + "." + simpleType).replace('.', '/');
-            } catch (ClassNotFoundException e) {
-              // not in this wildcard-imported package
-            }
-            continue;
-          }
-          String simple =
-              imp.id.contains(".") ? imp.id.substring(imp.id.lastIndexOf('.') + 1) : imp.id;
-          if (simple.equals(simpleType)) {
-            return imp.id.replace('.', '/');
-          }
-        }
-      }
-    }
-    return simpleType.replace('.', '/');
+  private String resolveExceptionType(String type) {
+    return ctx.exprGen.resolveJvmClassName(type);
   }
 }

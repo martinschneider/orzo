@@ -171,6 +171,27 @@ public class TypeUtils {
     return sb.toString();
   }
 
+  // Whether a class (binary name with '.' or '/') is an interface: a class of this compilation run
+  // or a reflectively loadable one
+  public static boolean isInterface(String className, List<Clazz> allClazzes) {
+    if (className == null) {
+      return false;
+    }
+    String name = className.replace('/', '.');
+    if (allClazzes != null) {
+      for (Clazz clazz : allClazzes) {
+        if (clazz.fqn().equals(name)) {
+          return clazz.isInterface;
+        }
+      }
+    }
+    try {
+      return Class.forName(name, false, TypeUtils.class.getClassLoader()).isInterface();
+    } catch (ClassNotFoundException | LinkageError e) {
+      return false;
+    }
+  }
+
   public static String resolveSimpleType(String type, List<Clazz> allClazzes, Clazz currentClazz) {
     if (type == null) return null;
     if (isPrimitive(type)

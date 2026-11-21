@@ -42,7 +42,9 @@ public class ConstantPoolProcessor {
     }
     for (String interfaceName : clazz.interfaces) {
       String ifaceFqn =
-          interfaceName.contains(".") ? interfaceName : (clazz.packageName + "." + interfaceName);
+          (interfaceName.contains(".") || clazz.packageName == null || clazz.packageName.isEmpty())
+              ? interfaceName
+              : (clazz.packageName + "." + interfaceName);
       constPool.addClass(ifaceFqn.replace('.', '/'));
     }
 

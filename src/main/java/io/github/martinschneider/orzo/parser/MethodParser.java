@@ -103,16 +103,21 @@ public class MethodParser implements ProdParser<Method> {
           String bound = "java.lang.Object";
           if (tokens.curr().eq(keyword(EXTENDS))) {
             tokens.next();
-            String boundId = tokens.curr().toString();
-            tokens.next();
-            if (ctx.importMap.containsKey(boundId)) {
-              bound = ctx.importMap.get(boundId);
+            if (ctx.typeArgsParser.isQualifiedName(tokens)) {
+              // a qualified bound, e.g. "T extends java.lang.reflect.Executable"
+              bound = ctx.typeArgsParser.resolveQualified(parseQualifiedName(tokens));
             } else {
-              try {
-                Class.forName("java.lang." + boundId);
-                bound = "java.lang." + boundId;
-              } catch (ClassNotFoundException e) {
-                bound = boundId;
+              String boundId = tokens.curr().toString();
+              tokens.next();
+              if (ctx.importMap.containsKey(boundId)) {
+                bound = ctx.importMap.get(boundId);
+              } else {
+                try {
+                  Class.forName("java.lang." + boundId);
+                  bound = "java.lang." + boundId;
+                } catch (ClassNotFoundException e) {
+                  bound = boundId;
+                }
               }
             }
           }

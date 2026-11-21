@@ -79,11 +79,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       }
       if (receiverVar != null && receiverVar.type != null) {
         // e.g. "Lpkg/Color;" for an enum constant
-        String receiverType = TypeUtils.jvmDescriptorToTypeName(receiverVar.type);
-        // Try simple class name prefix
-        int lastDotInType = receiverType.lastIndexOf('.');
-        String simpleType =
-            (lastDotInType >= 0) ? receiverType.substring(lastDotInType + 1) : receiverType;
+        String receiverType = TypeUtils.jvmDescriptorToTypeName(receiverVar.type).replace('/', '.');
+        // Try simple class name prefix (also of a nested class, e.g. "Inner" of "a.Outer$Inner")
+        String simpleType = receiverType.substring(receiverType.lastIndexOf('.') + 1);
+        simpleType = simpleType.substring(simpleType.lastIndexOf('$') + 1);
         method = findMatchingMethod(simpleType + "." + simpleMethod, types);
         if (method == null) {
           method = findMatchingMethod(receiverType + "." + simpleMethod, types);
@@ -430,38 +429,24 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
 
   public HasOutput callSuperConstrWithArgs(DynamicByteArray out, MethodCall methodCall) {
     ctx.loadGen.loadReference(out, (short) 0);
-    ctx.opStack.push(SHORT);
+    ctx.opStack.push(REF);
     String superClass =
-        (ctx.clazz.baseClass != null && !ctx.clazz.baseClass.equals("java.lang.Object"))
-            ? ctx.clazz.baseClass.replace('.', '/')
-            : "java/lang/Object";
-    // Phase 1: collect argument types without emitting bytecode
+        (ctx.clazz.baseClass != null) ? ctx.clazz.baseClass.replace('.', '/') : "java/lang/Object";
     List<String> exprTypes = new ArrayList<>();
     for (Expression param : methodCall.params) {
       exprTypes.add(new NumExprTypeDecider(ctx).getType(ctx.classIdMap, param));
     }
-    // Find constructor using type information
     Method superConstr = ctx.exprGen.findMatchingConstructor(superClass, exprTypes);
     if (superConstr == null) {
-      superConstr = findConstructorViaReflection(superClass, exprTypes.size());
+      superConstr = findConstructorViaReflectionTyped(superClass, exprTypes, true);
     }
     if (superConstr == null) {
-      List<Argument> constrArgs = new ArrayList<>();
-      for (int i = 0; i < exprTypes.size(); i++) {
-        constrArgs.add(
-            new Argument(
-                exprTypes.get(i), io.github.martinschneider.orzo.lexer.tokens.Token.id("p" + i)));
-      }
-      superConstr =
-          new Method(
-              superClass.replace('/', '.'),
-              List.of(AccessFlag.ACC_PUBLIC),
-              "void",
-              io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
-              constrArgs,
-              null);
+      ctx.errors.addError(
+          LOGGER_NAME,
+          String.format("no constructor %s(%s) for super(...)", superClass, exprTypes),
+          new RuntimeException().getStackTrace());
+      return out;
     }
-    // Phase 2: eval each argument and box if needed
     pushArgs(out, methodCall.params, exprTypes, superConstr);
     ctx.invokeGen.invokeSpecial(out, superConstr);
     return out;
@@ -524,11 +509,19 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   }
 
   Method findConstructorViaReflectionTyped(String jvmClassName, List<String> argTypes) {
+    return findConstructorViaReflectionTyped(jvmClassName, argTypes, false);
+  }
+
+  // (includeProtected: for a super(...) call)
+  Method findConstructorViaReflectionTyped(
+      String jvmClassName, List<String> argTypes, boolean includeProtected) {
     try {
       Class<?> clazz = Class.forName(jvmClassName.replace('/', '.'));
       for (int pass = 0; pass < 2; pass++) {
-        for (java.lang.reflect.Constructor<?> c : clazz.getConstructors()) {
-          if (!Modifier.isPublic(c.getModifiers())) {
+        List<java.lang.reflect.Constructor<?>> matches = new ArrayList<>();
+        for (java.lang.reflect.Constructor<?> c : clazz.getDeclaredConstructors()) {
+          if (!Modifier.isPublic(c.getModifiers())
+              && !(includeProtected && Modifier.isProtected(c.getModifiers()))) {
             continue;
           }
           // second pass: a varargs constructor called with its trailing arguments unpacked
@@ -539,7 +532,16 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
           for (int i = 0; compatible && pass == 0 && i < argTypes.size(); i++) {
             compatible = isArgTypeCompatible(argTypes.get(i), c.getParameters()[i].getType());
           }
-          if (!compatible) continue;
+          if (compatible) {
+            matches.add(c);
+          }
+        }
+        if (!matches.isEmpty()) {
+          List<Class<?>[]> signatures = new ArrayList<>();
+          for (java.lang.reflect.Constructor<?> match : matches) {
+            signatures.add(match.getParameterTypes());
+          }
+          java.lang.reflect.Constructor<?> c = matches.get(mostSpecific(signatures));
           List<Argument> args = new ArrayList<>();
           for (java.lang.reflect.Parameter p : c.getParameters()) {
             args.add(
@@ -697,14 +699,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   }
 
   public boolean isInterfaceClass(String className) {
-    if (className == null) {
-      return false;
-    }
-    try {
-      return Class.forName(className.replace('/', '.')).isInterface();
-    } catch (ClassNotFoundException e) {
-      return false;
-    }
+    return TypeUtils.isInterface(className, ctx.allClazzes);
   }
 
   public Method findMethodViaReflection(String receiverType, String methodName, int argCount) {
@@ -931,7 +926,8 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
           matches.add(m);
         }
         if (!matches.isEmpty()) {
-          return reflectedMethod(mostSpecific(matches), javaClassName, methodName);
+          return reflectedMethod(
+              matches.get(mostSpecific(parameterTypes(matches))), javaClassName, methodName);
         }
       }
       // Fall back to bridge methods (e.g. StringBuilder.length() is a bridge on Java 21)
@@ -944,14 +940,21 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     return null;
   }
 
-  // The most specific of several applicable methods: one whose parameter types are all
-  // assignable to the corresponding parameter types of every other one (the first if none is).
-  private static java.lang.reflect.Method mostSpecific(List<java.lang.reflect.Method> methods) {
-    for (java.lang.reflect.Method candidate : methods) {
+  private static List<Class<?>[]> parameterTypes(List<java.lang.reflect.Method> methods) {
+    List<Class<?>[]> signatures = new ArrayList<>();
+    for (java.lang.reflect.Method method : methods) {
+      signatures.add(method.getParameterTypes());
+    }
+    return signatures;
+  }
+
+  // The index of the most specific signature: one whose parameter types are all assignable to the
+  // corresponding parameter types of every other one (the first if none is)
+  private static int mostSpecific(List<Class<?>[]> signatures) {
+    for (int c = 0; c < signatures.size(); c++) {
+      Class<?>[] mine = signatures.get(c);
       boolean mostSpecific = true;
-      for (java.lang.reflect.Method other : methods) {
-        Class<?>[] mine = candidate.getParameterTypes();
-        Class<?>[] theirs = other.getParameterTypes();
+      for (Class<?>[] theirs : signatures) {
         for (int i = 0; mostSpecific && i < mine.length && i < theirs.length; i++) {
           mostSpecific =
               theirs[i].isAssignableFrom(mine[i])
@@ -960,10 +963,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         }
       }
       if (mostSpecific) {
-        return candidate;
+        return c;
       }
     }
-    return methods.get(0);
+    return 0;
   }
 
   private static final List<Class<?>> NUMERIC_PRIMITIVES =
