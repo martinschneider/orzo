@@ -218,10 +218,24 @@ public class ClassParser implements ProdParser<Clazz> {
     if (fqn != null) {
       return fqn;
     }
-    if (packageDeclaration != null && !packageDeclaration.isEmpty()) {
-      return packageDeclaration + "." + name;
+    String samePackage =
+        (packageDeclaration != null && !packageDeclaration.isEmpty())
+            ? packageDeclaration + "." + name
+            : name;
+    // a java.lang type (e.g. "implements Comparable<T>"), unless the package has its own
+    if (!isLoadable(samePackage) && isLoadable("java.lang." + name)) {
+      return "java.lang." + name;
     }
-    return name;
+    return samePackage;
+  }
+
+  private static boolean isLoadable(String className) {
+    try {
+      Class.forName(className, false, ClassParser.class.getClassLoader());
+      return true;
+    } catch (ClassNotFoundException | LinkageError e) {
+      return false;
+    }
   }
 
   List<String> parseInterfaces(

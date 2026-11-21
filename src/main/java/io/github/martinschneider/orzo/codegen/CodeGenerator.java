@@ -234,7 +234,8 @@ public class CodeGenerator {
    *
    * <p>Phase 1: exact match (erased param descriptor == concrete param descriptor). Phase 2
    * fallback: name + param-count match, for generic methods where the erased param type (e.g.
-   * Object) differs from the concrete type (e.g. TokenList).
+   * Object) differs from the concrete type (e.g. TokenList). A differing parameter must be a
+   * subtype of the erased one, so an unrelated overload with the same arity is never picked.
    */
   private Method findConcreteMethod(Clazz clazz, String name, Class<?>[] erasedParams) {
     Method fallback = null;
@@ -243,7 +244,11 @@ public class CodeGenerator {
       if (!m.name.val.equals(name)) continue;
       int count = m.args == null ? 0 : m.args.size();
       if (count != erasedParams.length) continue;
-      if (fallback == null) fallback = m;
+      boolean candidate = true;
+      for (int i = 0; candidate && i < erasedParams.length; i++) {
+        candidate = isBridgeableParam(erasedParams[i], m.args.get(i).type, clazz);
+      }
+      if (fallback == null && candidate) fallback = m;
       // Try exact match on all parameter descriptors
       for (int i = 0; i < erasedParams.length; i++) {
         String expected = classToDescr(erasedParams[i]);
@@ -253,6 +258,25 @@ public class CodeGenerator {
       return m; // exact match
     }
     return fallback; // fallback: name+count (handles TypeVariable erased-to-Object params)
+  }
+
+  // Whether a concrete parameter type can implement an erased interface parameter: the same type
+  // or a subtype of it (e.g. "IfStatement" for "T extends Statement"). Types that can't be loaded
+  // (e.g. compiled in the same run) are accepted.
+  private boolean isBridgeableParam(Class<?> erased, String concreteType, Clazz clazz) {
+    String resolved = TypeUtils.resolveSimpleType(concreteType, clazzes, clazz);
+    if (classToDescr(erased).equals(TypeUtils.descr(resolved))) {
+      return true;
+    }
+    if (erased.isPrimitive() || TypeUtils.isPrimitive(resolved)) {
+      return false;
+    }
+    try {
+      return erased.isAssignableFrom(
+          Class.forName(resolved, false, CodeGenerator.class.getClassLoader()));
+    } catch (ClassNotFoundException | LinkageError e) {
+      return true;
+    }
   }
 
   private String buildErasedDescriptor(Class<?>[] params, Class<?> ret) {
