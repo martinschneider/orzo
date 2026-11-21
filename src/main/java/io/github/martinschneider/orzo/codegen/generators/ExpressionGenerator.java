@@ -489,13 +489,7 @@ public class ExpressionGenerator {
     boolean typeFromArrayElement = false;
     for (int i = 0; i < tokens.size(); i++) {
       Token token = tokens.get(i);
-      if (!type.equals(DOUBLE)
-          && ((i + 2 < tokens.size() && tokens.get(i + 2).eq(op(POW)))
-              || (i + 1 < tokens.size() && tokens.get(i + 1).eq(op(POW))))) {
-        // Calculating powers for integer types uses BigInteger and requires loading the
-        // operands in
-        // a different order. Therefore, we skip processing them here.
-      } else if (isChainedIncrement(tokens, i)) {
+      if (isChainedIncrement(tokens, i)) {
         exprTypeStack.push(
             generateChainedIncrement(
                 out, (Identifier) token, ((Operator) tokens.get(i + 1)).opValue()));
@@ -621,29 +615,7 @@ public class ExpressionGenerator {
           VariableInfo varInfo = ctx.classIdMap.variables.get(tokens.get(i - 1));
           ctx.incrGen.inc(out, varInfo, op, false);
         } else if (op.equals(POW)) {
-          if (type.equals(DOUBLE)) {
-            ctx.constPool.addClass("java/lang/Math");
-            ctx.invokeGen.invokeStatic(
-                out, new Method("java.lang.Math", "pow", DOUBLE, List.of(DOUBLE, DOUBLE)));
-          } else {
-            eval(out, LONG, new Expression(List.of(tokens.get(i - 1))));
-            ctx.constPool.addClass("java/math/BigInteger");
-            ctx.constPool.addMethodRef(
-                "java/math/BigInteger", "valueOf", "(J)Ljava/math/BigInteger;");
-            ctx.constPool.addMethodRef("java/math/BigInteger", "pow", "(I)Ljava/math/BigInteger;");
-            ctx.constPool.addMethodRef("java/math/BigInteger", "longValue", "()J");
-            ctx.invokeGen.invokeStatic(
-                out,
-                new Method(
-                    "java.math.BigInteger", "valueOf", "Ljava/math/BigInteger;", List.of(LONG)));
-            eval(out, INT, new Expression(List.of(tokens.get(i - 2))));
-            ctx.invokeGen.invokeVirtual(
-                out,
-                new Method("java/math/BigInteger", "pow", "Ljava/math/BigInteger;", List.of(INT)));
-            ctx.invokeGen.invokeVirtual(
-                out, new Method("java/math/BigInteger", "longValue", LONG, emptyList()));
-            type = LONG;
-          }
+          type = generatePow(out, exprTypeStack, DOUBLE.equals(type));
         } else if (op == ASSIGN) {
           if (assignTargets.containsKey(i)) {
             // Assignment expression: RHS is on stack, LHS old value was NOT loaded.
@@ -1073,6 +1045,56 @@ public class ExpressionGenerator {
   }
 
   private static final List<String> NUMERIC = List.of(BYTE, SHORT, CHAR, INT, LONG, FLOAT, DOUBLE);
+
+  // "base ** exponent" (both on the stack): Math.pow() for a floating-point operand (or context),
+  // otherwise BigInteger.valueOf(base).pow(exponent).longValue()
+  private String generatePow(
+      DynamicByteArray out, OperandStack exprTypeStack, boolean doubleContext) {
+    String exponent = widerNumericType(exprTypeStack.type(), INT);
+    String base = widerNumericType(exprTypeStack.secondType(), INT);
+    boolean floating =
+        doubleContext
+            || List.of(FLOAT, DOUBLE).contains(base)
+            || List.of(FLOAT, DOUBLE).contains(exponent);
+    String exponentType = floating ? DOUBLE : INT;
+    String baseType = floating ? DOUBLE : LONG;
+    ctx.basicGen.convert1(out, exponent, exponentType);
+    // the base is below the exponent: park the exponent in a temporary local
+    String tmpName = "$pow_" + ctx.classIdMap.variables.localSize;
+    VariableInfo tmp =
+        new VariableInfo(
+            tmpName,
+            exponentType,
+            emptyList(),
+            false,
+            (short) ctx.classIdMap.variables.localSize,
+            null);
+    ctx.classIdMap.variables.putLocal(Token.id(tmpName), tmp);
+    ctx.storeGen.store(out, tmp);
+    ctx.basicGen.convert1(out, base, baseType);
+    if (floating) {
+      ctx.loadGen.load(out, tmp);
+      ctx.constPool.addClass("java/lang/Math");
+      ctx.invokeGen.invokeStatic(
+          out, new Method("java.lang.Math", "pow", DOUBLE, List.of(DOUBLE, DOUBLE)));
+    } else {
+      ctx.constPool.addClass("java/math/BigInteger");
+      ctx.constPool.addMethodRef("java/math/BigInteger", "valueOf", "(J)Ljava/math/BigInteger;");
+      ctx.constPool.addMethodRef("java/math/BigInteger", "pow", "(I)Ljava/math/BigInteger;");
+      ctx.constPool.addMethodRef("java/math/BigInteger", "longValue", "()J");
+      ctx.invokeGen.invokeStatic(
+          out,
+          new Method("java.math.BigInteger", "valueOf", "Ljava/math/BigInteger;", List.of(LONG)));
+      ctx.loadGen.load(out, tmp);
+      ctx.invokeGen.invokeVirtual(
+          out, new Method("java/math/BigInteger", "pow", "Ljava/math/BigInteger;", List.of(INT)));
+      ctx.invokeGen.invokeVirtual(
+          out, new Method("java/math/BigInteger", "longValue", LONG, emptyList()));
+    }
+    exprTypeStack.pop2();
+    exprTypeStack.push(baseType);
+    return baseType;
+  }
 
   // Binary numeric promotion (JLS 5.6) of the two operands of a binary operator when their types
   // differ, e.g. the int in "x - aLong" becomes a long (for a shift only the left operand is

@@ -28,7 +28,7 @@ public enum Operators {
   MINUS(11),
   PLUS(11),
   TIMES(12),
-  POW(10),
+  POW(13), // binds tighter than * and / (but is left-associative)
   DIV(12),
   MOD(12),
   LSHIFT(10),

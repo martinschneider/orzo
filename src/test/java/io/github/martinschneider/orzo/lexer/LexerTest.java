@@ -153,6 +153,13 @@ public class LexerTest {
     lexer = new Lexer();
     lexer.getTokens("a # b");
     assertEquals(1, lexer.getErrors().errors.size());
+    // unsupported: text blocks; a string literal must end on its line
+    lexer = new Lexer();
+    lexer.getTokens("x = \"\"\"\n  a\n  \"\"\";");
+    assertEquals(false, lexer.getErrors().errors.isEmpty());
+    lexer = new Lexer();
+    lexer.getTokens("x = \"a\n\";");
+    assertEquals(false, lexer.getErrors().errors.isEmpty());
   }
 
   @Test

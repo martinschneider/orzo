@@ -470,19 +470,30 @@ public class Lexer {
           buffer.append(character);
           continue;
         }
-        if ((character = (char) c) == '"') {
+        if ((character = (char) c) == '"' || c == '\n') {
           break;
         }
         buffer.append(character);
       }
-      if (c == -1) {
+      if (c == -1 || c == '\n') {
         errors.addError(
             "scan string", "missing \" in string", new RuntimeException().getStackTrace());
+      } else if (buffer.length() == 0 && peek() == '"') {
+        errors.addError(
+            "scan string", "text blocks are not supported", new RuntimeException().getStackTrace());
       } else {
         tokenList.add(str(buffer.toString()));
       }
     }
     buffer.setLength(0);
+  }
+
+  private int peek() throws IOException {
+    int c = inputReader.read();
+    if (c != -1) {
+      inputReader.unread(c);
+    }
+    return c;
   }
 
   private void scanSym() throws IOException {

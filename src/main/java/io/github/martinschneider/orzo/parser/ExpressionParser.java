@@ -200,8 +200,7 @@ public class ExpressionParser implements ProdParser<Expression> {
           boolean negative = false;
           Token prevToken = tokens.peekPrev();
           if (prevToken.eq(sym(LPAREN))
-              || (prevToken instanceof Operator
-                  && ((Operator) prevToken).opValue().getPrecedence() <= 12)) {
+              || (prevToken instanceof Operator && !isPostfixOperator(prevToken))) {
             negative = checkNegative(tokens, exprTokens, pendingNegatedParens);
           }
           if (negative) {
