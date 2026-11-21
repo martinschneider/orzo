@@ -43,6 +43,10 @@ public class BasicGenerator {
   }
 
   public void convert(DynamicByteArray out, String from, String to) {
+    if (from != null && !TypeUtils.isPrimitive(from) && TypeUtils.isPrimitive(to)) {
+      convert1(out, from, to);
+      return;
+    }
     addCastingErrors(from, to);
     // TODO: array casts
     if (to != null) {
@@ -88,8 +92,36 @@ public class BasicGenerator {
     ctx.opStack.push(REF);
   }
 
+  private static String wrapperOf(String primitive) {
+    for (Map.Entry<String, String[]> entry : UNBOX_INFO.entrySet()) {
+      if (entry.getValue()[3].equals(primitive)) {
+        return entry.getKey();
+      }
+    }
+    return null;
+  }
+
   public void convert1(DynamicByteArray out, String from, String to) {
     // TODO: array casts
+    if (from != null
+        && to != null
+        && !TypeUtils.isPrimitive(from)
+        && !from.startsWith("[")
+        && !REF.equals(from) // an untracked type: the value may well be a primitive already
+        && !"null".equals(from)
+        && TypeUtils.isPrimitive(to)
+        && !"void".equals(to)) {
+      // a reference cast to a primitive, e.g. "(char) obj": unbox, after a CHECKCAST to the
+      // wrapper class unless the value already is a wrapper (e.g. "(long) anInteger")
+      String wrapper = from;
+      if (!UNBOX_INFO.containsKey(from)) {
+        wrapper = wrapperOf(to);
+        ctx.constPool.addClass(wrapper.replace('.', '/'));
+        out.write(CHECKCAST);
+        out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, wrapper.replace('.', '/')));
+      }
+      from = wrapper;
+    }
     if (from != null && to != null) {
       String[] unboxInfo = UNBOX_INFO.get(from);
       if (unboxInfo != null && TypeUtils.isPrimitive(to) && !"void".equals(to)) {
