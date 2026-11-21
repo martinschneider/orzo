@@ -71,7 +71,7 @@ public class ExpressionGeneratorTest {
                 constant("valueOf", 3),
                 constant("pow", 4),
                 constant("longValue", 5)),
-            list("ldc2_w 0", "invokestatic 3", "iconst_1", "invokevirtual 4", "invokevirtual 5")),
+            list("ldc2_w 1", "invokestatic 3", "iconst_1", "invokevirtual 4", "invokevirtual 5")),
         args(
             "x+10",
             INT,
@@ -112,7 +112,7 @@ public class ExpressionGeneratorTest {
                 constant("valueOf", 3),
                 constant("pow", 4),
                 constant("longValue", 5)),
-            list("ldc2_w 0", "invokestatic 3", "iload 6", "invokevirtual 4", "invokevirtual 5")),
+            list("ldc2_w 1", "invokestatic 3", "iload 6", "invokevirtual 4", "invokevirtual 5")),
         args("1+2", BYTE, emptyList(), emptyList(), list("iconst_1", "iconst_2", "iadd")),
         args("1-2", BYTE, emptyList(), emptyList(), list("iconst_1", "iconst_2", "isub")),
         args("1*2", BYTE, emptyList(), emptyList(), list("iconst_1", "iconst_2", "imul")),
@@ -128,7 +128,7 @@ public class ExpressionGeneratorTest {
                 constant("valueOf", 3),
                 constant("pow", 4),
                 constant("longValue", 5)),
-            list("ldc2_w 0", "invokestatic 3", "iconst_1", "invokevirtual 4", "invokevirtual 5")),
+            list("ldc2_w 1", "invokestatic 3", "iconst_1", "invokevirtual 4", "invokevirtual 5")),
         args(
             "x+10",
             BYTE,
@@ -166,13 +166,13 @@ public class ExpressionGeneratorTest {
                 constant("valueOf", 3),
                 constant("pow", 4),
                 constant("longValue", 5)),
-            list("ldc2_w 0", "invokestatic 3", "iload 6", "invokevirtual 4", "invokevirtual 5")),
+            list("ldc2_w 1", "invokestatic 3", "iload 6", "invokevirtual 4", "invokevirtual 5")),
         args(
             "√2",
             DOUBLE,
             emptyList(),
             list(constant(Math.sqrt(2), 1), constant("java/math/Math", 2), constant("sqrt", 3)),
-            list("ldc2_w 0")),
+            list("ldc2_w 1")),
         args(
             "√x",
             DOUBLE,

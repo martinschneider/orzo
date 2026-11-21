@@ -440,7 +440,6 @@ public class CodeGenerator {
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, TypeUtils.descr(varInfo)));
     // Only add ConstantValue for primitive types and String (compile-time constants), not for
     // reference types (e.g. List<String> fields) whose initializers are not constant expressions.
-    // TODO: for some reason this still breaks for long and double
     Object constVal = varInfo.val != null ? varInfo.val.getConstantValue(varInfo.type) : null;
     boolean constantValue =
         varInfo.accFlags.contains(AccessFlag.ACC_FINAL)

@@ -123,15 +123,13 @@ public class LoadGenerator {
     short idx = ctx.constPool.indexOf(type, key, true);
     if (idx == -1) {
       if (type == CONSTANT_LONG) {
-        ctx.opStack.push(LONG);
         ctx.constPool.addLong((Long) key);
       } else if (type == CONSTANT_DOUBLE) {
-        ctx.opStack.push(DOUBLE);
         ctx.constPool.addDouble((Double) key);
       }
       idx = ctx.constPool.indexOf(type, key);
     }
-    out.write((short) (idx - 1));
+    out.write(idx);
     return out;
   }
 

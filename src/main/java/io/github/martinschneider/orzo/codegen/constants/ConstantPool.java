@@ -87,14 +87,12 @@ public class ConstantPool {
       return idx;
     } else {
       if (entry instanceof ConstantLong || entry instanceof ConstantDouble) {
-        // JVM spec §4.4.5: Long and Double take two consecutive constant-pool slots.
-        // After size+=2, the valid index is the slot BEFORE the increment (size-1 post-increment,
-        // or size pre-increment). Returning `size` here may produce an off-by-one index.
-        // Tests pass currently because Long/Double constants in self-compiled code are rare.
-        // TODO: verify this is correct or fix — see docs/TODO.md "ConstantPool.add()".
+        // JVM spec §4.4.5: Long and Double take two consecutive constant-pool slots; the entry's
+        // index is the first one
+        int first = size + 1;
         size += 2;
         entries.add(entry);
-        return size;
+        return first;
       } else {
         size++;
         entries.add(entry);
@@ -265,15 +263,13 @@ public class ConstantPool {
   public void addLong(Long val) {
     int idx = add(new ConstantLong(val));
     longMap.put(val, idx);
-    // add() returns the slot after a 2-slot constant; LDC2_W references idx - 1
-    ldcTypeByIdx.put(idx - 1, "J");
+    ldcTypeByIdx.put(idx, "J");
   }
 
   public void addDouble(Double val) {
     int idx = add(new ConstantDouble(val));
     doubleMap.put(val, idx);
-    // add() returns the slot after a 2-slot constant; LDC2_W references idx - 1
-    ldcTypeByIdx.put(idx - 1, "D");
+    ldcTypeByIdx.put(idx, "D");
   }
 
   public void addFloat(Float val) {

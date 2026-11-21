@@ -103,4 +103,14 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
-Self-compilation progress: ████████████████████████████████████████ 100.0%
+# Metrics
+
+Measured by `mvn clean verify -Pselfcompile` (see `selfcompile.sh`): Orzo compiles its own sources three times, the first time with the javac-built compiler, then with the Orzo-built one. Compile time is the first pass (one JVM run each, so JVM start-up is included); class size is the class files of the last pass.
+
+<!-- metrics:start -->
+| Metric | Value |
+|--------|-------|
+| Self-compilation (share of source lines compiled by Orzo) | ████████████████████████████████████████ 100.0% |
+| Compile time (compiling Orzo's sources) | 5.4x javac (16.0 s vs. 3.0 s) |
+| Class size (Orzo's class files) | 4.3x javac (3665.2 KiB vs. 845.5 KiB) |
+<!-- metrics:end -->

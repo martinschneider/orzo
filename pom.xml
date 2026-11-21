@@ -133,13 +133,13 @@
                 </configuration>
               </execution>
               <execution>
-                <id>Write stats</id>
+                <id>Write metrics</id>
                 <goals>
                   <goal>exec</goal>
                 </goals>
                 <phase>verify</phase>
                 <configuration>
-                  <executable>${basedir}/update_progress.sh</executable>
+                  <executable>${basedir}/update_metrics.sh</executable>
                 </configuration>
               </execution>
             </executions>
