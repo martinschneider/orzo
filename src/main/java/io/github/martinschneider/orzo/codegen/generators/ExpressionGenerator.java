@@ -47,6 +47,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESSEQ;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_AND;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LOGICAL_OR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.NEGATE;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
@@ -142,6 +143,41 @@ public class ExpressionGenerator {
 
   private static final List<Operators> COMPARATORS =
       List.of(EQUAL, NOTEQUAL, GREATER, LESS, LESSEQ, GREATEREQ);
+
+  // "++a.b.c", "a[i]--", ... inside an expression: a field of another object or an array element
+  private static boolean isChainedIncrement(List<Token> tokens, int i) {
+    if (!(tokens.get(i) instanceof Identifier) || i + 1 >= tokens.size()) {
+      return false;
+    }
+    Identifier id = (Identifier) tokens.get(i);
+    Token next = tokens.get(i + 1);
+    return (id.next != null || id.arrSel != null)
+        && (next.eq(op(PRE_INCREMENT))
+            || next.eq(op(PRE_DECREMENT))
+            || next.eq(op(POST_INCREMENT))
+            || next.eq(op(POST_DECREMENT)));
+  }
+
+  // Desugars into "a.b.c = a.b.c + 1" plus a load of "a.b.c" before (post-increment) or after it
+  // (pre-increment). The receiver is evaluated more than once.
+  private String generateChainedIncrement(DynamicByteArray out, Identifier id, Operators op) {
+    Operators arith = (op == PRE_DECREMENT || op == POST_DECREMENT) ? MINUS : PLUS;
+    boolean pre = op == PRE_INCREMENT || op == PRE_DECREMENT;
+    Expression value = new Expression(new ArrayList<>(List.of(id)));
+    String valueType = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, value);
+    Expression rhs =
+        new Expression(new ArrayList<>(List.of(id, new IntLiteral(1, false), op(arith))));
+    Assignment assignment =
+        new Assignment(new ArrayList<>(List.of(id)), new ArrayList<>(List.of(rhs)));
+    if (!pre) {
+      eval(out, valueType, value);
+    }
+    ctx.delegator.generate(out, null, assignment);
+    if (pre) {
+      eval(out, valueType, value);
+    }
+    return valueType;
+  }
 
   public ExpressionResult eval(DynamicByteArray out, String type, Expression expr) {
     // Unlike the raw 4-arg eval() (used by callers that build their own branch, e.g.
@@ -364,6 +400,11 @@ public class ExpressionGenerator {
         // Calculating powers for integer types uses BigInteger and requires loading the
         // operands in
         // a different order. Therefore, we skip processing them here.
+      } else if (isChainedIncrement(tokens, i)) {
+        exprTypeStack.push(
+            generateChainedIncrement(
+                out, (Identifier) token, ((Operator) tokens.get(i + 1)).opValue()));
+        i++; // the increment operator
       } else if (token instanceof Identifier) {
         if (skipLoad.containsKey(i)) {
           // LHS of assignment expression: skip loading old value; ASSIGN handler will DUP+STORE.
