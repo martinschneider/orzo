@@ -79,6 +79,67 @@ public class GenericTypes {
     }
   }
 
+  /**
+   * The return type of a generic method like {@code <T> T[] copyOf(T[], int)} with its method type
+   * variables bound from the argument types, e.g. "[Ljava.lang.String;" for a String[] argument.
+   * Returns null if the method can't be found or its return type doesn't use a type variable bound
+   * by a parameter of type T or T[].
+   */
+  public static String inferredReturnType(
+      String className, String methodName, List<String> paramTypes, List<String> argTypes) {
+    try {
+      java.lang.reflect.Method method =
+          findMethod(Class.forName(className.replace('/', '.')), methodName, paramTypes);
+      if (method == null) {
+        return null;
+      }
+      Map<String, String> bindings = new HashMap<>();
+      Type[] params = method.getGenericParameterTypes();
+      for (int i = 0; i < params.length && i < argTypes.size(); i++) {
+        String argType = argTypes.get(i);
+        if (argType == null || "reference".equals(argType) || "null".equals(argType)) {
+          continue; // no usable type information
+        }
+        if (params[i] instanceof TypeVariable && !TypeUtils.isPrimitive(argType)) {
+          bindings.putIfAbsent(((TypeVariable<?>) params[i]).getName(), referenceName(argType));
+        } else if (params[i] instanceof java.lang.reflect.GenericArrayType
+            && ((java.lang.reflect.GenericArrayType) params[i]).getGenericComponentType()
+                instanceof TypeVariable
+            && argType.startsWith("[")) {
+          String component = TypeUtils.jvmDescriptorToTypeName(argType.substring(1));
+          if (!TypeUtils.isPrimitive(component)) {
+            TypeVariable<?> var =
+                (TypeVariable<?>)
+                    ((java.lang.reflect.GenericArrayType) params[i]).getGenericComponentType();
+            bindings.putIfAbsent(var.getName(), referenceName(component));
+          }
+        }
+      }
+      Type ret = method.getGenericReturnType();
+      if (ret instanceof TypeVariable) {
+        return bindings.get(((TypeVariable<?>) ret).getName());
+      }
+      if (ret instanceof java.lang.reflect.GenericArrayType
+          && ((java.lang.reflect.GenericArrayType) ret).getGenericComponentType()
+              instanceof TypeVariable) {
+        String bound =
+            bindings.get(
+                ((TypeVariable<?>)
+                        ((java.lang.reflect.GenericArrayType) ret).getGenericComponentType())
+                    .getName());
+        return (bound == null) ? null : "[L" + bound + ";";
+      }
+      return null;
+    } catch (ClassNotFoundException | LinkageError e) {
+      return null;
+    }
+  }
+
+  // "String" → "java.lang.String"; other names are kept
+  private static String referenceName(String type) {
+    return "String".equals(type) ? "java.lang.String" : type.replace('/', '.');
+  }
+
   /** The generic type of a reflected field, or null if it isn't parameterized. */
   public static String fieldType(java.lang.reflect.Field field) {
     if (field.getGenericType() instanceof ParameterizedType) {

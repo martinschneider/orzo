@@ -331,28 +331,32 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     } else {
       ctx.invokeGen.invokeVirtual(out, method);
     }
-    return applyGenericReturnType(out, method, receiverGeneric);
+    return applyGenericReturnType(out, method, receiverGeneric, types);
   }
 
   // If the receiver's generic type is known, replace an erased return type (e.g. Object for
   // List<Foo>.get()) with the real one, emitting the CHECKCAST javac would emit.
   private String applyGenericReturnType(
-      DynamicByteArray out, Method method, String receiverGeneric) {
+      DynamicByteArray out, Method method, String receiverGeneric, List<String> argTypes) {
     lastGenericType = null;
     String type = method.type;
-    if (receiverGeneric == null
-        || type == null
-        || TypeUtils.isPrimitive(type)
-        || type.startsWith("[")
-        || VOID.equals(type)) {
+    if (type == null || TypeUtils.isPrimitive(type) || VOID.equals(type)) {
       return type;
     }
     List<String> paramTypes = new ArrayList<>();
     for (Argument arg : method.args) {
       paramTypes.add(arg.type);
     }
-    String generic =
-        GenericTypes.returnType(receiverGeneric, method.name.val.toString(), paramTypes);
+    String generic = null;
+    if (receiverGeneric != null && !type.startsWith("[")) {
+      generic = GenericTypes.returnType(receiverGeneric, method.name.val.toString(), paramTypes);
+    }
+    if (generic == null && method.fqClassName != null) {
+      // a generic method's own type variables, e.g. <T> T[] Arrays.copyOf(T[], int)
+      generic =
+          GenericTypes.inferredReturnType(
+              method.fqClassName, method.name.val.toString(), paramTypes, argTypes);
+    }
     if (generic == null) {
       return type;
     }
@@ -854,10 +858,10 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     } else {
       ctx.invokeGen.invokeVirtual(out, method);
     }
-    return applyGenericReturnType(out, method, receiverGeneric);
+    return applyGenericReturnType(out, method, receiverGeneric, types);
   }
 
-  private Method findMethodViaReflectionTyped(
+  public Method findMethodViaReflectionTyped(
       String receiverType, String methodName, List<String> argTypes) {
     if (receiverType == null) {
       return null;

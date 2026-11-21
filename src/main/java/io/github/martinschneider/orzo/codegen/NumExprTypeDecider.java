@@ -119,11 +119,15 @@ public class NumExprTypeDecider {
           }
           if (resolvedClass != null) {
             method =
-                ctx.methodCallGen.findMethodViaReflection(
-                    resolvedClass, simpleName, argTypes.size());
+                ctx.methodCallGen.findMethodViaReflectionTyped(resolvedClass, simpleName, argTypes);
+            if (method == null) {
+              method =
+                  ctx.methodCallGen.findMethodViaReflection(
+                      resolvedClass, simpleName, argTypes.size());
+            }
           }
           if (method != null) {
-            methodType = genericReturnType(method, receiverGeneric);
+            methodType = genericReturnType(method, receiverGeneric, argTypes);
             genericType = lastGeneric;
           }
         }
@@ -239,19 +243,24 @@ public class NumExprTypeDecider {
 
   // The return type of a reflectively resolved method, taking the receiver's generic type
   // arguments into account (e.g. List<Foo>.get() returns Foo, not Object).
-  private String genericReturnType(Method method, String receiverGeneric) {
+  private String genericReturnType(Method method, String receiverGeneric, List<String> argTypes) {
     lastGeneric = null;
-    if (receiverGeneric == null
-        || TypeUtils.isPrimitive(method.type)
-        || method.type.startsWith("[")) {
+    if (TypeUtils.isPrimitive(method.type)) {
       return method.type;
     }
     List<String> paramTypes = new ArrayList<>();
     for (Argument arg : method.args) {
       paramTypes.add(arg.type);
     }
-    String generic =
-        GenericTypes.returnType(receiverGeneric, method.name.val.toString(), paramTypes);
+    String generic = null;
+    if (receiverGeneric != null && !method.type.startsWith("[")) {
+      generic = GenericTypes.returnType(receiverGeneric, method.name.val.toString(), paramTypes);
+    }
+    if (generic == null && method.fqClassName != null) {
+      generic =
+          GenericTypes.inferredReturnType(
+              method.fqClassName, method.name.val.toString(), paramTypes, argTypes);
+    }
     if (generic == null) {
       return method.type;
     }
@@ -293,7 +302,10 @@ public class NumExprTypeDecider {
           type = method.type;
           generic = null;
         } else {
-          method = ctx.methodCallGen.findMethodViaReflection(type, methodName, argTypes.size());
+          method = ctx.methodCallGen.findMethodViaReflectionTyped(type, methodName, argTypes);
+          if (method == null) {
+            method = ctx.methodCallGen.findMethodViaReflection(type, methodName, argTypes.size());
+          }
           if (method == null) {
             // e.g. toString() on an interface type (Class.getMethods() omits Object's methods)
             method =
@@ -303,7 +315,7 @@ public class NumExprTypeDecider {
           if (method == null) {
             return null;
           }
-          type = genericReturnType(method, generic);
+          type = genericReturnType(method, generic, argTypes);
           generic = lastGeneric;
         }
       } else {

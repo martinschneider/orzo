@@ -84,7 +84,7 @@ public class TypeArgsParser {
             Token seg = tokens.next();
             fqn.append('.').append(seg instanceof Type ? ((Type) seg).name : seg.val.toString());
           }
-          name = fqn.toString();
+          name = resolveQualified(fqn.toString());
         } else if (!PRIMITIVE_ARRAY_CODES.containsKey(name)) {
           name = resolve(name);
         }
@@ -104,6 +104,39 @@ public class TypeArgsParser {
     }
     tokens.next();
     return supported ? str.toString() : null;
+  }
+
+  /**
+   * Resolves a dotted type name as written in the source: "java.util.List" stays as is, a nested
+   * class like "Map.Entry" or "java.util.Map.Entry" becomes its binary name "java.util.Map$Entry"
+   * (segments after the first one starting with an uppercase letter are nested classes; the first
+   * segment of "Outer.Inner" is resolved like a simple name).
+   */
+  public String resolveQualified(String dotted) {
+    String[] parts = dotted.split("\\.");
+    int outer = 0;
+    while (outer < parts.length && !Character.isUpperCase(parts[outer].charAt(0))) {
+      outer++;
+    }
+    if (outer >= parts.length - 1) {
+      return dotted; // no nested class
+    }
+    StringBuilder name =
+        new StringBuilder(
+            (outer == 0)
+                ? resolve(parts[0])
+                : String.join(".", java.util.Arrays.copyOf(parts, outer + 1)));
+    for (int i = outer + 1; i < parts.length; i++) {
+      name.append('$').append(parts[i]);
+    }
+    return name.toString();
+  }
+
+  /** Whether the current token starts a dotted name, e.g. "Map.Entry" (but not "Token..."). */
+  public boolean isQualifiedName(TokenList tokens) {
+    Token afterDot = tokens.get(tokens.idx() + 2);
+    return tokens.peekNext().eq(sym(DOT))
+        && (afterDot instanceof Identifier || afterDot instanceof Type);
   }
 
   /** Resolves a simple type name (as written in the source) to a fully-qualified name. */

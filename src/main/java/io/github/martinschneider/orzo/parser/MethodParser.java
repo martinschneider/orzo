@@ -161,7 +161,8 @@ public class MethodParser implements ProdParser<Method> {
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
     } else if (tokens.curr() instanceof Identifier
-        && ctx.importMap.containsKey(tokens.curr().toString())) {
+        && ctx.importMap.containsKey(tokens.curr().toString())
+        && !ctx.typeArgsParser.isQualifiedName(tokens)) {
       String id = tokens.curr().toString();
       type = new Type(ctx.importMap.get(id));
       tokens.next();
@@ -294,7 +295,8 @@ public class MethodParser implements ProdParser<Method> {
           && ctx.typeMap.TYPES.containsKey(tokens.curr().toString())) {
         type = ctx.typeMap.TYPES.get(tokens.curr().toString()).toString();
       } else if (tokens.curr() instanceof Identifier
-          && ctx.importMap.containsKey(tokens.curr().toString())) {
+          && ctx.importMap.containsKey(tokens.curr().toString())
+          && !ctx.typeArgsParser.isQualifiedName(tokens)) {
         type = ctx.importMap.get(tokens.curr().toString());
       } else if (tokens.curr() instanceof Identifier
           && ctx.classTypeParams.containsKey(tokens.curr().toString())) {
@@ -398,7 +400,7 @@ public class MethodParser implements ProdParser<Method> {
       tokens.setIdx(start);
       return null;
     }
-    return fqn.toString();
+    return ctx.typeArgsParser.resolveQualified(fqn.toString());
   }
 
   // Orzo does not check exceptions, so a method's "throws T1, T2, ..." clause is parsed only to

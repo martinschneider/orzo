@@ -98,7 +98,8 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
         && ctx.typeMap.TYPES.containsKey(tokens.curr().toString())) {
       type = ctx.typeMap.TYPES.get(tokens.curr().toString());
     } else if (tokens.curr() instanceof Identifier
-        && ctx.importMap.containsKey(tokens.curr().toString())) {
+        && ctx.importMap.containsKey(tokens.curr().toString())
+        && !ctx.typeArgsParser.isQualifiedName(tokens)) {
       type = new Type(ctx.importMap.get(tokens.curr().toString()));
     } else if (tokens.curr() instanceof Identifier && tokens.peekNext().eq(sym(DOT))) {
       // Fully-qualified type name, e.g.
@@ -125,7 +126,7 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       }
       String lastSegment = tokens.curr().toString();
       if (validChain && !lastSegment.isEmpty() && Character.isUpperCase(lastSegment.charAt(0))) {
-        type = new Type(fqn.toString());
+        type = new Type(ctx.typeArgsParser.resolveQualified(fqn.toString()));
       } else {
         tokens.setIdx(scanStart);
       }

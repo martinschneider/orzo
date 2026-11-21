@@ -210,6 +210,10 @@ public class ExpressionParser implements ProdParser<Expression> {
                 if (curr instanceof Identifier) {
                   selectors.add((Identifier) curr);
                   tokens.next();
+                } else if (!selectors.isEmpty() && curr instanceof Type) {
+                  // last segment of a qualified name, e.g. "String" in "java.lang.String"
+                  selectors.add(new Identifier(((Type) curr).name));
+                  tokens.next();
                 } else if (selectors.isEmpty()
                     && curr instanceof Type
                     && tokens.peekNext().eq(sym(DOT))) {
@@ -252,14 +256,14 @@ public class ExpressionParser implements ProdParser<Expression> {
       }
       // Handle ((Type) inner) — balanced parenthesized cast expression without following DOT
       if (parenthesis == 0 && !tokens.curr().eq(sym(DOT)) && isCastMethodChainPattern(exprTokens)) {
-        cast = new Type(resolveCastType(exprTokens.get(2).val.toString()));
+        cast = new Type(resolveCastType(castTypeName(exprTokens.get(2))));
         exprTokens = new ArrayList<>(exprTokens.subList(4, exprTokens.size() - 1));
       }
       // Handle ((Type) inner).method() — DOT after balanced parenthesized cast expression
       // (also as a later operand, e.g. "a && ((Type) expr).method()")
       int castStart = tokens.curr().eq(sym(DOT)) ? castChainStart(exprTokens) : -1;
       if (castStart >= 0) {
-        String castType = resolveCastType(exprTokens.get(castStart + 2).val.toString());
+        String castType = resolveCastType(castTypeName(exprTokens.get(castStart + 2)));
         List<Token> innerTokens =
             new ArrayList<>(exprTokens.subList(castStart + 4, exprTokens.size() - 1));
         Expression innerExpr = new Expression(postfix(innerTokens), null);
@@ -364,7 +368,8 @@ public class ExpressionParser implements ProdParser<Expression> {
     if (!(type instanceof Identifier) && !(type instanceof Type)) {
       return -1;
     }
-    String name = type.val.toString();
+    String name = castTypeName(type);
+    name = name.substring(name.lastIndexOf('.') + 1); // e.g. java.util.List → List
     if (name.isEmpty()
         || !Character.isUpperCase(name.charAt(0))
         || !exprTokens.get(start + 3).eq(sym(RPAREN))) {
@@ -379,14 +384,30 @@ public class ExpressionParser implements ProdParser<Expression> {
     if (!exprTokens.get(1).eq(sym(LPAREN))) return false;
     Token third = exprTokens.get(2);
     if (!(third instanceof Identifier) && !(third instanceof Type)) return false;
-    String name = third.val.toString();
+    String name = castTypeName(third);
+    name = name.substring(name.lastIndexOf('.') + 1);
     if (name.isEmpty() || !Character.isUpperCase(name.charAt(0))) return false;
     if (!exprTokens.get(3).eq(sym(RPAREN))) return false;
     if (!exprTokens.get(exprTokens.size() - 1).eq(sym(RPAREN))) return false;
     return true;
   }
 
+  // The (possibly dotted) type name of a cast, e.g. "java.lang.reflect.Type" for the Identifier
+  // chain java -> lang -> reflect -> Type
+  private static String castTypeName(Token token) {
+    StringBuilder name = new StringBuilder(token.val.toString());
+    if (token instanceof Identifier) {
+      for (Identifier link = ((Identifier) token).next; link != null; link = link.next) {
+        name.append('.').append(link.val.toString());
+      }
+    }
+    return name.toString();
+  }
+
   private String resolveCastType(String name) {
+    if (name.contains(".")) {
+      return ctx.typeArgsParser.resolveQualified(name);
+    }
     String fqn = ctx.importMap.get(name);
     if (fqn != null) return fqn;
     if (ctx.currClazz != null && name.equals(ctx.currClazz.name)) return ctx.currClazz.fqn();
@@ -416,8 +437,10 @@ public class ExpressionParser implements ProdParser<Expression> {
     Identifier id = selectors.get(0);
     Identifier root = id;
     for (int i = 1; i < selectors.size(); i++) {
-      // a selector may already carry a chain, e.g. "a.get(1).get(2)" parsed as one MethodCall
-      while (id.next != null) {
+      // a MethodCall selector may already carry a chain, e.g. "a.get(1).get(2)" parsed as one
+      // MethodCall. (Only MethodCalls: plain Identifier selectors are lexer tokens that may still
+      // carry a stale .next link from an abandoned parse attempt, which must be overwritten.)
+      while (id instanceof MethodCall && id.next != null) {
         id = id.next;
       }
       id.next = selectors.get(i);
