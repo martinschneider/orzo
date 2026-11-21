@@ -77,6 +77,7 @@ import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.FieldProcessor;
+import io.github.martinschneider.orzo.codegen.GenericTypes;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.OperandStack;
@@ -100,12 +101,15 @@ import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
+import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
+import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
+import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.math.BigDecimal;
@@ -121,6 +125,9 @@ public class ExpressionGenerator {
   private static final String LOGGER_NAME = "expression code generator";
 
   public CGContext ctx;
+  // generic type of the functional interface a lambda argument is passed as (set by
+  // MethodCallGenerator.pushArgs(), null if unknown), e.g. "java.util.function.Function<a.Foo,R>"
+  public String lambdaTargetGeneric;
 
   private static final List<Operators> COMPARATORS =
       List.of(EQUAL, NOTEQUAL, GREATER, LESS, LESSEQ, GREATEREQ);
@@ -357,8 +364,16 @@ public class ExpressionGenerator {
             ctx.opStack.push(REF);
           }
         } else {
-          type = handleId(out, ctx.classIdMap, tokens, i, token, type);
-          exprTypeStack.push(type);
+          String operandType = handleId(out, ctx.classIdMap, tokens, i, token, type);
+          exprTypeStack.push(operandType);
+          // In a string concatenation (e.g. "i + str"), a primitive operand's own type must not
+          // replace the expression type: the next operand would be "converted" to it.
+          if (!(STRING.equals(type)
+              && TypeUtils.isPrimitive(operandType)
+              && !BOOLEAN.equals(operandType)
+              && tokens.contains(op(PLUS)))) {
+            type = operandType;
+          }
           // Only byte/short/char elements need this: Java always promotes them to int for
           // arithmetic/bitwise ops, unlike float/double/long elements, which a following
           // literal operand must still match (e.g. for FMUL/DMUL/LMUL to see matching types).
@@ -421,7 +436,9 @@ public class ExpressionGenerator {
       } else if (token instanceof Chr) {
         char chr = (char) ((Chr) token).val;
         ctx.pushGen.push(out, CHAR, chr);
-        type = CHAR;
+        if (!STRING.equals(type)) {
+          type = CHAR; // (but keep a string-concatenation context, e.g. "'[' + str")
+        }
         exprTypeStack.push(CHAR);
       } else if (token instanceof InstanceofToken) {
         InstanceofToken instof = (InstanceofToken) token;
@@ -521,6 +538,22 @@ public class ExpressionGenerator {
               ctx.basicGen.primitiveToString(out, leftType);
             }
             out.write(SWAP);
+          } else {
+            // long/double + String: a 2-slot value can't be SWAPped, so park the String in a
+            // temporary local while converting the left operand
+            String tmpName = "$concat_" + ctx.classIdMap.variables.localSize;
+            VariableInfo tmp =
+                new VariableInfo(
+                    tmpName,
+                    STRING,
+                    emptyList(),
+                    false,
+                    (short) ctx.classIdMap.variables.localSize,
+                    null);
+            ctx.classIdMap.variables.putLocal(Token.id(tmpName), tmp);
+            ctx.storeGen.store(out, tmp);
+            ctx.basicGen.primitiveToString(out, leftType);
+            ctx.loadGen.load(out, tmp);
           }
           ctx.invokeGen.invokeVirtual(
               out, new Method("java.lang.String", "concat", STRING, List.of(STRING)));
@@ -559,6 +592,16 @@ public class ExpressionGenerator {
           }
         } else {
           byte[] opCode = null;
+          // In a string concatenation context, a numeric sub-expression (e.g. "i + j" in
+          // "i + j + str") is computed in its operands' type, not as a String.
+          String typeBefore = type;
+          boolean numericInStringContext =
+              STRING.equals(type)
+                  && TypeUtils.isPrimitive(exprTypeStack.type())
+                  && TypeUtils.isPrimitive(exprTypeStack.secondType());
+          if (numericInStringContext) {
+            type = widerNumericType(exprTypeStack.secondType(), exprTypeStack.type());
+          }
           if (COMPARATORS.contains(op) && exprTypeStack.oneOfTopTwoElementsIsZero()) {
             opCode = new byte[] {COMPARE_TO_ZERO_OPS.get(op)};
             type = BOOLEAN;
@@ -606,6 +649,9 @@ public class ExpressionGenerator {
               branchEmitted = true;
             }
             out.write(opCode);
+          }
+          if (numericInStringContext) {
+            type = typeBefore;
           }
         }
       }
@@ -856,6 +902,14 @@ public class ExpressionGenerator {
       returnType = type;
     }
     return returnType;
+  }
+
+  // The type binary numeric promotion gives two operands, e.g. long for (int, long)
+  private static String widerNumericType(String a, String b) {
+    List<String> order = List.of(INT, LONG, FLOAT, DOUBLE);
+    int ia = Math.max(0, order.indexOf(a));
+    int ib = Math.max(0, order.indexOf(b));
+    return order.get(Math.max(ia, ib));
   }
 
   private static boolean isWideningPrimitive(String from, String to) {
@@ -1213,28 +1267,85 @@ public class ExpressionGenerator {
     }
 
     String syntheticName = ctx.clazz.name + "$$Lambda$" + (++ctx.syntheticClassCounter);
+    String syntheticFqn =
+        (ctx.clazz.packageName == null || ctx.clazz.packageName.isEmpty())
+            ? syntheticName
+            : ctx.clazz.packageName + "." + syntheticName;
+    // The SAM's parameters are erased (e.g. Object for Function.apply); with the target's generic
+    // type known, a parameter gets its real type via a casting local of the same name, e.g.
+    // "Argument arg = (Argument) $lambda_arg;"
+    List<String> typedParams =
+        (lambdaTargetGeneric != null)
+            ? GenericTypes.samParameterTypes(lambdaTargetGeneric, sam)
+            : emptyList();
+    lambdaTargetGeneric = null;
+    // Local variables of the enclosing method used in the lambda body are captured: they become
+    // fields of the synthetic class, passed to its constructor.
+    List<VariableInfo> captured = new ArrayList<>();
+    visitLambdaBody(lambda.body.tokens, lambda.params, captured);
     List<Argument> args = new ArrayList<>();
+    List<Statement> body = new ArrayList<>();
     for (int i = 0; i < lambda.params.size(); i++) {
-      args.add(
-          new Argument(sam.getParameterTypes()[i].getName(), new Identifier(lambda.params.get(i))));
+      String erased = sam.getParameterTypes()[i].getName();
+      String typed = (i < typedParams.size()) ? typedParams.get(i) : null;
+      String name = lambda.params.get(i);
+      if (typed != null && typed.indexOf('<') < 0 && !typed.equals(erased)) {
+        args.add(new Argument(erased, new Identifier("$lambda_" + name)));
+        Expression cast =
+            new Expression(
+                List.of(new Identifier("$lambda_" + name)),
+                new io.github.martinschneider.orzo.lexer.tokens.Type(typed));
+        body.add(
+            new ParallelDeclaration(
+                new ArrayList<>(
+                    List.of(new Declaration(emptyList(), typed, new Identifier(name), cast)))));
+      } else {
+        args.add(new Argument(erased, new Identifier(name)));
+      }
     }
+    body.add(new ReturnStatement(lambda.body));
     String returnType = sam.getReturnType().getName();
     Method samImpl =
         new Method(
-            ctx.clazz.packageName + "." + syntheticName,
+            syntheticFqn,
             List.of(AccessFlag.ACC_PUBLIC),
             returnType,
             Token.id(sam.getName()),
             args,
-            List.of((Statement) new ReturnStatement(lambda.body)));
+            body);
+    List<Argument> ctorArgs = new ArrayList<>();
+    List<Statement> ctorBody = new ArrayList<>();
+    ctorBody.add(new MethodCall("super", emptyList()));
+    List<ParallelDeclaration> fields = new ArrayList<>();
+    for (VariableInfo var : captured) {
+      boolean isArray = var.arrType != null;
+      String type = isArray ? var.arrType : var.type;
+      ctorArgs.add(new Argument(isArray ? "[" + type : type, new Identifier(var.name)));
+      Declaration field =
+          new Declaration(
+              List.of(AccessFlag.ACC_PRIVATE),
+              type,
+              isArray ? 1 : 0,
+              new Identifier(var.name),
+              null);
+      field.isField = true;
+      field.genericType = var.genericType;
+      fields.add(new ParallelDeclaration(new ArrayList<>(List.of(field))));
+      Identifier thisField = new Identifier("this");
+      thisField.next = new Identifier(var.name);
+      ctorBody.add(
+          new Assignment(
+              new ArrayList<>(List.of(thisField)),
+              new ArrayList<>(List.of(new Expression(List.of(new Identifier(var.name)))))));
+    }
     Method ctor =
         new Method(
-            ctx.clazz.packageName + "." + syntheticName,
+            syntheticFqn,
             List.of(AccessFlag.ACC_PUBLIC),
             VOID,
             Token.id(Method.CONSTRUCTOR_NAME),
-            emptyList(),
-            List.of((Statement) new MethodCall("super", emptyList())));
+            ctorArgs,
+            ctorBody);
     Clazz syntheticClazz =
         new Clazz(
             ctx.clazz.packageName,
@@ -1249,7 +1360,7 @@ public class ExpressionGenerator {
             List.of(iface.getName()),
             Clazz.JAVA_LANG_OBJECT,
             List.of(ctor, samImpl),
-            emptyList(),
+            fields,
             ctx.clazz.sourceFile);
     ctx.addSyntheticClazz(syntheticClazz);
 
@@ -1258,8 +1369,68 @@ public class ExpressionGenerator {
     ctx.invokeGen.newInstance(out, jvmClassName);
     out.write(DUP);
     ctx.opStack.push(REF);
+    for (VariableInfo var : captured) {
+      ctx.loadGen.load(out, var);
+    }
     ctx.invokeGen.invokeSpecial(out, ctor);
     return targetType;
+  }
+
+  // Finds the enclosing method's local variables a lambda body uses (to be captured), and
+  // qualifies unqualified calls of the enclosing class's static methods with its name (the body
+  // is compiled as part of a synthetic class, where they wouldn't resolve otherwise).
+  private void visitLambdaBody(
+      List<Token> tokens, List<String> lambdaParams, List<VariableInfo> captured) {
+    for (Token token : tokens) {
+      if (token instanceof TernaryExpression) {
+        TernaryExpression ternary = (TernaryExpression) token;
+        visitLambdaBody(ternary.condition.tokens, lambdaParams, captured);
+        visitLambdaBody(ternary.trueBranch.tokens, lambdaParams, captured);
+        visitLambdaBody(ternary.falseBranch.tokens, lambdaParams, captured);
+      } else if (token instanceof Identifier) {
+        Identifier root = (Identifier) token;
+        if (root instanceof CastMethodCall) {
+          visitLambdaBody(((CastMethodCall) root).innerExpr.tokens, lambdaParams, captured);
+        } else if (root instanceof MethodCall && !((MethodCall) root).name.contains(".")) {
+          qualifyStaticCall((MethodCall) root);
+        }
+        String rootName =
+            (root instanceof MethodCall)
+                ? ((MethodCall) root).name.split("\\.")[0]
+                : root.val.toString();
+        boolean isCall = root instanceof MethodCall && !((MethodCall) root).name.contains(".");
+        VariableInfo var = ctx.classIdMap.variables.localMap.get(rootName);
+        if (!isCall && var != null && !lambdaParams.contains(rootName) && !captured.contains(var)) {
+          captured.add(var);
+        }
+        for (Identifier link = root; link != null; link = link.next) {
+          if (link instanceof MethodCall) {
+            for (Expression param : ((MethodCall) link).params) {
+              visitLambdaBody(param.tokens, lambdaParams, captured);
+            }
+          } else if (link instanceof ConstructorCall) {
+            for (Expression arg : ((ConstructorCall) link).args) {
+              visitLambdaBody(arg.tokens, lambdaParams, captured);
+            }
+          }
+          if (link.arrSel != null) {
+            for (Expression index : link.arrSel.exprs) {
+              visitLambdaBody(index.tokens, lambdaParams, captured);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private void qualifyStaticCall(MethodCall call) {
+    for (Method m : ctx.clazz.methods) {
+      if (m.name.val.toString().equals(call.name) && m.accFlags.contains(AccessFlag.ACC_STATIC)) {
+        call.name = ctx.clazz.name + "." + call.name;
+        call.val = call.name;
+        return;
+      }
+    }
   }
 
   // The single non-default, non-static abstract method of a functional interface, or null if

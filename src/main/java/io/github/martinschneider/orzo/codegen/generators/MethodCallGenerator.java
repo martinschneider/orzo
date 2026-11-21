@@ -42,6 +42,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
   // Generic return type of the most recently generated call, e.g. "java.util.List<a.b.Foo>"
   // (null if unknown/not generic). Consumed by generateChained() for the next call in a chain.
   public String lastGenericType;
+  // Generic type of the receiver of the call whose arguments pushArgs() is evaluating (null if
+  // unknown); used to give a lambda argument typed parameters
+  private String argsReceiverGeneric;
 
   public MethodCallGenerator(CGContext ctx) {
     this.ctx = ctx;
@@ -321,7 +324,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         ctx.opStack.push(REF);
       }
     }
+    argsReceiverGeneric = receiverGeneric;
     pushArgs(out, methodCall.params, types, method);
+    argsReceiverGeneric = null;
     if (isStatic) {
       ctx.invokeGen.invokeStatic(out, method);
     } else if ("super".equals(receiverName)) {
@@ -608,6 +613,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
    */
   public void pushArgs(
       DynamicByteArray out, List<Expression> params, List<String> types, Method method) {
+    String receiverGeneric = argsReceiverGeneric; // (nested calls among the args overwrite it)
     int paramCount = method.args.size();
     boolean pack =
         paramCount > 0
@@ -615,7 +621,20 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
             && !(types.size() == paramCount && types.get(paramCount - 1).startsWith("["));
     int direct = pack ? paramCount - 1 : types.size();
     for (int i = 0; i < direct; i++) {
+      if (params.get(i).tokens.size() == 1
+          && params.get(i).tokens.get(0)
+              instanceof io.github.martinschneider.orzo.lexer.tokens.LambdaExpr) {
+        // the functional interface's generic type, so the lambda's parameters get real types
+        List<String> paramTypes = new ArrayList<>();
+        for (Argument arg : method.args) {
+          paramTypes.add(arg.type);
+        }
+        ctx.exprGen.lambdaTargetGeneric =
+            GenericTypes.parameterType(
+                receiverGeneric, method.fqClassName, method.name.val.toString(), paramTypes, i);
+      }
       pushArg(out, params.get(i), types.get(i), method.args.get(i).type);
+      ctx.exprGen.lambdaTargetGeneric = null;
     }
     if (pack) {
       String elemType =
@@ -849,7 +868,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       return "";
     }
     // Receiver is already on the operand stack from the previous method call
+    argsReceiverGeneric = receiverGeneric;
     pushArgs(out, methodCall.params, types, method);
+    argsReceiverGeneric = null;
     boolean isStatic = method.accFlags != null && method.accFlags.contains(AccessFlag.ACC_STATIC);
     if (isStatic) {
       ctx.invokeGen.invokeStatic(out, method);

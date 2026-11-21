@@ -140,6 +140,62 @@ public class GenericTypes {
     return "String".equals(type) ? "java.lang.String" : type.replace('/', '.');
   }
 
+  /**
+   * The generic type of parameter {@code index} of a method invoked on a receiver of the given
+   * generic type (null if not generic), e.g. "java.util.function.Function<a.Foo,java.lang.Object>"
+   * for Stream.map(Function<? super T, ? extends R>) on "java.util.stream.Stream<a.Foo>". Returns
+   * null unless the result is a parameterized type.
+   */
+  public static String parameterType(
+      String receiverGeneric,
+      String className,
+      String methodName,
+      List<String> paramTypes,
+      int index) {
+    try {
+      Class<?> clazz =
+          Class.forName(
+              (receiverGeneric != null) ? erasure(receiverGeneric) : className.replace('/', '.'));
+      java.lang.reflect.Method method = findMethod(clazz, methodName, paramTypes);
+      if (method == null || index >= method.getParameterCount()) {
+        return null;
+      }
+      Map<String, String> bindings = new HashMap<>();
+      if (receiverGeneric != null) {
+        bindings =
+            bindingsFor(
+                clazz, bindings(clazz, typeArgs(receiverGeneric)), method.getDeclaringClass());
+        if (bindings == null) {
+          return null;
+        }
+      }
+      String type = resolve(method.getGenericParameterTypes()[index], bindings);
+      return (type.indexOf('<') >= 0) ? type : null;
+    } catch (ClassNotFoundException | LinkageError e) {
+      return null;
+    }
+  }
+
+  /**
+   * The parameter types of a functional interface's single abstract method for the given generic
+   * interface type, e.g. ["a.Foo"] for Function.apply on "java.util.function.Function<a.Foo,R>".
+   */
+  public static List<String> samParameterTypes(
+      String interfaceGeneric, java.lang.reflect.Method sam) {
+    List<String> result = new ArrayList<>();
+    try {
+      Class<?> iface = Class.forName(erasure(interfaceGeneric));
+      Map<String, String> bindings =
+          bindingsFor(iface, bindings(iface, typeArgs(interfaceGeneric)), sam.getDeclaringClass());
+      for (Type param : sam.getGenericParameterTypes()) {
+        result.add(bindings == null ? null : resolve(param, bindings));
+      }
+    } catch (ClassNotFoundException | LinkageError e) {
+      // no type information
+    }
+    return result;
+  }
+
   /** The generic type of a reflected field, or null if it isn't parameterized. */
   public static String fieldType(java.lang.reflect.Field field) {
     if (field.getGenericType() instanceof ParameterizedType) {
@@ -238,7 +294,13 @@ public class GenericTypes {
       str.append('>');
       return str.toString();
     } else if (type instanceof WildcardType) {
-      return resolve(((WildcardType) type).getUpperBounds()[0], bindings);
+      // "? super T" → T, "? extends T" / "?" → the upper bound
+      WildcardType wildcard = (WildcardType) type;
+      return resolve(
+          (wildcard.getLowerBounds().length > 0)
+              ? wildcard.getLowerBounds()[0]
+              : wildcard.getUpperBounds()[0],
+          bindings);
     }
     return "java.lang.Object"; // e.g. a generic array type
   }

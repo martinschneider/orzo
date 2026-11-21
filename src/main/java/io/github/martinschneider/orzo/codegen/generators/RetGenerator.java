@@ -15,12 +15,14 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.FLOAT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
 import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -46,7 +48,7 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
     // run the enclosing finally blocks (innermost first), then return the saved value.
     VariableInfo tmp = null;
     if (retStmt.retValue != null) {
-      ctx.exprGen.eval(out, method.type, retStmt.retValue);
+      ctx.exprGen.eval(out, evalType(method.type), retStmt.retValue);
       ctx.basicGen.convert1(out, ctx.opStack.type(), method.type);
       String tmpName = "$ret_" + ctx.classIdMap.variables.localSize;
       tmp =
@@ -86,9 +88,15 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
       out.write(RETURN);
       return out;
     }
-    ctx.exprGen.eval(out, type, retValue);
+    ctx.exprGen.eval(out, evalType(type), retValue);
     ctx.basicGen.convert1(out, ctx.opStack.type(), type);
     return returnOpcode(out, type);
+  }
+
+  // The type to evaluate a returned expression in: a general reference return type (e.g. Object)
+  // must not be imposed on the expression ("return a + b;" is still a String concatenation).
+  private static String evalType(String returnType) {
+    return (TypeUtils.isPrimitive(returnType) || STRING.equals(returnType)) ? returnType : null;
   }
 
   private HasOutput returnOpcode(DynamicByteArray out, String type) {
