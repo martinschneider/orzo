@@ -1269,6 +1269,9 @@ public class ExpressionGenerator {
           ctx.basicGen.convert1(out, valueType, type);
         }
         out.write(storeOpCode);
+        // the store consumes the (untracked) DUP'ed array reference, the index and the value
+        ctx.opStack.pop();
+        ctx.opStack.pop();
       }
     }
     // ctx.assignGen.assignArray(out, variables, type, decl.arrDim, decl.name);

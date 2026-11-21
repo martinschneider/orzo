@@ -284,7 +284,8 @@ public class OrzoTest {
         args(list("tests/BridgeOverload")),
         args(list("tests/ChainedIncrementExpr")),
         args(list("tests/UnboxingCast")),
-        args(list("tests/UnboxArrayInitElements")));
+        args(list("tests/UnboxArrayInitElements")),
+        args(list("tests/ArrayInitAssignment")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the
