@@ -903,6 +903,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       // Third pass: a varargs method called with its trailing arguments unpacked
       for (int pass = 0; pass < 3; pass++) {
         boolean exactOnly = pass == 0;
+        // all applicable overloads of this pass: the most specific one is chosen (e.g.
+        // Stream.of(T...) over Stream.of(T) for an array argument)
+        List<java.lang.reflect.Method> matches = new ArrayList<>();
         for (java.lang.reflect.Method m : getMethodsIncludingNonPublic(clazz)) {
           if (!m.getName().equals(methodName)) {
             continue;
@@ -924,61 +927,66 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
             if (bridgeCandidate == null) bridgeCandidate = m;
             continue;
           }
-          List<Argument> args = new ArrayList<>();
-          for (java.lang.reflect.Parameter p : m.getParameters()) {
-            args.add(
-                new Argument(
-                    p.getType().getName(),
-                    io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
-          }
-          markVarargs(args, m.isVarArgs());
-          String returnType = m.getReturnType().getName();
-          if ("java.lang.String".equals(returnType)) {
-            returnType = STRING;
-          }
-          List<AccessFlag> accFlags = new ArrayList<>();
-          if (java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
-            accFlags.add(AccessFlag.ACC_STATIC);
-          }
-          return new Method(
-              javaClassName,
-              accFlags,
-              returnType,
-              io.github.martinschneider.orzo.lexer.tokens.Token.id(methodName),
-              args,
-              null);
+          matches.add(m);
+        }
+        if (!matches.isEmpty()) {
+          return reflectedMethod(mostSpecific(matches), javaClassName, methodName);
         }
       }
       // Fall back to bridge methods (e.g. StringBuilder.length() is a bridge on Java 21)
       if (bridgeCandidate != null) {
-        List<Argument> args = new ArrayList<>();
-        for (java.lang.reflect.Parameter p : bridgeCandidate.getParameters()) {
-          args.add(
-              new Argument(
-                  p.getType().getName(),
-                  io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
-        }
-        markVarargs(args, bridgeCandidate.isVarArgs());
-        String returnType = bridgeCandidate.getReturnType().getName();
-        if ("java.lang.String".equals(returnType)) {
-          returnType = STRING;
-        }
-        List<AccessFlag> accFlags = new ArrayList<>();
-        if (java.lang.reflect.Modifier.isStatic(bridgeCandidate.getModifiers())) {
-          accFlags.add(AccessFlag.ACC_STATIC);
-        }
-        return new Method(
-            javaClassName,
-            accFlags,
-            returnType,
-            io.github.martinschneider.orzo.lexer.tokens.Token.id(methodName),
-            args,
-            null);
+        return reflectedMethod(bridgeCandidate, javaClassName, methodName);
       }
     } catch (ClassNotFoundException e) {
       // not on classpath
     }
     return null;
+  }
+
+  // The most specific of several applicable methods: one whose parameter types are all
+  // assignable to the corresponding parameter types of every other one (the first if none is).
+  private static java.lang.reflect.Method mostSpecific(List<java.lang.reflect.Method> methods) {
+    for (java.lang.reflect.Method candidate : methods) {
+      boolean mostSpecific = true;
+      for (java.lang.reflect.Method other : methods) {
+        Class<?>[] mine = candidate.getParameterTypes();
+        Class<?>[] theirs = other.getParameterTypes();
+        for (int i = 0; mostSpecific && i < mine.length && i < theirs.length; i++) {
+          mostSpecific = theirs[i].isAssignableFrom(mine[i]) || theirs[i] == mine[i];
+        }
+      }
+      if (mostSpecific) {
+        return candidate;
+      }
+    }
+    return methods.get(0);
+  }
+
+  private Method reflectedMethod(
+      java.lang.reflect.Method m, String javaClassName, String methodName) {
+    List<Argument> args = new ArrayList<>();
+    for (java.lang.reflect.Parameter p : m.getParameters()) {
+      args.add(
+          new Argument(
+              p.getType().getName(),
+              io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
+    }
+    markVarargs(args, m.isVarArgs());
+    String returnType = m.getReturnType().getName();
+    if ("java.lang.String".equals(returnType)) {
+      returnType = STRING;
+    }
+    List<AccessFlag> accFlags = new ArrayList<>();
+    if (java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
+      accFlags.add(AccessFlag.ACC_STATIC);
+    }
+    return new Method(
+        javaClassName,
+        accFlags,
+        returnType,
+        io.github.martinschneider.orzo.lexer.tokens.Token.id(methodName),
+        args,
+        null);
   }
 
   private java.lang.reflect.Method[] getMethodsIncludingNonPublic(Class<?> clazz) {

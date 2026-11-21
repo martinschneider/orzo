@@ -276,7 +276,8 @@ public class OrzoTest {
         args(list("tests/SameNamedFieldChain", "tests/ChainedFieldIncrement")),
         args(list("tests/ArrayAsObjectArgument")),
         args(list("tests/GenericFieldSignature")),
-        args(list("tests/BoxingOverloadAndNewChain")));
+        args(list("tests/BoxingOverloadAndNewChain")),
+        args(list("tests/MostSpecificOverload")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the
