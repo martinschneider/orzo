@@ -1023,7 +1023,14 @@ public class ExpressionGenerator {
     if (curr.next instanceof MethodCall) {
       MethodCall mc = (MethodCall) curr.next;
       String dottedName = curr.val.toString() + "." + mc.name;
-      return ctx.methodCallGen.generate(out, ctx.classIdMap, new MethodCall(dottedName, mc.params));
+      String returnType =
+          ctx.methodCallGen.generate(out, ctx.classIdMap, new MethodCall(dottedName, mc.params));
+      // the rest of the chain, e.g. ".length()" in "String.format(...).length()"
+      for (Identifier link = mc.next; link instanceof MethodCall; link = link.next) {
+        returnType =
+            ctx.methodCallGen.generateChained(out, ctx.classIdMap, (MethodCall) link, returnType);
+      }
+      return returnType;
     }
     ctx.errors.addError(
         LOGGER_NAME,

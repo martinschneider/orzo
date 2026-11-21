@@ -204,6 +204,13 @@ public class NumExprTypeDecider {
             } else if (id.next != null && "class".equals(id.next.val.toString())) {
               // Class literal, e.g. String.class
               types.add("java.lang.Class");
+            } else if (id.next instanceof MethodCall) {
+              // static call on a class name, e.g. String.valueOf(1)
+              String className = ctx.methodCallGen.resolveClassName(id.val.toString());
+              String resolvedType = followChain(classIdMap, className, null, id.next);
+              if (resolvedType != null) {
+                types.add(resolvedType);
+              }
             } else if (id.next != null) {
               // ClassName.fieldName pattern (e.g. Operators.LESS, Byte.MAX_VALUE)
               String resolvedType = resolveChainedType(id.val.toString(), id.next.val.toString());

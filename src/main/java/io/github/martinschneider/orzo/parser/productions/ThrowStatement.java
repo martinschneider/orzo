@@ -4,9 +4,15 @@ import io.github.martinschneider.orzo.util.ObjectUtils;
 
 public class ThrowStatement implements Statement {
   public ConstructorCall constructorCall;
+  // any other thrown expression, e.g. "throw e;" (null if constructorCall is set)
+  public Expression expr;
 
   public ThrowStatement(ConstructorCall constructorCall) {
     this.constructorCall = constructorCall;
+  }
+
+  public ThrowStatement(Expression expr) {
+    this.expr = expr;
   }
 
   @Override

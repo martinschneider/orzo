@@ -309,9 +309,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
           }
         } else {
           ctx.loadGen.loadReference(out, (short) 0);
+          ctx.opStack.push(REF);
         }
       } else {
         ctx.loadGen.loadReference(out, (short) 0); // push 'this' for invokevirtual
+        ctx.opStack.push(REF);
       }
     }
     pushArgs(out, methodCall.params, types, method);
@@ -1145,7 +1147,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     }
   }
 
-  private String resolveClassName(String simpleName) {
+  public String resolveClassName(String simpleName) {
     if (simpleName == null || simpleName.contains(".")) {
       return simpleName;
     }

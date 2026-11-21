@@ -5,6 +5,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_3;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ATHROW;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static java.util.Collections.emptyList;
@@ -26,6 +27,8 @@ import java.util.List;
 
 public class TryGenerator implements StatementGenerator<TryStatement> {
   private CGContext ctx;
+
+  private static final String THROWABLE = "java/lang/Throwable";
 
   public TryGenerator(CGContext ctx) {
     this.ctx = ctx;
@@ -51,6 +54,11 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, TryStatement stmt) {
+    List<Statement> finallyBody = stmt.finallyBody;
+    if (finallyBody != null) {
+      // a return inside the try or catch blocks must run the finally block first
+      ctx.finallyStack.push(finallyBody);
+    }
     int startPc = out.size();
 
     // Generate try body
@@ -59,18 +67,22 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
     }
 
     int endPc = out.size(); // exclusive end of protected region
-
-    // Only write GOTO to skip catch handlers if try body doesn't already return
-    boolean tryBodyReturns = endsWithReturn(stmt.tryBody);
-    int tryGotoOffsetPos = -1;
-    if (!tryBodyReturns) {
-      out.write(GOTO);
-      tryGotoOffsetPos = out.size(); // position of the 2-byte offset placeholder
-      out.write((short) 0);
+    // Regions covered by the finally block's catch-all handler: the try body and every catch body
+    List<int[]> finallyRanges = new ArrayList<>();
+    if (endPc > startPc) {
+      finallyRanges.add(new int[] {startPc, endPc});
     }
 
-    // Track GOTO positions that need to be patched for inter-catch jumps
-    List<Integer> catchGotoOffsetPositions = new ArrayList<>();
+    // GOTOs to patch to the end of the whole statement (positions of their 2-byte offsets)
+    List<Integer> gotoOffsetPositions = new ArrayList<>();
+
+    // Normal completion of the try body: run finally, skip the handlers
+    if (!endsWithReturn(stmt.tryBody)) {
+      inlineFinally(out, method, finallyBody);
+      out.write(GOTO);
+      gotoOffsetPositions.add(out.size());
+      out.write((short) 0);
+    }
 
     for (int ci = 0; ci < stmt.catchBlocks.size(); ci++) {
       CatchBlock catchBlock = stmt.catchBlocks.get(ci);
@@ -100,12 +112,19 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
       for (Statement s : catchBlock.body) {
         ctx.delegator.generate(out, method, s);
       }
+      if (finallyBody != null) {
+        finallyRanges.add(new int[] {handlerPc, out.size()});
+      }
 
-      // Add GOTO to skip remaining handlers if this catch block doesn't return
-      if (ci < stmt.catchBlocks.size() - 1 && !endsWithReturn(catchBlock.body)) {
-        out.write(GOTO);
-        catchGotoOffsetPositions.add(out.size()); // position of the 2-byte placeholder
-        out.write((short) 0);
+      // Skip the remaining handlers (and the finally block's catch-all handler) unless this
+      // catch block returns; the last one falls through to the end if there's no finally.
+      if (!endsWithReturn(catchBlock.body)) {
+        inlineFinally(out, method, finallyBody);
+        if (ci < stmt.catchBlocks.size() - 1 || finallyBody != null) {
+          out.write(GOTO);
+          gotoOffsetPositions.add(out.size());
+          out.write((short) 0);
+        }
       }
 
       // Record exception table entries: {startPc, endPc, handlerPc, catchTypeIdx}
@@ -116,23 +135,46 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
       ctx.exceptionHandlerType.put(handlerPc, jvmExType);
     }
 
+    if (finallyBody != null) {
+      ctx.finallyStack.pop();
+      // Catch-all handler: save the exception, run finally, rethrow
+      int anyHandlerPc = out.size();
+      short tmpSlot = (short) ctx.classIdMap.variables.localSize;
+      String tmpName = "$finally_" + tmpSlot;
+      ctx.classIdMap.variables.putLocal(
+          Token.id(tmpName),
+          new VariableInfo(tmpName, THROWABLE, null, emptyList(), false, tmpSlot, null));
+      storeRef(out, tmpSlot);
+      for (Statement s : finallyBody) {
+        ctx.delegator.generate(out, method, s);
+      }
+      ctx.loadGen.loadReference(out, tmpSlot);
+      out.write(ATHROW);
+      for (int[] range : finallyRanges) {
+        ctx.exceptionTable.add(new int[] {range[0], range[1], anyHandlerPc, 0});
+      }
+      ctx.exceptionHandlerType.put(anyHandlerPc, THROWABLE);
+    }
+
     int afterPc = out.size();
-
-    // Patch the try-body GOTO offset (if one was written)
-    if (tryGotoOffsetPos >= 0) {
-      int gotoInstrPc = tryGotoOffsetPos - 1;
-      short tryGotoOffset = (short) (afterPc - gotoInstrPc);
-      out.patch(tryGotoOffsetPos, ByteUtils.shortToByteArray(tryGotoOffset));
-    }
-
-    // Patch inter-catch GOTO offsets
-    for (int gotoOffsetPos : catchGotoOffsetPositions) {
+    for (int gotoOffsetPos : gotoOffsetPositions) {
       int gotoInstrPc = gotoOffsetPos - 1; // GOTO opcode is 1 byte before offset bytes
-      short catchGotoOffset = (short) (afterPc - gotoInstrPc);
-      out.patch(gotoOffsetPos, ByteUtils.shortToByteArray(catchGotoOffset));
+      out.patch(gotoOffsetPos, ByteUtils.shortToByteArray((short) (afterPc - gotoInstrPc)));
     }
-
     return out;
+  }
+
+  // Generates a copy of the finally block (if any) at the current position, e.g. at the end of the
+  // try body. Its own returns must not run it again, so it's taken off the finally stack meanwhile.
+  private void inlineFinally(DynamicByteArray out, Method method, List<Statement> finallyBody) {
+    if (finallyBody == null) {
+      return;
+    }
+    ctx.finallyStack.pop();
+    for (Statement s : finallyBody) {
+      ctx.delegator.generate(out, method, s);
+    }
+    ctx.finallyStack.push(finallyBody);
   }
 
   private boolean endsWithReturn(List<Statement> body) {

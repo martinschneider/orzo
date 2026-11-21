@@ -60,6 +60,10 @@ public class CGContext {
   public List<int[]> exceptionTable;
   // Maps handlerPc → JVM class name (e.g. "java/lang/Exception") for StackMapTable
   public Map<Integer, String> exceptionHandlerType;
+  // finally blocks enclosing the statement being generated, innermost first: a return inside a
+  // try block must run them first
+  public java.util.Deque<List<io.github.martinschneider.orzo.parser.productions.Statement>>
+      finallyStack = new java.util.ArrayDeque<>();
 
   public void init(CompilerErrors errors, int idx, List<Clazz> clazzes, List<Output> outputs) {
     exceptionTable = new ArrayList<>();

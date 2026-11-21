@@ -1,10 +1,13 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.THROW;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
+import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ThrowStatement;
 
 public class ThrowParser implements ProdParser<ThrowStatement> {
@@ -22,10 +25,18 @@ public class ThrowParser implements ProdParser<ThrowStatement> {
     int idx = tokens.idx();
     tokens.next();
     ConstructorCall cc = ctx.constrCallParser.parse(tokens);
-    if (cc == null) {
+    if (cc != null) {
+      return new ThrowStatement(cc);
+    }
+    // any other expression, e.g. "throw e;"
+    Expression expr = ctx.exprParser.parse(tokens);
+    if (expr == null) {
       tokens.setIdx(idx);
       return null;
     }
-    return new ThrowStatement(cc);
+    if (tokens.curr().eq(sym(SEMICOLON))) {
+      tokens.next();
+    }
+    return new ThrowStatement(expr);
   }
 }

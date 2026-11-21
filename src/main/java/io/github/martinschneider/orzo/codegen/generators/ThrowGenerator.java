@@ -17,8 +17,13 @@ public class ThrowGenerator implements StatementGenerator<ThrowStatement> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, ThrowStatement stmt) {
-    ctx.exprGen.generateConstructorCall(out, ctx.classIdMap, stmt.constructorCall);
+    if (stmt.constructorCall != null) {
+      ctx.exprGen.generateConstructorCall(out, ctx.classIdMap, stmt.constructorCall);
+    } else {
+      ctx.exprGen.eval(out, null, stmt.expr);
+    }
     out.write(ATHROW);
+    ctx.opStack.pop();
     return out;
   }
 }

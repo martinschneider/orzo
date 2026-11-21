@@ -1,0 +1,9 @@
+10
+101
+before
+caught
+finally 1
+finally 2
+outer caught
+wrapped
+resource

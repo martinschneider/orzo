@@ -6,6 +6,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.FRETURN;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IRETURN;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LRETURN;
 import static io.github.martinschneider.orzo.codegen.OpCodes.RETURN;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BOOLEAN;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
@@ -15,13 +16,18 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
+import io.github.martinschneider.orzo.parser.productions.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RetGenerator implements StatementGenerator<ReturnStatement> {
   private CGContext ctx;
@@ -32,7 +38,44 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, ReturnStatement retStmt) {
-    ret(out, method.type, retStmt.retValue);
+    if (ctx.finallyStack.isEmpty()) {
+      ret(out, method.type, retStmt.retValue);
+      return out;
+    }
+    // Inside try block(s) with finally: evaluate the return value into a temporary first, then
+    // run the enclosing finally blocks (innermost first), then return the saved value.
+    VariableInfo tmp = null;
+    if (retStmt.retValue != null) {
+      ctx.exprGen.eval(out, method.type, retStmt.retValue);
+      ctx.basicGen.convert1(out, ctx.opStack.type(), method.type);
+      String tmpName = "$ret_" + ctx.classIdMap.variables.localSize;
+      tmp =
+          new VariableInfo(
+              tmpName,
+              method.type,
+              emptyList(),
+              false,
+              (short) ctx.classIdMap.variables.localSize,
+              null);
+      ctx.classIdMap.variables.putLocal(id(tmpName), tmp);
+      ctx.storeGen.store(out, tmp);
+    }
+    List<List<Statement>> pending = new ArrayList<>(ctx.finallyStack);
+    ctx.finallyStack.clear();
+    for (List<Statement> finallyBody : pending) {
+      for (Statement stmt : finallyBody) {
+        ctx.delegator.generate(out, method, stmt);
+      }
+    }
+    for (int i = pending.size() - 1; i >= 0; i--) {
+      ctx.finallyStack.push(pending.get(i));
+    }
+    if (tmp == null) {
+      out.write(RETURN);
+      return out;
+    }
+    ctx.loadGen.load(out, tmp);
+    returnOpcode(out, method.type);
     return out;
   }
 
@@ -45,6 +88,10 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
     }
     ctx.exprGen.eval(out, type, retValue);
     ctx.basicGen.convert1(out, ctx.opStack.type(), type);
+    return returnOpcode(out, type);
+  }
+
+  private HasOutput returnOpcode(DynamicByteArray out, String type) {
     switch (type) {
       case INT:
         out.write(IRETURN);

@@ -246,7 +246,10 @@ public class OrzoTest {
         args(list("tests/VoidReturnAfterCall")),
         args(list("tests/CStyleArrayParam")),
         args(list("tests/NestedTernary")),
-        args(list("tests/WidenCallResult")));
+        args(list("tests/WidenCallResult")),
+        args(list("tests/TryFinally")),
+        args(list("tests/ImplicitThisCallArg")),
+        args(list("tests/StaticCallOnClassName")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the
