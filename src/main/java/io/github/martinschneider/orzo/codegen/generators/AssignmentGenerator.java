@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.AALOAD;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
@@ -8,6 +9,7 @@ import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
+import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.FieldProcessor;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
@@ -289,6 +291,10 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
         ctx.opStack.push(instanceField.fieldType);
         currentType = instanceField.fieldType;
       }
+      if (id.arrSel != null) {
+        // an element of an array field along the chain, e.g. the "b[i]" in "a.b[i].c = x"
+        currentType = loadElements(out, id, currentType);
+      }
       id = id.next;
     }
 
@@ -303,6 +309,31 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
         String fieldTypeDescr = TypeUtils.descr(fieldType);
         ctx.constPool.addClass(className);
         ctx.constPool.addFieldRef(className, instanceField.fieldName, fieldTypeDescr);
+        if (id.arrSel != null) {
+          // an element of an array field, e.g. "a.b[i] = x"
+          ctx.loadGen.getField(
+              out,
+              ctx.constPool.indexOf(
+                  CONSTANT_FIELDREF, className, instanceField.fieldName, fieldTypeDescr));
+          ctx.opStack.pop();
+          ctx.opStack.push(fieldType);
+          List<Expression> indices = id.arrSel.exprs;
+          String arrayType = fieldType;
+          for (int i = 0; i < indices.size() - 1; i++) {
+            ctx.exprGen.eval(out, INT, indices.get(i));
+            out.write(AALOAD);
+            ctx.opStack.pop(2);
+            arrayType = arrayType.substring(1);
+            ctx.opStack.push(arrayType);
+          }
+          String elemType = TypeUtils.jvmDescriptorToTypeName(arrayType.substring(1));
+          ctx.exprGen.eval(out, INT, indices.get(indices.size() - 1));
+          ExpressionResult result = ctx.exprGen.eval(out, elemType, value);
+          ctx.basicGen.convert1(out, result.type, elemType);
+          out.write(TypeUtils.getStoreOpCode(elemType));
+          ctx.opStack.pop(3);
+          return out;
+        }
         ctx.exprGen.eval(out, fieldType, value);
         ctx.storeGen.putField(
             out,
@@ -316,6 +347,18 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       }
     }
     return out;
+  }
+
+  // Loads the selected element(s) of the array on top of the stack, returns the element type
+  private String loadElements(DynamicByteArray out, Identifier id, String arrayType) {
+    for (Expression index : id.arrSel.exprs) {
+      ctx.exprGen.eval(out, INT, index);
+      arrayType = arrayType.substring(1);
+      out.write(TypeUtils.getLoadOpCode(TypeUtils.jvmDescriptorToTypeName(arrayType)));
+      ctx.opStack.pop(2);
+      ctx.opStack.push(TypeUtils.jvmDescriptorToTypeName(arrayType));
+    }
+    return TypeUtils.jvmDescriptorToTypeName(arrayType);
   }
 
   private HasOutput handleThisFieldAssignment(

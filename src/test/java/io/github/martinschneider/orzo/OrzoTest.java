@@ -295,7 +295,9 @@ public class OrzoTest {
         args(list("tests/ConcatForObject")),
         args(list("tests/LongDoubleConstants")),
         args(list("tests/EnumConstructors")),
-        args(list("tests/EnumUsage", "tests/EnumUsageColor")));
+        args(list("tests/EnumUsage", "tests/EnumUsageColor")),
+        args(list("tests/ArrayElementIncrement")),
+        args(list("tests/FieldArrayAssignment")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

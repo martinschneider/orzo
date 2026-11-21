@@ -9,6 +9,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
+import io.github.martinschneider.orzo.parser.productions.ArraySelector;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
 import java.util.List;
@@ -25,10 +26,11 @@ public class PostIncrementParser implements ProdParser<IncrementStatement> {
     Identifier id;
     Operator op;
     int idx = tokens.idx();
+    ArraySelector arrSel;
     if (tokens.curr() instanceof Identifier) {
       id = (Identifier) tokens.curr();
       tokens.next();
-      id.arrSel = ctx.arraySelectorParser.parse(tokens);
+      arrSel = ctx.arraySelectorParser.parse(tokens);
     } else {
       return null;
     }
@@ -40,8 +42,16 @@ public class PostIncrementParser implements ProdParser<IncrementStatement> {
         op = op(POST_DECREMENT);
         tokens.next();
       } else {
-        tokens.prev();
+        tokens.setIdx(idx);
         return null;
+      }
+      if (arrSel != null) {
+        // the selector belongs to the last link of a chain, e.g. "a.b[i]++"
+        Identifier last = id;
+        while (last.next != null) {
+          last = last.next;
+        }
+        last.arrSel = arrSel;
       }
       if (tokens.curr().eq(sym(SEMICOLON))) {
         tokens.next();

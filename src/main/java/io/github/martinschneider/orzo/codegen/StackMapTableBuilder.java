@@ -318,6 +318,62 @@ public class StackMapTableBuilder {
    * Handles all branch instructions, dead code after unconditional transfers, and exception-handler
    * entry points (which carry one element on the stack). Returns 0 for null/empty code.
    */
+  // The dup instructions (JVMS 6.5), on a stack of verification types where a long or double ("J",
+  // "D") is a single (category 2) entry
+  private static void applyDup(byte op, List<String> stack) {
+    int n = stack.size();
+    if (n == 0) {
+      return;
+    }
+    String v1 = stack.get(n - 1);
+    boolean wide1 = isCategory2(v1);
+    boolean wide2 = n >= 2 && isCategory2(stack.get(n - 2));
+    switch (op) {
+      case DUP: // ..., v1 -> ..., v1, v1
+        stack.add(v1);
+        break;
+      case DUP_X1: // ..., v2, v1 -> ..., v1, v2, v1
+        stack.add(Math.max(0, n - 2), v1);
+        break;
+      case DUP_X2: // ..., v3, v2, v1 -> ..., v1, v3, v2, v1 (v2 wide: ..., v2, v1 -> v1, v2, v1)
+        stack.add(Math.max(0, wide2 ? n - 2 : n - 3), v1);
+        break;
+      case DUP2: // ..., v2, v1 -> ..., v2, v1, v2, v1 (v1 wide: ..., v1 -> ..., v1, v1)
+        if (wide1) {
+          stack.add(v1);
+        } else {
+          stack.add((n >= 2) ? stack.get(n - 2) : v1);
+          stack.add(v1);
+        }
+        break;
+      case DUP2_X1: // ..., v3, v2, v1 -> ..., v2, v1, v3, v2, v1 (v1 wide: v2, v1 -> v1, v2, v1)
+        if (wide1) {
+          stack.add(Math.max(0, n - 2), v1);
+        } else {
+          String v2 = (n >= 2) ? stack.get(n - 2) : v1;
+          stack.add(Math.max(0, n - 3), v1);
+          stack.add(Math.max(0, n - 3), v2);
+        }
+        break;
+      default: // DUP2_X2
+        if (wide1) {
+          // ..., v3, v2, v1 -> ..., v1, v3, v2, v1 (v2 wide: ..., v2, v1 -> ..., v1, v2, v1)
+          stack.add(Math.max(0, wide2 ? n - 2 : n - 3), v1);
+        } else {
+          // ..., v4, v3, v2, v1 -> ..., v2, v1, v4, v3, v2, v1
+          // (v3 wide: ..., v3, v2, v1 -> ..., v2, v1, v3, v2, v1)
+          String v2 = (n >= 2) ? stack.get(n - 2) : v1;
+          int at = (n >= 3 && isCategory2(stack.get(n - 3))) ? n - 3 : n - 4;
+          stack.add(Math.max(0, at), v1);
+          stack.add(Math.max(0, at), v2);
+        }
+    }
+  }
+
+  private static boolean isCategory2(String type) {
+    return "J".equals(type) || "D".equals(type);
+  }
+
   public static int computeMaxStack(byte[] code, ConstantPool constPool) {
     return computeMaxStack(code, constPool, Collections.emptyList(), Collections.emptyMap());
   }
@@ -820,6 +876,15 @@ public class StackMapTableBuilder {
         stack.add(NULL);
         break;
 
+      case DUP:
+      case DUP_X1:
+      case DUP_X2:
+      case DUP2:
+      case DUP2_X1:
+      case DUP2_X2:
+        applyDup(op, stack);
+        break;
+
       // Push ref
       case ALOAD_0:
       case ALOAD_1:
@@ -827,20 +892,7 @@ public class StackMapTableBuilder {
       case ALOAD_3:
       case ALOAD:
       case AALOAD:
-      case DUP:
-      case DUP_X1:
-      case DUP_X2:
-      case DUP2:
-      case DUP2_X1:
-      case DUP2_X2:
-        // For dup: push a copy of the top (type unknown without full stack view, use Object)
-        if (op >= DUP && op <= DUP2_X2) {
-          if (!stack.isEmpty()) {
-            stack.add(stack.get(stack.size() - 1));
-          } else {
-            stack.add("Ljava/lang/Object;");
-          }
-        } else if (op == AALOAD) {
+        if (op == AALOAD) {
           String elemType = "Ljava/lang/Object;";
           if (stack.size() >= 2) {
             stack.remove(stack.size() - 1);
@@ -996,7 +1048,10 @@ public class StackMapTableBuilder {
 
       // pop2
       case POP2:
-        if (stack.size() >= 2) {
+        // one long/double, or two category 1 values
+        if (!stack.isEmpty() && isCategory2(stack.get(stack.size() - 1))) {
+          stack.remove(stack.size() - 1);
+        } else if (stack.size() >= 2) {
           stack.remove(stack.size() - 1);
           stack.remove(stack.size() - 1);
         } else if (!stack.isEmpty()) {

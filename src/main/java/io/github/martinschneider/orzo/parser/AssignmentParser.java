@@ -42,6 +42,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
+import io.github.martinschneider.orzo.parser.productions.ArraySelector;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.util.ArrayList;
@@ -108,8 +109,12 @@ public class AssignmentParser implements ProdParser<Assignment> {
           }
         }
         tokens.next();
+        // the selector belongs to the last link, e.g. "a.b[i] = x"
+        ArraySelector arrSel = ctx.arraySelectorParser.parse(tokens);
+        if (arrSel != null) {
+          id.arrSel = arrSel;
+        }
         id = root;
-        id.arrSel = ctx.arraySelectorParser.parse(tokens);
         left.add(id);
       } else {
         tokens.next();

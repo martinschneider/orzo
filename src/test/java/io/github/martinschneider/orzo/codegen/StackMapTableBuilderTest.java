@@ -10,6 +10,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPLE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IRETURN;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ISTORE_2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.POP2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.PUTFIELD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.RETURN;
 import static java.util.Collections.emptyList;
@@ -37,6 +38,26 @@ public class StackMapTableBuilderTest {
     // aload_0; getfield #1; ireturn  →  max stack = 1
     byte[] code = {ALOAD_0, GETFIELD, 0, 1, IRETURN};
     assertEquals(1, StackMapTableBuilder.computeMaxStack(code, constPool));
+  }
+
+  @Test
+  public void testDupForms() {
+    // dup2 on two ints duplicates both: depth 4
+    assertEquals(
+        4,
+        StackMapTableBuilder.computeMaxStack(
+            new byte[] {ICONST_1, ICONST_2, OpCodes.DUP2, POP2, POP2, RETURN}, constPool));
+    // dup2 on a long duplicates the long only: depth 4 slots
+    assertEquals(
+        4,
+        StackMapTableBuilder.computeMaxStack(
+            new byte[] {OpCodes.LCONST_1, OpCodes.DUP2, POP2, POP2, RETURN}, constPool));
+    // dup_x2 on three ints inserts one copy: depth 4
+    assertEquals(
+        4,
+        StackMapTableBuilder.computeMaxStack(
+            new byte[] {ICONST_1, ICONST_2, ICONST_1, OpCodes.DUP_X2, POP2, POP2, RETURN},
+            constPool));
   }
 
   @Test

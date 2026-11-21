@@ -2,11 +2,18 @@ package io.github.martinschneider.orzo.codegen.generators;
 
 import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ANEWARRAY;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DCONST_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2_X1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP2_X2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DUP_X1;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP_X2;
+import static io.github.martinschneider.orzo.codegen.OpCodes.FCONST_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2B;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2C;
+import static io.github.martinschneider.orzo.codegen.OpCodes.I2S;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IAND;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ICONST_1;
@@ -27,6 +34,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPNE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INSTANCEOF;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IOR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IXOR;
+import static io.github.martinschneider.orzo.codegen.OpCodes.LCONST_1;
 import static io.github.martinschneider.orzo.codegen.OpCodes.NEWARRAY;
 import static io.github.martinschneider.orzo.codegen.OpCodes.SWAP;
 import static io.github.martinschneider.orzo.codegen.TypeUtils.getArrayType;
@@ -162,9 +170,80 @@ public class ExpressionGenerator {
             || next.eq(op(POST_DECREMENT)));
   }
 
+  /**
+   * "a[i]++", "--x.arr[f()]" (the operand evaluated once: array reference and index are DUP2'ed).
+   * Returns the element type, or null (generating nothing) for an unsupported operand, e.g. a
+   * multi-dimensional array or one returned by a method call.
+   */
+  public String incrementArrayElement(
+      DynamicByteArray out, Identifier id, Operators op, boolean leaveValue) {
+    List<Identifier> links = new ArrayList<>();
+    for (Identifier link = id; link != null; link = link.next) {
+      if (link.getClass() != Identifier.class) {
+        return null;
+      }
+      links.add(link);
+    }
+    Identifier last = links.get(links.size() - 1);
+    if (last.arrSel == null || last.arrSel.exprs.size() != 1) {
+      return null;
+    }
+    String elemType =
+        TypeUtils.jvmDescriptorToTypeName(
+            new NumExprTypeDecider(ctx).getType(ctx.classIdMap, new Expression(List.of(id))));
+    String arithType = List.of(BYTE, SHORT, CHAR).contains(elemType) ? INT : elemType;
+    if (!ONE.containsKey(arithType)) {
+      return null;
+    }
+    // the array reference: the same chain without the last selector
+    Identifier arrayRef = null;
+    Identifier tail = null;
+    for (Identifier link : links) {
+      Identifier copy = new Identifier(link.val.toString(), (link == last) ? null : link.arrSel);
+      if (arrayRef == null) {
+        arrayRef = copy;
+      } else {
+        tail.next = copy;
+      }
+      tail = copy;
+    }
+    eval(out, null, new Expression(new ArrayList<>(List.of(arrayRef))));
+    eval(out, INT, last.arrSel.exprs.get(0));
+    boolean wide = LONG.equals(elemType) || DOUBLE.equals(elemType);
+    boolean pre = op == PRE_INCREMENT || op == PRE_DECREMENT;
+    Operators arith = (op == PRE_DECREMENT || op == POST_DECREMENT) ? MINUS : PLUS;
+    out.write(DUP2);
+    out.write(TypeUtils.getLoadOpCode(elemType));
+    if (leaveValue && !pre) {
+      out.write(wide ? DUP2_X2 : DUP_X2);
+    }
+    out.write(ONE.get(arithType));
+    out.write(ARITHMETIC_OPS.get(arith).get(arithType));
+    if (NARROWING.containsKey(elemType)) {
+      out.write(NARROWING.get(elemType));
+    }
+    if (leaveValue && pre) {
+      out.write(wide ? DUP2_X2 : DUP_X2);
+    }
+    out.write(TypeUtils.getStoreOpCode(elemType));
+    ctx.opStack.pop(2); // the array reference and the index
+    if (leaveValue) {
+      ctx.opStack.push(elemType);
+    }
+    return elemType;
+  }
+
+  private static final Map<String, Byte> ONE =
+      Map.of(INT, ICONST_1, LONG, LCONST_1, FLOAT, FCONST_1, DOUBLE, DCONST_1);
+  private static final Map<String, Byte> NARROWING = Map.of(BYTE, I2B, SHORT, I2S, CHAR, I2C);
+
   // Desugars into "a.b.c = a.b.c + 1" plus a load of "a.b.c" before (post-increment) or after it
-  // (pre-increment). The receiver is evaluated more than once.
+  // (pre-increment). The receiver is evaluated more than once (harmless for a chain of fields).
   private String generateChainedIncrement(DynamicByteArray out, Identifier id, Operators op) {
+    String elemType = incrementArrayElement(out, id, op, true);
+    if (elemType != null) {
+      return elemType;
+    }
     Operators arith = (op == PRE_DECREMENT || op == POST_DECREMENT) ? MINUS : PLUS;
     boolean pre = op == PRE_INCREMENT || op == PRE_DECREMENT;
     Expression value = new Expression(new ArrayList<>(List.of(id)));
