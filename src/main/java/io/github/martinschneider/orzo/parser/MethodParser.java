@@ -229,14 +229,10 @@ public class MethodParser implements ProdParser<Method> {
         // signature even when the body contains syntax Orzo cannot yet parse.
         // Still report it (unless the statement that stopped it already reported an error):
         // silently compiling a truncated method body produces wrong bytecode.
-        if (tokens.curr() instanceof EOF) {
+        // (parseStmtSeq() reports unparsable statements, so this is the end of the input)
+        if (ctx.errors.errors.size() == errorCount) {
           ctx.errors.missingExpected(
               LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
-        } else if (ctx.errors.errors.size() == errorCount) {
-          ctx.errors.addError(
-              LOG_NAME,
-              "expected a statement but found " + tokens.curr().display(),
-              new RuntimeException().getStackTrace());
         }
         int depth = 1;
         while (depth > 0 && !(tokens.curr() instanceof EOF)) {

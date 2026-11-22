@@ -7,6 +7,8 @@ import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import io.github.martinschneider.orzo.parser.productions.Statement;
+import io.github.martinschneider.orzo.parser.productions.SwitchStatement;
 
 /**
  * Emits a placeholder GOTO for a "break" statement and records its offset field in {@code
@@ -23,6 +25,23 @@ public class BreakGenerator implements StatementGenerator<Break> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, Break stmt) {
+    boolean valid = false;
+    for (Statement target : ctx.jumpTargets) {
+      if ((stmt.label != null)
+          ? stmt.label.equals(CGContext.label(target))
+          : CGContext.isLoop(target) || target instanceof SwitchStatement) {
+        valid = true;
+      }
+    }
+    if (!valid) {
+      ctx.errors.addError(
+          "break code generator",
+          (stmt.label != null)
+              ? "undefined label: " + stmt.label
+              : "break outside of a loop or switch",
+          new RuntimeException().getStackTrace());
+      return out;
+    }
     if (stmt.label != null) {
       out.labeledBreaks
           .computeIfAbsent(stmt.label, k -> new java.util.ArrayList<>())

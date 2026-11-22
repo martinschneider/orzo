@@ -21,24 +21,24 @@ public class Orzo {
   public static void main(String args[]) throws IOException {
     int verbose = 0;
     if (args.length == 0) {
-      System.err.println("Syntax: orzo inputFiles -d outputPath");
+      System.err.println("Syntax: orzo inputFiles -d outputPath [-v [level]]");
+      System.exit(2);
     } else {
       List<File> inputs = new ArrayList<>();
       String outputPath = null;
       for (int i = 0; i < args.length; i++) {
         if (args[i].equals("-v")) {
-          if (args.length >= i + 2) {
+          verbose = 1;
+          if (args.length >= i + 2 && args[i + 1].matches("[0-9]+")) {
             verbose = Integer.parseInt(args[i + 1]);
             i++;
-          } else {
-            verbose = 1;
           }
         } else if (!args[i].equals("-d")) {
           inputs.add(new File(args[i]));
         } else {
           if (args.length < i + 2) {
             System.err.println("Missing argument for -d option");
-            return;
+            System.exit(2);
           }
           outputPath = args[i + 1];
           i++;
@@ -79,21 +79,35 @@ public class Orzo {
     List<Clazz> nestedClazzes = new ArrayList<>();
     for (int i = 0; i < inputs.size(); i++) {
       if (verbose > 0) {
-        System.out.println("Reading from: " + inputs.get(i).getAbsolutePath());
+        log("Reading from: " + inputs.get(i).getAbsolutePath());
       }
       errors.file = inputs.get(i).getName();
-      TokenList tokens = new Lexer(errors).getTokens(inputs.get(i));
+      TokenList tokens;
+      try {
+        tokens = new Lexer(errors).getTokens(inputs.get(i));
+      } catch (IOException e) {
+        errors.addError("read", "cannot read file: " + e.getMessage(), e.getStackTrace());
+        continue;
+      }
       if (verbose > 0) {
-        System.out.println(
+        log(
             "Scanner output: "
                 + tokens.list().stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
       }
       Parser parser = new Parser(errors);
       errors.tokens = tokens;
-      Clazz clazz = parser.parse(tokens);
-      errors.tokens = null;
+      Clazz clazz;
+      try {
+        clazz = parser.parse(tokens);
+      } catch (RuntimeException e) {
+        // a bug in the parser: report it (at the current token) and go on with the next file
+        errors.addError("parser", "internal compiler error: " + e, e.getStackTrace());
+        continue;
+      } finally {
+        errors.tokens = null;
+      }
       if (verbose > 0) {
-        System.out.println("Parser output: " + clazz);
+        log("Parser output: " + clazz);
       }
       if (clazz == null) {
         errors.addError(
@@ -134,7 +148,7 @@ public class Orzo {
       for (int i = 0; i < clazzes.size(); i++) {
         File outputFile = new File(classPath(outputPath, clazzes.get(i)));
         if (verbose > 0) {
-          System.out.println("Writing to: " + outputFile.getAbsolutePath());
+          log("Writing to: " + outputFile.getAbsolutePath());
         }
         if (!outputFile.getParentFile().exists()) {
           outputFile.getParentFile().mkdirs();
@@ -145,6 +159,11 @@ public class Orzo {
       }
     }
     return true;
+  }
+
+  // verbose output (-v) goes to stderr, like the errors (stdout is left to the program's users)
+  private static void log(String message) {
+    System.err.println(message);
   }
 
   // Output always buffers what's written to it (getBytes()); the PrintStream is irrelevant

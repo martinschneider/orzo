@@ -111,24 +111,37 @@ public class CodeGenerator {
       Clazz clazz = clazzes.get(i);
       errors.file = clazz.sourceFile;
       errors.position = null;
-      init(i);
-      ctx.classIdMap.variables.fieldMap.clear();
-      ctx.classIdMap.variables.localMap.clear();
-      header();
-      supportPrint(clazz);
-      ctx.memberProc.processFields();
-      HasOutput methods = methods(new DynamicByteArray(), clazz);
-      HasOutput constPool = constPool(new DynamicByteArray());
-      out.write(constPool.getBytes());
-      accessModifiers(clazz);
-      classIndex();
-      superClassIndex();
-      interfaces(clazz);
-      fields();
-      out.write(methods.getBytes());
-      attributes();
-      out.flush();
+      try {
+        generate(i, clazz);
+      } catch (RuntimeException e) {
+        // a bug in the compiler: report it (at the statement being generated) and go on with the
+        // next class instead of crashing (no class files are written after errors)
+        errors.addError(
+            "code generator",
+            "internal compiler error in " + clazz.fqn() + ": " + e,
+            e.getStackTrace());
+      }
     }
+  }
+
+  private void generate(int i, Clazz clazz) {
+    init(i);
+    ctx.classIdMap.variables.fieldMap.clear();
+    ctx.classIdMap.variables.localMap.clear();
+    header();
+    supportPrint(clazz);
+    ctx.memberProc.processFields();
+    HasOutput methods = methods(new DynamicByteArray(), clazz);
+    HasOutput constPool = constPool(new DynamicByteArray());
+    out.write(constPool.getBytes());
+    accessModifiers(clazz);
+    classIndex();
+    superClassIndex();
+    interfaces(clazz);
+    fields();
+    out.write(methods.getBytes());
+    attributes();
+    out.flush();
   }
 
   private void header() {

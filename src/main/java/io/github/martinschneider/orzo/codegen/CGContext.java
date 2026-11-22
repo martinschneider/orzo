@@ -64,6 +64,27 @@ public class CGContext {
   // try block must run them first
   public java.util.Deque<List<io.github.martinschneider.orzo.parser.productions.Statement>>
       finallyStack = new java.util.ArrayDeque<>();
+  // the enclosing loops, switch statements and labeled blocks of the statement being generated
+  // (innermost first), the targets of break and continue
+  public java.util.Deque<io.github.martinschneider.orzo.parser.productions.Statement> jumpTargets =
+      new java.util.ArrayDeque<>();
+
+  // a statement's label, e.g. "outer" for "outer: for (...)" (null if it has none)
+  public static String label(io.github.martinschneider.orzo.parser.productions.Statement stmt) {
+    if (stmt instanceof io.github.martinschneider.orzo.parser.productions.LoopStatement) {
+      return ((io.github.martinschneider.orzo.parser.productions.LoopStatement) stmt).label;
+    } else if (stmt instanceof io.github.martinschneider.orzo.parser.productions.ForEachStatement) {
+      return ((io.github.martinschneider.orzo.parser.productions.ForEachStatement) stmt).label;
+    } else if (stmt instanceof io.github.martinschneider.orzo.parser.productions.Block) {
+      return ((io.github.martinschneider.orzo.parser.productions.Block) stmt).label;
+    }
+    return null;
+  }
+
+  public static boolean isLoop(io.github.martinschneider.orzo.parser.productions.Statement stmt) {
+    return stmt instanceof io.github.martinschneider.orzo.parser.productions.LoopStatement
+        || stmt instanceof io.github.martinschneider.orzo.parser.productions.ForEachStatement;
+  }
 
   public void init(CompilerErrors errors, int idx, List<Clazz> clazzes, List<Output> outputs) {
     exceptionTable = new ArrayList<>();

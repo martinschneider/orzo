@@ -66,10 +66,18 @@ public class StatementDelegator {
     if (start != null) {
       ctx.errors.position = start;
     }
+    boolean jumpTarget =
+        CGContext.isLoop(stmt) || stmt instanceof SwitchStatement || CGContext.label(stmt) != null;
+    if (jumpTarget) {
+      ctx.jumpTargets.push(stmt);
+    }
     try {
       return reg.get(stmt.getClass()).generate(out, method, stmt);
     } finally {
       ctx.errors.position = outer;
+      if (jumpTarget) {
+        ctx.jumpTargets.pop();
+      }
     }
   }
 }

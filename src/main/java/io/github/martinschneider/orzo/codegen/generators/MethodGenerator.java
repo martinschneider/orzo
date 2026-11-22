@@ -97,22 +97,6 @@ public class MethodGenerator {
         }
         methodOut.write(RETURN);
       }
-      if (!methodOut.pendingBreaks.isEmpty() || !methodOut.labeledBreaks.isEmpty()) {
-        ctx.errors.addError(
-            LOG_NAME,
-            methodOut.labeledBreaks.isEmpty()
-                ? "break outside of a loop or switch"
-                : "undefined label: " + methodOut.labeledBreaks.keySet().iterator().next(),
-            new RuntimeException().getStackTrace());
-      }
-      if (!methodOut.pendingContinues.isEmpty() || !methodOut.labeledContinues.isEmpty()) {
-        ctx.errors.addError(
-            LOG_NAME,
-            methodOut.labeledContinues.isEmpty()
-                ? "continue outside of a loop"
-                : "undefined label: " + methodOut.labeledContinues.keySet().iterator().next(),
-            new RuntimeException().getStackTrace());
-      }
       byte[] stackMapBytes =
           StackMapTableBuilder.buildFromBytecode(methodOut.getBytes(), method, ctx, ctx.constPool);
       int codeLen = methodOut.size();

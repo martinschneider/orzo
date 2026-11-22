@@ -161,19 +161,18 @@ array dimensions, multi-dimensional arrays (used to emit nothing), and the obvio
 mismatches. Earlier, `~x`, text blocks, switch fall-through and `System.out.println()` compiled to
 wrong code without an error.
 
+Also done: error recovery (an unparsable statement or class member is reported and skipped, so one
+run reports independent errors), `break`/`continue` errors at the statement (enclosing loops, switches
+and labeled blocks are tracked during code generation), internal compiler errors (an exception while
+parsing a file or generating a class is reported as an error, and the other files and classes are
+still checked), and usage errors exit with status 2.
+
 Still to do:
 
-- **Error recovery**: one syntax error ends the method body (later statements aren't checked). Skip to
-  the next `;` or `}` and continue, so a single run reports several independent errors.
-- **Statement-level positions for all errors**: errors detected after a method's body (e.g. a `break`
-  outside a loop) are reported at the method; record the token with the statement that causes them.
 - **Structured diagnostics**: severity (error/warning), a stable code, an optional source excerpt with
-  a `^` marker, and notes ("did you mean ...?"). Capture the compiler's own stack trace only with `-v`
-  (every error still captures one via `new RuntimeException().getStackTrace()`).
-- **Internal compiler errors**: catch unexpected exceptions per class and report "internal compiler
-  error in Foo.m()" with the stack trace, instead of crashing the whole run.
-- **Logging**: compiler-internal tracing (`-v` token and parse tree dumps, the parser's loop guard)
-  should go through `System.Logger` with levels; nothing should print to stdout or stderr directly.
+  a `^` marker, and notes ("did you mean ...?").
+- **Positions for errors inside expressions**: code generation errors are reported at the start of
+  their statement; a typed expression tree (recommendation 2) can carry the position of each node.
 - **Explicit resolution failures**: ~50 `catch (ClassNotFoundException e)` blocks fall back silently;
   an unresolved name should end up as one "cannot find symbol" error (see recommendation 3).
 - **Real type checking**: only the clearest incompatible assignments are detected; the attribution phase

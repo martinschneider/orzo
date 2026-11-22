@@ -10,6 +10,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.lexer.tokens.EOF;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Block;
@@ -25,38 +26,65 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class StatementParser implements ProdParser<Statement> {
+  private static final String LOG_NAME = "parse statement";
   private ParserContext ctx;
 
   public StatementParser(ParserContext ctx) {
     this.ctx = ctx;
   }
 
+  /**
+   * The statements up to the closing '}' of a block (or the end of the input). A statement that
+   * can't be parsed is reported (unless it reported an error itself) and skipped, so that the
+   * following statements are still checked.
+   */
   public List<Statement> parseStmtSeq(TokenList tokens) {
     List<Statement> stmtSequence = new ArrayList<>();
-    Statement stmt;
-    int lastIdx = -1;
-    int stuckCount = 0;
-    while ((stmt = parse(tokens)) != null) {
-      stmtSequence.add(stmt);
-      int currIdx = tokens.idx();
-      if (currIdx == lastIdx) {
-        stuckCount++;
-        if (stuckCount >= 3) {
-          System.err.println(
-              "[LOOP GUARD] parseStmtSeq stuck at token idx="
-                  + currIdx
-                  + " token="
-                  + tokens.curr()
-                  + " parsed="
-                  + stmt.getClass().getSimpleName());
-          break;
-        }
-      } else {
-        stuckCount = 0;
+    while (!tokens.curr().eq(sym(RBRACE)) && !(tokens.curr() instanceof EOF)) {
+      int start = tokens.idx();
+      int errorCount = ctx.errors.errors.size();
+      Statement stmt = parse(tokens);
+      if (stmt != null && tokens.idx() > start) {
+        stmtSequence.add(stmt);
+        continue;
       }
-      lastIdx = currIdx;
+      if (ctx.errors.errors.size() == errorCount) {
+        tokens.setIdx(start);
+        ctx.errors.addError(
+            LOG_NAME,
+            "expected a statement but found " + tokens.curr().display(),
+            new RuntimeException().getStackTrace());
+      }
+      skipStatement(tokens, start);
     }
     return (stmtSequence.size() == 0) ? null : stmtSequence;
+  }
+
+  // Error recovery: continues after the next ';' (or before the '}' that closes the block)
+  private void skipStatement(TokenList tokens, int start) {
+    if (tokens.idx() < start) {
+      tokens.setIdx(start);
+    }
+    int depth = 0;
+    boolean moved = tokens.idx() > start;
+    while (!(tokens.curr() instanceof EOF)) {
+      if (tokens.curr().eq(sym(LBRACE))) {
+        depth++;
+      } else if (tokens.curr().eq(sym(RBRACE))) {
+        if (depth == 0) {
+          if (!moved) {
+            tokens.next(); // (no progress otherwise)
+          }
+          return;
+        }
+        depth--;
+      } else if (depth == 0 && tokens.curr().eq(sym(SEMICOLON))) {
+        tokens.next();
+        return;
+      }
+      tokens.next();
+      moved = true;
+    }
   }
 
   // A call chain none of the parsers above handle, e.g. "arr[i].append(x);"

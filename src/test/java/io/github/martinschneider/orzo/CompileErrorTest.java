@@ -62,9 +62,10 @@ public class CompileErrorTest {
         Arguments.of(
             "String q = \"\"\"\n  a\n  \"\"\";",
             "N.java:5:16: error: text blocks are not supported"),
-        // (reported at the start of the method)
-        Arguments.of("break;", "N.java:3:3: error: break outside of a loop or switch"),
-        Arguments.of("continue;", "N.java:3:3: error: continue outside of a loop"));
+        Arguments.of("break;", "N.java:5:5: error: break outside of a loop or switch"),
+        Arguments.of("continue;", "N.java:5:5: error: continue outside of a loop"),
+        Arguments.of(
+            "while (x < 3) { break outer; }", "N.java:5:21: error: undefined label: outer"));
   }
 
   @ParameterizedTest
@@ -79,6 +80,79 @@ public class CompileErrorTest {
     List<String> errors =
         compile(Map.of("N.java", "public class N {\n  int f() {\n    int x = 1;\n  }\n}\n"));
     assertEquals(List.of("N.java:2:3: error: missing return statement"), errors);
+  }
+
+  @Test
+  public void independentErrorsAreReported() throws IOException {
+    // (the parser continues after a statement with an error)
+    List<String> errors =
+        compile(
+            Map.of(
+                "M.java",
+                "public class M {\n"
+                    + "  void m(int x) {\n"
+                    + "    int a = ;\n"
+                    + "    x + 1;\n"
+                    + "    while (true {\n"
+                    + "      x++;\n"
+                    + "    }\n"
+                    + "    int b = 1 +;\n"
+                    + "  }\n"
+                    + "  void n() {\n"
+                    + "    foo(;\n"
+                    + "  }\n"
+                    + "}\n"));
+    assertEquals(
+        List.of(
+            "M.java:3:13: error: expected an expression but found ';'",
+            "M.java:4:5: error: expected a statement but found 'x'",
+            "M.java:5:17: error: expected ')' but found '{'",
+            "M.java:8:16: error: expected an expression but found ';'",
+            "M.java:11:9: error: expected ')' but found ';'"),
+        errors);
+  }
+
+  @Test
+  public void independentMemberErrorsAreReported() throws IOException {
+    List<String> errors =
+        compile(
+            Map.of(
+                "C.java",
+                "public class C {\n"
+                    + "  int a = ;\n"
+                    + "  + 3;\n"
+                    + "  int f() {\n"
+                    + "    return 1;\n"
+                    + "  }\n"
+                    + "  ) junk {\n"
+                    + "  }\n"
+                    + "  void n() {\n"
+                    + "    x + 1;\n"
+                    + "  }\n"
+                    + "}\n"));
+    assertEquals(
+        List.of(
+            "C.java:2:11: error: expected an expression but found ';'",
+            "C.java:3:3: error: expected a field, method or class declaration but found '+'",
+            "C.java:7:3: error: expected a field, method or class declaration but found ')'",
+            "C.java:10:5: error: expected a statement but found 'x'"),
+        errors);
+  }
+
+  @Test
+  public void unreadableFileIsAnError() throws IOException {
+    Orzo orzo =
+        new Orzo(List.of(dir.resolve("Missing.java").toFile()), dir.resolve("out").toString(), 0);
+    PrintStream stderr = System.err;
+    System.setErr(new PrintStream(new ByteArrayOutputStream()));
+    try {
+      assertFalse(orzo.compile());
+    } finally {
+      System.setErr(stderr);
+    }
+    assertTrue(
+        orzo.errors.errors.get(0).toString().startsWith("Missing.java: error: cannot read file"),
+        orzo.errors.toString());
   }
 
   @Test

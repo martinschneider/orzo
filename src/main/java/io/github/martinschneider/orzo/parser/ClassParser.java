@@ -330,6 +330,33 @@ public class ClassParser implements ProdParser<Clazz> {
     }
   }
 
+  // Error recovery: continues after the next ';' or the next "{ ... }" block (e.g. a method body)
+  private void skipMember(TokenList tokens, int start) {
+    if (tokens.idx() <= start) {
+      tokens.setIdx(start);
+      tokens.next();
+    }
+    int depth = 0;
+    while (!(tokens.curr() instanceof EOF)) {
+      if (tokens.curr().eq(sym(LBRACE))) {
+        depth++;
+      } else if (tokens.curr().eq(sym(RBRACE))) {
+        if (depth == 0) {
+          return; // the end of the class body
+        }
+        depth--;
+        if (depth == 0) {
+          tokens.next();
+          return;
+        }
+      } else if (depth == 0 && tokens.curr().eq(sym(SEMICOLON))) {
+        tokens.next();
+        return;
+      }
+      tokens.next();
+    }
+  }
+
   // A static nested class, e.g. "private static final class Frame { ... }": parsed into a separate
   // class "Outer$Frame" (see ParserContext.nestedClazzes)
   private boolean parseNestedClass(TokenList tokens) {
@@ -369,35 +396,27 @@ public class ClassParser implements ProdParser<Clazz> {
 
   List<ClassMember> parseClassBody(TokenList tokens, boolean isInterface) {
     List<ClassMember> classBody = new ArrayList<>();
-    ClassMember member = null;
-    int lastIdx = -1;
-    int stuckCount = 0;
-    while (true) {
+    while (!tokens.curr().eq(sym(RBRACE)) && !(tokens.curr() instanceof EOF)) {
       if (parseNestedClass(tokens)) {
         continue;
       }
-      member = parserClassMember(tokens, isInterface);
-      if (member == null) {
-        break;
+      int start = tokens.idx();
+      int errorCount = ctx.errors.errors.size();
+      ClassMember member = parserClassMember(tokens, isInterface);
+      if (member != null && tokens.idx() > start) {
+        classBody.add(member);
+        continue;
       }
-      classBody.add(member);
-      int currIdx = tokens.idx();
-      if (currIdx == lastIdx) {
-        stuckCount++;
-        if (stuckCount >= 3) {
-          System.err.println(
-              "[LOOP GUARD] parseClassBody stuck at token idx="
-                  + currIdx
-                  + " token="
-                  + tokens.curr()
-                  + " member="
-                  + member.getClass().getSimpleName());
-          break;
-        }
-      } else {
-        stuckCount = 0;
+      // a member that can't be parsed: report it (unless it reported an error itself) and continue
+      // after it
+      if (ctx.errors.errors.size() == errorCount) {
+        tokens.setIdx(start);
+        ctx.errors.addError(
+            LOG_NAME,
+            "expected a field, method or class declaration but found " + tokens.curr().display(),
+            new RuntimeException().getStackTrace());
       }
-      lastIdx = currIdx;
+      skipMember(tokens, start);
     }
     if (!classBody.isEmpty()) {
       return classBody;
