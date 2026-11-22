@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.util;
 
+import io.github.martinschneider.orzo.parser.tree.ExprNode;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Objects;
@@ -16,6 +17,7 @@ public class ObjectUtils {
     while (clazz != null && clazz != Object.class) {
       for (Field field : clazz.getDeclaredFields()) {
         if (Modifier.isStatic(field.getModifiers())) continue;
+        if (ExprNode.class.isAssignableFrom(field.getType())) continue; // (a derived form)
         try {
           result = prime * result + Objects.hashCode(field.get(obj));
         } catch (IllegalAccessException e) {
@@ -35,6 +37,7 @@ public class ObjectUtils {
     while (clazz != null && clazz != Object.class) {
       for (Field field : clazz.getDeclaredFields()) {
         if (Modifier.isStatic(field.getModifiers())) continue;
+        if (ExprNode.class.isAssignableFrom(field.getType())) continue; // (a derived form)
         try {
           if (!Objects.equals(field.get(a), field.get(b))) return false;
         } catch (IllegalAccessException e) {
@@ -55,6 +58,7 @@ public class ObjectUtils {
     while (clazz != null && clazz != Object.class) {
       for (Field field : clazz.getDeclaredFields()) {
         if (Modifier.isStatic(field.getModifiers())) continue;
+        if (ExprNode.class.isAssignableFrom(field.getType())) continue; // (a derived form)
         try {
           if (!first) sb.append(", ");
           sb.append(field.getName()).append('=').append(field.get(obj));

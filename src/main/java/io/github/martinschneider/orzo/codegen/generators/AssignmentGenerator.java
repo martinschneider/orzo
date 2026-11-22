@@ -218,7 +218,11 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
     for (Expression arrIdx : id.arrSel.exprs) {
       ctx.exprGen.eval(out, INT, arrIdx);
     }
-    ctx.exprGen.eval(out, type, val);
+    ExpressionResult value = ctx.exprGen.eval(out, type, val);
+    if (value != null && TypeUtils.isPrimitive(type) && TypeUtils.unboxedType(value.type) != null) {
+      // unboxing, e.g. "bytes[i] = map.get(k);" on a Map<String, Byte>
+      ctx.basicGen.convert1(out, value.type, type);
+    }
     ctx.storeGen.storeInArray(out, type);
     return out;
   }
@@ -251,6 +255,7 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       expression.tokens.replaceAll(x -> (x.eq(id)) ? tmpId : x);
       if (expression.tokens.contains(tmpId)) {
         retValue = true;
+        expression.tree = null; // (now generated from the changed tokens)
       }
     }
     return retValue;

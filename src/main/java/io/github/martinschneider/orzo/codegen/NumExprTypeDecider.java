@@ -81,6 +81,16 @@ public class NumExprTypeDecider {
 
   public String getType(GlobalIdentifierMap classIdMap, Expression expr) {
     if (expr == null) return null;
+    if (expr.tree != null && ExpressionTypes.isOperation(expr.tree)) {
+      return new ExpressionTypes(ctx).typeOf(expr.tree);
+    }
+    if (expr.tokens.size() == 2
+        && expr.tokens.get(0) instanceof Str
+        && expr.tokens.get(1) instanceof MethodCall
+        && ((MethodCall) expr.tokens.get(1)).literalReceiver) {
+      // a call on a String literal, e.g. "\"x\".length()"
+      return followChain(classIdMap, "java.lang.String", null, (MethodCall) expr.tokens.get(1));
+    }
     if (expr.cast != null) {
       return expr.cast.name;
     }

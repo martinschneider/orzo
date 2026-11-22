@@ -475,6 +475,8 @@ public class Lexer {
       }
     } else if (character == '~') {
       tokenList.add(op(BITWISE_NOT));
+    } else if (character == '÷') {
+      tokenList.add(op(REAL_DIV));
     } else if (character == '√') {
       tokenList.add(sym(SQRT));
     } else if (character == '⌊') {

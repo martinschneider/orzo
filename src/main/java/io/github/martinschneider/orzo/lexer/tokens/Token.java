@@ -60,8 +60,54 @@ public class Token {
     if (val instanceof Symbols) {
       return "'" + SYMBOLS.getOrDefault(val, val.toString()) + "'";
     }
+    if (val instanceof Operators && OPERATORS.containsKey(val)) {
+      return "'" + OPERATORS.get(val) + "'";
+    }
     return "'" + val + "'";
   }
+
+  // (for an operator without source text, e.g. one inserted by the parser)
+  private static final java.util.Map<Operators, String> OPERATORS =
+      java.util.Map.ofEntries(
+          java.util.Map.entry(Operators.ASSIGN, "="),
+          java.util.Map.entry(Operators.PLUS_ASSIGN, "+="),
+          java.util.Map.entry(Operators.MINUS_ASSIGN, "-="),
+          java.util.Map.entry(Operators.TIMES_ASSIGN, "*="),
+          java.util.Map.entry(Operators.DIV_ASSIGN, "/="),
+          java.util.Map.entry(Operators.MOD_ASSIGN, "%="),
+          java.util.Map.entry(Operators.LSHIFT_ASSIGN, "<<="),
+          java.util.Map.entry(Operators.RSHIFT_ASSIGN, ">>="),
+          java.util.Map.entry(Operators.RSHIFTU_ASSIGN, ">>>="),
+          java.util.Map.entry(Operators.BITWISE_OR_ASSIGN, "|="),
+          java.util.Map.entry(Operators.BITWISE_XOR_ASSIGN, "^="),
+          java.util.Map.entry(Operators.BITWISE_AND_ASSIGN, "&="),
+          java.util.Map.entry(Operators.LOGICAL_OR, "||"),
+          java.util.Map.entry(Operators.LOGICAL_AND, "&&"),
+          java.util.Map.entry(Operators.BITWISE_OR, "|"),
+          java.util.Map.entry(Operators.BITWISE_XOR, "^"),
+          java.util.Map.entry(Operators.BITWISE_AND, "&"),
+          java.util.Map.entry(Operators.EQUAL, "=="),
+          java.util.Map.entry(Operators.NOTEQUAL, "!="),
+          java.util.Map.entry(Operators.GREATER, ">"),
+          java.util.Map.entry(Operators.LESS, "<"),
+          java.util.Map.entry(Operators.LESSEQ, "<="),
+          java.util.Map.entry(Operators.GREATEREQ, ">="),
+          java.util.Map.entry(Operators.MINUS, "-"),
+          java.util.Map.entry(Operators.PLUS, "+"),
+          java.util.Map.entry(Operators.TIMES, "*"),
+          java.util.Map.entry(Operators.POW, "**"),
+          java.util.Map.entry(Operators.DIV, "/"),
+          java.util.Map.entry(Operators.REAL_DIV, "÷"),
+          java.util.Map.entry(Operators.MOD, "%"),
+          java.util.Map.entry(Operators.LSHIFT, "<<"),
+          java.util.Map.entry(Operators.RSHIFT, ">>"),
+          java.util.Map.entry(Operators.RSHIFTU, ">>>"),
+          java.util.Map.entry(Operators.NEGATE, "!"),
+          java.util.Map.entry(Operators.BITWISE_NOT, "~"),
+          java.util.Map.entry(Operators.PRE_INCREMENT, "++"),
+          java.util.Map.entry(Operators.PRE_DECREMENT, "--"),
+          java.util.Map.entry(Operators.POST_INCREMENT, "++"),
+          java.util.Map.entry(Operators.POST_DECREMENT, "--"));
 
   private static final java.util.Map<Symbols, String> SYMBOLS =
       java.util.Map.ofEntries(

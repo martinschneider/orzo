@@ -8,6 +8,8 @@ import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.parser.productions.*;
+import io.github.martinschneider.orzo.parser.tree.BinaryNode;
+import io.github.martinschneider.orzo.parser.tree.NameNode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -59,11 +61,13 @@ public class RepeatParser implements ProdParser<LoopStatement> {
       // program's variables (it used to be "i", overwriting a variable "i" of the program)
       String counter = "$repeat" + ctx.repeatCount++;
       Lexer lexer = new Lexer();
-      count.tokens.add(0, id(counter));
-      count.tokens.add(op(Operators.LESS));
+      Expression condition =
+          ctx.exprParser.lower(
+              new BinaryNode(
+                  Operators.LESS, new NameNode(counter, false), ExpressionParser.tree(count)));
       return new ForStatement(
           ctx.stmtParser.parseWithoutSemicolon(lexer.getTokens("int " + counter + "=0")),
-          count,
+          condition,
           ctx.stmtParser.parseWithoutSemicolon(lexer.getTokens(counter + "++")),
           body);
     } else {

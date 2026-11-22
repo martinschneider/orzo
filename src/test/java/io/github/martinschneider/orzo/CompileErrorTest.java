@@ -40,6 +40,8 @@ public class CompileErrorTest {
   private static Stream<Arguments> statementErrors() {
     return Stream.of(
         Arguments.of("int y = ;", "N.java:5:13: error: expected an expression but found ';'"),
+        Arguments.of(
+            "int y = x - \"s\";", "N.java:5:5: error: bad operand types for binary operator '-'"),
         Arguments.of("int z = 1 +;", "N.java:5:16: error: expected an expression but found ';'"),
         Arguments.of("x = ;", "N.java:5:9: error: expected an expression but found ';'"),
         Arguments.of("x = (1 + 2;", "N.java:5:15: error: expected ')' but found ';'"),
@@ -249,6 +251,47 @@ public class CompileErrorTest {
 
   // Compiles the given files (name -> source, in name order), asserts that it fails without
   // writing class files and returns the errors
+  @Test
+  public void integerDivisionInFloatingPointContext() throws IOException {
+    List<String> warnings =
+        warnings(
+            "public class W {\n"
+                + "  public static void main(String[] args) {\n"
+                + "    int a = 7;\n"
+                + "    int b = 2;\n"
+                + "    double d = a / b;\n"
+                + "    double scaled = (a / b) * 2.0;\n"
+                + "    if (a / b < 0.5) {\n"
+                + "      d = 0;\n"
+                + "    }\n"
+                + "    double fine = a ÷ b + (double) a / b;\n"
+                + "    int quotient = a / b;\n"
+                + "    System.out.println(d + scaled + fine + quotient);\n"
+                + "  }\n"
+                + "}\n");
+    String warning =
+        ": warning: integer division in a floating-point context (use ÷ to divide in floating point)";
+    assertEquals(
+        List.of("W.java:5:5" + warning, "W.java:6:5" + warning, "W.java:7:5" + warning), warnings);
+  }
+
+  // the warnings of a program that compiles
+  private List<String> warnings(String source) throws IOException {
+    Path file = dir.resolve("W.java");
+    Files.writeString(file, source);
+    Orzo orzo = new Orzo(List.of(file.toFile()), dir.resolve("out").toString(), 0);
+    PrintStream stderr = System.err;
+    System.setErr(new PrintStream(new ByteArrayOutputStream()));
+    boolean success;
+    try {
+      success = orzo.compile();
+    } finally {
+      System.setErr(stderr);
+    }
+    assertTrue(success, () -> orzo.errors.toString());
+    return orzo.errors.warnings.stream().map(e -> e.toString()).collect(Collectors.toList());
+  }
+
   private List<String> compile(Map<String, String> sources) throws IOException {
     List<File> inputs = new java.util.ArrayList<>();
     for (String name : new java.util.TreeSet<>(sources.keySet())) {

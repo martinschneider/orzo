@@ -164,6 +164,14 @@ public class ExpressionParser implements ProdParser<Expression> {
     return parseSelectors(tokens, primary);
   }
 
+  /** The tree of a parsed expression (an OpaqueNode for one the tree doesn't model). */
+  public static ExprNode tree(Expression expr) {
+    if (expr.tree != null) {
+      return expr.tree;
+    }
+    return new OpaqueNode(expr);
+  }
+
   /** The postfix form of an expression tree. */
   public Expression lower(ExprNode tree) {
     return lowering.lower(tree);

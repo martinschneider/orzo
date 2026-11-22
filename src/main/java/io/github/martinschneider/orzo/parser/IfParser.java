@@ -15,6 +15,7 @@ import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.IfBlock;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import io.github.martinschneider.orzo.parser.tree.UnaryNode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,8 +83,9 @@ public class IfParser implements ProdParser<IfStatement> {
     }
     tokens.next();
     condition = ctx.exprParser.parse(tokens);
-    if (negate) {
-      condition.tokens.add(op(NEGATE));
+    if (negate && condition != null) {
+      // "unless (c)" is "if (!c)"
+      condition = ctx.exprParser.lower(new UnaryNode(NEGATE, ExpressionParser.tree(condition)));
     }
     if (condition == null) {
       tokens.prev();

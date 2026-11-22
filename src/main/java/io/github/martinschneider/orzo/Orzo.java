@@ -143,6 +143,9 @@ public class Orzo {
       System.err.print(errors.toString(verbose));
       return false;
     }
+    if (!errors.warnings.isEmpty()) {
+      System.err.print(errors.toString(verbose));
+    }
     // only now (without errors) write the class files
     if (outputPath != null) {
       for (int i = 0; i < clazzes.size(); i++) {

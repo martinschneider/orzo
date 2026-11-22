@@ -8,6 +8,7 @@ import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
+import io.github.martinschneider.orzo.parser.tree.ExprNode;
 import io.github.martinschneider.orzo.util.ObjectUtils;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +16,9 @@ import java.util.List;
 public class Expression {
   public List<Token> tokens = new ArrayList<>();
   public Type cast;
+  // the expression tree this postfix form was lowered from, if any (see PostfixLowering; not part
+  // of equals())
+  public ExprNode tree;
 
   public Expression() {
     tokens = new ArrayList<>();

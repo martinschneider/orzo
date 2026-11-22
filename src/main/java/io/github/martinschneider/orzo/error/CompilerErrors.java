@@ -14,6 +14,7 @@ import java.util.Map;
  */
 public class CompilerErrors {
   public List<CompilerError> errors = new ArrayList<>();
+  public List<CompilerError> warnings = new ArrayList<>();
   // the file being compiled
   public String file;
   // the tokens being parsed (null outside of parsing)
@@ -32,6 +33,21 @@ public class CompilerErrors {
       at = tokens.curr();
     }
     addError(at, source, message, trace);
+  }
+
+  /** A warning (at the current position, like an error): it doesn't stop the compilation. */
+  public void addWarning(String source, String message, StackTraceElement[] trace) {
+    Token at = position;
+    if (tokens != null && tokens.idx() < tokens.list().size()) {
+      at = tokens.curr();
+    }
+    int line = (at != null) ? at.line : 0;
+    int col = (at != null) ? at.col : 0;
+    CompilerError warning = new CompilerError(file, line, col, source, message, trace);
+    warning.warning = true;
+    if (!warnings.contains(warning)) {
+      warnings.add(warning);
+    }
   }
 
   public void addError(Token at, String source, String message, StackTraceElement[] trace) {
@@ -83,7 +99,9 @@ public class CompilerErrors {
   // (verbose > 0: also the reporting component and that many frames of the compiler's call trace)
   public String toString(int verbose) {
     StringBuilder errorMsg = new StringBuilder();
-    for (CompilerError error : errors) {
+    List<CompilerError> all = new ArrayList<>(warnings);
+    all.addAll(errors);
+    for (CompilerError error : all) {
       errorMsg.append(error);
       String excerpt = excerpt(error);
       if (excerpt != null) {
@@ -101,8 +119,14 @@ public class CompilerErrors {
       }
       errorMsg.append("\n");
     }
+    int warnCount = warnings.size();
+    if (warnCount > 0) {
+      errorMsg.append(warnCount).append(warnCount == 1 ? " warning" : " warnings").append("\n");
+    }
     int errCount = errors.size();
-    errorMsg.append(errCount).append(errCount == 1 ? " error" : " errors").append("\n");
+    if (errCount > 0) {
+      errorMsg.append(errCount).append(errCount == 1 ? " error" : " errors").append("\n");
+    }
     return errorMsg.toString();
   }
 }

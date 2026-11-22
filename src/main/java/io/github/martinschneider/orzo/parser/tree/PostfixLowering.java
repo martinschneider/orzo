@@ -2,7 +2,9 @@ package io.github.martinschneider.orzo.parser.tree;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_NOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.DIV;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.REAL_DIV;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
@@ -54,11 +56,15 @@ public class PostfixLowering {
     if (node instanceof OpaqueNode) {
       return ((OpaqueNode) node).expr;
     }
+    Expression expr;
     if (node instanceof CastNode) {
       CastNode cast = (CastNode) node;
-      return new Expression(tokens(cast.operand), new Type(cast.type));
+      expr = new Expression(tokens(cast.operand), new Type(cast.type));
+    } else {
+      expr = new Expression(tokens(node), null);
     }
-    return new Expression(tokens(node), null);
+    expr.tree = node;
+    return expr;
   }
 
   private List<Expression> lower(List<ExprNode> nodes) {
@@ -80,6 +86,14 @@ public class PostfixLowering {
       out.add(((LiteralNode) node).value);
     } else if (node instanceof UnaryNode) {
       addUnary((UnaryNode) node, out);
+    } else if (node instanceof BinaryNode && ((BinaryNode) node).op == REAL_DIV) {
+      // "a ÷ b" is "(double) a / (double) b"
+      BinaryNode division = (BinaryNode) node;
+      add(division.left, out);
+      out.add(new CastOperator(Type.DOUBLE));
+      add(division.right, out);
+      out.add(new CastOperator(Type.DOUBLE));
+      out.add(op(DIV));
     } else if (node instanceof BinaryNode) {
       BinaryNode binary = (BinaryNode) node;
       add(binary.left, out);
@@ -132,7 +146,8 @@ public class PostfixLowering {
     return token instanceof IntLiteral || token instanceof FPLiteral;
   }
 
-  private static Token negate(Token number) {
+  /** A negated number literal, e.g. -1 for 1. */
+  public static Token negate(Token number) {
     if (number instanceof IntLiteral) {
       IntLiteral value = (IntLiteral) number;
       BigInteger negated = ((BigInteger) value.val).negate();

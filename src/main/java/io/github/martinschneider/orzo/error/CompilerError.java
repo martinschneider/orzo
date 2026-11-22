@@ -12,6 +12,8 @@ public class CompilerError {
   public final String source;
   public final String msg;
   public final StackTraceElement[] trace;
+  // a warning doesn't stop the compilation
+  public boolean warning;
 
   public CompilerError(
       String file, int line, int col, String source, String msg, StackTraceElement[] trace) {
@@ -39,7 +41,7 @@ public class CompilerError {
     if (str.length() > 0) {
       str.append(' ');
     }
-    return str.append("error: ").append(msg).toString();
+    return str.append(warning ? "warning: " : "error: ").append(msg).toString();
   }
 
   // equals and hashCode do NOT consider the stack trace
@@ -56,6 +58,7 @@ public class CompilerError {
     return Objects.equals(file, other.file)
         && line == other.line
         && col == other.col
+        && warning == other.warning
         && Objects.equals(msg, other.msg);
   }
 }

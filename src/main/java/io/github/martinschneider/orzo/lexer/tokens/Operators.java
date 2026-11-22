@@ -30,6 +30,7 @@ public enum Operators {
   TIMES(12),
   POW(13), // binds tighter than * and / (but is left-associative)
   DIV(12),
+  REAL_DIV(12), // "÷": a division in floating point, e.g. 0.25 for "1 ÷ 4" (Orzo-only)
   MOD(12),
   LSHIFT(10),
   RSHIFT(10),

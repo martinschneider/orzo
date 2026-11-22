@@ -80,13 +80,20 @@ cast the whole product).
 
 Still to do:
 
-- The code generator still consumes postfix token lists, which `PostfixLowering` produces from the
-  tree. Every consumer still finds the operands of an operator by scanning backwards
-  (`findRightOperandStart`, `withoutCastOperands`, the `**` operand skipping), which is fragile
-  (integer `**` once swapped its operands this way). Migrate `NumExprTypeDecider` and
-  `ExpressionGenerator` to the tree, then delete the lowering and the token subclasses that only
-  exist to encode trees in token lists (`CastOperator`, `CastMethodCall`, `TernaryExpression`,
-  `InstanceofToken`, `MethodCall`/`ConstructorCall` as `Identifier`s).
+- Operations (operators, casts, `instanceof`, conditional expressions) are generated from the tree
+  by `ExpressionTreeGenerator` and typed bottom-up by `ExpressionTypes`, like in Java (e.g. an integer
+  division is one in a floating-point context too; `÷` divides in floating point). The leaves (names,
+  field accesses, calls, object creations, lambdas, assignment and increment expressions) are still
+  generated from their postfix form by `ExpressionGenerator`, and typed by `NumExprTypeDecider`.
+  Migrate those (`handleId`, `MethodCallGenerator`, `AssignmentGenerator`), then delete the postfix
+  path (the token loop of `ExpressionGenerator.eval`, `findRightOperandStart`,
+  `withoutCastOperands`, ...), the lowering and the token subclasses that only exist to encode trees
+  in token lists (`CastOperator`, `CastMethodCall`, `TernaryExpression`, `InstanceofToken`,
+  `MethodCall`/`ConstructorCall` as `Identifier`s).
+- Two code generators still rewrite tokens: the temporaries of a parallel assignment
+  (`AssignmentGenerator.replaceIds`) and the qualified calls in a lambda body
+  (`ExpressionGenerator.visitLambdaBody`). Their expressions are generated from the changed tokens
+  (not the tree) for now; rewrite them on the tree.
 - Lambdas, method references and array creations are still `OpaqueNode`s holding postfix
   expressions.
 - Tree nodes have no source positions yet (errors use the position of their statement).
@@ -178,7 +185,8 @@ still checked), and usage errors exit with status 2.
 
 Still to do:
 
-- **Structured diagnostics**: severity (error/warning), a stable code and notes ("did you mean ...?").
+- **Structured diagnostics**: a stable code and notes ("did you mean ...?"). (There are warnings
+  now, e.g. for an integer division in a floating-point context.)
   (The report already shows the source line with a `^` under the error.)
 - **Positions for errors inside expressions**: code generation errors are reported at the start of
   their statement; a typed expression tree (recommendation 2) can carry the position of each node.

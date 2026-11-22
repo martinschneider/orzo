@@ -86,6 +86,7 @@ import io.github.martinschneider.orzo.codegen.ByteUtils;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
+import io.github.martinschneider.orzo.codegen.ExpressionTypes;
 import io.github.martinschneider.orzo.codegen.FieldProcessor;
 import io.github.martinschneider.orzo.codegen.GenericTypes;
 import io.github.martinschneider.orzo.codegen.HasOutput;
@@ -136,6 +137,8 @@ public class ExpressionGenerator {
   private static final String LOGGER_NAME = "expression code generator";
 
   public CGContext ctx;
+  // (for the operations, see ExpressionTypes.isOperation())
+  private ExpressionTreeGenerator treeGen;
   // generic type of the functional interface a lambda argument is passed as (set by
   // MethodCallGenerator.pushArgs(), null if unknown), e.g. "java.util.function.Function<a.Foo,R>"
   public String lambdaTargetGeneric;
@@ -391,6 +394,12 @@ public class ExpressionGenerator {
 
   public ExpressionResult eval(
       DynamicByteArray out, String type, Expression expr, boolean pushIfZero, boolean reverseComp) {
+    if (expr != null && expr.tree != null && ExpressionTypes.isOperation(expr.tree)) {
+      if (treeGen == null) {
+        treeGen = new ExpressionTreeGenerator(ctx);
+      }
+      return treeGen.generate(out, type, expr.tree, pushIfZero, reverseComp);
+    }
     if (expr instanceof ArrayInit) {
       ArrayInit arrInit = (ArrayInit) expr;
       generateArray(out, ctx.classIdMap, arrInit);
@@ -1053,7 +1062,7 @@ public class ExpressionGenerator {
 
   // Converts the value below the top of the stack (from -> to): the top value (of type topType)
   // is parked in a temporary local meanwhile
-  private void convertBelowTop(DynamicByteArray out, String topType, String from, String to) {
+  void convertBelowTop(DynamicByteArray out, String topType, String from, String to) {
     String tmpName = "$tmp_" + ctx.classIdMap.variables.localSize;
     VariableInfo tmp =
         new VariableInfo(
@@ -1656,7 +1665,7 @@ public class ExpressionGenerator {
     // Local variables of the enclosing method used in the lambda body are captured: they become
     // fields of the synthetic class, passed to its constructor.
     List<VariableInfo> captured = new ArrayList<>();
-    visitLambdaBody(lambda.body.tokens, lambda.params, captured);
+    visitLambdaBody(lambda.body, lambda.params, captured);
     List<Argument> args = new ArrayList<>();
     List<Statement> body = new ArrayList<>();
     for (int i = 0; i < lambda.params.size(); i++) {
@@ -1754,17 +1763,19 @@ public class ExpressionGenerator {
   // qualifies unqualified calls of the enclosing class's static methods with its name (the body
   // is compiled as part of a synthetic class, where they wouldn't resolve otherwise).
   private void visitLambdaBody(
-      List<Token> tokens, List<String> lambdaParams, List<VariableInfo> captured) {
-    for (Token token : tokens) {
+      Expression expr, List<String> lambdaParams, List<VariableInfo> captured) {
+    // (its calls may be qualified below, so it is generated from its tokens, not from its tree)
+    expr.tree = null;
+    for (Token token : expr.tokens) {
       if (token instanceof TernaryExpression) {
         TernaryExpression ternary = (TernaryExpression) token;
-        visitLambdaBody(ternary.condition.tokens, lambdaParams, captured);
-        visitLambdaBody(ternary.trueBranch.tokens, lambdaParams, captured);
-        visitLambdaBody(ternary.falseBranch.tokens, lambdaParams, captured);
+        visitLambdaBody(ternary.condition, lambdaParams, captured);
+        visitLambdaBody(ternary.trueBranch, lambdaParams, captured);
+        visitLambdaBody(ternary.falseBranch, lambdaParams, captured);
       } else if (token instanceof Identifier) {
         Identifier root = (Identifier) token;
         if (root instanceof CastMethodCall) {
-          visitLambdaBody(((CastMethodCall) root).innerExpr.tokens, lambdaParams, captured);
+          visitLambdaBody(((CastMethodCall) root).innerExpr, lambdaParams, captured);
         } else if (root instanceof MethodCall && !((MethodCall) root).name.contains(".")) {
           qualifyStaticCall((MethodCall) root);
         }
@@ -1780,16 +1791,16 @@ public class ExpressionGenerator {
         for (Identifier link = root; link != null; link = link.next) {
           if (link instanceof MethodCall) {
             for (Expression param : ((MethodCall) link).params) {
-              visitLambdaBody(param.tokens, lambdaParams, captured);
+              visitLambdaBody(param, lambdaParams, captured);
             }
           } else if (link instanceof ConstructorCall) {
             for (Expression arg : ((ConstructorCall) link).args) {
-              visitLambdaBody(arg.tokens, lambdaParams, captured);
+              visitLambdaBody(arg, lambdaParams, captured);
             }
           }
           if (link.arrSel != null) {
             for (Expression index : link.arrSel.exprs) {
-              visitLambdaBody(index.tokens, lambdaParams, captured);
+              visitLambdaBody(index, lambdaParams, captured);
             }
           }
         }

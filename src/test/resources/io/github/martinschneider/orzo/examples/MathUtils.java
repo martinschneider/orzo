@@ -35,7 +35,7 @@ public class MathUtils {
 
   // Calculate pi using Gauss-Legendre algorithm
   public static double pi3(int n) {
-    double a, b, t, p, x = 1, 1/√2, 1/4, 1;
+    double a, b, t, p, x = 1, 1/√2, 1÷4, 1;
     repeat n
     {
       x, a, b  =  a, (a + b) / 2, √(x*b);
@@ -48,7 +48,7 @@ public class MathUtils {
   public static double pi4(int n) {
     double pi = 4;
     for (int i = 3; i <= n; i += 2) {
-      pi *= ((i - 1) / i) * ((i + 1) / i);
+      pi *= ((i - 1) ÷ i) * ((i + 1) ÷ i);
     }
     return pi;
   }
@@ -57,7 +57,7 @@ public class MathUtils {
   public static double pi5(int n) {
     double pi = 3;
     for(int i = 2; i < n; i += 2){
-      pi += (-1 ** i) * (4 / (i * (i + 1) * (i + 2)));
+      pi += (-1 ** i) * (4 ÷ (i * (i + 1) * (i + 2)));
     }
     return pi;
   }
@@ -66,7 +66,7 @@ public class MathUtils {
   public static double pi6(int n) {
     double pi = 1;
     for(int i = 2; i < n; i++){
-      pi += 1/(i ** 2);
+      pi += 1 ÷ (i ** 2);
     }
     return √(6 * pi);
   }
