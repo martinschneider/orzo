@@ -23,6 +23,8 @@ public class CompilerErrors {
   // the first token of each parsed statement and class member (by identity), for the positions of
   // errors during code generation
   public Map<Object, Token> startTokens = new IdentityHashMap<>();
+  // the source text of each file (for the source excerpts in the report)
+  public Map<String, String> sources = new java.util.HashMap<>();
 
   public void addError(String source, String message, StackTraceElement[] trace) {
     Token at = position;
@@ -49,6 +51,26 @@ public class CompilerErrors {
         found, source, "expected " + expected.display() + " but found " + found.display(), trace);
   }
 
+  // The error's source line with a '^' under its column, e.g.
+  //     while (true {
+  //                 ^
+  private String excerpt(CompilerError error) {
+    String source = (error.file != null) ? sources.get(error.file) : null;
+    if (source == null || error.line <= 0) {
+      return null;
+    }
+    String[] lines = source.split("\n", -1);
+    if (error.line > lines.length) {
+      return null;
+    }
+    String line = lines[error.line - 1].stripTrailing();
+    StringBuilder marker = new StringBuilder();
+    for (int i = 0; i < error.col - 1 && i < line.length(); i++) {
+      marker.append(line.charAt(i) == '\t' ? '\t' : ' ');
+    }
+    return line + "\n" + marker + "^";
+  }
+
   public boolean isEmpty() {
     return errors.isEmpty();
   }
@@ -63,6 +85,10 @@ public class CompilerErrors {
     StringBuilder errorMsg = new StringBuilder();
     for (CompilerError error : errors) {
       errorMsg.append(error);
+      String excerpt = excerpt(error);
+      if (excerpt != null) {
+        errorMsg.append("\n").append(excerpt);
+      }
       if (verbose > 0) {
         errorMsg.append(" [").append(error.source).append("]");
         errorMsg.append(" call trace: ");

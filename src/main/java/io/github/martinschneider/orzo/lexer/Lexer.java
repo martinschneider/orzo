@@ -50,6 +50,9 @@ public class Lexer {
 
   public TokenList getTokens(String string) {
     source = string;
+    if (errors.file != null) {
+      errors.sources.put(errors.file, string);
+    }
     lineStarts = new ArrayList<>();
     lineStarts.add(0);
     for (int i = 0; i < string.length(); i++) {

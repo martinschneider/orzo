@@ -169,8 +169,8 @@ still checked), and usage errors exit with status 2.
 
 Still to do:
 
-- **Structured diagnostics**: severity (error/warning), a stable code, an optional source excerpt with
-  a `^` marker, and notes ("did you mean ...?").
+- **Structured diagnostics**: severity (error/warning), a stable code and notes ("did you mean ...?").
+  (The report already shows the source line with a `^` under the error.)
 - **Positions for errors inside expressions**: code generation errors are reported at the start of
   their statement; a typed expression tree (recommendation 2) can carry the position of each node.
 - **Explicit resolution failures**: ~50 `catch (ClassNotFoundException e)` blocks fall back silently;
