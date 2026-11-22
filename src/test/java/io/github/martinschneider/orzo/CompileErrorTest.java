@@ -49,6 +49,7 @@ public class CompileErrorTest {
         Arguments.of("y = x + 1;", "N.java:5:5: error: cannot find variable y"),
         Arguments.of("f(1, 2);", "N.java:5:5: error: cannot find method f(int, int)"),
         Arguments.of("Object o = new Unknown();", "N.java:5:5: error: cannot find class Unknown"),
+        Arguments.of("Foo g = null;", "N.java:5:5: error: cannot find class Foo"),
         Arguments.of(
             "int s = \"text\";",
             "N.java:5:5: error: incompatible types: String cannot be converted to int"),
@@ -73,6 +74,12 @@ public class CompileErrorTest {
   public void statementErrors(String statement, String expectedError) throws IOException {
     List<String> errors = compile(Map.of("N.java", String.format(TEMPLATE, statement)));
     assertTrue(errors.contains(expectedError), errors.toString());
+  }
+
+  @Test
+  public void unknownFieldType() throws IOException {
+    List<String> errors = compile(Map.of("F.java", "public class F {\n  Bar bar;\n}\n"));
+    assertEquals(List.of("F.java:2:3: error: cannot find class Bar"), errors);
   }
 
   @Test

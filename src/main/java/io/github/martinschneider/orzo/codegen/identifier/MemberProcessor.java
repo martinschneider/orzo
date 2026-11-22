@@ -41,6 +41,13 @@ public class MemberProcessor {
 
     for (ParallelDeclaration pDecl : ctx.clazz.fields) {
       for (Declaration decl : pDecl.declarations) {
+        if (!TypeUtils.typeExists(decl.type, ctx.allClazzes, ctx.clazz)) {
+          ctx.errors.addError(
+              ctx.errors.startTokens.get(pDecl),
+              "member processor",
+              "cannot find class " + decl.type.substring(decl.type.lastIndexOf('.') + 1),
+              new RuntimeException().getStackTrace());
+        }
         ctx.classIdMap.variables.putField(
             decl.name,
             new VariableInfo(

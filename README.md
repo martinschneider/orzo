@@ -25,7 +25,7 @@ Orzo compiles a large subset of Java (enough to compile itself, see [Metrics](#m
 - [X] static nested classes, interfaces and enums (no `InnerClasses`/`NestHost` attributes yet)
 - [ ] inner (non-static), local and anonymous classes
 - [ ] records
-- [ ] generics (partially supported: type arguments of locals, parameters and fields are tracked for calls on JDK generic types, e.g. `list.get(i).length()`, generic calls are typed from their target, e.g. `list.sort(Comparator.comparingInt(v -> v.idx))`, and generic types are emitted as `Signature` attributes; generic classes of your own and calls on variables of a type variable are not supported)
+- [ ] generics (partially supported: type arguments of locals, parameters and fields are tracked for calls on JDK generic types, e.g. `list.get(i).length()`, generic calls are typed from their target, e.g. `list.sort(Comparator.comparingInt(v -> v.idx))`, and generic types are emitted as `Signature` attributes, and type variables are erased to their bounds, e.g. in your own generic classes; the type arguments of your own generic classes aren't tracked, e.g. `box.get().length()` on a `Box<String>`)
 - [ ] `var`
 - [X] varargs methods
 - [X] static imports (of JDK classes and classes of the same compilation unit)
@@ -128,6 +128,6 @@ Measured by `mvn clean verify -Pselfcompile` (see `selfcompile.sh`): Orzo compil
 | Metric | Value |
 |--------|-------|
 | Self-compilation (share of source lines compiled by Orzo) | 100.0% |
-| Compile time (compiling Orzo's sources) | 4.9x javac (20.2 s vs. 4.1 s) |
-| Class size (Orzo's class files) | 4.4x javac (3884.1 KiB vs. 882.7 KiB) |
+| Compile time (compiling Orzo's sources) | 5.4x javac (21.0 s vs. 3.9 s) |
+| Class size (Orzo's class files) | 4.4x javac (3895.6 KiB vs. 884.8 KiB) |
 <!-- metrics:end -->

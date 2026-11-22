@@ -114,6 +114,11 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
         tokens.setIdx(scanStart);
       }
     } else if (tokens.curr() instanceof Identifier
+        && ctx.classTypeParams.containsKey(tokens.curr().toString())
+        && ((Identifier) tokens.curr()).next == null) {
+      // a type variable, e.g. "T value": erased to its bound (like parameter and return types)
+      type = new Type(ctx.classTypeParams.get(tokens.curr().toString()));
+    } else if (tokens.curr() instanceof Identifier
         && !tokens.curr().toString().isEmpty()
         && Character.isUpperCase(tokens.curr().toString().charAt(0))) {
       String id = tokens.curr().toString();

@@ -31,6 +31,13 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, ParallelDeclaration pDecl) {
     for (Declaration decl : pDecl.declarations) {
+      if (!decl.isField && !TypeUtils.typeExists(decl.type, ctx.allClazzes, ctx.clazz)) {
+        ctx.errors.addError(
+            "declaration generator",
+            "cannot find class " + simpleName(decl.type),
+            new RuntimeException().getStackTrace());
+        continue;
+      }
       if (decl.arrDim > 0) {
         return generateArray(out, ctx.classIdMap, method, decl);
       }
@@ -132,5 +139,10 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
     ctx.exprGen.generateArray(out, classIdMap, arrInit);
     ctx.assignGen.assignArray(out, classIdMap, type, decl.arrDim, decl.name);
     return out;
+  }
+
+  // e.g. "Foo" for "pkg.Foo"
+  static String simpleName(String type) {
+    return type.substring(type.lastIndexOf('.') + 1);
   }
 }

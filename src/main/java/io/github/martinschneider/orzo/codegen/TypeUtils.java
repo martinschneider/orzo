@@ -188,6 +188,22 @@ public class TypeUtils {
         || (targetIsString && (valueNumeric || BOOLEAN.equals(valueType)));
   }
 
+  // Whether a declared type exists: a primitive type, a class of this compilation run or a
+  // reflectively loadable one (e.g. "pkg.Foo" for an undefined "Foo" in package "pkg" doesn't)
+  public static boolean typeExists(String type, List<Clazz> allClazzes, Clazz currentClazz) {
+    if (type == null || isPrimitive(type) || STRING.equals(type) || "Object".equals(type)) {
+      return true;
+    }
+    String name = type;
+    while (name.endsWith("[]")) {
+      name = name.substring(0, name.length() - 2);
+    }
+    if (name.startsWith("[") || name.startsWith("L") && name.endsWith(";")) {
+      return true; // a JVM descriptor (synthesized declarations)
+    }
+    return classExists(resolveSimpleType(name, allClazzes, currentClazz), allClazzes);
+  }
+
   // Whether a class (binary name with '.' or '/') exists: a class of this compilation run or a
   // reflectively loadable one
   public static boolean classExists(String className, List<Clazz> allClazzes) {
