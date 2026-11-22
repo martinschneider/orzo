@@ -165,13 +165,14 @@ public class AssignmentParser implements ProdParser<Assignment> {
         tokens.setIdx(idx);
         return null;
       }
+      // (parallel assignments: values separated by commas, e.g. "a, b = b, a;")
       Expression expression = null;
-      while ((expression = ctx.exprParser.parse(tokens)) != null || tokens.curr().eq(sym(COMMA))) {
-        if (expression != null) {
-          right.add(expression);
-        } else {
-          tokens.next();
+      while ((expression = ctx.exprParser.parse(tokens)) != null) {
+        right.add(expression);
+        if (!tokens.curr().eq(sym(COMMA))) {
+          break;
         }
+        tokens.next();
       }
       if (right.isEmpty()) {
         ctx.errors.addError(

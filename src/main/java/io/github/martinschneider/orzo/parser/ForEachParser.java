@@ -38,7 +38,7 @@ public class ForEachParser implements ProdParser<ForEachStatement> {
       return null;
     }
     tokens.next();
-    Statement initialization = ctx.stmtParser.parse(tokens);
+    Statement initialization = ctx.stmtParser.parseWithoutSemicolon(tokens);
     if (!(initialization instanceof ParallelDeclaration)) {
       tokens.setIdx(savedIdx);
       return null;

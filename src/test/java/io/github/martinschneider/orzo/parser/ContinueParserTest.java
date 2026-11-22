@@ -18,7 +18,8 @@ public class ContinueParserTest {
   private ContinueParser target = new ContinueParser();
 
   private static Stream<Arguments> test() throws IOException {
-    return stream(args("", null), args("continue;", new Continue()), args("continue", null));
+    return stream(
+        args("", null), args("continue;", new Continue()), args("continue", new Continue()));
   }
 
   @ParameterizedTest

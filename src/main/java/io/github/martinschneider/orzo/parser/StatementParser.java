@@ -15,13 +15,19 @@ import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
+import io.github.martinschneider.orzo.parser.productions.EmptyStatement;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ExpressionStatement;
 import io.github.martinschneider.orzo.parser.productions.FieldAssignment;
 import io.github.martinschneider.orzo.parser.productions.ForEachStatement;
+import io.github.martinschneider.orzo.parser.productions.ForStatement;
+import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.LoopStatement;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import io.github.martinschneider.orzo.parser.productions.SwitchStatement;
+import io.github.martinschneider.orzo.parser.productions.TryStatement;
+import io.github.martinschneider.orzo.parser.productions.WhileStatement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -130,8 +136,18 @@ public class StatementParser implements ProdParser<Statement> {
     return null;
   }
 
+  /** A statement; one that doesn't end with a block (e.g. "x = 1;") must end with a ';'. */
   @Override
   public Statement parse(TokenList tokens) {
+    Statement stmt = parseWithoutSemicolon(tokens);
+    if (stmt != null && !isCompound(stmt) && !tokens.peekPrev().eq(sym(SEMICOLON))) {
+      reportMissingSemicolon(ctx, tokens);
+    }
+    return stmt;
+  }
+
+  /** A statement not ended by a ';', e.g. the update of a for loop ("i++" in "for (...; i++)"). */
+  public Statement parseWithoutSemicolon(TokenList tokens) {
     Token start = tokens.curr();
     Statement stmt = parseStatement(tokens);
     if (stmt != null) {
@@ -139,6 +155,27 @@ public class StatementParser implements ProdParser<Statement> {
       ctx.errors.startTokens.putIfAbsent(stmt, start);
     }
     return stmt;
+  }
+
+  // statements ending with a block (or another statement) rather than a ';'
+  private static boolean isCompound(Statement stmt) {
+    return stmt instanceof IfStatement
+        || stmt instanceof WhileStatement
+        || stmt instanceof ForStatement
+        || stmt instanceof ForEachStatement
+        || stmt instanceof TryStatement
+        || stmt instanceof SwitchStatement
+        || stmt instanceof Block
+        || stmt instanceof EmptyStatement;
+  }
+
+  // "expected ';'" right after the previous token (where the ';' is missing)
+  static void reportMissingSemicolon(ParserContext ctx, TokenList tokens) {
+    Token last = tokens.peekPrev();
+    Token at = new Token(null);
+    at.line = last.line;
+    at.col = last.col + ((last.text != null) ? last.text.length() : 1);
+    ctx.errors.addError(at, LOG_NAME, "expected ';'", new RuntimeException().getStackTrace());
   }
 
   private Statement parseStatement(TokenList tokens) {

@@ -460,6 +460,9 @@ public class ClassParser implements ProdParser<Clazz> {
       for (Declaration decl : pDecl.declarations) {
         decl.isField = true;
       }
+      if (!tokens.peekPrev().eq(sym(SEMICOLON))) {
+        StatementParser.reportMissingSemicolon(ctx, tokens);
+      }
       return pDecl;
     }
     return null;

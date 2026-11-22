@@ -92,6 +92,67 @@ public class CompileErrorTest {
   }
 
   @Test
+  public void missingSemicolons() throws IOException {
+    // (reported right after the statement, like javac does)
+    List<String> errors =
+        compile(
+            Map.of(
+                "S.java",
+                "public class S {\n"
+                    + "  int field = 1\n"
+                    + "  public static void main(String[] args) {\n"
+                    + "    int a = 1;\n"
+                    + "    a = 2;\n"
+                    + "    a++;\n"
+                    + "    System.out.println(a)\n"
+                    + "    while (a < 3) {\n"
+                    + "      if (a == 2) continue\n"
+                    + "      break\n"
+                    + "    }\n"
+                    + "    do { a++; } while (a < 5)\n"
+                    + "    if (a > 0) {\n"
+                    + "      return\n"
+                    + "    }\n"
+                    + "    throw new RuntimeException()\n"
+                    + "  }\n"
+                    + "}\n"));
+    assertEquals(
+        List.of(
+            "S.java:2:16: error: expected ';'",
+            "S.java:7:26: error: expected ';'",
+            "S.java:9:27: error: expected ';'",
+            "S.java:10:12: error: expected ';'",
+            "S.java:12:30: error: expected ';'",
+            "S.java:14:13: error: expected ';'",
+            "S.java:16:33: error: expected ';'"),
+        errors);
+  }
+
+  // TODO: the expression parser takes "1 a = 2 a++ System.out.println(a)" for one expression (it
+  // accepts an operand right after another one); enable once it has been rewritten
+  @org.junit.jupiter.api.Disabled
+  @Test
+  public void missingSemicolonsAfterExpressions() throws IOException {
+    List<String> errors =
+        compile(
+            Map.of(
+                "S.java",
+                "public class S {\n"
+                    + "  void m() {\n"
+                    + "    int a = 1\n"
+                    + "    a = 2\n"
+                    + "    a++\n"
+                    + "  }\n"
+                    + "}\n"));
+    assertEquals(
+        List.of(
+            "S.java:3:14: error: expected ';'",
+            "S.java:4:10: error: expected ';'",
+            "S.java:5:8: error: expected ';'"),
+        errors);
+  }
+
+  @Test
   public void missingReturnStatement() throws IOException {
     List<String> errors =
         compile(Map.of("N.java", "public class N {\n  int f() {\n    int x = 1;\n  }\n}\n"));

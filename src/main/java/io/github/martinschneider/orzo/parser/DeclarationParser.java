@@ -162,13 +162,14 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       Expression value = null;
       if (tokens.curr().eq(op(ASSIGN))) {
         tokens.next();
-        while ((value = parseExpOrArrInit(tokens, type)) != null || tokens.curr().eq(sym(COMMA))) {
-          if (value != null) {
-            values.add(value);
-            arrDims.add(type.arr);
-          } else {
-            tokens.next();
+        // (parallel declarations: values separated by commas, e.g. "int a, b = 1, 2;")
+        while ((value = parseExpOrArrInit(tokens, type)) != null) {
+          values.add(value);
+          arrDims.add(type.arr);
+          if (!tokens.curr().eq(sym(COMMA))) {
+            break;
           }
+          tokens.next();
         }
         if (values.isEmpty() && !names.isEmpty()) {
           ctx.errors.addError(

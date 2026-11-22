@@ -18,7 +18,7 @@ public class BreakParserTest {
   private BreakParser target = new BreakParser();
 
   private static Stream<Arguments> test() throws IOException {
-    return stream(args("", null), args("break;", new Break()), args("break", null));
+    return stream(args("", null), args("break;", new Break()), args("break", new Break()));
   }
 
   @ParameterizedTest

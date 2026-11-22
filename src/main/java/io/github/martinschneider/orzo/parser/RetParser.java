@@ -22,11 +22,9 @@ public class RetParser implements ProdParser<ReturnStatement> {
       tokens.next();
       Expression expression = ctx.exprParser.parse(tokens);
       if (tokens.curr().eq(sym(SEMICOLON))) {
-        tokens.next();
-        return new ReturnStatement(expression);
-      } else {
-        // TODO: log error
+        tokens.next(); // (a missing ';' is reported by StatementParser)
       }
+      return new ReturnStatement(expression);
     }
     return null;
   }

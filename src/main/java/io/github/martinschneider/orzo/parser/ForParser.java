@@ -62,7 +62,7 @@ public class ForParser implements ProdParser<ForStatement> {
       }
       tokens.next();
       // TODO: support stmtSequence
-      loopStatement = ctx.stmtParser.parse(tokens);
+      loopStatement = ctx.stmtParser.parseWithoutSemicolon(tokens);
       if (loopStatement == null) {
         tokens.next(sym(RBRACE));
         ctx.errors.addError(

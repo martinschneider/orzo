@@ -12,21 +12,19 @@ import io.github.martinschneider.orzo.parser.productions.Continue;
 public class ContinueParser implements ProdParser<Continue> {
   @Override
   public Continue parse(TokenList tokens) {
-    if (tokens.curr().eq(keyword(CONTINUE))) {
-      if (tokens.next().eq(sym(SEMICOLON))) {
-        tokens.next();
-        return new Continue();
-      } else if (tokens.curr() instanceof Identifier && tokens.peekNext().eq(sym(SEMICOLON))) {
-        // labeled, e.g. "continue outer;"
-        Continue stmt = new Continue();
-        stmt.label = tokens.curr().val.toString();
-        tokens.next();
-        tokens.next();
-        return stmt;
-      } else {
-        tokens.prev();
-      }
+    if (!tokens.curr().eq(keyword(CONTINUE))) {
+      return null;
     }
-    return null;
+    tokens.next();
+    Continue stmt = new Continue();
+    if (tokens.curr() instanceof Identifier) {
+      // labeled, e.g. "continue outer;"
+      stmt.label = tokens.curr().val.toString();
+      tokens.next();
+    }
+    if (tokens.curr().eq(sym(SEMICOLON))) {
+      tokens.next(); // (a missing ';' is reported by StatementParser)
+    }
+    return stmt;
   }
 }

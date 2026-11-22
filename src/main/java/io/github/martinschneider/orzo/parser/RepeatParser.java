@@ -62,9 +62,9 @@ public class RepeatParser implements ProdParser<LoopStatement> {
       count.tokens.add(0, id(counter));
       count.tokens.add(op(Operators.LESS));
       return new ForStatement(
-          ctx.stmtParser.parse(lexer.getTokens("int " + counter + "=0")),
+          ctx.stmtParser.parseWithoutSemicolon(lexer.getTokens("int " + counter + "=0")),
           count,
-          ctx.stmtParser.parse(lexer.getTokens(counter + "++")),
+          ctx.stmtParser.parseWithoutSemicolon(lexer.getTokens(counter + "++")),
           body);
     } else {
       return null;
