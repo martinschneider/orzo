@@ -304,7 +304,9 @@ public class OrzoTest {
         args(list("tests/SwitchFallThrough")),
         args(list("tests/QualifiedTypeBound")),
         args(list("tests/PowerOperator")),
-        args(list("tests/FieldOfNewObject")));
+        args(list("tests/FieldOfNewObject")),
+        args(list("tests/SuperMethodCall")),
+        args(list("tests/UnboxedOperands")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the
@@ -379,7 +381,7 @@ public class OrzoTest {
       streams.add(baos);
     }
     Orzo orzo = new Orzo(inputs, null, 0);
-    orzo.compile(outputs);
+    assertTrue(orzo.compile(outputs), () -> programs + ": " + orzo.errors);
     for (Clazz clazz : orzo.clazzes) {
       classNames.add(clazz.fqn());
     }

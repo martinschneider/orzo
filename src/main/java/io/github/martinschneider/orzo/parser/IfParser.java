@@ -76,9 +76,9 @@ public class IfParser implements ProdParser<IfStatement> {
       tokens.next();
     }
     if (!tokens.curr().eq(sym(LPAREN))) {
-      tokens.prev();
       ctx.errors.missingExpected(
           IF_BLOCK_LOG_NAME, sym(LPAREN), tokens, new RuntimeException().getStackTrace());
+      tokens.prev();
     }
     tokens.next();
     condition = ctx.exprParser.parse(tokens);
@@ -91,9 +91,9 @@ public class IfParser implements ProdParser<IfStatement> {
           IF_BLOCK_LOG_NAME, "missing condition", new RuntimeException().getStackTrace());
     }
     if (!tokens.curr().eq(sym(RPAREN))) {
-      tokens.prev();
       ctx.errors.missingExpected(
           LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
+      tokens.prev();
     }
     tokens.next();
     if (tokens.curr().eq(sym(LBRACE))) {
@@ -105,9 +105,9 @@ public class IfParser implements ProdParser<IfStatement> {
         body = new ArrayList<>();
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
-        tokens.prev();
         ctx.errors.missingExpected(
             IF_BLOCK_LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+        tokens.prev();
       } else {
         tokens.next();
       }
@@ -142,9 +142,9 @@ public class IfParser implements ProdParser<IfStatement> {
         body = new ArrayList<>();
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
-        tokens.prev();
         ctx.errors.missingExpected(
             ELSE_BLOCK_LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+        tokens.prev();
       } else {
         tokens.next();
       }

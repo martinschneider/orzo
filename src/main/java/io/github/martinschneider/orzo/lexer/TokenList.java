@@ -19,9 +19,16 @@ public class TokenList {
     this.idx = idx;
   }
 
+  // an EOF token positioned at the end of the input (if known)
+  public Token end;
+
+  private Token endOfInput() {
+    return (end != null) ? end : eof();
+  }
+
   public Token curr() {
     if (idx < 0 || idx >= tokens.size()) {
-      return eof();
+      return endOfInput();
     }
     return tokens.get(idx);
   }
@@ -91,7 +98,7 @@ public class TokenList {
 
   public Token get(int idx) {
     if (idx < 0 || idx >= tokens.size()) {
-      return eof();
+      return endOfInput();
     }
     return tokens.get(idx);
   }

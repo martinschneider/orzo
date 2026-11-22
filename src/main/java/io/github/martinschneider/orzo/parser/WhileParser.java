@@ -34,9 +34,9 @@ public class WhileParser implements ProdParser<WhileStatement> {
     if (tokens.curr().eq(keyword(WHILE))) {
       tokens.next();
       if (!tokens.curr().eq(sym(LPAREN))) {
-        tokens.prev();
         ctx.errors.missingExpected(
             LOG_NAME, sym(LPAREN), tokens, new RuntimeException().getStackTrace());
+        tokens.prev();
       }
       tokens.next();
       condition = ctx.exprParser.parse(tokens);
@@ -46,9 +46,9 @@ public class WhileParser implements ProdParser<WhileStatement> {
         return null;
       }
       if (!tokens.curr().eq(sym(RPAREN))) {
-        tokens.prev();
         ctx.errors.missingExpected(
             LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
+        tokens.prev();
       }
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
@@ -69,9 +69,9 @@ public class WhileParser implements ProdParser<WhileStatement> {
         body = new ArrayList<>();
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
-        tokens.prev();
         ctx.errors.missingExpected(
             LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+        tokens.prev();
       }
       tokens.next();
       if (tokens.curr().eq(sym(SEMICOLON))) {

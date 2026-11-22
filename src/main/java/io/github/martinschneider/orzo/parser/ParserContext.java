@@ -13,6 +13,8 @@ public class ParserContext {
   public List<Clazz> nestedClazzes = new ArrayList<>();
   // Maps simple class name → fully-qualified name, built from import statements
   public Map<String, String> importMap = new HashMap<>();
+  // the packages of on-demand imports ("import java.io.*;")
+  public List<String> onDemandImports = new ArrayList<>();
   // Maps class-level type variable names to their erasure types (e.g. T → java.lang.Object)
   public Map<String, String> classTypeParams = new HashMap<>();
   public CompilerErrors errors;

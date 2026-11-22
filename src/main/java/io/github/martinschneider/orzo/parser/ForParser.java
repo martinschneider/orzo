@@ -37,9 +37,9 @@ public class ForParser implements ProdParser<ForStatement> {
     if (tokens.curr().eq(keyword(FOR))) {
       tokens.next();
       if (!tokens.curr().eq(sym(LPAREN))) {
-        tokens.next(sym(RBRACE));
         ctx.errors.missingExpected(
             LOG_NAME, sym(LPAREN), tokens, new RuntimeException().getStackTrace());
+        tokens.next(sym(RBRACE));
       }
       tokens.next();
       if (tokens.curr().eq(sym(SEMICOLON))) {
@@ -69,18 +69,18 @@ public class ForParser implements ProdParser<ForStatement> {
             LOG_NAME, "missing loop statement", new RuntimeException().getStackTrace());
       }
       if (!tokens.curr().eq(sym(RPAREN))) {
-        tokens.next(sym(RBRACE));
         ctx.errors.missingExpected(
             LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
+        tokens.next(sym(RBRACE));
       }
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
         // single-statement body without braces, e.g. "for (...) total += i;"
         Statement stmt = ctx.stmtParser.parse(tokens);
         if (stmt == null) {
-          tokens.next(sym(RBRACE));
           ctx.errors.missingExpected(
               LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
+          tokens.next(sym(RBRACE));
           return null;
         }
         body = new ArrayList<>();
@@ -93,9 +93,9 @@ public class ForParser implements ProdParser<ForStatement> {
         body = new ArrayList<>();
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
-        tokens.next(sym(RBRACE));
         ctx.errors.missingExpected(
             LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+        tokens.next(sym(RBRACE));
       } else {
         tokens.next();
       }

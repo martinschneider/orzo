@@ -2,14 +2,13 @@ package io.github.martinschneider.orzo;
 
 import io.github.martinschneider.orzo.codegen.CodeGenerator;
 import io.github.martinschneider.orzo.codegen.Output;
+import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.parser.Parser;
-import io.github.martinschneider.orzo.parser.ParserContext;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -19,21 +18,6 @@ import java.util.stream.Collectors;
 
 // main entry point
 public class Orzo {
-  private static Output fileOutput(File outputFile) {
-    if (!outputFile.getParentFile().exists()) {
-      outputFile.getParentFile().mkdirs();
-    }
-    PrintStream fileOutput;
-    Output out = null;
-    try {
-      fileOutput = new PrintStream(new FileOutputStream(outputFile));
-      out = new Output(fileOutput);
-      return out;
-    } catch (FileNotFoundException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   public static void main(String args[]) throws IOException {
     int verbose = 0;
     if (args.length == 0) {
@@ -60,7 +44,9 @@ public class Orzo {
           i++;
         }
       }
-      new Orzo(inputs, outputPath, verbose).compile();
+      if (!new Orzo(inputs, outputPath, verbose).compile()) {
+        System.exit(1);
+      }
     }
   }
 
@@ -69,6 +55,8 @@ public class Orzo {
   private int verbose;
   // package private for unit test
   List<Clazz> clazzes = new ArrayList<>();
+  // the errors of the last compile()
+  CompilerErrors errors;
 
   public Orzo(List<File> inputs, String outputPath, int verbose) {
     this.inputs = inputs;
@@ -76,79 +64,78 @@ public class Orzo {
     this.verbose = verbose;
   }
 
-  public void compile() throws IOException {
-    compile(new ArrayList<>());
+  public boolean compile() throws IOException {
+    return compile(new ArrayList<>());
   }
 
-  public void compile(List<Output> outputs) throws IOException {
+  /**
+   * Compiles the input files: the class files are written to the output path (or only into the
+   * given outputs if it is null) unless there are errors, which are printed to stderr. Returns
+   * whether the compilation succeeded.
+   */
+  public boolean compile(List<Output> outputs) throws IOException {
     clazzes = new ArrayList<>();
+    errors = new CompilerErrors();
     List<Clazz> nestedClazzes = new ArrayList<>();
-    ParserContext ctx = null;
     for (int i = 0; i < inputs.size(); i++) {
       if (verbose > 0) {
         System.out.println("Reading from: " + inputs.get(i).getAbsolutePath());
       }
-      Lexer scanner = new Lexer();
-      TokenList tokens = scanner.getTokens(inputs.get(i));
+      errors.file = inputs.get(i).getName();
+      TokenList tokens = new Lexer(errors).getTokens(inputs.get(i));
       if (verbose > 0) {
         System.out.println(
             "Scanner output: "
                 + tokens.list().stream().map(x -> x.toString()).collect(Collectors.joining(", ")));
       }
-      Parser parser = new Parser(scanner.getErrors());
+      Parser parser = new Parser(errors);
+      errors.tokens = tokens;
       Clazz clazz = parser.parse(tokens);
+      errors.tokens = null;
       if (verbose > 0) {
         System.out.println("Parser output: " + clazz);
       }
-      Output output = null;
-      boolean preSupplied = outputs != null && outputs.size() > i;
-      if (preSupplied) {
-        output = outputs.get(i);
-      }
-      if (output == null) {
-        File outputFile = new File(classPath(outputPath, clazz));
-        if (verbose > 0) {
-          System.out.println("Writing to: " + outputFile.getAbsolutePath());
-        }
-        output = fileOutput(outputFile);
+      if (clazz == null) {
+        errors.addError(
+            "parse", "expected a class, interface or enum", new RuntimeException().getStackTrace());
+        continue;
       }
       clazz.sourceFile = inputs.get(i).getName();
       clazzes.add(clazz);
-      // Only append a new entry when none existed at this index yet - appending unconditionally
-      // duplicated a pre-supplied output (every caller that pre-populates `outputs`, e.g. the
-      // test harness), desyncing clazzes/outputs indices. That went unnoticed until classes
-      // appended mid-codegen (e.g. a lambda's synthetic implementation, via
-      // ctx.addSyntheticClazz()) started relying on the two lists staying index-aligned.
-      if (!preSupplied) {
-        outputs.add(output);
+      // (the test harness supplies one output per input file)
+      if (outputs.size() <= i) {
+        outputs.add(inMemoryOutput());
       }
       for (Clazz nested : parser.ctx.nestedClazzes) {
         nested.sourceFile = clazz.sourceFile;
         nestedClazzes.add(nested);
       }
-      ctx = parser.ctx;
     }
-    int inputCount = inputs.size();
+    // no code generation for files with syntax errors (it would only report follow-up errors)
+    if (!errors.isEmpty()) {
+      System.err.print(errors.toString(verbose));
+      return false;
+    }
     // Static nested classes are compiled like the classes of separate input files. They come after
-    // those (outputs stay index-aligned with the input files) and are written out like synthetic
-    // classes below.
+    // those (outputs stay index-aligned with the input files), as do classes discovered during
+    // code generation (e.g. a lambda expression's synthetic implementation).
     for (Clazz nested : nestedClazzes) {
       clazzes.add(nested);
-      outputs.add(new Output(new PrintStream(new ByteArrayOutputStream())));
+      outputs.add(inMemoryOutput());
     }
-    CodeGenerator codeGen = new CodeGenerator(clazzes, outputs, ctx.errors);
+    CodeGenerator codeGen = new CodeGenerator(clazzes, outputs, errors);
     codeGen.generate();
-    if (!codeGen.getErrors().errors.isEmpty()) {
-      System.err.println(String.format("%s", codeGen.getErrors().toString(verbose)));
+    if (!errors.isEmpty()) {
+      System.err.print(errors.toString(verbose));
+      return false;
     }
-    // Persist classes discovered during codegen that weren't part of the original input files
-    // (e.g. a lambda expression's synthetic functional-interface implementation) and so have no
-    // file-backed Output yet. Output always buffers its bytes internally (getBytes()) regardless
-    // of backing PrintStreams, so an in-memory caller (e.g. the test harness, which passes
-    // outputPath == null) can already read them straight out of `outputs` without this.
+    // only now (without errors) write the class files
     if (outputPath != null) {
-      for (int i = inputCount; i < clazzes.size(); i++) {
+      for (int i = 0; i < clazzes.size(); i++) {
         File outputFile = new File(classPath(outputPath, clazzes.get(i)));
+        if (verbose > 0) {
+          System.out.println("Writing to: " + outputFile.getAbsolutePath());
+        }
         if (!outputFile.getParentFile().exists()) {
           outputFile.getParentFile().mkdirs();
         }
@@ -157,6 +144,12 @@ public class Orzo {
         }
       }
     }
+    return true;
+  }
+
+  // Output always buffers what's written to it (getBytes()); the PrintStream is irrelevant
+  private static Output inMemoryOutput() {
+    return new Output(new PrintStream(new ByteArrayOutputStream()));
   }
 
   private String classPath(String dir, Clazz clazz) {

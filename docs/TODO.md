@@ -56,7 +56,6 @@ currently fails with a compile error or produces a class file that doesn't verif
 | Priority |                 Feature                  |                                                           Notes                                                           |
 |----------|------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
 | H        | Comparisons inside string concatenations | `"x: " + (a == b)` - a comparison is only materialized into a 0/1 value at the end of an expression, not as an operand.   |
-| H        | `super.method()`                         | `missing method declaration "super.m[]"`; calls through `super` only work for constructors.                               |
 | H        | `abstract` classes and methods           | The parser doesn't accept the `abstract` modifier.                                                                        |
 | M        | Generic classes                          | `class Box<T> { T v; }`: members typed with a class type variable aren't erased to the bound (`NoClassDefFoundError: T`). |
 | M        | Interface `default`/`static` methods     | Interface methods can't have a body.                                                                                      |

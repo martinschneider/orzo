@@ -4,6 +4,11 @@ import java.math.BigInteger;
 
 public class Token {
   public Object val;
+  // the position (1-based, 0 for a token that isn't from the source) and text in the source; not
+  // part of equals()
+  public int line;
+  public int col;
+  public String text;
 
   public Token(Object val) {
     this.val = val;
@@ -43,6 +48,35 @@ public class Token {
   public String toString() {
     return val.toString();
   }
+
+  /** The token as written in the source, e.g. "')'", for error messages. */
+  public String display() {
+    if (text != null && !text.isBlank()) {
+      return "'" + text.strip() + "'";
+    }
+    if (this instanceof EOF) {
+      return "end of file";
+    }
+    if (val instanceof Symbols) {
+      return "'" + SYMBOLS.getOrDefault(val, val.toString()) + "'";
+    }
+    return "'" + val + "'";
+  }
+
+  private static final java.util.Map<Symbols, String> SYMBOLS =
+      java.util.Map.ofEntries(
+          java.util.Map.entry(Symbols.LPAREN, "("),
+          java.util.Map.entry(Symbols.RPAREN, ")"),
+          java.util.Map.entry(Symbols.LBRACE, "{"),
+          java.util.Map.entry(Symbols.RBRACE, "}"),
+          java.util.Map.entry(Symbols.LBRAK, "["),
+          java.util.Map.entry(Symbols.RBRAK, "]"),
+          java.util.Map.entry(Symbols.DOT, "."),
+          java.util.Map.entry(Symbols.COMMA, ","),
+          java.util.Map.entry(Symbols.SEMICOLON, ";"),
+          java.util.Map.entry(Symbols.COLON, ":"),
+          java.util.Map.entry(Symbols.QUESTION, "?"),
+          java.util.Map.entry(Symbols.ARROW, "->"));
 
   public static Chr chr(char val) {
     return new Chr(val);

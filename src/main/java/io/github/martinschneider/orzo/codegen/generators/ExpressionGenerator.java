@@ -1047,6 +1047,23 @@ public class ExpressionGenerator {
 
   private static final List<String> NUMERIC = List.of(BYTE, SHORT, CHAR, INT, LONG, FLOAT, DOUBLE);
 
+  private static boolean isNumeric(String type) {
+    return type != null && NUMERIC.contains(type);
+  }
+
+  // Converts the value below the top of the stack (from -> to): the top value (of type topType)
+  // is parked in a temporary local meanwhile
+  private void convertBelowTop(DynamicByteArray out, String topType, String from, String to) {
+    String tmpName = "$tmp_" + ctx.classIdMap.variables.localSize;
+    VariableInfo tmp =
+        new VariableInfo(
+            tmpName, topType, emptyList(), false, (short) ctx.classIdMap.variables.localSize, null);
+    ctx.classIdMap.variables.putLocal(Token.id(tmpName), tmp);
+    ctx.storeGen.store(out, tmp);
+    ctx.basicGen.convert1(out, from, to);
+    ctx.loadGen.load(out, tmp);
+  }
+
   // "base ** exponent" (both on the stack): Math.pow() for a floating-point operand (or context),
   // otherwise BigInteger.valueOf(base).pow(exponent).longValue()
   private String generatePow(
@@ -1105,10 +1122,33 @@ public class ExpressionGenerator {
   private String promoteOperands(DynamicByteArray out, Operators op, OperandStack exprTypeStack) {
     String right = exprTypeStack.type();
     String left = exprTypeStack.secondType();
-    if (left == null
-        || right == null
-        || !NUMERIC.contains(left)
-        || !NUMERIC.contains(right)
+    // unboxing (JLS 5.6), e.g. "list.get(i) > x" on a List<Integer> (but "==" and "!=" compare two
+    // wrapper objects as references)
+    String leftUnboxed = TypeUtils.unboxedType(left);
+    String rightUnboxed = TypeUtils.unboxedType(right);
+    boolean bothNumeric =
+        (isNumeric(left) || isNumeric(leftUnboxed))
+            && (isNumeric(right) || isNumeric(rightUnboxed));
+    boolean referenceEquality =
+        (op == EQUAL || op == NOTEQUAL) && leftUnboxed != null && rightUnboxed != null;
+    if (bothNumeric
+        && (leftUnboxed != null || rightUnboxed != null)
+        && !referenceEquality
+        && (ARITHMETIC_OPS.containsKey(op) || COMPARATORS.contains(op))) {
+      if (rightUnboxed != null) {
+        ctx.basicGen.convert1(out, right, rightUnboxed);
+        right = rightUnboxed;
+      }
+      if (leftUnboxed != null) {
+        convertBelowTop(out, right, left, leftUnboxed);
+        left = leftUnboxed;
+      }
+      exprTypeStack.pop2();
+      exprTypeStack.push(left);
+      exprTypeStack.push(right);
+    }
+    if (!isNumeric(left)
+        || !isNumeric(right)
         || !(ARITHMETIC_OPS.containsKey(op) || COMPARATORS.contains(op))) {
       return null;
     }
@@ -1124,20 +1164,7 @@ public class ExpressionGenerator {
       ctx.basicGen.convert1(out, rightType, rightTarget);
     }
     if (!leftType.equals(target)) {
-      // the left operand is below the right one: park the right one in a temporary local
-      String tmpName = "$promote_" + ctx.classIdMap.variables.localSize;
-      VariableInfo tmp =
-          new VariableInfo(
-              tmpName,
-              rightTarget,
-              emptyList(),
-              false,
-              (short) ctx.classIdMap.variables.localSize,
-              null);
-      ctx.classIdMap.variables.putLocal(Token.id(tmpName), tmp);
-      ctx.storeGen.store(out, tmp);
-      ctx.basicGen.convert1(out, leftType, target);
-      ctx.loadGen.load(out, tmp);
+      convertBelowTop(out, rightTarget, leftType, target);
     }
     exprTypeStack.pop2();
     exprTypeStack.push(target);

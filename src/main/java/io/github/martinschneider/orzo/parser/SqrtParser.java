@@ -36,7 +36,6 @@ public class SqrtParser {
         tokens.replace(idx, new Identifier("Math.sqrt"));
       }
     }
-    ctx.errors.tokenIdx = tokens.idx();
     tokens.setIdx(idx);
   }
 }

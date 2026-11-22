@@ -401,6 +401,11 @@ public class TypeUtils {
     return emptyList();
   }
 
+  /** The primitive type of a wrapper class, e.g. "int" for "java.lang.Integer" (else null). */
+  public static String unboxedType(String type) {
+    return (type == null) ? null : UNBOXED.get(type.replace('/', '.'));
+  }
+
   private static final Map<String, String> UNBOXED =
       Map.of(
           "java.lang.Integer", INT,

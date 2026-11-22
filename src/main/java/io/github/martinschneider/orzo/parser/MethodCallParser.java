@@ -47,9 +47,9 @@ public class MethodCallParser implements ProdParser<MethodCall> {
         // TODO: else
       }
       if (!tokens.curr().eq(sym(RPAREN))) {
-        tokens.next(sym(RBRACE));
         ctx.errors.missingExpected(
             LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
+        tokens.next(sym(RBRACE));
         return null;
       }
       tokens.next();
@@ -83,7 +83,6 @@ public class MethodCallParser implements ProdParser<MethodCall> {
       parameters = parseArgs(tokens);
       ArraySelector arrSel = ctx.arraySelectorParser.parse(tokens);
       if (parameters == null) {
-        ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
       }

@@ -20,7 +20,7 @@ Orzo compiles a large subset of Java (enough to compile itself, see [Metrics](#m
 - [X] classes with fields, constructors (`this(...)`, `super(...)`), static and instance initializers, static initializer blocks `static { }`
 - [X] interfaces (implemented by classes of the same compilation unit or the JDK)
 - [ ] `default` and `static` interface methods
-- [ ] class inheritance (partially supported: `extends` with inherited fields and methods and virtual dispatch work; `super.method()` calls and `abstract` classes don't)
+- [ ] class inheritance (partially supported: `extends` with inherited fields and methods, virtual dispatch and `super.method()` calls work; `abstract` classes don't)
 - [X] [enums](https://docs.oracle.com/javase/specs/jls/se18/html/jls-8.html#jls-8.9) incl. constructors with any number of arguments, fields, methods, `values()`, `valueOf()`, `name()`, `ordinal()`
 - [X] static nested classes, interfaces and enums (no `InnerClasses`/`NestHost` attributes yet)
 - [ ] inner (non-static), local and anonymous classes
@@ -126,6 +126,6 @@ Measured by `mvn clean verify -Pselfcompile` (see `selfcompile.sh`): Orzo compil
 | Metric | Value |
 |--------|-------|
 | Self-compilation (share of source lines compiled by Orzo) | 100.0% |
-| Compile time (compiling Orzo's sources) | 6.4x javac (20.5 s vs. 3.2 s) |
-| Class size (Orzo's class files) | 4.4x javac (3780.6 KiB vs. 861.4 KiB) |
+| Compile time (compiling Orzo's sources) | 6.0x javac (20.1 s vs. 3.4 s) |
+| Class size (Orzo's class files) | 4.4x javac (3807.4 KiB vs. 868.2 KiB) |
 <!-- metrics:end -->

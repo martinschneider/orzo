@@ -62,6 +62,7 @@ public class ClassParser implements ProdParser<Clazz> {
   public Clazz parse(TokenList tokens) {
     String packageDeclaration = parsePackageDeclaration(tokens);
     ctx.importMap.clear();
+    ctx.onDemandImports.clear();
     List<Import> imports = parseImports(tokens);
     Scope scope = ctx.scopeParser.parse(tokens);
     boolean isInterface = false;
@@ -152,7 +153,6 @@ public class ClassParser implements ProdParser<Clazz> {
       parseInterfaces(tokens, interfaces, packageDeclaration);
     }
     if (!tokens.curr().eq(sym(LBRACE))) {
-      ctx.errors.tokenIdx = tokens.idx();
       ctx.errors.missingExpected(
           LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
       return null;
@@ -208,7 +208,6 @@ public class ClassParser implements ProdParser<Clazz> {
     }
 
     if (!tokens.curr().eq(sym(RBRACE))) {
-      ctx.errors.tokenIdx = tokens.idx();
       ctx.errors.missingExpected(
           LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
     }
@@ -243,8 +242,17 @@ public class ClassParser implements ProdParser<Clazz> {
         (packageDeclaration != null && !packageDeclaration.isEmpty())
             ? packageDeclaration + "." + name
             : name;
-    // a java.lang type (e.g. "implements Comparable<T>"), unless the package has its own
-    if (!isLoadable(samePackage) && isLoadable("java.lang." + name)) {
+    if (isLoadable(samePackage)) {
+      return samePackage;
+    }
+    // a class of an on-demand import (e.g. "extends PushbackReader" with "import java.io.*;") or
+    // of java.lang (e.g. "implements Comparable<T>")
+    for (String pkg : ctx.onDemandImports) {
+      if (isLoadable(pkg + "." + name)) {
+        return pkg + "." + name;
+      }
+    }
+    if (isLoadable("java.lang." + name)) {
       return "java.lang." + name;
     }
     return samePackage;
@@ -399,6 +407,15 @@ public class ClassParser implements ProdParser<Clazz> {
   }
 
   private ClassMember parserClassMember(TokenList tokens, boolean isInterface) {
+    Token start = tokens.curr();
+    ClassMember member = parseClassMember(tokens, isInterface);
+    if (member != null) {
+      ctx.errors.startTokens.putIfAbsent(member, start);
+    }
+    return member;
+  }
+
+  private ClassMember parseClassMember(TokenList tokens, boolean isInterface) {
     if (tokens.curr().eq(keyword(STATIC))) {
       int savedIdx = tokens.idx();
       tokens.next();
@@ -470,6 +487,8 @@ public class ClassParser implements ProdParser<Clazz> {
           String simpleName = importPath.substring(lastDot + 1);
           if (!simpleName.equals("*")) {
             ctx.importMap.put(simpleName, importPath);
+          } else {
+            ctx.onDemandImports.add(importPath.substring(0, lastDot));
           }
         }
       }

@@ -17,30 +17,92 @@ import java.util.List;
 public class Lexer {
   private StringBuffer buffer;
   private char character;
-  private final CompilerErrors errors = new CompilerErrors();
+  private final CompilerErrors errors;
   // a PushbackReader is used to be able to jump forward and backward in the input stream
-  private PushbackReader inputReader;
+  private PositionReader inputReader;
   private List<Token> tokenList;
+  // the input, and the offsets at which its lines start (for the positions of tokens)
+  private String source;
+  private List<Integer> lineStarts;
+
+  public Lexer() {
+    this(new CompilerErrors());
+  }
+
+  public Lexer(CompilerErrors errors) {
+    this.errors = errors;
+  }
 
   public CompilerErrors getErrors() {
     return errors;
   }
 
   public TokenList getTokens(File file) throws IOException {
-    inputReader = new PushbackReader(new FileReader(file));
-    return getTokens(inputReader);
+    StringBuilder content = new StringBuilder();
+    try (Reader reader = new BufferedReader(new FileReader(file))) {
+      int c;
+      while ((c = reader.read()) != -1) {
+        content.append((char) c);
+      }
+    }
+    return getTokens(content.toString());
   }
 
   public TokenList getTokens(String string) {
-    inputReader = new PushbackReader(new StringReader(string));
+    source = string;
+    lineStarts = new ArrayList<>();
+    lineStarts.add(0);
+    for (int i = 0; i < string.length(); i++) {
+      if (string.charAt(i) == '\n') {
+        lineStarts.add(i + 1);
+      }
+    }
+    inputReader = new PositionReader(new StringReader(string));
     try {
       return getTokens(inputReader);
     } catch (IOException e) {
       throw new RuntimeException(e);
+    } finally {
+      errors.position = null;
     }
   }
 
-  public TokenList getTokens(PushbackReader fileReader) throws IOException {
+  // A PushbackReader that knows its offset in the input
+  private static class PositionReader extends PushbackReader {
+    int offset;
+
+    PositionReader(Reader reader) {
+      super(reader);
+    }
+
+    @Override
+    public int read() throws IOException {
+      int c = super.read();
+      if (c != -1) {
+        offset++;
+      }
+      return c;
+    }
+
+    @Override
+    public void unread(int c) throws IOException {
+      super.unread(c);
+      offset--;
+    }
+  }
+
+  // Sets the position (and source text) of a token starting at the given offset of the input
+  private void setPosition(Token token, int start, int end) {
+    int line = lineStarts.size() - 1;
+    while (lineStarts.get(line) > start) {
+      line--;
+    }
+    token.line = line + 1;
+    token.col = start - lineStarts.get(line) + 1;
+    token.text = source.substring(start, Math.max(start, Math.min(end, source.length())));
+  }
+
+  private TokenList getTokens(PushbackReader fileReader) throws IOException {
     tokenList = new ArrayList<>();
     buffer = new StringBuffer();
     int tokenCount;
@@ -49,6 +111,11 @@ public class Lexer {
     while ((c = fileReader.read()) != -1) {
       character = (char) c;
       tokenCount = tokenList.size();
+      int start = inputReader.offset - 1;
+      // the position of errors reported while scanning this token
+      Token here = new Token(null);
+      setPosition(here, start, start);
+      errors.position = here;
       // parenthesis
       scanParen();
       // identifier/keyword
@@ -93,8 +160,14 @@ public class Lexer {
             "unexpected character '" + character + "'",
             new RuntimeException().getStackTrace());
       }
+      for (int i = tokenCount; i < tokenList.size(); i++) {
+        setPosition(tokenList.get(i), start, inputReader.offset);
+      }
     }
-    return new TokenList(tokenList);
+    TokenList result = new TokenList(tokenList);
+    result.end = eof();
+    setPosition(result.end, source.length(), source.length());
+    return result;
   }
 
   private void scanComment() throws IOException {

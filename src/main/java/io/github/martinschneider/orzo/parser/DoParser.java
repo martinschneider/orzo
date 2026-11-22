@@ -36,9 +36,9 @@ public class DoParser implements ProdParser<DoStatement> {
     if (tokens.curr() instanceof Keyword && tokens.curr().eq(keyword(DO))) {
       tokens.next();
       if (!tokens.curr().eq(sym(LBRACE))) {
-        tokens.prev();
         ctx.errors.missingExpected(
             LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
+        tokens.prev();
       }
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
@@ -46,21 +46,21 @@ public class DoParser implements ProdParser<DoStatement> {
         body = new ArrayList<>();
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
-        tokens.prev();
         ctx.errors.missingExpected(
             LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+        tokens.prev();
       }
       tokens.next();
       if (!tokens.curr().eq(keyword(WHILE))) {
-        tokens.prev();
         ctx.errors.missingExpected(
             LOG_NAME, keyword(WHILE), tokens, new RuntimeException().getStackTrace());
+        tokens.prev();
       }
       tokens.next();
       if (!tokens.curr().eq(sym(LPAREN))) {
-        tokens.prev();
         ctx.errors.missingExpected(
             LOG_NAME, sym(LPAREN), tokens, new RuntimeException().getStackTrace());
+        tokens.prev();
       }
       tokens.next();
       condition = ctx.exprParser.parse(tokens);
@@ -69,9 +69,9 @@ public class DoParser implements ProdParser<DoStatement> {
         ctx.errors.addError(LOG_NAME, "missing condition", new RuntimeException().getStackTrace());
       }
       if (!tokens.curr().eq(sym(RPAREN))) {
-        tokens.prev();
         ctx.errors.missingExpected(
             LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
+        tokens.prev();
       } else {
         tokens.next();
         if (tokens.curr().eq(sym(SEMICOLON))) {

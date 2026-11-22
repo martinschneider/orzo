@@ -11,6 +11,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -103,6 +104,16 @@ public class StatementParser implements ProdParser<Statement> {
 
   @Override
   public Statement parse(TokenList tokens) {
+    Token start = tokens.curr();
+    Statement stmt = parseStatement(tokens);
+    if (stmt != null) {
+      // (for the position of errors when generating its code)
+      ctx.errors.startTokens.putIfAbsent(stmt, start);
+    }
+    return stmt;
+  }
+
+  private Statement parseStatement(TokenList tokens) {
     Statement stmt;
     if (tokens.curr().eq(sym(LBRACE))) {
       // a block, e.g. "{ int x = 1; ... }"

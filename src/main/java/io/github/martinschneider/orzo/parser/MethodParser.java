@@ -201,7 +201,6 @@ public class MethodParser implements ProdParser<Method> {
     }
     if (!tokens.curr().eq(sym(LPAREN))) {
       for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
-      ctx.errors.tokenIdx = tokens.idx();
       tokens.setIdx(idx);
       return null;
     }
@@ -209,7 +208,6 @@ public class MethodParser implements ProdParser<Method> {
     arguments = parseArgs(tokens);
     if (!tokens.curr().eq(sym(RPAREN))) {
       for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
-      ctx.errors.tokenIdx = tokens.idx();
       tokens.setIdx(idx);
       return null;
     }
@@ -219,7 +217,6 @@ public class MethodParser implements ProdParser<Method> {
       skipThrowsClause(tokens);
       if (!tokens.curr().eq(sym(LBRACE))) {
         for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
-        ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
       }
@@ -230,7 +227,6 @@ public class MethodParser implements ProdParser<Method> {
         // Skip forward to the matching } rather than resetting — this preserves the method
         // signature even when the body contains syntax Orzo cannot yet parse.
         // Still report it: silently compiling a truncated method body produces wrong bytecode.
-        ctx.errors.tokenIdx = tokens.idx();
         ctx.errors.missingExpected(
             LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
         int depth = 1;

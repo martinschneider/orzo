@@ -43,7 +43,6 @@ public class CastParser implements ProdParser<Type> {
         }
       }
       if (type == null) {
-        ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
       }
@@ -54,7 +53,6 @@ public class CastParser implements ProdParser<Type> {
         tokens.next();
         return type;
       } else {
-        ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
       }

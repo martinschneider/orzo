@@ -29,9 +29,9 @@ public class RepeatParser implements ProdParser<LoopStatement> {
       tokens.next();
       count = ctx.exprParser.parse(tokens);
       if (!tokens.curr().eq(sym(LBRACE))) {
-        tokens.next(sym(RBRACE));
         ctx.errors.missingExpected(
             LOG_NAME, sym(LBRACE), tokens, new RuntimeException().getStackTrace());
+        tokens.next(sym(RBRACE));
         return null;
       }
       tokens.next();
@@ -41,9 +41,9 @@ public class RepeatParser implements ProdParser<LoopStatement> {
         ctx.errors.addError(LOG_NAME, "missing body", new RuntimeException().getStackTrace());
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
-        tokens.next(sym(RBRACE));
         ctx.errors.missingExpected(
             LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+        tokens.next(sym(RBRACE));
         return null;
       } else {
         tokens.next();

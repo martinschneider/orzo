@@ -135,7 +135,6 @@ public class AssignmentParser implements ProdParser<Assignment> {
         tokens.next();
       } else if (tokens.curr().eq(op(POST_INCREMENT)) || tokens.curr().eq(op(POST_DECREMENT))) {
         // see post increment parser
-        ctx.errors.tokenIdx = tokens.idx();
         tokens.setIdx(idx);
         return null;
       } else if (tokens.curr().eq(op(PLUS_ASSIGN))) {
@@ -179,7 +178,6 @@ public class AssignmentParser implements ProdParser<Assignment> {
       }
       return assignment;
     }
-    ctx.errors.tokenIdx = tokens.idx();
     tokens.setIdx(idx);
     return null;
   }

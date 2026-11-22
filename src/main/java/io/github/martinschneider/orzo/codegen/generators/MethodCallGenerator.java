@@ -103,12 +103,16 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
                     && !"java.lang.Object".equals(ctx.clazz.baseClass))
                 ? ctx.clazz.baseClass.replace('.', '/')
                 : "java/lang/Object";
-        if (types.isEmpty() && "toString".equals(simpleMethod)) {
-          method = new Method(superClass, "toString", STRING, new ArrayList<>());
-        } else if (types.isEmpty() && "hashCode".equals(simpleMethod)) {
-          method = new Method(superClass, "hashCode", INT, new ArrayList<>());
-        } else if (types.size() == 1 && "equals".equals(simpleMethod)) {
-          method = new Method(superClass, "equals", BOOLEAN, List.of("Ljava/lang/Object;"));
+        // a superclass of this compilation run, or one that can be reflected on
+        String superName = superClass.replace('/', '.');
+        method = findMatchingMethod(superName + "." + simpleMethod, types);
+        if (method == null) {
+          method =
+              findMatchingMethod(
+                  superName.substring(superName.lastIndexOf('.') + 1) + "." + simpleMethod, types);
+        }
+        if (method == null) {
+          method = findMethodViaReflectionTyped(superName, simpleMethod, types);
         }
       }
       // Reflection fallback for class-name-prefixed calls (e.g. ParserContext.build(errors))
@@ -238,11 +242,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     if (method == null) {
       ctx.errors.addError(
           LOGGER_NAME,
-          (ctx.clazz != null ? ctx.clazz.sourceFile + " " : "")
-              + " missing method declaration \""
-              + methodName
-              + types
-              + "\"",
+          "cannot find method " + methodName + "(" + String.join(", ", types) + ")",
           new RuntimeException().getStackTrace());
       return "";
     }
@@ -854,11 +854,11 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     if (method == null) {
       ctx.errors.addError(
           LOGGER_NAME,
-          (ctx.clazz != null ? ctx.clazz.sourceFile + " " : "")
-              + "missing chained method \""
+          "cannot find method "
               + methodName
-              + types
-              + "\" on "
+              + "("
+              + String.join(", ", types)
+              + ") in "
               + receiverType,
           new RuntimeException().getStackTrace());
       return "";

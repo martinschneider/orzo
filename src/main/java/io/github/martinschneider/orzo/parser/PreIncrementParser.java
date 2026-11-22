@@ -61,7 +61,6 @@ public class PreIncrementParser implements ProdParser<IncrementStatement> {
       }
       return new IncrementStatement(new Expression(List.of(id, op)));
     } else {
-      ctx.errors.tokenIdx = tokens.idx();
       tokens.setIdx(idx);
       return null;
     }

@@ -1,7 +1,6 @@
 package io.github.martinschneider.orzo.error;
 
 import static io.github.martinschneider.orzo.TestHelper.args;
-import static io.github.martinschneider.orzo.util.FactoryHelper.err;
 import static io.github.martinschneider.orzo.util.FactoryHelper.list;
 import static io.github.martinschneider.orzo.util.FactoryHelper.stream;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -12,6 +11,7 @@ import io.github.martinschneider.orzo.parser.ClassParser;
 import io.github.martinschneider.orzo.parser.ParserContext;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -22,8 +22,8 @@ public class ParserErrorTest {
 
   private static Stream<Arguments> testClass() throws IOException {
     return stream(
-        args("public class Martin {", list(err("parse class: expected RBRACE but found EOF"))),
-        args("public class Martin }", list(err("parse class: expected LBRACE but found RBRACE"))));
+        args("public class Martin {", list("1:22: error: expected '}' but found end of file")),
+        args("public class Martin }", list("1:21: error: expected '{' but found '}'")));
   }
 
   @ParameterizedTest
@@ -31,6 +31,8 @@ public class ParserErrorTest {
   public void testClass(String input, List<String> errors) throws IOException {
     TokenList tokens = new Lexer().getTokens(input);
     target.parse(tokens);
-    assertTrue(target.ctx.errors.errors.containsAll(errors), target.ctx.errors.errors.toString());
+    List<String> actual =
+        target.ctx.errors.errors.stream().map(e -> e.toString()).collect(Collectors.toList());
+    assertTrue(actual.containsAll(errors), actual.toString());
   }
 }

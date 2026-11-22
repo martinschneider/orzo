@@ -37,7 +37,7 @@ public class GenericChainMethodResolutionTest {
     }
     String stderr = capturedErr.toString();
     assertTrue(
-        stderr.contains("missing chained method") && stderr.contains("length"),
+        stderr.contains("error: cannot find method length()"),
         "expected a compile error naming the unresolved chained method, got: " + stderr);
   }
 }

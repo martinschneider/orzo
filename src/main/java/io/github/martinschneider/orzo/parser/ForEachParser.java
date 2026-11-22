@@ -51,9 +51,9 @@ public class ForEachParser implements ProdParser<ForEachStatement> {
     tokens.next();
     Expression iterable = ctx.exprParser.parse(tokens);
     if (!tokens.curr().eq(sym(RPAREN))) {
-      tokens.next(sym(RBRACE));
       ctx.errors.missingExpected(
           LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
+      tokens.next(sym(RBRACE));
     }
     tokens.next();
     if (!tokens.curr().eq(sym(LBRACE))) {
@@ -79,9 +79,9 @@ public class ForEachParser implements ProdParser<ForEachStatement> {
       body = new ArrayList<>();
     }
     if (!tokens.curr().eq(sym(RBRACE))) {
-      tokens.next(sym(RBRACE));
       ctx.errors.missingExpected(
           LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+      tokens.next(sym(RBRACE));
     } else {
       tokens.next();
     }

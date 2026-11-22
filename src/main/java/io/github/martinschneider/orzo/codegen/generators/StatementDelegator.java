@@ -3,6 +3,7 @@ package io.github.martinschneider.orzo.codegen.generators;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.Break;
@@ -56,6 +57,19 @@ public class StatementDelegator {
   }
 
   public HasOutput generate(DynamicByteArray out, Method method, Statement stmt) {
-    return (stmt != null) ? reg.get(stmt.getClass()).generate(out, method, stmt) : out;
+    if (stmt == null) {
+      return out;
+    }
+    // errors are reported at the start of the statement (restored for an enclosing statement)
+    Token outer = ctx.errors.position;
+    Token start = ctx.errors.startTokens.get(stmt);
+    if (start != null) {
+      ctx.errors.position = start;
+    }
+    try {
+      return reg.get(stmt.getClass()).generate(out, method, stmt);
+    } finally {
+      ctx.errors.position = outer;
+    }
   }
 }

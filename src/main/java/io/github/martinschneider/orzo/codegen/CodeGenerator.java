@@ -109,6 +109,8 @@ public class CodeGenerator {
     // picked up and generated in a later iteration of this same loop — no separate pass needed.
     for (int i = 0; i < clazzes.size(); i++) {
       Clazz clazz = clazzes.get(i);
+      errors.file = clazz.sourceFile;
+      errors.position = null;
       init(i);
       ctx.classIdMap.variables.fieldMap.clear();
       ctx.classIdMap.variables.localMap.clear();
@@ -166,6 +168,7 @@ public class CodeGenerator {
       ctx.classIdMap.variables.localSizeMax = ctx.classIdMap.variables.localSize;
       ctx.memberProc.processMethodArgs(method);
       ctx.memberProc.processLocalVars(method);
+      errors.position = errors.startTokens.get(method);
       ctx.methodGen.generate(out, method, clazz);
     }
     for (String[] bridge : bridges) {

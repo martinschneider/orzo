@@ -5,7 +5,6 @@ import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.identifier.IdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
-import io.github.martinschneider.orzo.error.CompilerError;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
@@ -219,10 +218,6 @@ public class FactoryHelper {
   public static ForEachStatement forEachStmt(
       String elemType, String elemVar, Expression iterable, List<Statement> body) {
     return new ForEachStatement(elemType, new Identifier(elemVar), iterable, body);
-  }
-
-  public static CompilerError err(String msg) {
-    return new CompilerError(msg, null);
   }
 
   public static Identifier id(String val, ArraySelector selector) {
