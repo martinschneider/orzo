@@ -12,6 +12,7 @@ import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.FieldProcessor;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.IdentifierMap;
@@ -85,10 +86,17 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
               thisLoaded
                   ? ctx.classIdMap.variables.fieldMap.get(id.val.toString())
                   : ctx.classIdMap.variables.get(id);
+          String valueType = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, right);
           if (varInfo == null) {
             ctx.errors.addError(
                 LOG_NAME,
-                String.format("Unknown variable %s", id.val),
+                String.format("cannot find variable %s", id.val),
+                new RuntimeException().getStackTrace());
+          } else if (left.arrSel == null && TypeUtils.isIncompatible(valueType, varInfo.type)) {
+            ctx.errors.addError(
+                LOG_NAME,
+                String.format(
+                    "incompatible types: %s cannot be converted to %s", valueType, varInfo.type),
                 new RuntimeException().getStackTrace());
           } else {
             String type = varInfo.type;
@@ -261,7 +269,7 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
         if (varInfo == null) {
           ctx.errors.addError(
               LOG_NAME,
-              String.format("Unknown variable in chained assignment: %s", id.val),
+              String.format("cannot find variable %s", id.val),
               new RuntimeException().getStackTrace());
           return out;
         }
@@ -275,7 +283,7 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
         if (instanceField == null) {
           ctx.errors.addError(
               LOG_NAME,
-              String.format("Unknown field %s in type %s", id.val, currentType),
+              String.format("cannot find field %s in %s", id.val, currentType),
               new RuntimeException().getStackTrace());
           return out;
         }
@@ -342,7 +350,7 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
       } else {
         ctx.errors.addError(
             LOG_NAME,
-            String.format("Unknown field %s in type %s", id.val, currentType),
+            String.format("cannot find field %s in %s", id.val, currentType),
             new RuntimeException().getStackTrace());
       }
     }

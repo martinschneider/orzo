@@ -171,6 +171,42 @@ public class TypeUtils {
     return sb.toString();
   }
 
+  /**
+   * Whether a value of one type can certainly not be assigned to a variable of another type, e.g. a
+   * String to an int or an int to a String (only these clear cases are detected; there is no full
+   * type check yet).
+   */
+  public static boolean isIncompatible(String valueType, String targetType) {
+    if (valueType == null || targetType == null) {
+      return false;
+    }
+    boolean targetIsString = STRING.equals(targetType) || "java.lang.String".equals(targetType);
+    boolean valueIsString = STRING.equals(valueType) || "java.lang.String".equals(valueType);
+    boolean targetNumeric = isPrimitive(targetType) && !BOOLEAN.equals(targetType);
+    boolean valueNumeric = isPrimitive(valueType) && !BOOLEAN.equals(valueType);
+    return (targetNumeric && valueIsString)
+        || (targetIsString && (valueNumeric || BOOLEAN.equals(valueType)));
+  }
+
+  // Whether a class (binary name with '.' or '/') exists: a class of this compilation run or a
+  // reflectively loadable one
+  public static boolean classExists(String className, List<Clazz> allClazzes) {
+    String name = className.replace('/', '.');
+    if (allClazzes != null) {
+      for (Clazz clazz : allClazzes) {
+        if (clazz.fqn().equals(name)) {
+          return true;
+        }
+      }
+    }
+    try {
+      Class.forName(name, false, TypeUtils.class.getClassLoader());
+      return true;
+    } catch (ClassNotFoundException | LinkageError e) {
+      return false;
+    }
+  }
+
   // Whether a class (binary name with '.' or '/') is an interface: a class of this compilation run
   // or a reflectively loadable one
   public static boolean isInterface(String className, List<Clazz> allClazzes) {

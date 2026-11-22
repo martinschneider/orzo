@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
 import static io.github.martinschneider.orzo.util.FactoryHelper.clazz;
+import static io.github.martinschneider.orzo.util.FactoryHelper.defaultConstr;
 import static io.github.martinschneider.orzo.util.FactoryHelper.list;
 import static io.github.martinschneider.orzo.util.FactoryHelper.varMap;
 import static io.github.martinschneider.orzo.util.decompiler.BytecodeDecompiler.decompile;
@@ -60,7 +61,8 @@ public abstract class StatementGeneratorTest<T extends Statement> {
                 "Clazz",
                 emptyList(),
                 Clazz.JAVA_LANG_OBJECT,
-                list(method),
+                // (every class has a constructor, e.g. for "this()")
+                list(method, defaultConstr("pkg.Clazz")),
                 emptyList())),
         list(new Output()));
   }

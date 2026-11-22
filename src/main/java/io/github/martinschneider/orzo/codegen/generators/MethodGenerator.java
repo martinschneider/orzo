@@ -3,6 +3,7 @@ package io.github.martinschneider.orzo.codegen.generators;
 import static io.github.martinschneider.orzo.codegen.OpCodes.*;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.*;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.VOID;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
@@ -90,7 +91,27 @@ public class MethodGenerator {
       }
 
       if (!returned) {
+        if (!VOID.equals(method.type) && !method.name.val.toString().startsWith("<")) {
+          ctx.errors.addError(
+              LOG_NAME, "missing return statement", new RuntimeException().getStackTrace());
+        }
         methodOut.write(RETURN);
+      }
+      if (!methodOut.pendingBreaks.isEmpty() || !methodOut.labeledBreaks.isEmpty()) {
+        ctx.errors.addError(
+            LOG_NAME,
+            methodOut.labeledBreaks.isEmpty()
+                ? "break outside of a loop or switch"
+                : "undefined label: " + methodOut.labeledBreaks.keySet().iterator().next(),
+            new RuntimeException().getStackTrace());
+      }
+      if (!methodOut.pendingContinues.isEmpty() || !methodOut.labeledContinues.isEmpty()) {
+        ctx.errors.addError(
+            LOG_NAME,
+            methodOut.labeledContinues.isEmpty()
+                ? "continue outside of a loop"
+                : "undefined label: " + methodOut.labeledContinues.keySet().iterator().next(),
+            new RuntimeException().getStackTrace());
       }
       byte[] stackMapBytes =
           StackMapTableBuilder.buildFromBytecode(methodOut.getBytes(), method, ctx, ctx.constPool);

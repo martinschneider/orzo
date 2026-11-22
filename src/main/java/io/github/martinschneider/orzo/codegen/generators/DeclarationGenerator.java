@@ -8,6 +8,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
@@ -40,6 +41,15 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
             fieldVarInfo != null ? fieldVarInfo : ctx.classIdMap.variables.get(decl.name);
         if (decl.isField && varInfo != null && !varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
           ctx.loadGen.loadReference(out, (short) 0);
+        }
+        String valueType = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, decl.val);
+        if (TypeUtils.isIncompatible(valueType, decl.type)) {
+          ctx.errors.addError(
+              "declaration generator",
+              String.format(
+                  "incompatible types: %s cannot be converted to %s", valueType, decl.type),
+              new RuntimeException().getStackTrace());
+          continue;
         }
         ctx.exprGen.eval(out, decl.type, decl.val);
         String actualType = ctx.opStack.type();

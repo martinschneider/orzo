@@ -554,11 +554,23 @@ public class Lexer {
       } else if (buffer.length() == 0 && peek() == '"') {
         errors.addError(
             "scan string", "text blocks are not supported", new RuntimeException().getStackTrace());
+        skipTextBlock();
+        tokenList.add(str("")); // (so that parsing continues without follow-up errors)
       } else {
         tokenList.add(str(buffer.toString()));
       }
     }
     buffer.setLength(0);
+  }
+
+  // skips the rest of a text block (the opening """ has been read except for its last ")
+  private void skipTextBlock() throws IOException {
+    inputReader.read();
+    int quotes = 0;
+    int c;
+    while (quotes < 3 && (c = inputReader.read()) != -1) {
+      quotes = (c == '"') ? quotes + 1 : 0;
+    }
   }
 
   private int peek() throws IOException {

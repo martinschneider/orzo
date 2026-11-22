@@ -5,9 +5,12 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.NEGATE;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PLUS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_DECREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.POST_INCREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_DECREMENT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
@@ -36,6 +39,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Keyword;
 import io.github.martinschneider.orzo.lexer.tokens.Keywords;
 import io.github.martinschneider.orzo.lexer.tokens.Num;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
+import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
@@ -345,7 +349,12 @@ public class ExpressionParser implements ProdParser<Expression> {
         continueParsing = true;
       }
     }
-    return (exprTokens.size() > 0) ? new Expression(postfix(exprTokens), cast) : null;
+    if (exprTokens.isEmpty()) {
+      return null;
+    }
+    List<Token> postfixTokens = postfix(exprTokens);
+    checkComplete(postfixTokens, tokens);
+    return new Expression(postfixTokens, cast);
   }
 
   // "(Type<Args>)" can only be a cast: drop the (erased) type arguments from the token stream, so
@@ -595,6 +604,55 @@ public class ExpressionParser implements ProdParser<Expression> {
       }
     }
     return false;
+  }
+
+  // Reports an incomplete expression, e.g. "1 +" or "(1 + 2" (the tokens are in postfix order)
+  private void checkComplete(List<Token> postfixTokens, TokenList tokens) {
+    int values = 0;
+    for (Token token : postfixTokens) {
+      if (token.eq(sym(LPAREN)) || token.eq(sym(RPAREN))) {
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
+        return;
+      }
+      if (token instanceof Type) {
+        continue; // a reference cast marker, e.g. the "String" in "((String) obj)" (see TODO.md)
+      }
+      int operands = operandCount(token);
+      if (values < operands) {
+        values = -1; // an operator without (enough) operands
+        break;
+      }
+      values += 1 - operands;
+    }
+    if (values != 1) {
+      ctx.errors.addError(
+          LOG_NAME,
+          "expected an expression but found " + tokens.curr().display(),
+          new RuntimeException().getStackTrace());
+    }
+  }
+
+  // the number of operands a token of a postfix expression consumes (it produces one value)
+  private static int operandCount(Token token) {
+    if (token instanceof InstanceofToken
+        || (token instanceof MethodCall && ((MethodCall) token).literalReceiver)) {
+      return 1;
+    }
+    if (!(token instanceof Operator)) {
+      return 0;
+    }
+    if (token instanceof CastOperator) {
+      return 1;
+    }
+    Operators op = ((Operator) token).opValue();
+    return (op == NEGATE
+            || op == PRE_INCREMENT
+            || op == PRE_DECREMENT
+            || op == POST_INCREMENT
+            || op == POST_DECREMENT)
+        ? 1
+        : 2;
   }
 
   // "(int)", "(char)", ... (a cast to a primitive type)

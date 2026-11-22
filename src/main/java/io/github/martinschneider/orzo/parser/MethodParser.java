@@ -221,14 +221,23 @@ public class MethodParser implements ProdParser<Method> {
         return null;
       }
       tokens.next();
+      int errorCount = ctx.errors.errors.size();
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (!tokens.curr().eq(sym(RBRACE))) {
         // Recovery: body parsing stopped before the closing brace.
         // Skip forward to the matching } rather than resetting — this preserves the method
         // signature even when the body contains syntax Orzo cannot yet parse.
-        // Still report it: silently compiling a truncated method body produces wrong bytecode.
-        ctx.errors.missingExpected(
-            LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+        // Still report it (unless the statement that stopped it already reported an error):
+        // silently compiling a truncated method body produces wrong bytecode.
+        if (tokens.curr() instanceof EOF) {
+          ctx.errors.missingExpected(
+              LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+        } else if (ctx.errors.errors.size() == errorCount) {
+          ctx.errors.addError(
+              LOG_NAME,
+              "expected a statement but found " + tokens.curr().display(),
+              new RuntimeException().getStackTrace());
+        }
         int depth = 1;
         while (depth > 0 && !(tokens.curr() instanceof EOF)) {
           tokens.next();

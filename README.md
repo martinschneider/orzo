@@ -118,6 +118,8 @@ More examples can be found [here](src/test/resources/io/github/martinschneider/o
 
 `java -jar target/orzo.jar inputFiles -d outputFolder`
 
+Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to also see where in the compiler they were detected). If there are errors, no class files are written and Orzo exits with status 1.
+
 # Metrics
 
 Measured by `mvn clean verify -Pselfcompile` (see `selfcompile.sh`): Orzo compiles its own sources three times, the first time with the javac-built compiler, then with the Orzo-built one. Compile time is the first pass (one JVM run each, so JVM start-up is included); class size is the class files of the last pass.
@@ -126,6 +128,6 @@ Measured by `mvn clean verify -Pselfcompile` (see `selfcompile.sh`): Orzo compil
 | Metric | Value |
 |--------|-------|
 | Self-compilation (share of source lines compiled by Orzo) | 100.0% |
-| Compile time (compiling Orzo's sources) | 6.0x javac (20.1 s vs. 3.4 s) |
-| Class size (Orzo's class files) | 4.4x javac (3807.4 KiB vs. 868.2 KiB) |
+| Compile time (compiling Orzo's sources) | 5.1x javac (20.9 s vs. 4.1 s) |
+| Class size (Orzo's class files) | 4.4x javac (3850.8 KiB vs. 875.8 KiB) |
 <!-- metrics:end -->

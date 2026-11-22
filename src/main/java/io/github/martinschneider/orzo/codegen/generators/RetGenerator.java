@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RetGenerator implements StatementGenerator<ReturnStatement> {
+  private static final String LOG_NAME = "return code generator";
   private CGContext ctx;
 
   public RetGenerator(CGContext ctx) {
@@ -40,6 +41,15 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, ReturnStatement retStmt) {
+    boolean isVoid = VOID.equals(method.type) || "<init>".equals(method.name.val.toString());
+    if (isVoid && retStmt.retValue != null) {
+      ctx.errors.addError(
+          LOG_NAME, "unexpected return value", new RuntimeException().getStackTrace());
+      return out;
+    } else if (!isVoid && retStmt.retValue == null) {
+      ctx.errors.addError(LOG_NAME, "missing return value", new RuntimeException().getStackTrace());
+      return out;
+    }
     if (ctx.finallyStack.isEmpty()) {
       ret(out, method.type, retStmt.retValue);
       return out;

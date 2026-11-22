@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DeclarationParser implements ProdParser<ParallelDeclaration> {
+  private static final String LOG_NAME = "parse declaration";
   private ParserContext ctx;
 
   public DeclarationParser(ParserContext ctx) {
@@ -163,6 +164,12 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
           } else {
             tokens.next();
           }
+        }
+        if (values.isEmpty() && !names.isEmpty()) {
+          ctx.errors.addError(
+              LOG_NAME,
+              "expected an expression but found " + tokens.curr().display(),
+              new RuntimeException().getStackTrace());
         }
       }
       if (tokens.curr().eq(sym(SEMICOLON))) {

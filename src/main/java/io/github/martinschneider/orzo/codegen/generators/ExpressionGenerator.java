@@ -1454,7 +1454,7 @@ public class ExpressionGenerator {
     }
     ctx.errors.addError(
         LOGGER_NAME,
-        String.format("Unknown variable: %s", curr),
+        String.format("cannot find variable %s", curr),
         new RuntimeException().getStackTrace());
     return type;
   }
@@ -1464,12 +1464,8 @@ public class ExpressionGenerator {
     String type = arrInit.type;
     byte storeOpCode = getStoreOpCode(type);
     createArray(out, classIdMap, type, arrInit.dims);
-    // multi-dim array
-    if (arrInit.vals.size() >= 2) {
-      // TODO
-    }
-    // one-dim array
-    else if (arrInit.vals.size() == 1) {
+    // (multi-dimensional arrays are reported by createArray())
+    if (arrInit.vals.size() == 1) {
       for (int i = 0; i < arrInit.vals.get(0).size(); i++) {
         out.write(DUP);
         ctx.pushGen.push(out, INT, i);
@@ -1511,7 +1507,10 @@ public class ExpressionGenerator {
       ctx.opStack.pop();
       ctx.opStack.push(REF);
     } else {
-      // TODO:
+      ctx.errors.addError(
+          "array code generator",
+          "multi-dimensional arrays are not supported",
+          new RuntimeException().getStackTrace());
     }
   }
 
@@ -1830,6 +1829,13 @@ public class ExpressionGenerator {
 
     // Convert to JVM class name format (e.g., String -> java/lang/String)
     String jvmClassName = convertToJVMClassName(className);
+    if (!TypeUtils.classExists(jvmClassName, ctx.allClazzes)) {
+      ctx.errors.addError(
+          "constructor call generator",
+          "cannot find class " + className,
+          new RuntimeException().getStackTrace());
+      return className;
+    }
 
     // Add class to constant pool before generating NEW instruction
     ctx.constPool.addClass(jvmClassName);
@@ -1862,7 +1868,7 @@ public class ExpressionGenerator {
     if (constructor == null) {
       ctx.errors.addError(
           "constructor call generator",
-          String.format("No matching constructor found for %s(%s)", className, argTypes),
+          String.format("cannot find constructor %s(%s)", className, String.join(", ", argTypes)),
           new RuntimeException().getStackTrace());
       return className; // Return the class type even if constructor not found
     }
@@ -1896,10 +1902,6 @@ public class ExpressionGenerator {
     }
     if (constructor == null) {
       constructor = ctx.methodCallGen.findBestMatch(simpleName + ".<init>", argTypes, null);
-    }
-    // If no constructor found, create a default constructor for basic types
-    if (constructor == null && argTypes.isEmpty()) {
-      constructor = new Method(className, "<init>", "void", argTypes);
     }
     return constructor;
   }

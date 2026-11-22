@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AssignmentParser implements ProdParser<Assignment> {
+  private static final String LOG_NAME = "parse assignment";
   private ParserContext ctx;
 
   public AssignmentParser(ParserContext ctx) {
@@ -172,6 +173,12 @@ public class AssignmentParser implements ProdParser<Assignment> {
           tokens.next();
         }
       }
+      if (right.isEmpty()) {
+        ctx.errors.addError(
+            LOG_NAME,
+            "expected an expression but found " + tokens.curr().display(),
+            new RuntimeException().getStackTrace());
+      }
       Assignment assignment = new Assignment(left, right);
       if (tokens.curr().eq(sym(SEMICOLON))) {
         tokens.next();
@@ -193,14 +200,15 @@ public class AssignmentParser implements ProdParser<Assignment> {
     tokens.insert(left);
     tokens.insert(op(ASSIGN));
     tokens.next();
+    tokens.next(); // the right-hand side starts after the inserted "="
     // rhs ends at the statement's top-level SEMICOLON, or — for a for-loop increment clause,
     // which has no trailing semicolon (e.g. "for (...; ...; i += 2)") — at the first RPAREN that
     // isn't balanced by one of rhs's own LPARENs (the loop header's closing paren). Start the
-    // scan past our own synthetic LPAREN (the 4 tokens just inserted are, in order: ASSIGN, left,
-    // arithOp, LPAREN) — depth==0 means "no paren opened by the original rhs is still open",
+    // scan past our own synthetic LPAREN (the tokens from the current one on are, in order:
+    // left, arithOp, LPAREN) — depth==0 means "no paren opened by the original rhs is still open",
     // not counting our own wrapper paren.
     int depth = 0;
-    int rhsEnd = tokens.idx() + 4;
+    int rhsEnd = tokens.idx() + 3;
     while (rhsEnd < tokens.list().size()) {
       Token curr = tokens.get(rhsEnd);
       if (curr.eq(sym(LPAREN))) {

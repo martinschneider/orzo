@@ -53,19 +53,22 @@ Priority: **H**igh / **M**edium / **L**ow.
 Found by compiling small probe programs (see README.md for the full feature checklist). Each of these
 currently fails with a compile error or produces a class file that doesn't verify.
 
-| Priority |                 Feature                  |                                                           Notes                                                           |
-|----------|------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
-| H        | Comparisons inside string concatenations | `"x: " + (a == b)` - a comparison is only materialized into a 0/1 value at the end of an expression, not as an operand.   |
-| H        | `abstract` classes and methods           | The parser doesn't accept the `abstract` modifier.                                                                        |
-| M        | Generic classes                          | `class Box<T> { T v; }`: members typed with a class type variable aren't erased to the bound (`NoClassDefFoundError: T`). |
-| M        | Interface `default`/`static` methods     | Interface methods can't have a body.                                                                                      |
-| M        | Annotations with arguments               | `@SuppressWarnings("unchecked")` breaks parsing (annotations without arguments are skipped).                              |
-| M        | Inner, local and anonymous classes       | Only static nested classes are supported.                                                                                 |
-| M        | Lambda block bodies, void SAMs           | See the lambda row above.                                                                                                 |
-| L        | `switch` with `->`, switch expressions   |                                                                                                                           |
-| L        | `var`, records, `instanceof` patterns    |                                                                                                                           |
-| L        | `assert`, `synchronized`                 |                                                                                                                           |
-| L        | C-style array declarations of locals     | `int a[] = ...` (parameters are supported).                                                                               |
+| Priority |                 Feature                  |                                                                       Notes                                                                        |
+|----------|------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| H        | Comparisons inside string concatenations | `"x: " + (a == b)` - a comparison is only materialized into a 0/1 value at the end of an expression, not as an operand.                            |
+| H        | `abstract` classes and methods           | The parser doesn't accept the `abstract` modifier.                                                                                                 |
+| M        | Generic classes                          | `class Box<T> { T v; }`: members typed with a class type variable aren't erased to the bound (`NoClassDefFoundError: T`).                          |
+| M        | Interface `default`/`static` methods     | Interface methods can't have a body.                                                                                                               |
+| M        | Annotations with arguments               | `@SuppressWarnings("unchecked")` breaks parsing (annotations without arguments are skipped).                                                       |
+| M        | Inner, local and anonymous classes       | Only static nested classes are supported.                                                                                                          |
+| M        | Lambda block bodies, void SAMs           | See the lambda row above.                                                                                                                          |
+| M        | Reference casts inside expressions       | `f(((String) obj))`, `a + (Foo) b`: the cast is a no-op marker token before the operand (no `CHECKCAST`), unlike primitive casts (`CastOperator`). |
+| M        | Duplicate local variables                | Not reported: locals share one name-to-slot map per method (no block scopes), so a valid redeclaration in a sibling block can't be told apart.     |
+| L        | Optional semicolons                      | Most statement parsers accept a missing `;` (e.g. `int a = 1 int b = 2;`). Decide whether Orzo requires them like Java does.                       |
+| L        | `switch` with `->`, switch expressions   |                                                                                                                                                    |
+| L        | `var`, records, `instanceof` patterns    |                                                                                                                                                    |
+| L        | `assert`, `synchronized`                 |                                                                                                                                                    |
+| L        | C-style array declarations of locals     | `int a[] = ...` (parameters are supported).                                                                                                        |
 
 ---
 

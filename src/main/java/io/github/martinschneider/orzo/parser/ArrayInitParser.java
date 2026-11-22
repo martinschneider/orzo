@@ -124,6 +124,10 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
         }
       } else {
         vals.add(new ArrayList<>());
+        if (dimensions.get(0) == null) {
+          ctx.errors.addError(
+              LOG_NAME, "array dimension missing", new RuntimeException().getStackTrace());
+        }
       }
       for (int i = 0; i < vals.size(); i++) {
         if (dimensions.get(i) == null) {

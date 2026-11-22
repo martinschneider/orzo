@@ -149,17 +149,35 @@ declare the same name with different types. Temporary locals are allocated ad ho
 types each slot by a single variable. With scoped symbols (recommendation 3) and frames computed from
 types (recommendation 4), locals can reuse slots when their scope ends, as javac does.
 
-### 7. Diagnostics with source positions; never emit a class file after an error (medium)
+### 7. Error handling and diagnostics (medium; the basics are done)
 
-Errors carry a logger name and a Java stack trace, but no line or column. Many code paths log an error
-and keep going: they emit nothing, call a made-up constructor, or produce a truncated class file. Several
-paths produced wrong code without any error at all. Examples fixed in this round: `~x` compiled as `x`,
-text blocks as empty strings, switch fall-through dropped, `System.out.println()` printing nothing.
+**Done** (November 2026): one error list for the whole compilation run (before, only the last input
+file's errors were reported), `File.java:line:col: error: message` with tokens shown as written, no
+class files and exit code 1 on errors, no code generation after syntax errors, and `CompileErrorTest`
+for programs that must not compile. Several silent fallbacks now report errors: incomplete
+expressions (`int y = ;`, `1 +;`, `(1 + 2;`), `new Unknown()` (used to call a made-up constructor),
+`break`/`continue` outside a loop, `return 5;` in a `void` method, missing return statements, missing
+array dimensions, multi-dimensional arrays (used to emit nothing), and the obvious `int`/`String`
+mismatches. Earlier, `~x`, text blocks, switch fall-through and `System.out.println()` compiled to
+wrong code without an error.
 
-- Record each token's line and column.
-- Report `file:line:col: message`.
-- Stop generating a class once it has errors, and don't write any class files if there were errors.
-- Treat "silently ignored" as a bug class: every unsupported construct must produce an error.
+Still to do:
+
+- **Error recovery**: one syntax error ends the method body (later statements aren't checked). Skip to
+  the next `;` or `}` and continue, so a single run reports several independent errors.
+- **Statement-level positions for all errors**: errors detected after a method's body (e.g. a `break`
+  outside a loop) are reported at the method; record the token with the statement that causes them.
+- **Structured diagnostics**: severity (error/warning), a stable code, an optional source excerpt with
+  a `^` marker, and notes ("did you mean ...?"). Capture the compiler's own stack trace only with `-v`
+  (every error still captures one via `new RuntimeException().getStackTrace()`).
+- **Internal compiler errors**: catch unexpected exceptions per class and report "internal compiler
+  error in Foo.m()" with the stack trace, instead of crashing the whole run.
+- **Logging**: compiler-internal tracing (`-v` token and parse tree dumps, the parser's loop guard)
+  should go through `System.Logger` with levels; nothing should print to stdout or stderr directly.
+- **Explicit resolution failures**: ~50 `catch (ClassNotFoundException e)` blocks fall back silently;
+  an unresolved name should end up as one "cannot find symbol" error (see recommendation 3).
+- **Real type checking**: only the clearest incompatible assignments are detected; the attribution phase
+  (recommendation 1) is the place for JLS assignment and method invocation conversions.
 
 ### 8. Differential testing against javac (medium)
 
