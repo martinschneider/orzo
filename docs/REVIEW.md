@@ -10,7 +10,7 @@ Concrete open issues are tracked in [TODO.md](TODO.md).
 
 ```
 source ─► Lexer ─► TokenList ─► recursive-descent ProdParsers ─► Clazz/Method/Statement "productions"
-                                                                  (expressions: postfix lists of tokens)
+                                 (expressions: ExpressionParser ─► tree ─► PostfixLowering ─► postfix lists of tokens)
         ─► CodeGenerator (per class, CGContext) ─► statement generators ─► ExpressionGenerator
         ─► raw bytecode in DynamicByteArray ─► StackMapTableBuilder (re-simulates the bytecode)
         ─► ConstantPool + class file
@@ -18,10 +18,10 @@ source ─► Lexer ─► TokenList ─► recursive-descent ProdParsers ─►
 
 - **Lexer**: a hand-written scanner producing `Token` subclasses (`Identifier`, `IntLiteral`, `Operator`, ...).
 - **Parser**: one `ProdParser` per construct, with backtracking via `tokens.setIdx(...)`. The
-  `StatementParser` tries the sub-parsers in a fixed order. Expressions are converted to postfix with a
-  shunting-yard algorithm plus many special cases (casts, ternaries, chains, lambdas) in
-  `ExpressionParser`. Dotted names and calls are chains of `Identifier`/`MethodCall` tokens linked via
-  `next`.
+  `StatementParser` tries the sub-parsers in a fixed order. `ExpressionParser` parses an expression
+  into an immutable tree (`parser.tree`) by precedence climbing, without modifying the tokens.
+  `PostfixLowering` turns the tree into the postfix token lists the code generator works with: dotted
+  names and calls become chains of `Identifier`/`MethodCall` tokens linked via `next`.
 - **Types**: there is no separate semantic analysis. `NumExprTypeDecider` guesses an expression's type
   for overload resolution. `ExpressionGenerator` tracks types again while emitting code: the requested
   context `type`, an `exprTypeStack`, and `ctx.opStack`.
@@ -66,25 +66,30 @@ Migration path: let `NumExprTypeDecider` store its result on each `Expression`. 
 `ExpressionGenerator` use the stored types instead of `type`, `exprTypeStack` and `opStack` guesses,
 then delete the guessing code. This also removes the side channels in recommendation 5.
 
-### 2. Replace postfix token lists with an expression tree and a Pratt parser (high)
+### 2. Replace postfix token lists with an expression tree and a Pratt parser (high, partly done)
 
-Expressions are lists of *lexer tokens* in postfix order, so lexer tokens double as AST nodes. `MethodCall`
-is an `Identifier`, a cast is a token, a ternary is a token containing expressions. Consequences:
+Done: `ExpressionParser` builds immutable tree nodes (`LiteralNode`, `NameNode`, `SelectNode`,
+`CallNode`, `IndexNode`, `NewNode`, `UnaryNode`, `BinaryNode`, `TernaryNode`, `CastNode`,
+`InstanceOfNode`) by precedence climbing. Precedence and associativity come from one table (the
+`Operators` precedences; assignments are right-associative). The parser doesn't modify tokens any more, so a failed
+parse attempt leaves nothing behind (before, it rewrote `√`/`⌊⌋` in the token list, removed array
+selector tokens and linked lexer tokens via `next`; `AssignmentParser` removed tokens and the old
+parser depended on those stale links). The assignment, increment, call and constructor statement
+parsers use the tree as well, and a cast now applies only to its operand (`(int) d * 1.5` used to
+cast the whole product).
 
-- The parser **mutates shared tokens** while backtracking (`Identifier.next`, `arrSel`), and
-  `AssignmentParser` even removes tokens from the list. Failed parse attempts leave stale state behind.
-  Recent bugs: an array selector attached to the first link of `r.small[0]`, a unary minus swallowing the
-  next statement, a nested class re-adding the previous member.
-- Every consumer has to find the operands of an operator by scanning backwards
-  (`findRightOperandStart`, `withoutCastOperands`, the `**` operand skipping). This is fragile: integer
-  `**` swapped its operands for this reason.
-- `ExpressionParser` (650 lines) centers on one `parse()` state machine with re-entry flags.
+Still to do:
 
-Use immutable tree nodes (`Literal`, `Name`, `FieldAccess`, `ArrayAccess`, `MethodInvocation`,
-`NewObject`, `Unary`, `Binary`, `Cast`, `Conditional`, `Lambda`, `Assign`, ...) built by a Pratt
-(precedence-climbing) parser. Precedence and associativity then become a table, and unary, prefix and
-postfix operators are handled uniformly. Keep backtracking limited to the `(Type) expr` cast versus
-`(expr)` grouping decision, and parse that without mutating tokens.
+- The code generator still consumes postfix token lists, which `PostfixLowering` produces from the
+  tree. Every consumer still finds the operands of an operator by scanning backwards
+  (`findRightOperandStart`, `withoutCastOperands`, the `**` operand skipping), which is fragile
+  (integer `**` once swapped its operands this way). Migrate `NumExprTypeDecider` and
+  `ExpressionGenerator` to the tree, then delete the lowering and the token subclasses that only
+  exist to encode trees in token lists (`CastOperator`, `CastMethodCall`, `TernaryExpression`,
+  `InstanceofToken`, `MethodCall`/`ConstructorCall` as `Identifier`s).
+- Lambdas, method references and array creations are still `OpaqueNode`s holding postfix
+  expressions.
+- Tree nodes have no source positions yet (errors use the position of their statement).
 
 ### 3. One symbol table, backed by class files instead of reflection (high)
 

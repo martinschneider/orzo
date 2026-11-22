@@ -128,11 +128,9 @@ public class CompileErrorTest {
         errors);
   }
 
-  // TODO: the expression parser takes "1 a = 2 a++ System.out.println(a)" for one expression (it
-  // accepts an operand right after another one); enable once it has been rewritten
-  @org.junit.jupiter.api.Disabled
   @Test
   public void missingSemicolonsAfterExpressions() throws IOException {
+    // (the expression parser used to take "1 a = 2 a++" for one expression)
     List<String> errors =
         compile(
             Map.of(

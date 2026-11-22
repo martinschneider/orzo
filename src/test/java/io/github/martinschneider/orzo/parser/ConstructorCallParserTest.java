@@ -25,7 +25,7 @@ public class ConstructorCallParserTest {
         args("", null),
         args("new", null),
         args("new M", null),
-        args("new M(", null),
+        args("new M(", constr("M", emptyList())), // (with an error: "expected ')'")
         args("new M()", constr("M", emptyList())),
         args("new M(a)", constr("M", list(expr("a")))),
         args("new M(a,b,c)", constr("M", list(expr("a"), expr("b"), expr("c")))));

@@ -25,14 +25,12 @@ public class ParserContext {
   public ArraySelectorParser arraySelectorParser;
   public AssignmentParser assignParser;
   public BreakParser breakParser;
-  public CastParser castParser;
   public ConstructorCallParser constrCallParser;
   public ContinueParser continueParser;
   public DeclarationParser declParser;
   public DoParser doParser;
   public EnumParser enumParser;
   public ExpressionParser exprParser;
-  public FloorParser floorParser;
   public ForEachParser forEachParser;
   public ForParser forParser;
   public IfParser ifParser;
@@ -43,7 +41,6 @@ public class ParserContext {
   public PreIncrementParser preIncrementParser;
   public RetParser retParser;
   public ScopeParser scopeParser;
-  public SqrtParser sqrtParser;
   public StatementParser stmtParser;
   public WhileParser whileParser;
   public RepeatParser repeatParser;
@@ -61,14 +58,12 @@ public class ParserContext {
     ctx.arraySelectorParser = new ArraySelectorParser(ctx);
     ctx.assignParser = new AssignmentParser(ctx);
     ctx.breakParser = new BreakParser();
-    ctx.castParser = new CastParser(ctx);
     ctx.constrCallParser = new ConstructorCallParser(ctx);
     ctx.continueParser = new ContinueParser();
     ctx.declParser = new DeclarationParser(ctx);
     ctx.doParser = new DoParser(ctx);
     ctx.enumParser = new EnumParser(ctx);
     ctx.exprParser = new ExpressionParser(ctx);
-    ctx.floorParser = new FloorParser(ctx);
     ctx.forEachParser = new ForEachParser(ctx);
     ctx.forParser = new ForParser(ctx);
     ctx.ifParser = new IfParser(ctx);
@@ -79,7 +74,6 @@ public class ParserContext {
     ctx.preIncrementParser = new PreIncrementParser(ctx);
     ctx.retParser = new RetParser(ctx);
     ctx.scopeParser = new ScopeParser();
-    ctx.sqrtParser = new SqrtParser(ctx);
     ctx.stmtParser = new StatementParser(ctx);
     ctx.whileParser = new WhileParser(ctx);
     ctx.repeatParser = new RepeatParser(ctx);

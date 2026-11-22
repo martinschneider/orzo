@@ -2,7 +2,7 @@ package io.github.martinschneider.orzo.lexer.tokens;
 
 import java.math.BigDecimal;
 
-public class FPLiteral extends Token implements Num {
+public class FPLiteral extends Token {
   public boolean isFloat;
 
   public FPLiteral(BigDecimal val, boolean isFloat) {
@@ -27,10 +27,5 @@ public class FPLiteral extends Token implements Num {
     }
     strBuilder.append(')');
     return strBuilder.toString();
-  }
-
-  @Override
-  public void changeSign() {
-    val = ((BigDecimal) val).multiply(BigDecimal.valueOf(-1));
   }
 }

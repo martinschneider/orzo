@@ -7,12 +7,11 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
-import io.github.martinschneider.orzo.parser.productions.ArraySelector;
-import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
-import java.util.List;
+import io.github.martinschneider.orzo.parser.tree.ExprNode;
+import io.github.martinschneider.orzo.parser.tree.UnaryNode;
 
 public class PostIncrementParser implements ProdParser<IncrementStatement> {
   private ParserContext ctx;
@@ -21,45 +20,23 @@ public class PostIncrementParser implements ProdParser<IncrementStatement> {
     this.ctx = ctx;
   }
 
+  /** "a++;", "a.b[i]--;", ... */
   @Override
   public IncrementStatement parse(TokenList tokens) {
-    Identifier id;
-    Operator op;
     int idx = tokens.idx();
-    ArraySelector arrSel;
-    if (tokens.curr() instanceof Identifier) {
-      id = (Identifier) tokens.curr();
-      tokens.next();
-      arrSel = ctx.arraySelectorParser.parse(tokens);
-    } else {
+    ExprNode target = ctx.exprParser.parseAssignmentTarget(tokens);
+    if (target == null) {
       return null;
     }
-    if (tokens.curr() instanceof Operator) {
-      if (tokens.curr().eq(op(POST_INCREMENT))) {
-        op = op(POST_INCREMENT);
-        tokens.next();
-      } else if (tokens.curr().eq(op(POST_DECREMENT))) {
-        op = op(POST_DECREMENT);
-        tokens.next();
-      } else {
-        tokens.setIdx(idx);
-        return null;
-      }
-      if (arrSel != null) {
-        // the selector belongs to the last link of a chain, e.g. "a.b[i]++"
-        Identifier last = id;
-        while (last.next != null) {
-          last = last.next;
-        }
-        last.arrSel = arrSel;
-      }
-      if (tokens.curr().eq(sym(SEMICOLON))) {
-        tokens.next();
-      }
-      return new IncrementStatement(new Expression(List.of(id, op)));
-    } else {
+    if (!tokens.curr().eq(op(POST_INCREMENT)) && !tokens.curr().eq(op(POST_DECREMENT))) {
       tokens.setIdx(idx);
       return null;
     }
+    Operators op = ((Operator) tokens.curr()).opValue();
+    tokens.next();
+    if (tokens.curr().eq(sym(SEMICOLON))) {
+      tokens.next();
+    }
+    return new IncrementStatement(ctx.exprParser.lower(new UnaryNode(op, target)));
   }
 }

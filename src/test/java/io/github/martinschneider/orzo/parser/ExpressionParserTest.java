@@ -55,6 +55,7 @@ public class ExpressionParserTest {
         args("√5", expr(list(fp(2.23606797749979)))),
         args("√n", expr(list(methodCall("Math.sqrt", list(expr("n")))))),
         args("√(n)", expr(list(methodCall("Math.sqrt", list(expr("n")))))),
+        args("⌊x⌋", expr(list(methodCall("Math.round", list(expr("Math.floor(x)")))))),
         args("1 ** 2", expr(list(integer(1), integer(2), op(POW)))),
         args("-1 ** 2", expr(list(integer(-1), integer(2), op(POW)))),
         args("-1 ** -2", expr(list(integer(-1), integer(-2), op(POW)))),

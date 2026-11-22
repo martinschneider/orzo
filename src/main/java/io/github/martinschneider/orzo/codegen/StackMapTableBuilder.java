@@ -598,8 +598,13 @@ public class StackMapTableBuilder {
     }
     for (Map.Entry<Integer, VariableInfo> e : slotToVar.entrySet()) {
       VariableInfo var = e.getValue();
-      String resolvedType = TypeUtils.resolveSimpleType(var.type, ctx.allClazzes, ctx.clazz);
-      initialLocalTypes.put(e.getKey(), TypeUtils.descr(resolvedType));
+      if (var.arrType != null) {
+        // an array (its type is REF), e.g. the "[I" an "a[i] = c ? x : y" leaves on the stack
+        initialLocalTypes.put(e.getKey(), TypeUtils.descr(var));
+      } else {
+        String resolvedType = TypeUtils.resolveSimpleType(var.type, ctx.allClazzes, ctx.clazz);
+        initialLocalTypes.put(e.getKey(), TypeUtils.descr(resolvedType));
+      }
     }
     Map<Integer, List<String>> branchTargetStacks =
         simulateStacks(code, constPool, targets, minBranchToTarget, initialLocalTypes);

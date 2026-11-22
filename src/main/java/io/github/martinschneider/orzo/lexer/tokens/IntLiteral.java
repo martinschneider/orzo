@@ -2,7 +2,7 @@ package io.github.martinschneider.orzo.lexer.tokens;
 
 import java.math.BigInteger;
 
-public class IntLiteral extends Token implements Num {
+public class IntLiteral extends Token {
   public boolean isLong;
 
   public IntLiteral(BigInteger val, boolean isLong) {
@@ -27,10 +27,5 @@ public class IntLiteral extends Token implements Num {
     }
     strBuilder.append(')');
     return strBuilder.toString();
-  }
-
-  @Override
-  public void changeSign() {
-    val = ((BigInteger) val).multiply(BigInteger.valueOf(-1));
   }
 }

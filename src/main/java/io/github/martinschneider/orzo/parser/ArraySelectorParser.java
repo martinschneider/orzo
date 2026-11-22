@@ -18,45 +18,26 @@ public class ArraySelectorParser implements ProdParser<ArraySelector> {
     this.ctx = ctx;
   }
 
+  /** "[i]" or "[i][j]", e.g. of a declaration "int a[3];" */
   @Override
   public ArraySelector parse(TokenList tokens) {
-    return parse(tokens, false);
-  }
-
-  public ArraySelector parse(TokenList tokens, boolean removeTokens) {
     List<Expression> expressions = new ArrayList<>();
-    Expression expr;
-    int startIdx = tokens.idx();
-    int endIdx;
-    int size;
-    List lst;
-    List sub;
     while (tokens.curr().eq(sym(LBRAK))) {
       tokens.next();
-      expr = ctx.exprParser.parse(tokens);
-      if (expr != null) {
-        expressions.add(expr);
-        if (!tokens.curr().eq(sym(RBRAK))) {
-          ctx.errors.missingExpected(
-              LOG_NAME, sym(RBRAK), tokens, new RuntimeException().getStackTrace());
-        }
-        tokens.next();
-      } else {
+      Expression expr = ctx.exprParser.parse(tokens);
+      if (expr == null) {
         tokens.prev();
         return null;
       }
+      expressions.add(expr);
+      if (!tokens.curr().eq(sym(RBRAK))) {
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(RBRAK), tokens, new RuntimeException().getStackTrace());
+      }
+      tokens.next();
     }
     if (expressions.isEmpty()) {
       return null;
-    }
-    // this is used when called from the context of an expression
-    if (removeTokens) {
-      endIdx = tokens.idx();
-      size = endIdx - startIdx;
-      lst = tokens.list();
-      sub = lst.subList(startIdx, endIdx);
-      sub.clear();
-      tokens.bw(size);
     }
     return new ArraySelector(expressions);
   }

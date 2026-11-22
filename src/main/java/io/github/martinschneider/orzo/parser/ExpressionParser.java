@@ -1,7 +1,11 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CLASS;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INSTANCEOF;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.NEW;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_NOT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_XOR;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.CAST;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.MINUS;
@@ -13,17 +17,17 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_DECREMEN
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.PRE_INCREMENT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LFLOOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.QUESTION;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RFLOOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SQRT;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.eof;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.integer;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
@@ -31,356 +35,372 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
-import io.github.martinschneider.orzo.lexer.tokens.CastOperator;
 import io.github.martinschneider.orzo.lexer.tokens.Chr;
+import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
-import io.github.martinschneider.orzo.lexer.tokens.InstanceofToken;
+import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
-import io.github.martinschneider.orzo.lexer.tokens.Keywords;
-import io.github.martinschneider.orzo.lexer.tokens.Num;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
-import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
-import io.github.martinschneider.orzo.parser.productions.ArraySelector;
-import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
-import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
-import io.github.martinschneider.orzo.parser.productions.MethodCall;
+import io.github.martinschneider.orzo.parser.tree.BinaryNode;
+import io.github.martinschneider.orzo.parser.tree.CallNode;
+import io.github.martinschneider.orzo.parser.tree.CastNode;
+import io.github.martinschneider.orzo.parser.tree.ExprNode;
+import io.github.martinschneider.orzo.parser.tree.IndexNode;
+import io.github.martinschneider.orzo.parser.tree.InstanceOfNode;
+import io.github.martinschneider.orzo.parser.tree.LiteralNode;
+import io.github.martinschneider.orzo.parser.tree.NameNode;
+import io.github.martinschneider.orzo.parser.tree.NewNode;
+import io.github.martinschneider.orzo.parser.tree.OpaqueNode;
+import io.github.martinschneider.orzo.parser.tree.PostfixLowering;
+import io.github.martinschneider.orzo.parser.tree.SelectNode;
+import io.github.martinschneider.orzo.parser.tree.TernaryNode;
+import io.github.martinschneider.orzo.parser.tree.UnaryNode;
 import java.util.ArrayList;
-import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Parses an expression into a tree (see parser.tree) by precedence climbing: e.g. "a + b * c" into
+ * the BinaryNode "+" of "a" and "b * c". The binary operators are left-associative (also "**"),
+ * except for the assignments. The tokens aren't modified (so a caller can backtrack).
+ *
+ * <p>parse() returns the expression in the postfix form the code generator works with (see
+ * PostfixLowering).
+ */
 public class ExpressionParser implements ProdParser<Expression> {
-  private ParserContext ctx;
   private static final String LOG_NAME = "parse expression";
+  // the precedence of "a ? b : c" (between the assignments and "||") and of instanceof (that of
+  // the relational operators)
+  private static final int TERNARY = 2;
+  private static final int RELATIONAL = 9;
+  private ParserContext ctx;
+  private PostfixLowering lowering = new PostfixLowering();
 
   public ExpressionParser(ParserContext ctx) {
     this.ctx = ctx;
   }
 
+  /** An expression in postfix form, or null (with the tokens unchanged) if there is none. */
   @Override
-  // TODO: simplify and document this
   public Expression parse(TokenList tokens) {
-    Expression expr = null;
-    if ((expr = ctx.arrayInitParser.parse(tokens)) != null) {
-      return expr;
-    }
-    if ((expr = ctx.lambdaParser.parse(tokens)) != null) {
-      return expr;
-    }
-    Type cast = ctx.castParser.parse(tokens);
-    List<Token> exprTokens = new ArrayList<>();
-    // Number of synthetic ')' tokens (closing a "(-1) * (" rewrite of a unary minus applied to a
-    // parenthesized sub-expression, e.g. "-(a+b)") still owed once the real parenthesis depth
-    // returns to 0.
-    int[] pendingNegatedParens = {0};
-    checkNegative(tokens, exprTokens, pendingNegatedParens);
-    int parenthesis = 0;
-    // Track the index in exprTokens where the last depth-0->(-1) LPAREN was added,
-    // and the position in exprTokens just after that LPAREN (where the condition starts).
-    // indices in exprTokens of the currently open '(' tokens, innermost first: a '?' inside
-    // parentheses makes the innermost one the opening paren of a ternary
-    java.util.Deque<Integer> openParens = new java.util.ArrayDeque<>();
-    // Re-entry loop: a resolved "((Type) expr).field"/"((Type) expr).method()" chain replaces
-    // exprTokens with a single CastMethodCall token (below) and leaves `tokens` positioned right
-    // after it - which may be mid-expression (e.g. "== 5" still unconsumed in
-    // "((Type) expr).field == 5"), not necessarily at the expression's end. The inner while loop
-    // doesn't accept a DOT to continue on (DOT-chains are only handled per-token-group inside
-    // it), so without this, that trailing operator+operand was silently dropped - the caller got
-    // back an incomplete expression and whatever came next (e.g. IfParser expecting ')') choked
-    // on the leftover tokens. Re-entering with the existing exprTokens/cast/parenthesis state
-    // lets the SAME unchanged loop body keep consuming normally (EQUAL/Num/etc. are already
-    // accepted token kinds) - a no-op for every expression that never hits the cast-chain case.
-    boolean continueParsing = true;
-    while (continueParsing) {
-      continueParsing = false;
-      outer:
-      {
-        while (tokens.curr() instanceof Num
-            || tokens.curr() instanceof BoolLiteral
-            || tokens.curr() instanceof Str
-            || tokens.curr() instanceof Chr
-            || tokens.curr() instanceof Identifier
-            || (tokens.curr() instanceof Type && parenthesis < 0)
-            // Dotted static access on a built-in type name (e.g. "String.valueOf(x)",
-            // "String.class") - previously only accepted as the very FIRST thing in the
-            // expression ("exprTokens.isEmpty()"), an intentionally narrow scope from when this
-            // was added (see commit history, "Add Type.class literal support"). That meant
-            // "String.valueOf(x)" as a non-first operand (e.g. "a + String.valueOf(x)") wasn't
-            // an accepted continuation token at all, so the outer loop exited early mid-
-            // expression, silently dropping everything from there on for the caller.
-            || (tokens.curr() instanceof Type && parenthesis == 0 && tokens.peekNext().eq(sym(DOT)))
-            // an array class literal, e.g. "int[].class"
-            || (tokens.curr() instanceof Type
-                && tokens.peekNext().eq(sym(LBRAK))
-                && tokens.get(tokens.idx() + 2).eq(sym(RBRAK)))
-            || tokens.curr() instanceof Operator
-            || tokens.curr().eq(sym(SQRT))
-            || tokens.curr().eq(sym(LPAREN))
-            || tokens.curr().eq(sym(RPAREN))
-            || tokens.curr().eq(sym(QUESTION))
-            || isNewKeyword(tokens.curr())
-            || isInstanceofKeyword(tokens.curr())) {
-          if (tokens.curr().eq(sym(LPAREN))) {
-            stripGenericCastArgs(tokens);
-          }
-          // Handle ternary: when we see '?' at depth -1, parse it as a ternary expression
-          if (tokens.curr().eq(sym(QUESTION)) && parenthesis < 0 && !openParens.isEmpty()) {
-            int ternaryOuterParenIdx = openParens.pop();
-            // conditionTokens = exprTokens from ternaryOuterParenIdx+1 to end (exclude the '(')
-            List<Token> condTokens =
-                new ArrayList<>(exprTokens.subList(ternaryOuterParenIdx + 1, exprTokens.size()));
-            // prefix = exprTokens[0..ternaryOuterParenIdx-1] (everything before the '(')
-            List<Token> prefixTokens = new ArrayList<>(exprTokens.subList(0, ternaryOuterParenIdx));
-            tokens.next(); // consume '?'
-            Expression condition = new Expression(postfix(condTokens), null);
-            // Parse true branch (until ':') — parse() stops naturally at ':' since it's not in the
-            // loop's accepted-token set
-            Expression trueBranch = parse(tokens);
-            // consume ':'
-            if (tokens.curr().eq(sym(COLON))) {
-              tokens.next();
-            }
-            // Parse false branch (until ')' that closes the ternary's outer '(')
-            Expression falseBranch = parse(tokens);
-            // consume the closing ')' of the ternary
-            if (tokens.curr().eq(sym(RPAREN))) {
-              tokens.next();
-            }
-            TernaryExpression ternary = new TernaryExpression(condition, trueBranch, falseBranch);
-            // Reset: prefix + ternary as a single token
-            exprTokens = prefixTokens;
-            // keep the ternary's parentheses: "(c ? a : b).method()" is a parenthesized receiver
-            exprTokens.add(sym(LPAREN));
-            exprTokens.add(ternary);
-            exprTokens.add(sym(RPAREN));
-            parenthesis++; // its closing ')' was consumed above
-            // Continue collecting the rest of the outer expression
-            continue;
-          } else if (tokens.curr().eq(sym(QUESTION)) && parenthesis == 0 && !exprTokens.isEmpty()) {
-            // Ternary at depth 0: all collected tokens form the condition
-            List<Token> condTokens = new ArrayList<>(exprTokens);
-            tokens.next(); // consume '?'
-            Expression condition = new Expression(postfix(condTokens), null);
-            Expression trueBranch = parse(tokens);
-            if (tokens.curr().eq(sym(COLON))) {
-              tokens.next();
-            }
-            Expression falseBranch = parse(tokens);
-            TernaryExpression ternary = new TernaryExpression(condition, trueBranch, falseBranch);
-            exprTokens = new ArrayList<>();
-            exprTokens.add(ternary);
-            continue;
-          }
-
-          if (isInstanceofKeyword(tokens.curr())) {
-            tokens.next(); // consume 'instanceof'
-            String typeName = tokens.curr().val.toString();
-            tokens.next(); // consume type name
-            // fully-qualified type, e.g. "x instanceof java.lang.String"
-            while (tokens.curr().eq(sym(DOT))
-                && (tokens.peekNext() instanceof Identifier || tokens.peekNext() instanceof Type)) {
-              Token seg = tokens.next();
-              typeName += "." + (seg instanceof Type ? ((Type) seg).name : seg.val.toString());
-              tokens.next();
-            }
-            exprTokens.add(new InstanceofToken(typeName));
-            continue;
-          }
-          if (isPrimitiveCast(tokens) && !exprTokens.isEmpty() && isOperandPosition(exprTokens)) {
-            // e.g. the "(int)" in "a + (int) b" or "x != (char) -1"
-            exprTokens.add(new CastOperator(((Type) tokens.peekNext()).name));
-            tokens.next();
-            tokens.next();
-            tokens.next();
-            checkNegative(tokens, exprTokens, pendingNegatedParens);
-            continue;
-          }
-          int idx = tokens.idx();
-          boolean negative = false;
-          Token prevToken = tokens.peekPrev();
-          if (prevToken.eq(sym(LPAREN))
-              || (prevToken instanceof Operator && !isPostfixOperator(prevToken))) {
-            negative = checkNegative(tokens, exprTokens, pendingNegatedParens);
-          }
-          if (negative) {
-            // the unary operator and its operand were consumed (or, for "-(", the parenthesis is
-            // next): continue with the next token instead of taking it as part of this operand
-            continue;
-          }
-          List<Identifier> selectors = new ArrayList<>();
-          boolean strReceiver = false;
-          do {
-            idx = tokens.idx();
-            MethodCall methodCall = parseMethod(tokens);
-            if (methodCall != null) {
-              selectors.add(methodCall);
-            } else {
-              tokens.setIdx(idx);
-              if (tokens.curr().eq(sym(LPAREN))) {
-                // Record where this potential ternary-opening '(' goes in exprTokens
-                openParens.push(exprTokens.size());
-                parenthesis--;
-              } else if (tokens.curr().eq(sym(RPAREN))) {
-                parenthesis++;
-                if (!openParens.isEmpty()) {
-                  openParens.pop(); // closed without a '?' → not a ternary
-                }
-              }
-              if (parenthesis > 0) {
-                break outer;
-              }
-              Token curr = tokens.curr();
-              ConstructorCall constrCall = null;
-              if (!curr.eq(eof())) {
-                if (curr instanceof Identifier) {
-                  selectors.add((Identifier) curr);
-                  tokens.next();
-                } else if (selectors.isEmpty()
-                    && (curr instanceof Type || curr instanceof Identifier)
-                    && tokens.peekNext().eq(sym(LBRAK))
-                    && tokens.get(tokens.idx() + 2).eq(sym(RBRAK))) {
-                  // an array class literal, e.g. "int[].class"
-                  String name = (curr instanceof Type) ? ((Type) curr).name : curr.val.toString();
-                  tokens.next();
-                  while (tokens.curr().eq(sym(LBRAK)) && tokens.peekNext().eq(sym(RBRAK))) {
-                    name += "[]";
-                    tokens.next();
-                    tokens.next();
-                  }
-                  selectors.add(new Identifier(name));
-                } else if (!selectors.isEmpty() && curr instanceof Type) {
-                  // last segment of a qualified name, e.g. "String" in "java.lang.String"
-                  selectors.add(new Identifier(((Type) curr).name));
-                  tokens.next();
-                } else if (selectors.isEmpty()
-                    && curr instanceof Type
-                    && tokens.peekNext().eq(sym(DOT))) {
-                  // Dotted static access on a built-in type name, e.g. String.class, String.valueOf
-                  selectors.add(new Identifier(((Type) curr).name));
-                  tokens.next();
-                } else if (curr instanceof Keyword
-                    && ((Keyword) curr).eq(keyword(Keywords.CLASS))) {
-                  // Class literal selector, e.g. String.class
-                  selectors.add(new Identifier("class"));
-                  tokens.next();
-                } else if ((constrCall = ctx.constrCallParser.parse(tokens, true)) != null) {
-                  selectors.add(constrCall);
-                } else {
-                  exprTokens.add(curr);
-                  tokens.next();
-                  if (curr.eq(sym(RPAREN)) && parenthesis == 0 && pendingNegatedParens[0] > 0) {
-                    for (int k = 0; k < pendingNegatedParens[0]; k++) {
-                      exprTokens.add(sym(RPAREN));
-                    }
-                    pendingNegatedParens[0] = 0;
-                  }
-                  // For Str literals: allow DOT-chained method calls (e.g. "string".method(arg))
-                  if (!(curr instanceof Str)) {
-                    break;
-                  }
-                  strReceiver = true;
-                }
-              }
-            }
-          } while (tokens.curr().eq(sym(DOT)) && tokens.next() != null);
-          if (!selectors.isEmpty()) {
-            Token flat = flattenId(selectors);
-            if (strReceiver && flat instanceof MethodCall) {
-              ((MethodCall) flat).literalReceiver = true;
-            }
-            exprTokens.add(flat);
-          }
-        }
-      }
-      // Handle ((Type) inner) — balanced parenthesized cast expression without following DOT
-      if (parenthesis == 0 && !tokens.curr().eq(sym(DOT)) && isCastMethodChainPattern(exprTokens)) {
-        cast = new Type(resolveCastType(castTypeName(exprTokens.get(2))));
-        exprTokens = new ArrayList<>(exprTokens.subList(4, exprTokens.size() - 1));
-      }
-      // Handle ((Type) inner).method() — DOT after balanced parenthesized cast expression
-      // (also as a later operand, e.g. "a && ((Type) expr).method()")
-      int castStart = tokens.curr().eq(sym(DOT)) ? castChainStart(exprTokens) : -1;
-      // ...and a parenthesized expression without a cast, e.g. "(a + b).length()" (castType null)
-      int groupStart =
-          (castStart < 0 && tokens.curr().eq(sym(DOT))) ? parenGroupStart(exprTokens) : -1;
-      if (castStart >= 0 || groupStart >= 0) {
-        String castType =
-            (castStart >= 0) ? resolveCastType(castTypeName(exprTokens.get(castStart + 2))) : null;
-        int innerStart = (castStart >= 0) ? castStart + 4 : groupStart + 1;
-        if (castStart < 0) {
-          castStart = groupStart;
-        }
-        List<Token> innerTokens =
-            new ArrayList<>(exprTokens.subList(innerStart, exprTokens.size() - 1));
-        Expression innerExpr = new Expression(postfix(innerTokens), null);
-        exprTokens = new ArrayList<>(exprTokens.subList(0, castStart));
-        int groupOpen = castStart;
-        openParens.removeIf(parenIdx -> parenIdx >= groupOpen);
-        tokens.next(); // skip DOT
-        List<Identifier> chainSelectors = new ArrayList<>();
-        do {
-          int chainIdx = tokens.idx();
-          MethodCall mc = parseMethod(tokens);
-          if (mc != null) {
-            chainSelectors.add(mc);
-          } else {
-            tokens.setIdx(chainIdx);
-            if (tokens.curr() instanceof Identifier && !tokens.curr().eq(eof())) {
-              chainSelectors.add((Identifier) tokens.curr());
-              tokens.next();
-            } else {
-              break;
-            }
-          }
-        } while (tokens.curr().eq(sym(DOT)) && tokens.next() != null);
-        CastMethodCall castCall = new CastMethodCall(castType, innerExpr);
-        if (!chainSelectors.isEmpty()) {
-          castCall.next = (Identifier) flattenId(chainSelectors);
-        }
-        exprTokens.add(castCall);
-        // tokens.curr() may now be a binary operator continuing the SAME expression (e.g. "== 5"
-        // in "((Type) expr).field == 5") - re-enter the loop above so it keeps consuming instead of
-        // this function returning early with the trailing operator+operand left unconsumed.
-        continueParsing = true;
-      }
-    }
-    if (exprTokens.isEmpty()) {
+    ExprNode tree = parseTree(tokens);
+    if (tree == null) {
       return null;
     }
-    List<Token> postfixTokens = postfix(exprTokens);
-    checkComplete(postfixTokens, tokens);
-    return new Expression(postfixTokens, cast);
+    return lowering.lower(tree);
   }
 
-  // "(Type<Args>)" can only be a cast: drop the (erased) type arguments from the token stream, so
-  // the cast patterns below don't need to know about them (and a "?" wildcard isn't mistaken for
-  // a ternary). Expects the current token to be "(".
-  private void stripGenericCastArgs(TokenList tokens) {
-    int i = tokens.idx() + 1;
-    if (!(tokens.get(i) instanceof Identifier) && !(tokens.get(i) instanceof Type)) {
-      return;
+  /**
+   * An expression, or null (with the tokens unchanged) if there is none. An array creation, a
+   * lambda and a method reference are only accepted as a whole expression (e.g. as an argument).
+   */
+  public ExprNode parseTree(TokenList tokens) {
+    Expression opaque = ctx.arrayInitParser.parse(tokens);
+    if (opaque == null) {
+      opaque = ctx.lambdaParser.parse(tokens);
     }
-    i++;
-    while (tokens.get(i).eq(sym(DOT))
-        && (tokens.get(i + 1) instanceof Identifier || tokens.get(i + 1) instanceof Type)) {
-      i += 2;
+    if (opaque != null) {
+      return new OpaqueNode(opaque);
     }
-    if (!tokens.get(i).eq(op(LESS))) {
-      return;
+    return parseBinary(tokens, 0);
+  }
+
+  /**
+   * An expression without the special cases of parseTree(), e.g. the value of a compound assignment
+   * ("b + c" in "a += b + c"): a cast at its start is that of its first operand.
+   */
+  public ExprNode parseOperand(TokenList tokens) {
+    return operand(tokens, parseBinary(tokens, 0));
+  }
+
+  /**
+   * The target of an assignment: a name, field or array element, e.g. "a", "a.b" or "a.b[i]" (an
+   * index only after the last name, see StatementParser for e.g. "a[i].b" or "f().b"). Returns null
+   * (with the tokens unchanged) if there is none.
+   */
+  public ExprNode parseAssignmentTarget(TokenList tokens) {
+    if (!(tokens.curr() instanceof Identifier)) {
+      return null;
     }
-    int start = i;
+    int idx = tokens.idx();
+    ExprNode target = new NameNode(((Identifier) tokens.curr()).id(), false);
+    tokens.next();
+    while (tokens.curr().eq(sym(DOT))
+        && (tokens.peekNext() instanceof Identifier || tokens.peekNext() instanceof Type)) {
+      Token name = tokens.next();
+      if (name instanceof Type) {
+        target = new SelectNode(target, ((Type) name).name, true);
+      } else {
+        target = new SelectNode(target, ((Identifier) name).id(), false);
+      }
+      tokens.next();
+    }
+    if (tokens.curr().eq(sym(LPAREN))) {
+      tokens.setIdx(idx); // a call
+      return null;
+    }
+    while (tokens.curr().eq(sym(LBRAK)) && !tokens.peekNext().eq(sym(RBRAK))) {
+      tokens.next();
+      ExprNode index = operand(tokens, parseTree(tokens));
+      expect(tokens, sym(RBRAK));
+      target = new IndexNode(target, index);
+    }
+    return target;
+  }
+
+  /**
+   * A primary expression with its selectors, e.g. "a.b.f(x)" or "new Foo().bar()", or null (with
+   * the tokens unchanged) if there is none.
+   */
+  public ExprNode parseSelectorExpression(TokenList tokens) {
+    ExprNode primary = parsePrimary(tokens);
+    if (primary == null) {
+      return null;
+    }
+    return parseSelectors(tokens, primary);
+  }
+
+  /** The postfix form of an expression tree. */
+  public Expression lower(ExprNode tree) {
+    return lowering.lower(tree);
+  }
+
+  // An expression of operators with at least the given precedence, e.g. "a * b" in "a * b + c"
+  // (with a minimum precedence above that of "+").
+  private ExprNode parseBinary(TokenList tokens, int minPrecedence) {
+    ExprNode left = parseUnary(tokens);
+    if (left == null) {
+      return null;
+    }
+    while (true) {
+      Token curr = tokens.curr();
+      if (curr.eq(sym(QUESTION)) && minPrecedence <= TERNARY) {
+        tokens.next();
+        ExprNode ifTrue = operand(tokens, parseTree(tokens));
+        expect(tokens, sym(COLON));
+        ExprNode ifFalse = operand(tokens, parseTree(tokens));
+        left = new TernaryNode(left, ifTrue, ifFalse);
+      } else if (curr.eq(keyword(INSTANCEOF)) && minPrecedence <= RELATIONAL) {
+        tokens.next();
+        left = new InstanceOfNode(left, parseInstanceofType(tokens));
+      } else if (isBinaryOperator(curr) && ((Operator) curr).precedence() >= minPrecedence) {
+        Operator operator = (Operator) curr;
+        int precedence = operator.precedence();
+        tokens.next();
+        // "a = b = c" is "a = (b = c)", "a - b - c" is "(a - b) - c"
+        int rightPrecedence = precedence + 1;
+        if (precedence == ASSIGN.getPrecedence()) {
+          rightPrecedence = precedence;
+        }
+        ExprNode right = operand(tokens, parseBinary(tokens, rightPrecedence));
+        left = new BinaryNode(operator.opValue(), left, right);
+      } else {
+        return left;
+      }
+    }
+  }
+
+  private static boolean isBinaryOperator(Token token) {
+    if (!(token instanceof Operator)) {
+      return false;
+    }
+    Operators op = ((Operator) token).opValue();
+    return op != NEGATE
+        && op != BITWISE_NOT
+        && op != CAST
+        && op != PRE_INCREMENT
+        && op != PRE_DECREMENT
+        && op != POST_INCREMENT
+        && op != POST_DECREMENT;
+  }
+
+  // e.g. "-x", "!a.b()", "(int) x", "√2" or just "a.b"
+  private ExprNode parseUnary(TokenList tokens) {
+    Token curr = tokens.curr();
+    if (curr instanceof Operator) {
+      Operators op = ((Operator) curr).opValue();
+      if (op == PLUS) {
+        tokens.next();
+        return operand(tokens, parseUnary(tokens));
+      }
+      if (op == MINUS
+          || op == NEGATE
+          || op == BITWISE_NOT
+          || op == PRE_INCREMENT
+          || op == PRE_DECREMENT) {
+        tokens.next();
+        return new UnaryNode(op, operand(tokens, parseUnary(tokens)));
+      }
+      return null; // e.g. "*"
+    }
+    if (curr.eq(sym(SQRT))) {
+      tokens.next();
+      return parseSqrt(tokens);
+    }
+    if (curr.eq(sym(LPAREN))) {
+      String castType = parseCastType(tokens);
+      if (castType != null) {
+        return new CastNode(castType, operand(tokens, parseUnary(tokens)));
+      }
+    }
+    ExprNode primary = parsePrimary(tokens);
+    if (primary == null) {
+      return null;
+    }
+    return parseSelectors(tokens, primary);
+  }
+
+  // "√x" is Math.sqrt(x), "√2" is evaluated by the compiler
+  private ExprNode parseSqrt(TokenList tokens) {
+    Token curr = tokens.curr();
+    if (curr instanceof IntLiteral) {
+      tokens.next();
+      double value = ((IntLiteral) curr).intValue();
+      return new LiteralNode(new FPLiteral(Math.sqrt(value), false));
+    } else if (curr instanceof FPLiteral) {
+      tokens.next();
+      double value = ((FPLiteral) curr).doubleVal();
+      return new LiteralNode(new FPLiteral(Math.sqrt(value), false));
+    }
+    ExprNode arg;
+    if (curr.eq(sym(LPAREN))) {
+      tokens.next();
+      arg = operand(tokens, parseTree(tokens));
+      expect(tokens, sym(RPAREN));
+    } else {
+      arg = operand(tokens, parseUnary(tokens));
+    }
+    List<ExprNode> args = new ArrayList<>();
+    args.add(arg);
+    return new CallNode(null, "Math.sqrt", args);
+  }
+
+  // a literal, a name, a call without a target, "new Foo()", "(expr)", ...
+  private ExprNode parsePrimary(TokenList tokens) {
+    Token curr = tokens.curr();
+    if (curr instanceof IntLiteral
+        || curr instanceof FPLiteral
+        || curr instanceof BoolLiteral
+        || curr instanceof Chr
+        || curr instanceof Str) {
+      tokens.next();
+      return new LiteralNode(curr);
+    } else if (curr instanceof Identifier) {
+      String name = ((Identifier) curr).id();
+      tokens.next();
+      if (tokens.curr().eq(sym(LPAREN))) {
+        return new CallNode(null, name, parseArguments(tokens));
+      }
+      return new NameNode(arrayClassName(tokens, name), false);
+    } else if (curr instanceof Type) {
+      // e.g. "String.valueOf(1)" or "int[].class"
+      int idx = tokens.idx();
+      tokens.next();
+      String name = arrayClassName(tokens, ((Type) curr).name);
+      if (!tokens.curr().eq(sym(DOT))) {
+        tokens.setIdx(idx);
+        return null; // (e.g. a declaration)
+      }
+      return new NameNode(name, true);
+    } else if (curr.eq(sym(LPAREN))) {
+      tokens.next();
+      ExprNode inner = operand(tokens, parseBinary(tokens, 0));
+      expect(tokens, sym(RPAREN));
+      return inner;
+    } else if (curr.eq(sym(LFLOOR))) {
+      // "⌊x⌋" is Math.round(Math.floor(x))
+      tokens.next();
+      List<ExprNode> args = new ArrayList<>();
+      args.add(operand(tokens, parseTree(tokens)));
+      expect(tokens, sym(RFLOOR));
+      List<ExprNode> floor = new ArrayList<>();
+      floor.add(new CallNode(null, "Math.floor", args));
+      return new CallNode(null, "Math.round", floor);
+    } else if (curr.eq(keyword(NEW))) {
+      return parseNew(tokens);
+    }
+    return null;
+  }
+
+  // the name of an array class literal, e.g. "int[]" in "int[].class" (otherwise the given name)
+  private static String arrayClassName(TokenList tokens, String name) {
+    int idx = tokens.idx();
+    String arrayName = name;
+    while (tokens.curr().eq(sym(LBRAK)) && tokens.peekNext().eq(sym(RBRAK))) {
+      arrayName += "[]";
+      tokens.next();
+      tokens.next();
+    }
+    if (arrayName.length() > name.length()
+        && (!tokens.curr().eq(sym(DOT)) || !tokens.peekNext().eq(keyword(CLASS)))) {
+      tokens.setIdx(idx);
+      return name;
+    }
+    return arrayName;
+  }
+
+  // "new Foo(x)", "new java.util.HashMap<>()" (the type arguments are erased)
+  private ExprNode parseNew(TokenList tokens) {
+    Token typeToken = tokens.next();
+    String type;
+    if (typeToken instanceof Identifier) {
+      type = qualifiedName(tokens);
+    } else if (typeToken instanceof Type) {
+      type = ((Type) typeToken).name;
+      tokens.next();
+    } else {
+      ctx.errors.addError(
+          LOG_NAME,
+          "identifier or type expected after \"new\"",
+          new RuntimeException().getStackTrace());
+      return new OpaqueNode(new Expression());
+    }
+    int end = typeArgumentsEnd(tokens, tokens.idx());
+    if (end > 0) {
+      tokens.setIdx(end);
+    }
+    if (!tokens.curr().eq(sym(LPAREN))) {
+      ctx.errors.missingExpected(
+          LOG_NAME, sym(LPAREN), tokens, new RuntimeException().getStackTrace());
+      return new OpaqueNode(new Expression());
+    }
+    return new NewNode(type, parseArguments(tokens));
+  }
+
+  // A (possibly qualified) name, e.g. "a" or "java.lang.String" (the current token is its first
+  // identifier).
+  private static String qualifiedName(TokenList tokens) {
+    StringBuilder name = new StringBuilder(((Identifier) tokens.curr()).id());
+    tokens.next();
+    while (tokens.curr().eq(sym(DOT))
+        && (tokens.peekNext() instanceof Identifier || tokens.peekNext() instanceof Type)) {
+      Token segment = tokens.next();
+      if (segment instanceof Type) {
+        name.append('.').append(((Type) segment).name);
+      } else {
+        name.append('.').append(((Identifier) segment).id());
+      }
+      tokens.next();
+    }
+    return name.toString();
+  }
+
+  // If the token at the given index starts type arguments (e.g. "<String, List<T>>"), returns the
+  // index after them, otherwise -1.
+  private static int typeArgumentsEnd(TokenList tokens, int start) {
+    if (!tokens.get(start).eq(op(LESS))) {
+      return -1;
+    }
     int depth = 1;
+    int i = start;
     while (depth > 0) {
       i++;
       Token t = tokens.get(i);
-      if (t.eq(eof())) {
-        return;
-      } else if (t.eq(op(LESS))) {
+      if (t.eq(op(LESS))) {
         depth++;
       } else if (t.eq(op(GREATER))) {
         depth--;
@@ -388,99 +408,148 @@ public class ExpressionParser implements ProdParser<Expression> {
         depth -= 2;
       } else if (t.eq(op(RSHIFTU))) {
         depth -= 3;
+      } else if (!(t instanceof Identifier)
+          && !(t instanceof Type)
+          && !t.eq(sym(DOT))
+          && !t.eq(sym(COMMA))
+          && !t.eq(sym(QUESTION))
+          && !t.eq(sym(LBRAK))
+          && !t.eq(sym(RBRAK))
+          && !(t instanceof Keyword)) {
+        return -1; // (also at the end of the input)
       }
     }
-    if (depth < 0 || !tokens.get(i + 1).eq(sym(RPAREN))) {
-      return;
-    }
-    for (int k = i; k >= start; k--) {
-      tokens.remove(k);
-    }
+    return (depth == 0) ? i + 1 : -1;
   }
 
-  // If exprTokens ends with a parenthesized group "(...)" with something inside, returns the index
-  // of its opening parenthesis, otherwise -1.
-  private int parenGroupStart(List<Token> exprTokens) {
-    int last = exprTokens.size() - 1;
-    if (last < 2 || !exprTokens.get(last).eq(sym(RPAREN))) {
-      return -1;
+  // "(a, b)", the arguments of a call (the current token is the "(")
+  private List<ExprNode> parseArguments(TokenList tokens) {
+    List<ExprNode> args = new ArrayList<>();
+    tokens.next();
+    ExprNode arg = parseTree(tokens);
+    if (arg != null) {
+      args.add(arg);
+      while (tokens.curr().eq(sym(COMMA))) {
+        tokens.next();
+        args.add(operand(tokens, parseTree(tokens)));
+      }
     }
-    int depth = 0;
-    for (int start = last; start >= 0; start--) {
-      Token t = exprTokens.get(start);
-      if (t.eq(sym(RPAREN))) {
-        depth++;
-      } else if (t.eq(sym(LPAREN))) {
-        depth--;
-        if (depth == 0) {
-          return (last - start >= 2) ? start : -1;
+    expect(tokens, sym(RPAREN));
+    return args;
+  }
+
+  // the selectors and postfix operators after a primary expression, e.g. ".b", ".f(x)", "[i]",
+  // "++"
+  private ExprNode parseSelectors(TokenList tokens, ExprNode primary) {
+    ExprNode node = primary;
+    while (true) {
+      Token curr = tokens.curr();
+      Token next = tokens.peekNext();
+      if (curr.eq(sym(DOT)) && next instanceof Identifier) {
+        tokens.next();
+        tokens.next();
+        String name = ((Identifier) next).id();
+        if (tokens.curr().eq(sym(LPAREN))) {
+          node = new CallNode(node, name, parseArguments(tokens));
+        } else {
+          node = new SelectNode(node, name, false);
         }
+      } else if (curr.eq(sym(DOT)) && next instanceof Type) {
+        // a qualified name, e.g. "java.lang.String"
+        tokens.next();
+        tokens.next();
+        node = new SelectNode(node, ((Type) next).name, true);
+      } else if (curr.eq(sym(DOT)) && next.eq(keyword(CLASS))) {
+        tokens.next();
+        tokens.next();
+        node = new SelectNode(node, "class", false);
+      } else if (curr.eq(sym(LBRAK)) && !next.eq(sym(RBRAK))) {
+        tokens.next();
+        ExprNode index = operand(tokens, parseTree(tokens));
+        expect(tokens, sym(RBRAK));
+        node = new IndexNode(node, index);
+      } else if (curr.eq(op(POST_INCREMENT)) || curr.eq(op(POST_DECREMENT))) {
+        tokens.next();
+        node = new UnaryNode(((Operator) curr).opValue(), node);
+      } else {
+        return node;
       }
     }
-    return -1;
   }
 
-  // If exprTokens ends with a parenthesized cast expression "((Type) inner)", returns the index of
-  // its opening parenthesis, otherwise -1.
-  private int castChainStart(List<Token> exprTokens) {
-    int last = exprTokens.size() - 1;
-    if (last < 0 || !exprTokens.get(last).eq(sym(RPAREN))) {
-      return -1;
+  // the type of "x instanceof T" (not resolved), e.g. "String" or "java.util.List"
+  private String parseInstanceofType(TokenList tokens) {
+    Token curr = tokens.curr();
+    if (curr instanceof Identifier) {
+      return qualifiedName(tokens);
+    } else if (curr instanceof Type) {
+      tokens.next();
+      return ((Type) curr).name;
     }
-    int depth = 0;
-    int start = last;
-    for (; start >= 0; start--) {
-      Token t = exprTokens.get(start);
-      if (t.eq(sym(RPAREN))) {
-        depth++;
-      } else if (t.eq(sym(LPAREN))) {
-        depth--;
-        if (depth == 0) {
-          break;
+    ctx.errors.addError(
+        LOG_NAME,
+        "expected a type but found " + curr.display(),
+        new RuntimeException().getStackTrace());
+    return "java.lang.Object";
+  }
+
+  // If the tokens start with a cast, e.g. "(int)", "(String)" or "(java.util.List<T>)" followed by
+  // its operand, consumes the parentheses and returns the (resolved) type, otherwise returns null
+  // (with the tokens unchanged). The current token is the "(".
+  private String parseCastType(TokenList tokens) {
+    int idx = tokens.idx();
+    Token first = tokens.next();
+    String type = null;
+    if (first instanceof Type) {
+      type = ((Type) first).name;
+      tokens.next();
+    } else if (first instanceof Identifier) {
+      String name = qualifiedName(tokens);
+      // (a class name starts with an upper-case letter, e.g. not "(a)")
+      if (Character.isUpperCase(name.charAt(name.lastIndexOf('.') + 1))) {
+        type = name;
+      }
+      int end = typeArgumentsEnd(tokens, tokens.idx());
+      if (end > 0) {
+        tokens.setIdx(end); // erased
+      }
+    }
+    if (type != null && tokens.curr().eq(sym(RPAREN))) {
+      tokens.next();
+      boolean primitive = TypeUtils.isPrimitive(type);
+      if (startsCastOperand(tokens, primitive)) {
+        if (primitive) {
+          return type;
         }
+        return resolveCastType(type);
       }
     }
-    if (start < 0 || last - start < 5 || !exprTokens.get(start + 1).eq(sym(LPAREN))) {
-      return -1;
-    }
-    Token type = exprTokens.get(start + 2);
-    if (!(type instanceof Identifier) && !(type instanceof Type)) {
-      return -1;
-    }
-    String name = castTypeName(type);
-    name = name.substring(name.lastIndexOf('.') + 1); // e.g. java.util.List → List
-    if (name.isEmpty()
-        || !Character.isUpperCase(name.charAt(0))
-        || !exprTokens.get(start + 3).eq(sym(RPAREN))) {
-      return -1;
-    }
-    return start;
+    tokens.setIdx(idx);
+    return null;
   }
 
-  private boolean isCastMethodChainPattern(List<Token> exprTokens) {
-    if (exprTokens.size() < 5) return false;
-    if (!exprTokens.get(0).eq(sym(LPAREN))) return false;
-    if (!exprTokens.get(1).eq(sym(LPAREN))) return false;
-    Token third = exprTokens.get(2);
-    if (!(third instanceof Identifier) && !(third instanceof Type)) return false;
-    String name = castTypeName(third);
-    name = name.substring(name.lastIndexOf('.') + 1);
-    if (name.isEmpty() || !Character.isUpperCase(name.charAt(0))) return false;
-    if (!exprTokens.get(3).eq(sym(RPAREN))) return false;
-    if (!exprTokens.get(exprTokens.size() - 1).eq(sym(RPAREN))) return false;
-    return true;
-  }
-
-  // The (possibly dotted) type name of a cast, e.g. "java.lang.reflect.Type" for the Identifier
-  // chain java -> lang -> reflect -> Type
-  private static String castTypeName(Token token) {
-    StringBuilder name = new StringBuilder(token.val.toString());
-    if (token instanceof Identifier) {
-      for (Identifier link = ((Identifier) token).next; link != null; link = link.next) {
-        name.append('.').append(link.val.toString());
+  // Whether the current token can start the operand of a cast. A "+" or "-" only after a cast to a
+  // primitive type: "(a) - b" is a subtraction.
+  private static boolean startsCastOperand(TokenList tokens, boolean primitive) {
+    Token curr = tokens.curr();
+    if (curr instanceof Operator) {
+      Operators op = ((Operator) curr).opValue();
+      if (op == NEGATE || op == BITWISE_NOT) {
+        return true;
       }
+      return primitive && (op == MINUS || op == PLUS || op == PRE_INCREMENT || op == PRE_DECREMENT);
     }
-    return name.toString();
+    return curr instanceof Identifier
+        || curr instanceof Type
+        || curr instanceof IntLiteral
+        || curr instanceof FPLiteral
+        || curr instanceof BoolLiteral
+        || curr instanceof Chr
+        || curr instanceof Str
+        || curr.eq(sym(LPAREN))
+        || curr.eq(sym(SQRT))
+        || curr.eq(sym(LFLOOR))
+        || curr.eq(keyword(NEW));
   }
 
   private String resolveCastType(String name) {
@@ -488,8 +557,12 @@ public class ExpressionParser implements ProdParser<Expression> {
       return ctx.typeArgsParser.resolveQualified(name);
     }
     String fqn = ctx.importMap.get(name);
-    if (fqn != null) return fqn;
-    if (ctx.currClazz != null && name.equals(ctx.currClazz.name)) return ctx.currClazz.fqn();
+    if (fqn != null) {
+      return fqn;
+    }
+    if (ctx.currClazz != null && name.equals(ctx.currClazz.name)) {
+      return ctx.currClazz.fqn();
+    }
     try {
       Class.forName("java.lang." + name);
       return "java.lang." + name;
@@ -504,206 +577,24 @@ public class ExpressionParser implements ProdParser<Expression> {
     return name;
   }
 
-  private boolean isNewKeyword(Token curr) {
-    return (curr instanceof Keyword && ((Keyword) curr).eq(keyword("new")));
-  }
-
-  private boolean isInstanceofKeyword(Token curr) {
-    return (curr instanceof Keyword && ((Keyword) curr).eq(keyword(Keywords.INSTANCEOF)));
-  }
-
-  private Token flattenId(List<Identifier> selectors) {
-    Identifier id = selectors.get(0);
-    Identifier root = id;
-    for (int i = 1; i < selectors.size(); i++) {
-      // a MethodCall selector may already carry a chain, e.g. "a.get(1).get(2)" parsed as one
-      // MethodCall. (Only MethodCalls: plain Identifier selectors are lexer tokens that may still
-      // carry a stale .next link from an abandoned parse attempt, which must be overwritten.)
-      while (id instanceof MethodCall && id.next != null) {
-        id = id.next;
-      }
-      id.next = selectors.get(i);
-      id = id.next;
+  // Reports a missing operand, e.g. in "1 +;", and returns a placeholder for it.
+  private ExprNode operand(TokenList tokens, ExprNode node) {
+    if (node != null) {
+      return node;
     }
-    return root;
+    ctx.errors.addError(
+        LOG_NAME,
+        "expected an expression but found " + tokens.curr().display(),
+        new RuntimeException().getStackTrace());
+    return new OpaqueNode(new Expression());
   }
 
-  private MethodCall parseMethod(TokenList tokens) {
-    if (tokens.curr() instanceof Identifier) {
-      Identifier id = ((Identifier) tokens.curr());
+  private void expect(TokenList tokens, Token expected) {
+    if (tokens.curr().eq(expected)) {
       tokens.next();
-      ArraySelector sel = ctx.arraySelectorParser.parse(tokens, true);
-      if (sel != null) {
-        id.arrSel = sel;
-      } else {
-        tokens.prev();
-      }
+    } else {
+      ctx.errors.missingExpected(
+          LOG_NAME, expected, tokens, new RuntimeException().getStackTrace());
     }
-    MethodCall methodCall = ctx.methodCallParser.parse(tokens, true);
-    if (methodCall != null) {
-      return methodCall;
-    }
-    return null;
-  }
-
-  private boolean checkNegative(
-      TokenList tokens, List<Token> exprTokens, int[] pendingNegatedParens) {
-    if (tokens.curr().eq(op(PLUS)) && !tokens.peekNext().eq(op(PLUS))) {
-      tokens.next(); // unary plus, e.g. "+x"
-    }
-    if (tokens.curr().eq(op(BITWISE_NOT))) {
-      // "~x" is "(-1 ^ x)"
-      tokens.next();
-      exprTokens.add(sym(LPAREN));
-      exprTokens.add(integer(-1));
-      exprTokens.add(op(BITWISE_XOR));
-      if (tokens.curr().eq(sym(LPAREN))) {
-        pendingNegatedParens[0]++; // (closed like a negated parenthesized expression, see below)
-        return true;
-      }
-      if (!checkNegative(tokens, exprTokens, pendingNegatedParens)) {
-        exprTokens.add(tokens.curr());
-        tokens.next();
-      }
-      exprTokens.add(sym(RPAREN));
-      return true;
-    }
-    if (tokens.curr().eq(op(MINUS))) {
-      tokens.next();
-      if (tokens.curr() instanceof Num) {
-        Num number = (Num) tokens.curr();
-        number.changeSign();
-        exprTokens.add(tokens.curr());
-        tokens.next();
-        return true;
-      } else if (tokens.curr() instanceof Identifier) {
-        exprTokens.add(sym(LPAREN));
-        exprTokens.add(integer(-1));
-        exprTokens.add(op(TIMES));
-        exprTokens.add(tokens.curr());
-        exprTokens.add(sym(RPAREN));
-        tokens.next();
-        return true;
-      } else if (tokens.curr().eq(sym(LPAREN))) {
-        // Rewrite "-(expr)" as "(-1) * (expr)". The following '(' is left in place for the
-        // caller's normal parenthesis handling to parse "expr" (preserving dotted selectors,
-        // method calls, etc.); a matching synthetic ')' is appended once that '(' closes (see
-        // pendingNegatedParens flush in parse()).
-        exprTokens.add(sym(LPAREN));
-        exprTokens.add(integer(-1));
-        exprTokens.add(op(TIMES));
-        pendingNegatedParens[0]++;
-        return true;
-      } else {
-        ctx.errors.addError(
-            LOG_NAME,
-            "unexpected symbol "
-                + tokens.curr()
-                + " after starting \"-\" in expression (expected number literal or identifier)",
-            new RuntimeException().getStackTrace());
-      }
-    }
-    return false;
-  }
-
-  // Reports an incomplete expression, e.g. "1 +" or "(1 + 2" (the tokens are in postfix order)
-  private void checkComplete(List<Token> postfixTokens, TokenList tokens) {
-    int values = 0;
-    for (Token token : postfixTokens) {
-      if (token.eq(sym(LPAREN)) || token.eq(sym(RPAREN))) {
-        ctx.errors.missingExpected(
-            LOG_NAME, sym(RPAREN), tokens, new RuntimeException().getStackTrace());
-        return;
-      }
-      if (token instanceof Type) {
-        continue; // a reference cast marker, e.g. the "String" in "((String) obj)" (see TODO.md)
-      }
-      int operands = operandCount(token);
-      if (values < operands) {
-        values = -1; // an operator without (enough) operands
-        break;
-      }
-      values += 1 - operands;
-    }
-    if (values != 1) {
-      ctx.errors.addError(
-          LOG_NAME,
-          "expected an expression but found " + tokens.curr().display(),
-          new RuntimeException().getStackTrace());
-    }
-  }
-
-  // the number of operands a token of a postfix expression consumes (it produces one value)
-  private static int operandCount(Token token) {
-    if (token instanceof InstanceofToken
-        || (token instanceof MethodCall && ((MethodCall) token).literalReceiver)) {
-      return 1;
-    }
-    if (!(token instanceof Operator)) {
-      return 0;
-    }
-    if (token instanceof CastOperator) {
-      return 1;
-    }
-    Operators op = ((Operator) token).opValue();
-    return (op == NEGATE
-            || op == PRE_INCREMENT
-            || op == PRE_DECREMENT
-            || op == POST_INCREMENT
-            || op == POST_DECREMENT)
-        ? 1
-        : 2;
-  }
-
-  // "(int)", "(char)", ... (a cast to a primitive type)
-  private static boolean isPrimitiveCast(TokenList tokens) {
-    return tokens.curr().eq(sym(LPAREN))
-        && tokens.peekNext() instanceof Type
-        && TypeUtils.isPrimitive(((Type) tokens.peekNext()).name)
-        && tokens.get(tokens.idx() + 2).eq(sym(RPAREN));
-  }
-
-  // Whether the next token starts an operand (after an operator or an opening parenthesis)
-  private static boolean isOperandPosition(List<Token> exprTokens) {
-    Token last = exprTokens.get(exprTokens.size() - 1);
-    return (last instanceof Operator && !isPostfixOperator(last)) || last.eq(sym(LPAREN));
-  }
-
-  private static boolean isPostfixOperator(Token token) {
-    return token.eq(op(POST_INCREMENT)) || token.eq(op(POST_DECREMENT));
-  }
-
-  private boolean isHigerPrec(Operator op, Token sub) {
-    return (sub instanceof Operator && ((Operator) sub).precedence() >= op.precedence());
-  }
-
-  // shunting yard algorithm to transform the token list to postfix notation
-  private List<Token> postfix(List<Token> tokens) {
-    List<Token> output = new ArrayList<>();
-    Deque<Token> stack = new LinkedList<>();
-    for (int i = 0; i < tokens.size(); i++) {
-      Token token = tokens.get(i);
-      if (token instanceof CastOperator) {
-        stack.push(token); // a prefix unary operator: applies to the operand that follows
-      } else if (token instanceof Operator) {
-        while (!stack.isEmpty() && isHigerPrec((Operator) token, stack.peek())) {
-          output.add(stack.pop());
-        }
-        stack.push(token);
-      } else if (token.eq(sym(LPAREN))) {
-        stack.push(token);
-      } else if (token.eq(sym(RPAREN))) {
-        while (!stack.peek().eq(sym(LPAREN))) {
-          output.add(stack.pop());
-        }
-        stack.pop();
-      } else {
-        output.add(token);
-      }
-    }
-    while (!stack.isEmpty()) {
-      output.add(stack.pop());
-    }
-    return output;
   }
 }

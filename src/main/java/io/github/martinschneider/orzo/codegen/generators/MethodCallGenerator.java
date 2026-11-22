@@ -1014,6 +1014,12 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     for (java.lang.reflect.Method m : clazz.getMethods()) {
       result.add(m);
     }
+    if (clazz.isInterface()) {
+      // (an interface has the public methods of Object, e.g. "list.toString()")
+      for (java.lang.reflect.Method m : Object.class.getMethods()) {
+        result.add(m);
+      }
+    }
     Class<?> c = clazz;
     while (c != null) {
       for (java.lang.reflect.Method m : c.getDeclaredMethods()) {

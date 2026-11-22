@@ -9,10 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
-import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.io.IOException;
-import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -34,8 +32,6 @@ public class MethodCallParserTest {
         args(
             "calculateSomething(a,b,c)",
             methodCall("calculateSomething", list(expr("a"), expr("b"), expr("c")))),
-        args("√(n)", methodCall("Math.sqrt", list(expr("n")))),
-        args("⌊x⌋", methodCall("Math.round", list(expr("Math.floor(x)")))),
         args(
             "test(new int[] {1, 2})",
             methodCall("test", list(arrInit("int", 2, list(expr("1"), expr("2")))))),
@@ -48,12 +44,9 @@ public class MethodCallParserTest {
                     arrInit("int", 2, list(expr("3"), expr("4")))))),
         args("doSomething()[0]", methodCall("doSomething", emptyList(), arrSel(list(expr("0"))))),
         args("System.out.println()", methodCall("System.out.println", emptyList())),
-        args("someMethod(", null),
-        args("someMethod(a", null));
-    // args(
-    // "⌊((1+√5)/2) ** n)/√5+0.5⌋",
-    // methodCall(id("Math.round"), list(expr("Math.floor(((1+√5)/2) **
-    // n)/√5+0.5)")))));
+        // (with an error: "expected ')'")
+        args("someMethod(", methodCall("someMethod", emptyList())),
+        args("someMethod(a", methodCall("someMethod", list(expr("a")))));
   }
 
   @ParameterizedTest
@@ -61,21 +54,6 @@ public class MethodCallParserTest {
   public void test(String input, MethodCall expected) throws IOException {
     TokenList tokens = new Lexer().getTokens(input);
     assertEquals(expected, target.parse(tokens));
-    assertTokenIdx(tokens, (expected == null));
-  }
-
-  private static Stream<Arguments> testArgs() throws IOException {
-    return stream(
-        args("()", emptyList()),
-        args("(x)", list(expr("x"))),
-        args("(ab,cd,efg)", list(expr("ab"), expr("cd"), expr("efg"))));
-  }
-
-  @ParameterizedTest
-  @MethodSource
-  public void testArgs(String input, List<Expression> expected) throws IOException {
-    TokenList tokens = new Lexer().getTokens(input);
-    assertEquals(expected, target.parseArgs(tokens));
     assertTokenIdx(tokens, (expected == null));
   }
 }

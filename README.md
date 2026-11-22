@@ -128,6 +128,6 @@ Measured by `mvn clean verify -Pselfcompile` (see `selfcompile.sh`): Orzo compil
 | Metric | Value |
 |--------|-------|
 | Self-compilation (share of source lines compiled by Orzo) | 100.0% |
-| Compile time (compiling Orzo's sources) | 5.3x javac (20.9 s vs. 3.9 s) |
-| Class size (Orzo's class files) | 4.4x javac (3912.5 KiB vs. 893.9 KiB) |
+| Compile time (compiling Orzo's sources) | 4.7x javac (19.5 s vs. 4.1 s) |
+| Class size (Orzo's class files) | 4.2x javac (3811.7 KiB vs. 899.2 KiB) |
 <!-- metrics:end -->
