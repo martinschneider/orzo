@@ -3,7 +3,7 @@
 # Re-compiles Orzo's own sources with Orzo (three times: the first pass runs the javac-built
 # compiler, the later ones the Orzo-built one), except for the files listed in skiplist.txt.
 # This runs after the unit and before the integration tests, so that the integration tests verify
-# the self-compiled compiler.
+# the self-compiled compiler. It fails unless all passes generate identical class files.
 #
 # Writes the metrics shown in README.md (see update_metrics.sh) to the "stats" file:
 #   progress      share of the source lines compiled by Orzo (in %)
@@ -71,7 +71,20 @@ for i in {1..3}; do
   jar cfe target/orzo.jar io.github.martinschneider.orzo.Orzo -C target/classes .
   orzoSize=$(class_bytes target/classes)
   echo "Pass #$i: ${elapsed} ms (javac: ${javacTime} ms), class files: $orzoSize bytes (javac: $javacSize bytes)"
+  # Fixpoint: the javac-built compiler (pass 1) and the Orzo-built ones (passes 2 and 3) must all
+  # generate the same class files, otherwise the compiler is miscompiled or nondeterministic.
+  if [ "$i" -eq 1 ]; then
+    pass1=$(mktemp -d)
+    cp -r target/classes/. "$pass1"
+  elif ! diff -r -q "$pass1" target/classes > /dev/null; then
+    echo "Self-compilation hasn't reached a fixpoint, the class files of passes 1 and $i differ:"
+    diff -r -q "$pass1" target/classes | head -20
+    rm -rf "$pass1"
+    exit 1
+  fi
 done
+rm -rf "$pass1"
+echo "Fixpoint reached: all passes generate identical class files."
 
 {
   echo "progress=$progress"

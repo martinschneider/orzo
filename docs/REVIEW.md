@@ -201,11 +201,12 @@ Exact-bytecode unit tests (`ExpressionGeneratorTest` and others) are brittle and
 rather than its behaviour. Keep them for peephole decisions (e.g. `IFEQ` versus `IF_ICMPEQ` against 0)
 and use behaviour tests for the rest.
 
-### 9. Turn the self-compilation fixpoint into an invariant (low)
+### 9. Turn the self-compilation fixpoint into an invariant (done)
 
-`selfcompile.sh` compares sizes. Byte-compare the class files of passes 2 and 3: a self-hosting compiler
-should reach a fixpoint where they are identical, and any difference points to nondeterminism or a
-miscompiled compiler. Also run pass 3's test suite with the pass-2 compiler.
+`selfcompile.sh` fails unless all three passes generate byte-identical class files: the javac-built
+compiler (pass 1) and the Orzo-built ones (passes 2 and 3) compile Orzo's sources to exactly the same
+bytes, so the self-compiled compiler behaves like the javac-built one and code generation is
+deterministic.
 
 ### 10. Performance and output size (low, after 1–4)
 
