@@ -178,7 +178,7 @@ Still to do:
 - **Real type checking**: only the clearest incompatible assignments are detected; the attribution phase
   (recommendation 1) is the place for JLS assignment and method invocation conversions.
 
-### 8. Differential testing against javac (medium)
+### 8. Differential testing against javac (medium; the main part is done)
 
 The expected outputs of the end-to-end tests are hand-written, and some encoded Orzo's bugs: `'Z'` for
 `'(' + '2'`, `@` for `64 * chr`, swapped `**` operands in the bytecode tests. Add a harness that compiles
@@ -186,6 +186,12 @@ every test program with both javac and Orzo, runs both, and compares their outpu
 every generated class with full verification. Expected outputs then only need to exist for Orzo-only
 syntax. A small corpus of "probe" programs for unsupported features (one per README checklist item)
 would keep the README honest automatically.
+
+**Done** (November 2026): `DifferentialTest` compiles every end-to-end test program with javac,
+runs it and checks it prints the expected output, so all expected outputs of valid Java programs are
+Java's (21 of 256 programs aren't valid Java: Orzo-only syntax, implicit narrowing of `int` literals
+to `byte`/`short`, unchecked checked exceptions). Still to do: verify every Orzo-generated class with
+full verification, and generate probe programs for the README checklist.
 
 Exact-bytecode unit tests (`ExpressionGeneratorTest` and others) are brittle and test the implementation
 rather than its behaviour. Keep them for peephole decisions (e.g. `IFEQ` versus `IF_ICMPEQ` against 0)

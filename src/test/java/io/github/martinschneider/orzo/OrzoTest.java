@@ -45,7 +45,7 @@ public class OrzoTest {
     }
   }
 
-  private static Stream<Arguments> tests() {
+  static Stream<Arguments> tests() {
     return stream(
         args(list("examples/HelloWorld")),
         args(list("tests/IntegerConstants")),
