@@ -243,7 +243,7 @@ public class Lexer {
 
   /** Scans for identifiers, primitive types and keywords */
   private void scanId() throws IOException {
-    if (Character.isLetter(character) || character == '_') {
+    if (Character.isJavaIdentifierStart(character)) { // (letters, '_' and '$')
       buffer.append(character);
       while (isAlphanumeric(character = (char) inputReader.read())) {
         buffer.append(character);
@@ -283,7 +283,7 @@ public class Lexer {
   }
 
   private boolean isAlphanumeric(char c) {
-    return Character.isAlphabetic(c) || Character.isDigit(c) || c == '_';
+    return Character.isJavaIdentifierPart(c) && !Character.isIdentifierIgnorable(c);
   }
 
   private void scanNum() throws IOException {

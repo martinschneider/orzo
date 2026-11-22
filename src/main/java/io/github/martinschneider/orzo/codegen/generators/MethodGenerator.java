@@ -14,6 +14,7 @@ import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.StackMapTableBuilder;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
+import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.CatchBlock;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
@@ -74,19 +75,7 @@ public class MethodGenerator {
         }
         for (Statement stmt : method.body) {
           generateCode(methodOut, method, stmt);
-          if (stmt instanceof ReturnStatement || stmt instanceof ThrowStatement) {
-            returned = true;
-          } else if (stmt instanceof TryStatement) {
-            returned = tryStatementAlwaysReturns((TryStatement) stmt);
-          } else if (stmt instanceof IfStatement) {
-            returned = ifStatementAlwaysReturns((IfStatement) stmt);
-          } else if (stmt instanceof SwitchStatement) {
-            returned = switchStatementAlwaysReturns((SwitchStatement) stmt);
-          } else if (stmt instanceof WhileStatement) {
-            returned = whileStatementAlwaysReturns((WhileStatement) stmt);
-          } else {
-            returned = false;
-          }
+          returned = alwaysReturns(List.of(stmt));
         }
       }
 
@@ -204,6 +193,10 @@ public class MethodGenerator {
       return switchStatementAlwaysReturns((SwitchStatement) last);
     } else if (last instanceof WhileStatement) {
       return whileStatementAlwaysReturns((WhileStatement) last);
+    } else if (last instanceof Block) {
+      // (a labeled block can be left by "break label;")
+      Block block = (Block) last;
+      return alwaysReturns(block.body) && (block.label == null || !containsBreak(block.body));
     }
     return false;
   }

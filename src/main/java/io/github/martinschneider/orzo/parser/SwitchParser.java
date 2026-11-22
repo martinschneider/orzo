@@ -13,6 +13,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import io.github.martinschneider.orzo.parser.productions.SwitchCase;
@@ -94,9 +95,8 @@ public class SwitchParser implements ProdParser<SwitchStatement> {
         // a braced block, e.g. "case X: { ... }"
         tokens.next();
         List<Statement> block = ctx.stmtParser.parseStmtSeq(tokens);
-        if (block != null) {
-          body.addAll(block);
-        }
+        // (a block of its own: its variables are only in scope in it)
+        body.add(new Block((block != null) ? block : new ArrayList<>()));
         if (!tokens.curr().eq(sym(RBRACE))) {
           break;
         }

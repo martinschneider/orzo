@@ -49,6 +49,7 @@ public class LexerTest {
         args("das ist ein test", new TokenList(list(id("das"), id("ist"), id("ein"), id("test")))),
         args("f1 f_1", new TokenList(list(id("f1"), id("f_1")))),
         args("_ _test", new TokenList(list(id("_"), id("_test")))),
+        args("$x a$b", new TokenList(list(id("$x"), id("a$b")))),
         args(
             "12  13 15 17",
             new TokenList(list(integer(12), integer(13), integer(15), integer(17)))),

@@ -149,6 +149,10 @@ declare the same name with different types. Temporary locals are allocated ad ho
 types each slot by a single variable. With scoped symbols (recommendation 3) and frames computed from
 types (recommendation 4), locals can reuse slots when their scope ends, as javac does.
 
+A first step is done: `LocalVariableChecker` walks each method with the block structure and reports a
+local variable that redeclares one still in scope (or a parameter), while sibling blocks may reuse a
+name.
+
 ### 7. Error handling and diagnostics (medium; the basics are done)
 
 **Done** (November 2026): one error list for the whole compilation run (before, only the last input

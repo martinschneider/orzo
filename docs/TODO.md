@@ -61,7 +61,6 @@ currently fails with a compile error or produces a class file that doesn't verif
 | M        | Inner, local and anonymous classes       | Only static nested classes are supported.                                                                                                          |
 | M        | Lambda block bodies, void SAMs           | See the lambda row above.                                                                                                                          |
 | M        | Reference casts inside expressions       | `f(((String) obj))`, `a + (Foo) b`: the cast is a no-op marker token before the operand (no `CHECKCAST`), unlike primitive casts (`CastOperator`). |
-| M        | Duplicate local variables                | Not reported: locals share one name-to-slot map per method (no block scopes), so a valid redeclaration in a sibling block can't be told apart.     |
 | L        | Optional semicolons                      | Most statement parsers accept a missing `;` (e.g. `int a = 1 int b = 2;`). Decide whether Orzo requires them like Java does.                       |
 | L        | `switch` with `->`, switch expressions   |                                                                                                                                                    |
 | L        | `var`, records, `instanceof` patterns    |                                                                                                                                                    |

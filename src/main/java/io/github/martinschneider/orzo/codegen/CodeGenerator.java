@@ -21,6 +21,7 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 
+import io.github.martinschneider.orzo.codegen.identifier.LocalVariableChecker;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
@@ -182,6 +183,7 @@ public class CodeGenerator {
       ctx.memberProc.processMethodArgs(method);
       ctx.memberProc.processLocalVars(method);
       errors.position = errors.startTokens.get(method);
+      new LocalVariableChecker(errors).check(method);
       ctx.methodGen.generate(out, method, clazz);
     }
     for (String[] bridge : bridges) {

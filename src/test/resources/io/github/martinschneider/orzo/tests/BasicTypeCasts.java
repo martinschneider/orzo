@@ -57,13 +57,13 @@ public class BasicTypeCasts {
     System.out.println((long) d);
     System.out.println((double) d);
     System.out.println((float) d);
-    char chr = 'G';
-    System.out.println((byte) chr);
-    System.out.println((char) chr);
-    System.out.println((short) chr);
-    System.out.println((int) chr);
-    System.out.println((long) chr);
-    System.out.println((double) chr);
-    System.out.println((float) chr);
+    char chr2 = 'G';
+    System.out.println((byte) chr2);
+    System.out.println((char) chr2);
+    System.out.println((short) chr2);
+    System.out.println((int) chr2);
+    System.out.println((long) chr2);
+    System.out.println((double) chr2);
+    System.out.println((float) chr2);
   }
 }

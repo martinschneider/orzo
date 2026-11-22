@@ -307,7 +307,8 @@ public class OrzoTest {
         args(list("tests/FieldOfNewObject")),
         args(list("tests/SuperMethodCall")),
         args(list("tests/UnboxedOperands")),
-        args(list("tests/TypeVariables")));
+        args(list("tests/TypeVariables")),
+        args(list("tests/LocalScopes")));
   }
 
   // Orzo.compile(outputs) appended a new entry to `outputs` for every input file even when the

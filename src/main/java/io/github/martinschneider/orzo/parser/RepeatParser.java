@@ -8,6 +8,7 @@ import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.parser.productions.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class RepeatParser implements ProdParser<LoopStatement> {
@@ -37,8 +38,7 @@ public class RepeatParser implements ProdParser<LoopStatement> {
       tokens.next();
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (body == null) {
-        tokens.next(sym(RBRACE));
-        ctx.errors.addError(LOG_NAME, "missing body", new RuntimeException().getStackTrace());
+        body = new ArrayList<>(); // an empty body
       }
       if (!tokens.curr().eq(sym(RBRACE))) {
         ctx.errors.missingExpected(
@@ -48,17 +48,23 @@ public class RepeatParser implements ProdParser<LoopStatement> {
       } else {
         tokens.next();
       }
+      if (count != null && count.tokens.isEmpty()) {
+        return null; // e.g. "repeat () {}" (reported by the expression parser)
+      }
       if (count == null) {
         // infinite loop
         return new WhileStatement(new Expression(List.of(bool("true"))), body);
       }
+      // "for (int $repeatN = 0; $repeatN < count; $repeatN++)": a name that can't clash with the
+      // program's variables (it used to be "i", overwriting a variable "i" of the program)
+      String counter = "$repeat" + ctx.repeatCount++;
       Lexer lexer = new Lexer();
-      count.tokens.add(0, id("i"));
+      count.tokens.add(0, id(counter));
       count.tokens.add(op(Operators.LESS));
       return new ForStatement(
-          ctx.stmtParser.parse(lexer.getTokens("int i=0")),
+          ctx.stmtParser.parse(lexer.getTokens("int " + counter + "=0")),
           count,
-          ctx.stmtParser.parse(lexer.getTokens("i++")),
+          ctx.stmtParser.parse(lexer.getTokens(counter + "++")),
           body);
     } else {
       return null;

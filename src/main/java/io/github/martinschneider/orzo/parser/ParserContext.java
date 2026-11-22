@@ -9,6 +9,8 @@ import java.util.Map;
 
 public class ParserContext {
   public Clazz currClazz;
+  // the number of repeat loops parsed (for the names of their counters)
+  public int repeatCount;
   // static nested classes of the parsed file, compiled as separate classes (e.g. "Outer$Inner")
   public List<Clazz> nestedClazzes = new ArrayList<>();
   // Maps simple class name → fully-qualified name, built from import statements

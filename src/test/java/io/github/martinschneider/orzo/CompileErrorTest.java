@@ -63,6 +63,15 @@ public class CompileErrorTest {
         Arguments.of(
             "String q = \"\"\"\n  a\n  \"\"\";",
             "N.java:5:16: error: text blocks are not supported"),
+        Arguments.of("int x = 2;", "N.java:5:5: error: variable x is already defined"),
+        Arguments.of(
+            "for (int i = 0; i < 2; i++) { int i = 1; }",
+            "N.java:5:35: error: variable i is already defined"),
+        Arguments.of(
+            "if (x > 0) { int x = 3; }", "N.java:5:18: error: variable x is already defined"),
+        Arguments.of(
+            "try { x++; } catch (Exception args) { }",
+            "N.java:5:5: error: variable args is already defined"),
         Arguments.of("break;", "N.java:5:5: error: break outside of a loop or switch"),
         Arguments.of("continue;", "N.java:5:5: error: continue outside of a loop"),
         Arguments.of(
