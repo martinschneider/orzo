@@ -112,7 +112,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
-import io.github.martinschneider.orzo.parser.ClassParser;
+import io.github.martinschneider.orzo.parser.InnerClasses;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
@@ -121,6 +121,7 @@ import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
 import io.github.martinschneider.orzo.parser.productions.ClassMember;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -1920,6 +1921,12 @@ public class ExpressionGenerator {
     for (Expression arg : constructorCall.args) {
       argTypes.add(new NumExprTypeDecider(ctx).getType(classIdMap, arg));
     }
+    // (a local class's constructors take the variables it captures last)
+    List<Argument> captured =
+        (source != null && source.captured != null) ? source.captured : emptyList();
+    for (Argument var : captured) {
+      argTypes.add(var.type);
+    }
 
     Method constructor = findConstructor(jvmClassName, argTypes);
     if (constructor == null) {
@@ -1930,21 +1937,27 @@ public class ExpressionGenerator {
       return className; // Return the class type even if constructor not found
     }
 
-    // Phase 2: eval each argument and box if needed
-    if (inner) {
-      // (the enclosing instance is on the stack already)
-      Method withoutOuter =
+    // Phase 2: eval each argument and box if needed (the enclosing instance is on the stack
+    // already)
+    int from = inner ? 1 : 0;
+    Method withoutSynthetic = constructor;
+    if (from > 0 || !captured.isEmpty()) {
+      withoutSynthetic =
           new Method(
               constructor.fqClassName,
               constructor.accFlags,
               constructor.type,
               constructor.name,
-              constructor.args.subList(1, constructor.args.size()),
+              constructor.args.subList(from, constructor.args.size() - captured.size()),
               constructor.body);
-      ctx.methodCallGen.pushArgs(
-          out, constructorCall.args, argTypes.subList(1, argTypes.size()), withoutOuter);
-    } else {
-      ctx.methodCallGen.pushArgs(out, constructorCall.args, argTypes, constructor);
+    }
+    ctx.methodCallGen.pushArgs(
+        out,
+        constructorCall.args,
+        argTypes.subList(from, argTypes.size() - captured.size()),
+        withoutSynthetic);
+    for (Argument var : captured) {
+      ctx.loadGen.load(out, ctx.classIdMap.variables.get(var.name));
     }
 
     // Generate INVOKESPECIAL <init>
@@ -2015,25 +2028,14 @@ public class ExpressionGenerator {
             ctx.clazz.sourceFile);
     anon.outerName =
         (ctx.clazz.outerName != null ? ctx.clazz.outerName + "$" : "") + ctx.clazz.name;
-    anon.isInner =
-        ctx.method != null
-            && !ctx.method.accFlags.contains(AccessFlag.ACC_STATIC)
-            && !ctx.clazz.isInterface;
+    boolean inner = !isStaticContext();
     String anonFqn = anon.fqn();
-    // its members (and what they use)
-    List<String> declared = new ArrayList<>();
-    List<Expression> exprs = new ArrayList<>();
+    // its members (and the local variables they use)
     List<Statement> inits = new ArrayList<>();
     for (ClassMember member : constructorCall.anonymousBody) {
       if (member instanceof Method) {
-        Method method = (Method) member;
-        method.fqClassName = anonFqn;
-        anon.methods.add(method);
-        for (Argument arg : method.args) {
-          declared.add(arg.name.val.toString());
-        }
-        declared.addAll(Statements.declaredNames(method.body));
-        exprs.addAll(Statements.expressions(method.body));
+        ((Method) member).fqClassName = anonFqn;
+        anon.methods.add((Method) member);
       } else if (member instanceof ParallelDeclaration) {
         anon.fields.add((ParallelDeclaration) member);
         inits.add((ParallelDeclaration) member);
@@ -2041,45 +2043,29 @@ public class ExpressionGenerator {
         inits.add(new Block(((InstanceInitializer) member).body));
       }
     }
-    declared.addAll(Statements.declaredNames(inits));
-    exprs.addAll(Statements.expressions(inits));
-    List<VariableInfo> captured = new ArrayList<>();
-    for (Expression expr : exprs) {
-      visitBody(expr, declared, captured, false);
-    }
-    // its constructor: super(args), then the enclosing instance and the captured variables are
-    // stored (before the initializers)
+    List<VariableInfo> captured = capturedBy(anon.methods, inits);
+    // its constructor passes the arguments on, the enclosing instance and the captured variables
+    // become fields
     List<Argument> ctorArgs = new ArrayList<>();
-    List<Statement> fieldInits = new ArrayList<>();
-    if (anon.isInner) {
-      ctorArgs.add(new Argument(ctx.clazz.fqn(), new Identifier(ClassParser.OUTER_INSTANCE)));
-      anon.fields.add(field(ctx.clazz.fqn(), 0, ClassParser.OUTER_INSTANCE, null));
-      fieldInits.add(storeField(ClassParser.OUTER_INSTANCE));
-    }
     List<Expression> superArgs = new ArrayList<>();
     for (int i = 0; superConstructor != null && i < superConstructor.args.size(); i++) {
       String name = "$super" + i;
       ctorArgs.add(new Argument(superConstructor.args.get(i).type, new Identifier(name)));
       superArgs.add(new Expression(List.of(new Identifier(name))));
     }
-    for (VariableInfo var : captured) {
-      boolean isArray = var.arrType != null;
-      String type = isArray ? var.arrType : var.type;
-      ctorArgs.add(new Argument(isArray ? "[" + type : type, new Identifier(var.name)));
-      anon.fields.add(field(type, isArray ? 1 : 0, var.name, var.genericType));
-      fieldInits.add(storeField(var.name));
-    }
-    fieldInits.addAll(inits);
-    anon.instanceInits = fieldInits;
-    Method ctor =
-        new Method(
+    anon.methods.add(
+        new Constructor(
             anonFqn,
             emptyList(),
-            VOID,
             Token.id(Method.CONSTRUCTOR_NAME),
             ctorArgs,
-            new ArrayList<>(List.of(new MethodCall("super", superArgs))));
-    anon.methods.add(ctor);
+            new ArrayList<>(List.of(new MethodCall("super", superArgs)))));
+    anon.instanceInits = inits;
+    if (inner) {
+      InnerClasses.makeInner(anon, ctx.clazz);
+    }
+    InnerClasses.addFields(anon, false, asArguments(captured));
+    Method ctor = anon.getConstructors().get(0);
     ctx.addSyntheticClazz(anon);
 
     String anonClassName = anon.fqn('/');
@@ -2087,7 +2073,7 @@ public class ExpressionGenerator {
     ctx.invokeGen.newInstance(out, anonClassName);
     out.write(DUP);
     ctx.opStack.push(REF);
-    if (anon.isInner && !pushEnclosingInstance(out, anon)) {
+    if (inner && !pushEnclosingInstance(out, anon)) {
       return superName;
     }
     if (superConstructor != null) {
@@ -2100,21 +2086,43 @@ public class ExpressionGenerator {
     return superName;
   }
 
-  private ParallelDeclaration field(String type, int arrDim, String name, String genericType) {
-    Declaration field =
-        new Declaration(List.of(AccessFlag.ACC_FINAL), type, arrDim, new Identifier(name), null);
-    field.isField = true;
-    field.genericType = genericType;
-    return new ParallelDeclaration(new ArrayList<>(List.of(field)));
+  // (no enclosing instance)
+  boolean isStaticContext() {
+    return ctx.method == null
+        || ctx.method.accFlags.contains(AccessFlag.ACC_STATIC)
+        || ctx.clazz.isInterface;
   }
 
-  // "this.name = name;"
-  private Assignment storeField(String name) {
-    Identifier target = new Identifier("this");
-    target.next = new Identifier(name);
-    return new Assignment(
-        new ArrayList<>(List.of(target)),
-        new ArrayList<>(List.of(new Expression(List.of(new Identifier(name))))));
+  // The local variables used in the methods or initializers of a local or anonymous class (to be
+  // captured)
+  List<VariableInfo> capturedBy(List<Method> methods, List<Statement> inits) {
+    List<String> declared = new ArrayList<>(Statements.declaredNames(inits));
+    List<Expression> exprs = new ArrayList<>(Statements.expressions(inits));
+    for (Method method : methods) {
+      for (Argument arg : method.args) {
+        declared.add(arg.name.val.toString());
+      }
+      declared.addAll(Statements.declaredNames(method.body));
+      exprs.addAll(Statements.expressions(method.body));
+    }
+    List<VariableInfo> captured = new ArrayList<>();
+    for (Expression expr : exprs) {
+      visitBody(expr, declared, captured, false);
+    }
+    return captured;
+  }
+
+  // (an array type starts with "[")
+  static List<Argument> asArguments(List<VariableInfo> vars) {
+    List<Argument> args = new ArrayList<>();
+    for (VariableInfo var : vars) {
+      Argument arg =
+          new Argument(
+              var.arrType != null ? "[" + var.arrType : var.type, new Identifier(var.name));
+      arg.genericType = var.genericType;
+      args.add(arg);
+    }
+    return args;
   }
 
   // The class C of "C.this" (this class or an enclosing one), or null for anything else

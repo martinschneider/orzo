@@ -320,6 +320,7 @@ public class OrzoTest {
         args(list("tests/AbstractClasses")),
         args(list("tests/InnerClasses")),
         args(list("tests/AnonymousClasses")),
+        args(list("tests/LocalClasses")),
         args(list("tests/LambdaBlocks")),
         args(list("tests/StaticFieldAssignment")),
         args(list("examples/Calculus")),

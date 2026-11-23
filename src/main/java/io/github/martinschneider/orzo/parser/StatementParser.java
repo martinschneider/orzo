@@ -22,6 +22,7 @@ import io.github.martinschneider.orzo.parser.productions.FieldAssignment;
 import io.github.martinschneider.orzo.parser.productions.ForEachStatement;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
+import io.github.martinschneider.orzo.parser.productions.LocalClassDeclaration;
 import io.github.martinschneider.orzo.parser.productions.LoopStatement;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.Statement;
@@ -166,6 +167,7 @@ public class StatementParser implements ProdParser<Statement> {
         || stmt instanceof TryStatement
         || stmt instanceof SwitchStatement
         || stmt instanceof Block
+        || stmt instanceof LocalClassDeclaration
         || stmt instanceof EmptyStatement;
   }
 
@@ -222,7 +224,9 @@ public class StatementParser implements ProdParser<Statement> {
       tokens.setIdx(idx);
     }
     // Check constructor calls first to avoid conflicts with other parsers
-    if ((stmt = ctx.constrCallParser.parse(tokens)) != null) {
+    if ((stmt = ctx.classParser.parseLocalClass(tokens)) != null) {
+      return stmt;
+    } else if ((stmt = ctx.constrCallParser.parse(tokens)) != null) {
       return stmt;
     } else if ((stmt = ctx.assignParser.parse(tokens)) != null) {
       return stmt;

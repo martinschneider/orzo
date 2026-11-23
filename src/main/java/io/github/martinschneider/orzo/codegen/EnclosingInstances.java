@@ -1,13 +1,13 @@
 package io.github.martinschneider.orzo.codegen;
 
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_FIELDREF;
-import static io.github.martinschneider.orzo.parser.ClassParser.OUTER_INSTANCE;
+import static io.github.martinschneider.orzo.parser.InnerClasses.OUTER_INSTANCE;
 
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import java.util.ArrayList;
 import java.util.List;
 
-/** The enclosing instances of inner classes (see ClassParser.makeInner()). */
+/** The enclosing instances of inner classes (see InnerClasses.makeInner()). */
 public class EnclosingInstances {
   private EnclosingInstances() {}
 

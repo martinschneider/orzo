@@ -78,6 +78,7 @@ public class Orzo {
     clazzes = new ArrayList<>();
     errors = new CompilerErrors();
     List<Clazz> nestedClazzes = new ArrayList<>();
+    List<Clazz> localClazzes = new ArrayList<>();
     for (int i = 0; i < inputs.size(); i++) {
       if (verbose > 0) {
         log("Reading from: " + inputs.get(i).getAbsolutePath());
@@ -125,6 +126,10 @@ public class Orzo {
         nested.sourceFile = clazz.sourceFile;
         nestedClazzes.add(nested);
       }
+      for (Clazz local : parser.ctx.localClazzes) {
+        local.sourceFile = clazz.sourceFile;
+        localClazzes.add(local);
+      }
     }
     // no code generation for files with syntax errors (it would only report follow-up errors)
     if (!errors.isEmpty()) {
@@ -134,6 +139,7 @@ public class Orzo {
     // Static nested classes are compiled like the classes of separate input files. They come after
     // those (outputs stay index-aligned with the input files), as do classes discovered during
     // code generation (e.g. a lambda expression's synthetic implementation).
+    nestedClazzes.addAll(localClazzes);
     for (Clazz nested : nestedClazzes) {
       clazzes.add(nested);
       outputs.add(inMemoryOutput());

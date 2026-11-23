@@ -17,6 +17,7 @@ import io.github.martinschneider.orzo.parser.productions.ForEachStatement;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
 import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
+import io.github.martinschneider.orzo.parser.productions.LocalClassDeclaration;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
@@ -54,6 +55,7 @@ public class StatementDelegator {
     reg.put(ExpressionStatement.class, new ExpressionStatementGenerator(ctx));
     reg.put(FieldAssignment.class, new FieldAssignmentGenerator(ctx));
     reg.put(Block.class, new BlockGenerator(ctx));
+    reg.put(LocalClassDeclaration.class, new LocalClassGenerator(ctx));
   }
 
   public HasOutput generate(DynamicByteArray out, Method method, Statement stmt) {

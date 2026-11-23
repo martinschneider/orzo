@@ -13,6 +13,8 @@ public class ParserContext {
   public int repeatCount;
   // static nested classes of the parsed file, compiled as separate classes (e.g. "Outer$Inner")
   public List<Clazz> nestedClazzes = new ArrayList<>();
+  // (compiled after all other classes, see ClassParser.parseLocalClass())
+  public List<Clazz> localClazzes = new ArrayList<>();
   // Maps simple class name → fully-qualified name, built from import statements
   public Map<String, String> importMap = new HashMap<>();
   // the packages of on-demand imports ("import java.io.*;")

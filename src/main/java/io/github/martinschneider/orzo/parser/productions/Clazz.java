@@ -14,8 +14,11 @@ public class Clazz {
   public boolean isInterface;
   public boolean isEnum;
   public boolean isAbstract;
-  // a non-static member class (see ClassParser.makeInner())
+  // a non-static member class (see InnerClasses.makeInner())
   public boolean isInner;
+  // the local variables a local class captures (passed to its constructors last), null before its
+  // declaration is generated (see LocalClassGenerator)
+  public List<Argument> captured;
   // whether it has type parameters
   public boolean isGeneric;
   public List<AccessFlag> modifiers = new ArrayList<>();
