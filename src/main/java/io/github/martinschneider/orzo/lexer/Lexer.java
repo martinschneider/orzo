@@ -308,7 +308,6 @@ public class Lexer {
       String str = buffer.toString();
       // keywords
       for (Keywords keyword : Keywords.values()) {
-        // TODO: specify case-sensitive keywords (instead of assuming they are all lowercase)
         if (str.equals(keyword.name().toLowerCase())) {
           tokenList.add(keyword(str));
           buffer.setLength(0);

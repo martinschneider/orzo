@@ -151,8 +151,6 @@ public class OrzoTest {
         args(list("tests/BasicTypeCasts")),
         args(list("tests/Fields")),
         args(list("tests/ArrayLength")),
-        // TODO: support infinite loops
-        // args(list("tests/InfiniteRepeat")),
         args(list("tests/WhileTrueTrailingReturn")),
         args(list("tests/WhileTrueBreakInTry")),
         args(list("tests/WhileTrueBreakInCatch")),

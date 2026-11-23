@@ -12,7 +12,7 @@ public class VariableInfo implements IdentifierInfo {
   public String arrType; // for arrays, type is reference and arrtype is the type of elements in
   // the array
   public short idx;
-  // TODO: support other objects than this
+  // the slot of the object a field is loaded from (0: this)
   public short objectRef = 0;
   public Expression val;
   // full generic type, e.g. "java.util.List<a.b.Foo>" (null if not generic or unknown)

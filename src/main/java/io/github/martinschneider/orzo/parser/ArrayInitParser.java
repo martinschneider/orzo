@@ -99,7 +99,6 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
         return null;
       }
       if (tokens.curr().eq(sym(LBRACE))) {
-        // TODO: support multi-dimensional initialisation
         if (dimensions.size() > 1) {
           ctx.errors.addError(
               LOG_NAME,
@@ -133,14 +132,8 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
         if (dimensions.get(i) == null) {
           dimensions.set(i, new Expression(List.of(new IntLiteral(vals.get(i).size(), false))));
         } else {
-          // this is different from the Java spec which doesn't allow specifying array
-          // dimension and
-          // an initializer
-          // we allow it (even though it's redundant) but fail if the size and the number
-          // of vals
-          // doesn't match
-          //
-          // if dim is a literal and it doesn't match the number of values found
+          // unlike Java, a dimension and an initializer are allowed together, but their sizes must
+          // match
           if (dimensions.get(i).tokens.size() == 1
               && dimensions.get(i).tokens.get(0) instanceof IntLiteral
               && ((IntLiteral) dimensions.get(i).tokens.get(0)).intValue() != vals.get(i).size()

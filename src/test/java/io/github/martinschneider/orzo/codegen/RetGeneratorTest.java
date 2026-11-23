@@ -19,7 +19,6 @@ import org.junit.jupiter.params.provider.Arguments;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class RetGeneratorTest extends StatementGeneratorTest<ReturnStatement> {
-  // TODO: add more interesting tests
   private static Stream<Arguments> test() throws IOException {
     return stream(args("return;", emptyList(), emptyList(), list("return")));
   }

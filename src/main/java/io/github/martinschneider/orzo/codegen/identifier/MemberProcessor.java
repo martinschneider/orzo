@@ -131,7 +131,6 @@ public class MemberProcessor {
   // add all method args (=local args) to the constant pool and idMap
   public void processMethodArgs(Method method) {
     for (Argument arg : method.args) {
-      // TODO: this code is ugly
       String type = arg.type;
       String arrayType = null;
       if (arg.type.startsWith("[")) {

@@ -201,12 +201,7 @@ public class NumExprTypeDecider {
           }
         }
       } else if (token instanceof ConstructorCall) {
-        // token.val is the simple, as-written class name (e.g. "ByteArrayOutputStream") - resolve
-        // it against the import list so overload resolution downstream (isArgTypeCompatible) can
-        // actually Class.forName() it, instead of silently defaulting to "assume compatible" for
-        // every overload when used as a constructor/method argument (see commit history: picked
-        // the wrong PrintStream(String) overload over PrintStream(OutputStream) for
-        // "new PrintStream(new ByteArrayOutputStream())").
+        // the class name as written, resolved via the imports (for overload resolution)
         String constructed =
             TypeUtils.resolveSimpleType(token.val.toString(), ctx.allClazzes, ctx.clazz);
         // a call chain on the new object, e.g. "new Lexer().getTokens(input)"

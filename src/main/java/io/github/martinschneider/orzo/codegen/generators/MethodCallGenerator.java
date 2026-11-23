@@ -374,9 +374,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     } else if ("this".equals(methodCall.name.toString())) {
       callThisConstrWithArgs(out, methodCall);
     } else if ("System.out.println".equals(methodCall.name.toString())) {
-      // TODO: System.out.println is hard-coded. Generalise to arbitrary getstatic + invokevirtual
-      // chains driven by field type reflection so that other PrintStream methods (print, printf,
-      // System.err.println, etc.) also work without special-casing.
+      // TODO: generate it like any other call
       if (methodCall.params.isEmpty()) {
         ctx.invokeGen.getStatic(out, "java/lang/System", "out", "Ljava/io/PrintStream;");
         ctx.invokeGen.invokeVirtual(
@@ -799,16 +797,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         method = findMethodViaReflectionTyped(resolvedType, methodName, types);
       }
     }
-    // No bare-name ("implicit this") fallback here: generateChained is only ever called for a
-    // genuine chain continuation (the receiver is always whatever the previous call in the chain
-    // returned, left on the stack), never an implicit-this call — so if the receiver-type-based
-    // lookups above all failed (e.g. a generic method's return erased to Object, so receiverType
-    // is a useless "java.lang.Object"), falling back to a same-named method on the *enclosing*
-    // class is never correct. It previously did exactly that silently, invoking the wrong method
-    // with mismatched semantics instead of raising a compile error (root-caused via
-    // "reg.get(x.getClass()).generate(x)" picking an unrelated this.generate(...) and
-    // VerifyError-ing at runtime instead of failing to compile).
-    // Handle dotted method name as field chain + method (e.g. "val.toString" on Token)
+    // (no fallback to a method of the enclosing class: the receiver is the previous call's result)
     if (method == null && methodName.contains(".")) {
       int lastDotInName = methodName.lastIndexOf('.');
       String fieldPart = methodName.substring(0, lastDotInName);
@@ -891,12 +880,8 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       javaClassName = resolveClassName(javaClassName);
       Class<?> clazz = Class.forName(javaClassName);
       java.lang.reflect.Method bridgeCandidate = null;
-      // Two passes: Class.getMethods() order is unspecified, so with only a widening-compatible
-      // check (e.g. char is also compatible with an int parameter, for "StringBuffer.append(C)"
-      // vs "append(I)") the FIRST compatible overload found could be the wrong one whenever an
-      // exact match also exists. Prefer an exact-type match on every parameter first; only fall
-      // back to widening-compatible matching if no exact match exists for any overload.
-      // Third pass: a varargs method called with its trailing arguments unpacked
+      // Pass 0: exact parameter types, 1: widening conversions (getMethods() is unordered), 2:
+      // varargs
       for (int pass = 0; pass < 3; pass++) {
         boolean exactOnly = pass == 0;
         // all applicable overloads of this pass: the most specific one is chosen (e.g.

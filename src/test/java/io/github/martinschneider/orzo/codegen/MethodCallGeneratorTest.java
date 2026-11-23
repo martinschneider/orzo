@@ -21,7 +21,6 @@ import org.junit.jupiter.params.provider.Arguments;
 @TestInstance(Lifecycle.PER_CLASS)
 public class MethodCallGeneratorTest extends StatementGeneratorTest<MethodCall> {
   private static Stream<Arguments> test() throws IOException {
-    // TODO: add more interesting tests
     return stream(
         args(
             "testMethod()",

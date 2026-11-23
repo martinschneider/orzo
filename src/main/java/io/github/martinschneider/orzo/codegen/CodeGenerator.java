@@ -493,9 +493,7 @@ public class CodeGenerator {
   }
 
   private void supportPrint(Clazz clazz) {
-    // TODO: only add these constant-pool entries when the class actually uses System.out.println.
-    // Unconditionally adding them bloats the constant pool of every generated class.
-    // Fix: scan clazz.methods for MethodCall nodes with name "System.out.println" before adding.
+    // TODO: only if the class uses System.out
     if (!clazz.isInterface) {
       ctx.constPool.addClass("java/lang/System");
       ctx.constPool.addClass("java/io/PrintStream");

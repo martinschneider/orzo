@@ -68,7 +68,6 @@ public class MethodGeneratorTest {
   }
 
   private static Stream<Arguments> test() {
-    // TODO: comparing the raw hex representation is not very elegant
     return stream(
         args(
             "public void test(){x=1;}",

@@ -268,14 +268,7 @@ public class ExpressionGenerator {
   }
 
   public ExpressionResult eval(DynamicByteArray out, String type, Expression expr) {
-    // Unlike the raw 4-arg eval() (used by callers that build their own branch, e.g.
-    // IfGenerator/WhileGenerator/ForGenerator with reverseComp=true, or DoGenerator with
-    // reverseComp=false that patches the branch offset itself), this convenience entry point is
-    // used wherever a plain 0/1 *value* is wanted (method argument, assignment RHS, declaration
-    // initializer, etc.) — so materialize a bare comparator branch into ICONST_0/ICONST_1 here.
-    // Writes directly to the caller's `out` throughout (not a sub-buffer): several internal
-    // branch-offset computations are relative to `out`'s absolute size, which an isolated
-    // sub-buffer would get wrong whenever `out` already has prior content.
+    // A value: a comparison's bare branch (see the 5-argument eval()) becomes a 0 or 1.
     if (type != null
         && !TypeUtils.isPrimitive(type)
         && !STRING.equals(type)
@@ -891,14 +884,7 @@ public class ExpressionGenerator {
         } else if ("this".equals(curr.val.toString()) || "super".equals(curr.val.toString())) {
           ctx.loadGen.loadReference(out, (short) 0);
           ctx.opStack.push(REF);
-          // Track the real class name here, not the generic REF marker (used for opStack
-          // bookkeeping elsewhere) — a following ".fieldName" segment resolves its instance
-          // field via FieldProcessor.getInstanceFieldMap(returnType, ...), which can't look
-          // anything up for a type literally named "REF". With it left as REF, that lookup
-          // silently found nothing and fell back to whatever classIdMap.variables.get() found
-          // instead — the right field normally (fieldMap has no shadowing local), but silently
-          // the wrong LOCAL variable whenever one happened to shadow the field by name (e.g.
-          // "this.character" inside a method that also declares a local "character").
+          // the real class (not REF): a following field is looked up in it
           returnType =
               "super".equals(curr.val.toString())
                   ? (ctx.clazz != null
@@ -1003,14 +989,9 @@ public class ExpressionGenerator {
                 && !deferNarrowing
                 && !(isNonPrimitive(varType) && isNonPrimitive(type))
                 && !(isNonPrimitive(varType) && curr.next != null)
-                // An operand can't be converted straight to boolean (that's only ever valid as
-                // the *result* of a comparison, not an operand's own type, with the one real
-                // exception being unboxing java.lang.Boolean) — e.g. the `h1` in
-                // "boolean same = h1 == h2;" or the `argType` in
-                // "count += (argType != null && argType.equals(\"long\")) ? 2 : 1;" shouldn't be
-                // coerced to boolean just because the surrounding declaration/compound-assignment
-                // target type is boolean-ish; a comparator/logical-op later in the token stream
-                // is what actually produces the boolean result.
+                // (an operand isn't converted to boolean, e.g. "h1" in "boolean same = h1 == h2;",
+                // except
+                // for unboxing a java.lang.Boolean)
                 && !(BOOLEAN.equals(type)
                     && !BOOLEAN.equals(varType)
                     && !"java.lang.Boolean".equals(varType))) {
@@ -1538,15 +1519,7 @@ public class ExpressionGenerator {
     DynamicByteArray falseOut = new DynamicByteArray();
     ctx.exprGen.eval(falseOut, resultType, ternary.falseBranch);
 
-    // Layout (offsets are from each branch instruction's own opcode position):
-    //   condOut (ends with: compare opcode [no offset yet])
-    //   [ifeqHi][ifeqLo]  ← 2-byte offset for the conditional jump
-    //   trueOut
-    //   GOTO [gotoHi][gotoLo]
-    //   falseOut
-    //
-    // ifeq offset = trueLen + 6  (skip: 2-byte ifeq operand + trueLen bytes + 3-byte GOTO)
-    // goto offset = falseLen + 3  (skip: 3-byte GOTO itself + falseLen bytes)
+    // condition (ending with a branch opcode), its offset, true branch, GOTO, false branch
     int trueLen = trueOut.size();
     int falseLen = falseOut.size();
     short ifeqOffset = (short) (trueLen + 6);
@@ -1562,15 +1535,6 @@ public class ExpressionGenerator {
     return resultType;
   }
 
-  // Generates a lambda expression as a synthetic class implementing `targetType`'s single
-  // abstract method (SAM), registered via ctx.addSyntheticClazz() so CodeGenerator's main
-  // class-list loop generates it like any other class, then instantiates it here (NEW+DUP+
-  // INVOKESPECIAL <init>) so the resulting reference is left on the stack as this expression's
-  // value - exactly how a real Java lambda becomes an object.
-  //
-  // Limitations (documented, not yet needed by any real caller): no captured variables from the
-  // enclosing scope (the body may only reference its own parameters and static members), and no
-  // "{ ... }" block body (only a single expression, via LambdaParser).
   // "Owner::method" as a lambda with the given number of parameters: "(a, b) -> Owner.method(a, b)"
   // for a static method, "(a, b) -> a.method(b)" for an instance method of Owner
   private LambdaExpr methodRefAsLambda(LambdaExpr ref, int arity) {
@@ -1610,6 +1574,8 @@ public class ExpressionGenerator {
         params, new Expression(new ArrayList<>(List.of(new MethodCall(callee, args)))));
   }
 
+  // A lambda is a synthetic class implementing the target type's single abstract method (see
+  // ctx.addSyntheticClazz()), instantiated here. Captured variables are constructor arguments.
   private String generateLambda(DynamicByteArray out, String targetType, LambdaExpr lambda) {
     Class<?> iface;
     try {

@@ -135,7 +135,6 @@ public class MethodParser implements ProdParser<Method> {
       type = ((Type) tokens.curr());
       tokens.next();
       type.arr = ctx.arrayDefParser.parse(tokens);
-      // TODO: add current class name to the map instead of having a spearate condition
     } else if (tokens.curr() instanceof Identifier
         && (ctx.typeMap.TYPES.containsKey(tokens.curr().toString())
             || ctx.currClazz.name.equals(tokens.curr().toString()))) {
@@ -224,12 +223,9 @@ public class MethodParser implements ProdParser<Method> {
       int errorCount = ctx.errors.errors.size();
       body = ctx.stmtParser.parseStmtSeq(tokens);
       if (!tokens.curr().eq(sym(RBRACE))) {
-        // Recovery: body parsing stopped before the closing brace.
-        // Skip forward to the matching } rather than resetting — this preserves the method
-        // signature even when the body contains syntax Orzo cannot yet parse.
-        // Still report it (unless the statement that stopped it already reported an error):
-        // silently compiling a truncated method body produces wrong bytecode.
-        // (parseStmtSeq() reports unparsable statements, so this is the end of the input)
+        // The body ended before its "}" (at the end of the input): report it unless a statement
+        // already
+        // did, and skip to the "}" to keep the signature.
         if (ctx.errors.errors.size() == errorCount) {
           ctx.errors.missingExpected(
               LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());

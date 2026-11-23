@@ -12,12 +12,9 @@ public class DynamicByteArray implements HasOutput {
   private byte[] array = new byte[size];
   private int pointer = 0;
 
-  // Positions (within this buffer) of the 2-byte offset field of a GOTO instruction emitted for a
-  // "break"/"continue" statement whose target isn't known yet. Populated by BreakGenerator and
-  // ContinueGenerator; resolved (patched) by the enclosing loop/switch generator once the jump
-  // target is known. When a nested buffer (e.g. an if-block's body) is appended into a parent
-  // buffer before that happens, its pending positions must be re-based with mergePending() so the
-  // enclosing loop generator can still find and patch them.
+  // The offsets (positions in this buffer) of the GOTOs of "break"/"continue" statements, patched
+  // by
+  // the enclosing loop or switch (see mergePending() for nested buffers).
   public List<Integer> pendingBreaks = new ArrayList<>();
   public List<Integer> pendingContinues = new ArrayList<>();
   // positions of labeled breaks/continues ("break outer;"), by label: they may target a loop

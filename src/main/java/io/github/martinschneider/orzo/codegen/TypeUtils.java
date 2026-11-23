@@ -97,7 +97,7 @@ public class TypeUtils {
 
   public static String descr(VariableInfo varInfo) {
     if (varInfo.type.equals(REF)) {
-      // TODO: multi-arrays
+      // TODO: multi-dimensional arrays
       return descr(varInfo.arrType, 1);
     }
     return descr(varInfo.type);

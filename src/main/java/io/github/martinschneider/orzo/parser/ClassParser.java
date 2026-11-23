@@ -209,8 +209,6 @@ public class ClassParser implements ProdParser<Clazz> {
         decls.add((ParallelDeclaration) member);
       }
     }
-    // TODO: one could argue that this should be handled during code generation rather than
-    // parsing
     if (!isInterface && !isEnum && !hasConstr) {
       methods.add(defaultConstr(ctx.currClazz.fqn()));
     }

@@ -19,7 +19,6 @@ public class TestHelper {
    */
   public static void assertTokenIdx(TokenList tokens, CompilerErrors errors, boolean resetIdx) {
     if (!errors.errors.isEmpty()) {
-      // TODO: define and test error scenarios
       return;
     }
     assertTokenIdx(tokens, resetIdx);

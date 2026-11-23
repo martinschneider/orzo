@@ -17,13 +17,8 @@ public class IdentifierMap {
   public Map<String, VariableInfo> localMap = new HashMap<>();
   public Map<String, VariableInfo> fieldMap = new HashMap<>();
   public Set<String> inheritedFieldNames = new HashSet<>();
-  // Every local ever declared anywhere in the current method, by slot index, regardless of
-  // block scope — never cleared when a nested block's scope is restored (unlike localMap,
-  // which IS scope-restored so a block-local doesn't leak into resolution of code outside its
-  // block). StackMapTableBuilder needs this: it runs once, after the whole method's bytecode is
-  // generated, and determines each local slot's declared type for building frames — it has no
-  // other way to find out that slot N held, say, an int for *part* of the method if that local's
-  // scope has already been restored away from localMap by then.
+  // all locals of the method by slot, regardless of scope (for StackMapTableBuilder, which runs
+  // after the method has been generated)
   public Map<Integer, VariableInfo> allLocalsBySlot = new HashMap<>();
   public int localSize;
   // High-water mark for localSize across the whole method: a nested block (e.g. an if-block,
@@ -62,7 +57,6 @@ public class IdentifierMap {
     VariableInfo ret = localMap.get(id.val.toString());
     if (ret == null) {
       ret = fieldMap.get(id.val.toString());
-      // TODO: error handling
     }
     return ret;
   }

@@ -39,8 +39,7 @@ import java.util.List;
  *       "a.b.f")
  *   <li>a negation "-x" becomes "-1 * x" (or a negative literal), "~x" becomes "-1 ^ x"
  *   <li>a cast of a whole expression becomes the cast of the Expression, other casts to a primitive
- *       type a CastOperator and other casts to a reference type a Type marker (which the code
- *       generator ignores, see TODO.md)
+ *       type a CastOperator and other casts to a reference type a CastMethodCall
  *   <li>a parenthesized receiver, e.g. "(a + b)" in "(a + b).length()" or "((Foo) x)" in "((Foo)
  *       x).bar()", becomes a CastMethodCall
  * </ul>

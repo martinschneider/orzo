@@ -41,7 +41,7 @@ public class Method implements ClassMember {
   }
 
   public short accessFlags(boolean isInterface) {
-    // TODO: handle the general case
+    // TODO: default and static interface methods
     short flags = 0;
     if (isInterface) {
       flags += (short) 0x0401; // ACC_ABSTRACT, ACC_PUBLIC

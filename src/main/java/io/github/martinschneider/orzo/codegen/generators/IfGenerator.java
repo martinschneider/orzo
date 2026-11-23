@@ -31,14 +31,8 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
     List<DynamicByteArray> condOutputs = new ArrayList<>();
     List<Integer> bodyEtStarts = new ArrayList<>();
     List<Integer> bodyEtEnds = new ArrayList<>();
-    // Snapshot local-variable scope once for the whole if/else-if chain: each block's body is
-    // generated before its own condition (needed to size the branch jump below), so a variable
-    // declared inside one block's body must not leak into that same block's condition (which
-    // precedes it in source), into a sibling else-if's condition/body, or past the if-statement
-    // altogether — restoring after each body generation keeps every block isolated.
-    // Only the name scope is restored, not localSize: reusing a block-local's slot for a later
-    // variable of a different type would break StackMapTableBuilder, which types each slot by a
-    // single variable.
+    // Each block's locals are scoped to it, restored after its body (not localSize: reusing a slot
+    // for another type would break StackMapTableBuilder).
     java.util.Map<String, VariableInfo> localMapSnapshot =
         new java.util.HashMap<>(ctx.classIdMap.variables.localMap);
     for (int i = 0; i < ifStmt.ifBlks.size(); i++) {

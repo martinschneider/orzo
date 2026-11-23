@@ -16,12 +16,8 @@ import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.util.ArrayList;
 import java.util.List;
 
-// Recognises a lambda expression ("x -> expr" or "(x, y) -> expr") and parses it into a single
-// LambdaExpr leaf token wrapped in an Expression, the same way TernaryExpression represents
-// "a ? b : c" - so it slots into the existing postfix-expression machinery (method call
-// arguments, assignment RHS, etc.) without any changes there. Only untyped parameter lists and an
-// expression body are supported (no "(Type x) -> ..." and no "{ ... }" block body) - real usages
-// so far are all untyped-single-expression, and broader support can be added when needed.
+// A lambda ("x -> expr", "(x, y) -> expr") or a method reference ("Math::min") as a single
+// LambdaExpr token. Only untyped parameters and an expression body are supported.
 public class LambdaParser implements ProdParser<Expression> {
   private ParserContext ctx;
   private static final String LOG_NAME = "parse lambda expression";

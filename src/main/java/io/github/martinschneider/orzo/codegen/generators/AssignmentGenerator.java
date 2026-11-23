@@ -133,12 +133,8 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
                 ctx.loadGen.loadReference(out, varInfo.objectRef);
               }
               ctx.exprGen.eval(out, type, right);
-              // Primitive<->primitive mismatches are already handled by eval()'s own widening
-              // (it was given `type` as its target-type hint). The two remaining cases needing
-              // an explicit conversion: autobox (e.g. "Integer x; x = 5;" — actualType primitive,
-              // declared type a boxed reference type), or a CHECKCAST for a generic/erased method
-              // returning a wider reference type than the variable's declared type (e.g.
-              // Object -> String via Deque<String>.pop(); both sides reference, unequal).
+              // (eval() converts primitives; boxing and reference casts, e.g. of
+              // Deque<String>.pop(), are left)
               String actualType = ctx.opStack.type();
               boolean needsAutobox =
                   actualType != null
@@ -171,14 +167,8 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
 
   public HasOutput assign(
       DynamicByteArray out, IdentifierMap variables, String type, Identifier id) {
-    // This registers a NEW local variable (called only from declaration-generating code —
-    // DeclarationGenerator, ForEachGenerator), so the check must be against localMap only: a
-    // field of the same name existing elsewhere must not stop a shadowing local from getting
-    // its own slot, or every reference to it inside this scope silently falls back to the field
-    // (containsKey() checks fieldMap too, which did exactly that for e.g. a local "char
-    // character;" in a method of a class that also has a field "character").
-    // (A same-named local of a different type is a variable of another block, e.g. two sibling
-    // blocks each declaring "x": it gets its own slot.)
+    // a new local: looked up in localMap only (a field of the same name doesn't prevent a shadowing
+    // local, and a same-named local of another block gets its own slot)
     VariableInfo existing = variables.localMap.get(id.val.toString());
     if (existing == null
         || (type != null && existing.type != null && !type.equals(existing.type))) {

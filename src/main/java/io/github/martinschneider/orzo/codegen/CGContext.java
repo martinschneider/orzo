@@ -124,13 +124,7 @@ public class CGContext {
   // own since allClazzes/allOutputs are the SAME list objects it iterates over.
   public void addSyntheticClazz(Clazz clazz) {
     allClazzes.add(clazz);
-    // A throwaway in-memory sink, same pattern the test harness uses - Output always buffers
-    // everything written to it internally (getBytes()) regardless of what PrintStreams are
-    // attached, so this PrintStream's own destination is irrelevant. Avoids needing a no-arg
-    // Output constructor or an empty PrintStream array, both of which (separately) ran into a
-    // pre-existing orzo codegen bug when this file self-compiles (an array-typed field's
-    // null-check, or a zero-length array literal, each produced a malformed class file - see
-    // docs/TODO.md).
+    // (Output buffers what is written to it: the stream is irrelevant)
     allOutputs.add(new Output(new PrintStream(new ByteArrayOutputStream())));
   }
 }

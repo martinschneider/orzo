@@ -61,7 +61,7 @@ public class ForParser implements ProdParser<ForStatement> {
         ctx.errors.addError(LOG_NAME, "missing condition", new RuntimeException().getStackTrace());
       }
       tokens.next();
-      // TODO: support stmtSequence
+      // TODO: several updates, e.g. "i++, j--"
       loopStatement = ctx.stmtParser.parseWithoutSemicolon(tokens);
       if (loopStatement == null) {
         tokens.next(sym(RBRACE));
