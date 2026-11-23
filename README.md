@@ -27,7 +27,7 @@ Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md)
 
 - multi-dimensional arrays and C-style array declarations of locals and fields (`int a[]`)
 - `default` and `static` interface methods
-- local and anonymous classes, records
+- local classes, records
 - generics are only partially supported: the type arguments of your own generic classes aren't tracked (e.g. `box.get().length()` on a `Box<String>`)
 - `var`, `instanceof` patterns (`o instanceof String s`), casts to array types (`(int[]) obj`)
 - annotations with arguments (annotations without arguments are ignored)
@@ -113,6 +113,6 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 | Self-compilation | 100.0% |
 | [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 36.9% (326 of 883) |
 | jtreg negative tests (must be rejected) | 60.0% (518 of 863) |
-| Compile time (Orzo's sources) | 1.2x javac (4.8 s vs. 4.2 s) |
-| Class size (Orzo's class files) | 1.0x javac (1000.2 KiB vs. 991.2 KiB) |
+| Compile time (Orzo's sources) | 1.2x javac (4.8 s vs. 4.1 s) |
+| Class size (Orzo's class files) | 1.0x javac (1010.1 KiB vs. 998.9 KiB) |
 <!-- metrics:end -->

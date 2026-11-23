@@ -7,6 +7,8 @@ import java.util.List;
 public class ConstructorCall extends Identifier implements Statement {
 
   public List<Expression> args;
+  // the members of an anonymous class (null for none)
+  public List<ClassMember> anonymousBody;
 
   public ConstructorCall(String type, List<Expression> args) {
     super(type);

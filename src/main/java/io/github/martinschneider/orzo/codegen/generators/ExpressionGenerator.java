@@ -112,16 +112,20 @@ import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.parser.ClassParser;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
+import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
+import io.github.martinschneider.orzo.parser.productions.ClassMember;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ExpressionStatement;
+import io.github.martinschneider.orzo.parser.productions.InstanceInitializer;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
@@ -1754,21 +1758,44 @@ public class ExpressionGenerator {
   // is compiled as part of a synthetic class, where they wouldn't resolve otherwise).
   private void visitLambdaBody(
       Expression expr, List<String> lambdaParams, List<VariableInfo> captured) {
-    // (its calls may be qualified below, so it is generated from its tokens, not from its tree)
-    expr.tree = null;
+    visitBody(expr, lambdaParams, captured, true);
+  }
+
+  // (qualify: qualify the static members of the enclosing class, for a lambda body)
+  private void visitBody(
+      Expression expr, List<String> lambdaParams, List<VariableInfo> captured, boolean qualify) {
+    if (qualify) {
+      // (its calls may be qualified below, so it is generated from its tokens, not from its tree)
+      expr.tree = null;
+    }
     for (Token token : expr.tokens) {
       if (token instanceof TernaryExpression) {
         TernaryExpression ternary = (TernaryExpression) token;
-        visitLambdaBody(ternary.condition, lambdaParams, captured);
-        visitLambdaBody(ternary.trueBranch, lambdaParams, captured);
-        visitLambdaBody(ternary.falseBranch, lambdaParams, captured);
+        visitBody(ternary.condition, lambdaParams, captured, qualify);
+        visitBody(ternary.trueBranch, lambdaParams, captured, qualify);
+        visitBody(ternary.falseBranch, lambdaParams, captured, qualify);
+      } else if (token instanceof LambdaExpr) {
+        // (a nested lambda: its own parameters and locals aren't captured)
+        LambdaExpr nested = (LambdaExpr) token;
+        List<String> names = new ArrayList<>(lambdaParams);
+        names.addAll(nested.params);
+        List<Expression> exprs = List.of(nested.body);
+        if (nested.block != null) {
+          names.addAll(Statements.declaredNames(nested.block));
+          exprs = Statements.expressions(nested.block);
+        }
+        for (Expression nestedExpr : exprs) {
+          visitBody(nestedExpr, names, captured, false);
+        }
       } else if (token instanceof Identifier) {
         Identifier root = (Identifier) token;
         if (root instanceof CastMethodCall) {
-          visitLambdaBody(((CastMethodCall) root).innerExpr, lambdaParams, captured);
-        } else if (root instanceof MethodCall && !((MethodCall) root).name.contains(".")) {
+          visitBody(((CastMethodCall) root).innerExpr, lambdaParams, captured, qualify);
+        } else if (qualify
+            && root instanceof MethodCall
+            && !((MethodCall) root).name.contains(".")) {
           qualifyStaticCall((MethodCall) root);
-        } else if (!(root instanceof MethodCall) && !(root instanceof ConstructorCall)) {
+        } else if (qualify && !(root instanceof MethodCall) && !(root instanceof ConstructorCall)) {
           qualifyStaticField(root, lambdaParams);
         }
         String rootName =
@@ -1783,16 +1810,16 @@ public class ExpressionGenerator {
         for (Identifier link = root; link != null; link = link.next) {
           if (link instanceof MethodCall) {
             for (Expression param : ((MethodCall) link).params) {
-              visitLambdaBody(param, lambdaParams, captured);
+              visitBody(param, lambdaParams, captured, qualify);
             }
           } else if (link instanceof ConstructorCall) {
             for (Expression arg : ((ConstructorCall) link).args) {
-              visitLambdaBody(arg, lambdaParams, captured);
+              visitBody(arg, lambdaParams, captured, qualify);
             }
           }
           if (link.arrSel != null) {
             for (Expression index : link.arrSel.exprs) {
-              visitLambdaBody(index, lambdaParams, captured);
+              visitBody(index, lambdaParams, captured, qualify);
             }
           }
         }
@@ -1858,6 +1885,9 @@ public class ExpressionGenerator {
           new RuntimeException().getStackTrace());
       return className;
     }
+    if (constructorCall.anonymousBody != null) {
+      return generateAnonymousClass(out, classIdMap, constructorCall, jvmClassName);
+    }
     Clazz source = TypeUtils.sourceClazz(jvmClassName.replace('/', '.'), ctx.allClazzes);
     if (source != null && (source.isAbstract || source.isInterface)) {
       ctx.errors.addError(
@@ -1891,18 +1921,7 @@ public class ExpressionGenerator {
       argTypes.add(new NumExprTypeDecider(ctx).getType(classIdMap, arg));
     }
 
-    // Find matching constructor (constructors have method name "<init>")
-    Method constructor = findMatchingConstructor(jvmClassName, argTypes);
-    if (constructor == null) {
-      constructor = ctx.methodCallGen.findConstructorViaReflectionTyped(jvmClassName, argTypes);
-    }
-    if (constructor == null) {
-      String simpleName = jvmClassName.substring(jvmClassName.lastIndexOf('/') + 1);
-      constructor = ctx.methodCallGen.findVarargsMethod(simpleName + ".<init>", argTypes);
-    }
-    if (constructor == null) {
-      constructor = ctx.methodCallGen.findConstructorViaReflection(jvmClassName, argTypes.size());
-    }
+    Method constructor = findConstructor(jvmClassName, argTypes);
     if (constructor == null) {
       ctx.errors.addError(
           "constructor call generator",
@@ -1932,6 +1951,170 @@ public class ExpressionGenerator {
     ctx.invokeGen.invokeSpecial(out, constructor);
 
     return className; // Return the object type
+  }
+
+  // (constructors have the method name "<init>")
+  private Method findConstructor(String jvmClassName, List<String> argTypes) {
+    Method constructor = findMatchingConstructor(jvmClassName, argTypes);
+    if (constructor == null) {
+      constructor = ctx.methodCallGen.findConstructorViaReflectionTyped(jvmClassName, argTypes);
+    }
+    if (constructor == null) {
+      String simpleName = jvmClassName.substring(jvmClassName.lastIndexOf('/') + 1);
+      constructor = ctx.methodCallGen.findVarargsMethod(simpleName + ".<init>", argTypes);
+    }
+    if (constructor == null) {
+      constructor = ctx.methodCallGen.findConstructorViaReflection(jvmClassName, argTypes.size());
+    }
+    return constructor;
+  }
+
+  // "new T(args) { members }": a synthetic class (e.g. "Outer$1") extending (or implementing) T,
+  // like a lambda's. Its constructor takes the enclosing instance (unless in a static context),
+  // the arguments of T's constructor and the local variables the members use (captured as fields).
+  private String generateAnonymousClass(
+      DynamicByteArray out,
+      GlobalIdentifierMap classIdMap,
+      ConstructorCall constructorCall,
+      String jvmClassName) {
+    String superName = jvmClassName.replace('/', '.');
+    boolean isInterface = TypeUtils.isInterface(superName, ctx.allClazzes);
+    List<String> argTypes = new ArrayList<>();
+    for (Expression arg : constructorCall.args) {
+      argTypes.add(new NumExprTypeDecider(ctx).getType(classIdMap, arg));
+    }
+    Method superConstructor = isInterface ? null : findConstructor(jvmClassName, argTypes);
+    Clazz superSource = TypeUtils.sourceClazz(superName, ctx.allClazzes);
+    if (isInterface ? !argTypes.isEmpty() : superConstructor == null) {
+      ctx.errors.addError(
+          "constructor call generator",
+          String.format(
+              "cannot find constructor %s(%s)", constructorCall.val, String.join(", ", argTypes)),
+          new RuntimeException().getStackTrace());
+      return superName;
+    }
+    if (superSource != null && superSource.isInner) {
+      ctx.errors.addError(
+          "constructor call generator",
+          "anonymous subclasses of inner classes are not supported yet",
+          new RuntimeException().getStackTrace());
+      return superName;
+    }
+    Clazz anon =
+        new Clazz(
+            ctx.clazz.packageName,
+            ctx.clazz.imports,
+            new Scope(Scopes.DEFAULT),
+            String.valueOf(++ctx.syntheticClassCounter),
+            false,
+            false,
+            isInterface ? List.of(superName) : emptyList(),
+            isInterface ? Clazz.JAVA_LANG_OBJECT : superName,
+            new ArrayList<>(),
+            new ArrayList<>(),
+            ctx.clazz.sourceFile);
+    anon.outerName =
+        (ctx.clazz.outerName != null ? ctx.clazz.outerName + "$" : "") + ctx.clazz.name;
+    anon.isInner =
+        ctx.method != null
+            && !ctx.method.accFlags.contains(AccessFlag.ACC_STATIC)
+            && !ctx.clazz.isInterface;
+    String anonFqn = anon.fqn();
+    // its members (and what they use)
+    List<String> declared = new ArrayList<>();
+    List<Expression> exprs = new ArrayList<>();
+    List<Statement> inits = new ArrayList<>();
+    for (ClassMember member : constructorCall.anonymousBody) {
+      if (member instanceof Method) {
+        Method method = (Method) member;
+        method.fqClassName = anonFqn;
+        anon.methods.add(method);
+        for (Argument arg : method.args) {
+          declared.add(arg.name.val.toString());
+        }
+        declared.addAll(Statements.declaredNames(method.body));
+        exprs.addAll(Statements.expressions(method.body));
+      } else if (member instanceof ParallelDeclaration) {
+        anon.fields.add((ParallelDeclaration) member);
+        inits.add((ParallelDeclaration) member);
+      } else if (member instanceof InstanceInitializer) {
+        inits.add(new Block(((InstanceInitializer) member).body));
+      }
+    }
+    declared.addAll(Statements.declaredNames(inits));
+    exprs.addAll(Statements.expressions(inits));
+    List<VariableInfo> captured = new ArrayList<>();
+    for (Expression expr : exprs) {
+      visitBody(expr, declared, captured, false);
+    }
+    // its constructor: super(args), then the enclosing instance and the captured variables are
+    // stored (before the initializers)
+    List<Argument> ctorArgs = new ArrayList<>();
+    List<Statement> fieldInits = new ArrayList<>();
+    if (anon.isInner) {
+      ctorArgs.add(new Argument(ctx.clazz.fqn(), new Identifier(ClassParser.OUTER_INSTANCE)));
+      anon.fields.add(field(ctx.clazz.fqn(), 0, ClassParser.OUTER_INSTANCE, null));
+      fieldInits.add(storeField(ClassParser.OUTER_INSTANCE));
+    }
+    List<Expression> superArgs = new ArrayList<>();
+    for (int i = 0; superConstructor != null && i < superConstructor.args.size(); i++) {
+      String name = "$super" + i;
+      ctorArgs.add(new Argument(superConstructor.args.get(i).type, new Identifier(name)));
+      superArgs.add(new Expression(List.of(new Identifier(name))));
+    }
+    for (VariableInfo var : captured) {
+      boolean isArray = var.arrType != null;
+      String type = isArray ? var.arrType : var.type;
+      ctorArgs.add(new Argument(isArray ? "[" + type : type, new Identifier(var.name)));
+      anon.fields.add(field(type, isArray ? 1 : 0, var.name, var.genericType));
+      fieldInits.add(storeField(var.name));
+    }
+    fieldInits.addAll(inits);
+    anon.instanceInits = fieldInits;
+    Method ctor =
+        new Method(
+            anonFqn,
+            emptyList(),
+            VOID,
+            Token.id(Method.CONSTRUCTOR_NAME),
+            ctorArgs,
+            new ArrayList<>(List.of(new MethodCall("super", superArgs))));
+    anon.methods.add(ctor);
+    ctx.addSyntheticClazz(anon);
+
+    String anonClassName = anon.fqn('/');
+    ctx.constPool.addClass(anonClassName);
+    ctx.invokeGen.newInstance(out, anonClassName);
+    out.write(DUP);
+    ctx.opStack.push(REF);
+    if (anon.isInner && !pushEnclosingInstance(out, anon)) {
+      return superName;
+    }
+    if (superConstructor != null) {
+      ctx.methodCallGen.pushArgs(out, constructorCall.args, argTypes, superConstructor);
+    }
+    for (VariableInfo var : captured) {
+      ctx.loadGen.load(out, var);
+    }
+    ctx.invokeGen.invokeSpecial(out, ctor);
+    return superName;
+  }
+
+  private ParallelDeclaration field(String type, int arrDim, String name, String genericType) {
+    Declaration field =
+        new Declaration(List.of(AccessFlag.ACC_FINAL), type, arrDim, new Identifier(name), null);
+    field.isField = true;
+    field.genericType = genericType;
+    return new ParallelDeclaration(new ArrayList<>(List.of(field)));
+  }
+
+  // "this.name = name;"
+  private Assignment storeField(String name) {
+    Identifier target = new Identifier("this");
+    target.next = new Identifier(name);
+    return new Assignment(
+        new ArrayList<>(List.of(target)),
+        new ArrayList<>(List.of(new Expression(List.of(new Identifier(name))))));
   }
 
   // The class C of "C.this" (this class or an enclosing one), or null for anything else

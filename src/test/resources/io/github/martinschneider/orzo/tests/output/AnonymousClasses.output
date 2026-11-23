@@ -1,0 +1,6 @@
+hi a! 1 hello from outer
+hi b! 2 hello from outer
+2 2
+square 9.0
+[run 1, run 2]
+[a, bb, ccc]

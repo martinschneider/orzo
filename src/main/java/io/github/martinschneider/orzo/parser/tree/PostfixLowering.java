@@ -189,7 +189,9 @@ public class PostfixLowering {
       kinds[links.size() - 1] = OTHER;
     } else if (first instanceof NewNode) {
       NewNode creation = (NewNode) first;
-      links.add(new ConstructorCall(creation.type, lower(creation.args)));
+      ConstructorCall constructorCall = new ConstructorCall(creation.type, lower(creation.args));
+      constructorCall.anonymousBody = creation.body;
+      links.add(constructorCall);
       kinds[links.size() - 1] = OTHER;
     } else if (first instanceof LiteralNode && ((LiteralNode) first).value instanceof Str) {
       // e.g. "\"s\".length()": the literal, then the call chain on it

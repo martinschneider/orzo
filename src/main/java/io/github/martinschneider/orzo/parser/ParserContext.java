@@ -25,6 +25,7 @@ public class ParserContext {
   public ArraySelectorParser arraySelectorParser;
   public AssignmentParser assignParser;
   public BreakParser breakParser;
+  public ClassParser classParser;
   public ConstructorCallParser constrCallParser;
   public ContinueParser continueParser;
   public DeclarationParser declParser;
@@ -59,6 +60,7 @@ public class ParserContext {
     ctx.arraySelectorParser = new ArraySelectorParser(ctx);
     ctx.assignParser = new AssignmentParser(ctx);
     ctx.breakParser = new BreakParser();
+    ctx.classParser = new ClassParser(ctx);
     ctx.constrCallParser = new ConstructorCallParser(ctx);
     ctx.continueParser = new ContinueParser();
     ctx.declParser = new DeclarationParser(ctx);

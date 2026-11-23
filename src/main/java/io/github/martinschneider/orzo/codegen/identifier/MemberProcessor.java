@@ -102,19 +102,18 @@ public class MemberProcessor {
         }
       }
     }
-    // the instance fields of the enclosing instances of an inner class (the innermost first)
+    // the static fields of the enclosing classes of a nested class, and the instance fields of the
+    // enclosing instances of an inner class (the innermost first)
     List<Clazz> outers = FieldProcessor.enclosingClasses(ctx.clazz, ctx.allClazzes);
+    List<Integer> path = new ArrayList<>();
     for (int i = outers.size() - 1; i >= 0; i--) {
       Clazz outer = outers.get(i);
-      List<Integer> path = EnclosingInstances.path(ctx, ctx.clazz, outer);
-      if (path == null) {
-        break;
-      }
+      path = (path != null) ? EnclosingInstances.path(ctx, ctx.clazz, outer) : null;
       for (ParallelDeclaration pDecl : outer.fields) {
         for (Declaration decl : pDecl.declarations) {
           String name = decl.name.id().toString();
-          if (decl.accFlags.contains(AccessFlag.ACC_STATIC)
-              || ctx.classIdMap.variables.fieldMap.containsKey(name)) {
+          boolean isStatic = decl.accFlags.contains(AccessFlag.ACC_STATIC);
+          if ((!isStatic && path == null) || ctx.classIdMap.variables.fieldMap.containsKey(name)) {
             continue;
           }
           VariableInfo field =
@@ -130,7 +129,7 @@ public class MemberProcessor {
                       name,
                       TypeUtils.descr(decl.type, decl.arrDim)),
                   null);
-          field.outerPath = path;
+          field.outerPath = isStatic ? new ArrayList<>() : path;
           field.genericType = decl.genericType;
           ctx.classIdMap.variables.putInheritedField(name, field);
         }

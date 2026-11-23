@@ -12,6 +12,6 @@ public class Parser {
   }
 
   public Clazz parse(TokenList tokens) {
-    return new ClassParser(ctx).parse(tokens);
+    return ctx.classParser.parse(tokens);
   }
 }

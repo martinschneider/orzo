@@ -315,6 +315,17 @@ public class CompileErrorTest {
   }
 
   @Test
+  public void anonymousClassOfInterfaceWithArguments() throws IOException {
+    List<String> errors =
+        compile(
+            Map.of(
+                "O.java",
+                "public class O {\n  static Runnable f() {\n    return new Runnable(1) {\n"
+                    + "      public void run() {}\n    };\n  }\n}\n"));
+    assertEquals(List.of("O.java:3:5: error: cannot find constructor Runnable(int)"), errors);
+  }
+
+  @Test
   public void instantiateAbstractClass() throws IOException {
     List<String> errors =
         compile(

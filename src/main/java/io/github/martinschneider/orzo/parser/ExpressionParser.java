@@ -20,10 +20,12 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LFLOOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.QUESTION;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RFLOOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
@@ -376,7 +378,14 @@ public class ExpressionParser implements ProdParser<Expression> {
           LOG_NAME, sym(LPAREN), tokens, new RuntimeException().getStackTrace());
       return new OpaqueNode(new Expression());
     }
-    return new NewNode(type, parseArguments(tokens));
+    NewNode creation = new NewNode(type, parseArguments(tokens));
+    if (tokens.curr().eq(sym(LBRACE))) {
+      // an anonymous class
+      tokens.next();
+      creation.body = ctx.classParser.parseClassBody(tokens, false);
+      expect(tokens, sym(RBRACE));
+    }
+    return creation;
   }
 
   // A (possibly qualified) name, e.g. "a" or "java.lang.String" (the current token is its first
