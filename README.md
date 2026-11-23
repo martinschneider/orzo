@@ -46,7 +46,7 @@ Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md)
 
 Calculating π using the [Gauss-Legendre algorithm](https://en.wikipedia.org/wiki/Gauss%E2%80%93Legendre_algorithm):
 
-```
+```java
 public double pi(int n) {
   double a, b, t, p, x = 1, 1/√2, 1÷4, 1;
   repeat n
@@ -60,7 +60,7 @@ public double pi(int n) {
 
 Numerical calculus with lambdas ([Newton's method](https://en.wikipedia.org/wiki/Newton%27s_method) and [Simpson's rule](https://en.wikipedia.org/wiki/Simpson%27s_rule)):
 
-```
+```java
 static DoubleUnaryOperator derivative(DoubleUnaryOperator f) {
   return x -> (f.applyAsDouble(x + h) - f.applyAsDouble(x - h)) ÷ (2 * h);
 }
