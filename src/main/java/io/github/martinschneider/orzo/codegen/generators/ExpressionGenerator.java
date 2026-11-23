@@ -882,6 +882,25 @@ public class ExpressionGenerator {
           ctx.basicGen.arrayLength(out);
           returnType = INT;
           prevLoadedRef = false;
+        } else if (prev == null && enclosingThis(curr) != null) {
+          // "Outer.this": an enclosing instance
+          Clazz outer = enclosingThis(curr);
+          List<Integer> path = EnclosingInstances.path(ctx, ctx.clazz, outer);
+          if (path == null) {
+            ctx.errors.addError(
+                LOGGER_NAME,
+                "not an enclosing class: " + curr.val,
+                new RuntimeException().getStackTrace());
+            path = new ArrayList<>();
+          }
+          ctx.loadGen.loadReference(out, (short) 0);
+          for (int field : path) {
+            ctx.loadGen.getField(out, (short) field);
+          }
+          ctx.opStack.push(REF);
+          returnType = outer.fqn();
+          prevLoadedRef = true;
+          curr = curr.next; // (the "this")
         } else if ("this".equals(curr.val.toString()) || "super".equals(curr.val.toString())) {
           ctx.loadGen.loadReference(out, (short) 0);
           ctx.opStack.push(REF);
@@ -1906,6 +1925,23 @@ public class ExpressionGenerator {
     ctx.invokeGen.invokeSpecial(out, constructor);
 
     return className; // Return the object type
+  }
+
+  // The class C of "C.this" (this class or an enclosing one), or null for anything else
+  private Clazz enclosingThis(Identifier id) {
+    if (id.next == null || !"this".equals(id.next.val.toString()) || ctx.clazz == null) {
+      return null;
+    }
+    String name = id.val.toString();
+    if (name.equals(ctx.clazz.name)) {
+      return ctx.clazz;
+    }
+    for (Clazz outer : FieldProcessor.enclosingClasses(ctx.clazz, ctx.allClazzes)) {
+      if (outer.name.equals(name)) {
+        return outer;
+      }
+    }
+    return null;
   }
 
   // Pushes the enclosing instance for a new instance of an inner class, e.g. "this" for "new

@@ -42,6 +42,11 @@ public class InnerClasses {
       String describe() {
         return name + " " + step + " " + count;
       }
+
+      // (an enclosing instance by its class name)
+      String qualified() {
+        return InnerClasses.this.name + " " + Counter.this.step + " " + InnerClasses.this.greet("x");
+      }
     }
 
     Detail detail() {
@@ -57,6 +62,7 @@ public class InnerClasses {
     System.out.println(count + " " + log);
     System.out.println(counter.hello());
     System.out.println(counter.detail().describe());
+    System.out.println(counter.detail().qualified());
   }
 
   public static void main(String[] args) {

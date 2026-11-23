@@ -220,7 +220,7 @@ public class PostfixLowering {
         links.add(new Identifier(select.name));
         if (select.typeName) {
           kinds[links.size() - 1] = TYPE_NAME;
-        } else if (select.name.equals("class")) {
+        } else if (select.name.equals("class") || select.name.equals("this")) {
           kinds[links.size() - 1] = OTHER;
         } else {
           kinds[links.size() - 1] = NAME;
