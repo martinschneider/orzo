@@ -1543,14 +1543,36 @@ public class ExpressionGenerator {
     DynamicByteArray condOut = new DynamicByteArray();
     ctx.exprGen.eval(condOut, null, ternary.condition, false, true);
 
+    // numeric branches of different types are promoted, e.g. "c ? 9 : 9.9" is a double
+    String trueType = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, ternary.trueBranch);
+    String falseType = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, ternary.falseBranch);
+    String promoted =
+        (trueType != null
+                && !trueType.equals(falseType)
+                && ExpressionTypes.isNumeric(trueType)
+                && ExpressionTypes.isNumeric(falseType))
+            ? ExpressionTypes.promote(trueType, falseType)
+            : null;
+
     // Generate true branch
     DynamicByteArray trueOut = new DynamicByteArray();
-    ExpressionResult trueResult = ctx.exprGen.eval(trueOut, type, ternary.trueBranch);
+    ExpressionResult trueResult =
+        ctx.exprGen.eval(trueOut, promoted != null ? promoted : type, ternary.trueBranch);
     String resultType = (trueResult != null && trueResult.type != null) ? trueResult.type : type;
+    if (promoted != null && !promoted.equals(resultType)) {
+      ctx.basicGen.convert1(trueOut, resultType, promoted);
+    }
+    resultType = (promoted != null) ? promoted : resultType;
 
     // Generate false branch
     DynamicByteArray falseOut = new DynamicByteArray();
-    ctx.exprGen.eval(falseOut, resultType, ternary.falseBranch);
+    ExpressionResult falseResult = ctx.exprGen.eval(falseOut, resultType, ternary.falseBranch);
+    if (promoted != null
+        && falseResult != null
+        && falseResult.type != null
+        && !promoted.equals(falseResult.type)) {
+      ctx.basicGen.convert1(falseOut, falseResult.type, promoted);
+    }
 
     // condition (ending with a branch opcode), its offset, true branch, GOTO, false branch
     int trueLen = trueOut.size();

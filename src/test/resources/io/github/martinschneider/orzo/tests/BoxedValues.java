@@ -35,5 +35,9 @@ public class BoxedValues {
     Supplier<Integer> size = list::size;
     System.out.println(list + " " + size.get() + " " + new BoxedValues().computed);
     System.out.println(MIN + " " + ALL_BITS);
+    // (numeric branches of different types are promoted)
+    int x = 5;
+    double promoted = x > 4 ? 9 : 9.9;
+    System.out.println("is " + (x > 4 ? 9 : 9.9) + " " + (x < 4 ? 1 : 2L) + " " + promoted);
   }
 }
