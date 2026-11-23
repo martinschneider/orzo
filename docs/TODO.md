@@ -4,7 +4,7 @@ Prioritized for three goals (see the metrics in README.md):
 
 1. Smaller class files (1.0x javac)
 2. Pass all jtreg tests (27% of the positive, 68% of the negative tests)
-3. Faster compilation (2.6x javac)
+3. Faster compilation (1.4x javac)
 
 Within each goal, the items are ordered by expected impact.
 
@@ -35,11 +35,10 @@ Failures of the last run of `compliance/jtreg.sh`, by cause (number of tests):
 
 ## 3. Compile time
 
-A profile (JFR) of Orzo compiling its own sources:
+Profile (JFR) Orzo compiling its own sources first. Known:
 
-1. **Stack map frames** (61% of the samples): `StackMapTableBuilder.computeExtendedCutForSlot()` (the definite assignment analysis per slot and branch target). Use one data-flow pass.
-2. **Per-class set-up** (about 10%): `MethodProcessor.getMethodMap()` collects the methods of all classes again for every class.
-3. **Type decisions**: `NumExprTypeDecider` types the same expressions repeatedly (see REVIEW.md, recommendation 1: attribution).
+1. **Per-class set-up**: `MethodProcessor.getMethodMap()` collects the methods of all classes again for every class.
+2. **Type decisions**: `NumExprTypeDecider` types the same expressions repeatedly (see REVIEW.md, recommendation 1: attribution).
 
 ## Other known issues
 

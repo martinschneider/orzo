@@ -211,9 +211,11 @@ import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -625,20 +627,18 @@ public class StackMapTableBuilder {
       }
       handlerToTryStart.merge(handlerPc, tryStart, Math::min);
     }
-    // A handler is entered from (anywhere in) its try range: record that as an edge, so the
-    // definite-assignment analysis below also sees paths into code *after* a handler (e.g. a
-    // local first stored inside an earlier block that the try range's start can bypass).
-    for (Map.Entry<Integer, Integer> e : handlerToTryStart.entrySet()) {
-      branchesToTarget.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).add(e.getValue());
-    }
+    Map<Integer, BitSet> assigned =
+        definitelyAssigned(
+            code,
+            paramSlots,
+            branchesToTarget,
+            prevInstrOffset,
+            handlerToTryStart,
+            firstStoreOffset);
 
     // Build frames
     StackMapTableBuilder builder = new StackMapTableBuilder();
     for (int target : targets) {
-      // Fresh cache per target: avoids stale sentinel values from cycle-breaking in previous
-      // targets corrupting the cut computation for later targets.
-      // (slot << 17 | position) → extended-cut value
-      Map<Long, Integer> slotCutCache = new HashMap<>();
       List<String> targetLocals = new ArrayList<>();
       if (!isStatic) {
         targetLocals.add("L" + ctx.clazz.fqn('/') + ";");
@@ -655,16 +655,7 @@ public class StackMapTableBuilder {
       int maxInitSlot = -1;
       for (VariableInfo var : sorted) {
         int slot = (int) var.idx;
-        boolean initialized =
-            isInitialized(
-                slot,
-                effectiveTarget,
-                paramSlots,
-                firstStoreOffset,
-                branchesToTarget,
-                prevInstrOffset,
-                code,
-                slotCutCache);
+        boolean initialized = isInitialized(slot, effectiveTarget, paramSlots, assigned);
         if (initialized) {
           maxInitSlot = Math.max(maxInitSlot, slot);
         }
@@ -679,16 +670,7 @@ public class StackMapTableBuilder {
         } else {
           String desc = TypeUtils.descr(var);
           boolean doubleSize = "J".equals(desc) || "D".equals(desc);
-          boolean initialized =
-              isInitialized(
-                  slot,
-                  effectiveTarget,
-                  paramSlots,
-                  firstStoreOffset,
-                  branchesToTarget,
-                  prevInstrOffset,
-                  code,
-                  slotCutCache);
+          boolean initialized = isInitialized(slot, effectiveTarget, paramSlots, assigned);
           if (initialized) {
             targetLocals.add(desc);
           } else {
@@ -1529,90 +1511,127 @@ public class StackMapTableBuilder {
     }
   }
 
-  /**
-   * Returns true if local variable {@code slot} is guaranteed initialized when execution reaches
-   * bytecode offset {@code target}. A slot is initialized iff its first STORE appears before every
-   * path that can reach {@code target} – which we approximate with a per-slot extended cut.
-   */
+  // Whether a local variable slot is definitely assigned at an instruction (see
+  // definitelyAssigned())
   private static boolean isInitialized(
-      int slot,
-      int target,
-      int paramSlots,
-      Map<Integer, Integer> firstStoreOffset,
-      Map<Integer, List<Integer>> branchesToTarget,
-      Map<Integer, Integer> prevInstrOffset,
-      byte[] code,
-      Map<Long, Integer> cache) {
-    if (slot < paramSlots) {
-      return true; // method parameter, always present
-    }
-    Integer firstStore = firstStoreOffset.get(slot);
-    if (firstStore == null) {
-      return false; // never stored
-    }
-    // Per-slot extended cut: the minimum bytecode offset from which {@code target} is reachable
-    // without passing through a store to {@code slot}. Propagation stops at unconditional
-    // transfers (no fallthrough) and at any store to this specific slot (because the sequential
-    // path through such a store guarantees initialization – there is no path that bypasses it
-    // at that point in the instruction stream).
-    int cut =
-        computeExtendedCutForSlot(target, slot, branchesToTarget, prevInstrOffset, code, cache);
-    return firstStore < cut;
+      int slot, int target, int paramSlots, Map<Integer, BitSet> assigned) {
+    return slot < paramSlots || (assigned.containsKey(target) && assigned.get(target).get(slot));
   }
 
   /**
-   * Computes the per-slot extended cut for {@code target}: the minimum bytecode offset from which
-   * {@code target} is reachable on any path that does not first execute a store to {@code slot}.
-   *
-   * <p>For each direct branch source B → target, recursively computes the cut at B (the minimum
-   * offset reachable from B without a store to {@code slot}). This propagates backward through
-   * indirect paths (e.g. a conditional branch at B1 → B2 → target, where B1 bypasses the store).
-   * Propagation also follows sequential (fallthrough) predecessors, stopping at unconditional
-   * transfers or stores to {@code slot}.
+   * The local variable slots definitely assigned at each instruction, by offset: a forward
+   * data-flow analysis, the intersection over all paths into an instruction. An exception handler
+   * is entered with the slots of the start of its try range. In unreachable code (which the
+   * verifier checks against its frames too), the slots stored before it count as assigned.
    */
-  private static int computeExtendedCutForSlot(
-      int target,
-      int slot,
+  private static Map<Integer, BitSet> definitelyAssigned(
+      byte[] code,
+      int paramSlots,
       Map<Integer, List<Integer>> branchesToTarget,
       Map<Integer, Integer> prevInstrOffset,
+      Map<Integer, Integer> handlerToTryStart,
+      Map<Integer, Integer> firstStoreOffset) {
+    List<Integer> offsets = new ArrayList<>();
+    for (int i = 0; i < code.length; i += opcodeLength(code, i)) {
+      offsets.add(i);
+    }
+    Set<Integer> reachable =
+        reachable(code, offsets, branchesToTarget, prevInstrOffset, handlerToTryStart);
+    Map<Integer, BitSet> in = new HashMap<>();
+    BitSet params = new BitSet();
+    params.set(0, paramSlots);
+    for (int offset : offsets) {
+      if (!reachable.contains(offset)) {
+        BitSet stored = (BitSet) params.clone();
+        for (Map.Entry<Integer, Integer> e : firstStoreOffset.entrySet()) {
+          if (e.getValue() < offset) {
+            stored.set(e.getKey());
+          }
+        }
+        in.put(offset, stored);
+      }
+    }
+    boolean changed = true;
+    while (changed) {
+      changed = false;
+      for (int offset : offsets) {
+        if (!reachable.contains(offset)) {
+          continue;
+        }
+        BitSet state = (offset == 0) ? (BitSet) params.clone() : null;
+        Integer prev = prevInstrOffset.get(offset);
+        if (prev != null && !isUnconditionalTransfer(code, prev)) {
+          state = intersect(state, out(code, prev, in.get(prev)));
+        }
+        for (int source : branchesToTarget.getOrDefault(offset, Collections.emptyList())) {
+          state = intersect(state, out(code, source, in.get(source)));
+        }
+        Integer tryStart = handlerToTryStart.get(offset);
+        if (tryStart != null) {
+          state = intersect(state, in.get(tryStart));
+        }
+        if (state != null && !state.equals(in.get(offset))) {
+          in.put(offset, state);
+          changed = true;
+        }
+      }
+    }
+    return in;
+  }
+
+  // the instructions reachable from the start of the method (or an exception handler of a
+  // reachable try range)
+  private static Set<Integer> reachable(
       byte[] code,
-      Map<Long, Integer> cache) {
-    long key = ((long) slot << 17) | target;
-    Integer cached = cache.get(key);
-    if (cached != null) {
-      return cached;
+      List<Integer> offsets,
+      Map<Integer, List<Integer>> branchesToTarget,
+      Map<Integer, Integer> prevInstrOffset,
+      Map<Integer, Integer> handlerToTryStart) {
+    Map<Integer, List<Integer>> successors = new HashMap<>();
+    for (int offset : offsets) {
+      Integer prev = prevInstrOffset.get(offset);
+      if (prev != null && !isUnconditionalTransfer(code, prev)) {
+        successors.computeIfAbsent(prev, k -> new ArrayList<>()).add(offset);
+      }
+      for (int source : branchesToTarget.getOrDefault(offset, Collections.emptyList())) {
+        successors.computeIfAbsent(source, k -> new ArrayList<>()).add(offset);
+      }
+      Integer tryStart = handlerToTryStart.get(offset);
+      if (tryStart != null) {
+        successors.computeIfAbsent(tryStart, k -> new ArrayList<>()).add(offset);
+      }
     }
-    // Sentinel to break any cycle (loops in control flow)
-    cache.put(key, target);
-
-    // Cap at target: a branch source offset ≥ target cannot create a path that bypasses stores
-    // that appear before the target in bytecode order.
-    int result = target;
-
-    // Recurse into each direct branch source: use the CUT at the source, not just its offset.
-    // This correctly propagates through indirect paths such as cond_branch → fallthrough → target.
-    for (int src : branchesToTarget.getOrDefault(target, Collections.emptyList())) {
-      result =
-          Math.min(
-              result,
-              computeExtendedCutForSlot(src, slot, branchesToTarget, prevInstrOffset, code, cache));
+    Set<Integer> reached = new HashSet<>();
+    List<Integer> work = new ArrayList<>();
+    work.add(0);
+    while (!work.isEmpty()) {
+      int offset = work.remove(work.size() - 1);
+      if (reached.add(offset)) {
+        work.addAll(successors.getOrDefault(offset, Collections.emptyList()));
+      }
     }
+    return reached;
+  }
 
-    // Propagate through sequential (fallthrough) predecessor, stopping at unconditional transfers
-    // and at any store to this specific slot.
-    Integer prevOff = prevInstrOffset.get(target);
-    if (prevOff != null
-        && !isUnconditionalTransfer(code, prevOff)
-        && !isStoreToSlot(code, prevOff, slot)) {
-      result =
-          Math.min(
-              result,
-              computeExtendedCutForSlot(
-                  prevOff, slot, branchesToTarget, prevInstrOffset, code, cache));
+  // the slots assigned after the instruction at pos (null if it hasn't been reached yet)
+  private static BitSet out(byte[] code, int pos, BitSet in) {
+    int slot = storedSlot(code, pos);
+    if (in == null || slot < 0) {
+      return in;
     }
+    BitSet out = (BitSet) in.clone();
+    out.set(slot);
+    return out;
+  }
 
-    cache.put(key, result);
-    return result;
+  // the intersection of two sets of slots (null: not reached yet, i.e. all slots)
+  private static BitSet intersect(BitSet a, BitSet b) {
+    if (a == null) {
+      return (b == null) ? null : (BitSet) b.clone();
+    } else if (b != null) {
+      a.and(b);
+    }
+    return a;
   }
 
   /**
@@ -1624,20 +1643,20 @@ public class StackMapTableBuilder {
     return op == GOTO || op == GOTO_W || (op >= IRETURN && op <= RETURN) || op == ATHROW;
   }
 
-  /**
-   * Returns true if the instruction at {@code pos} stores a value into local variable {@code slot}.
-   */
-  private static boolean isStoreToSlot(byte[] code, int pos, int slot) {
-    byte op = code[pos];
-    if (op >= ISTORE_0 && op <= ISTORE_3) return (op - ISTORE_0) == slot; // istore_0..3
-    if (op >= LSTORE_0 && op <= LSTORE_3) return (op - LSTORE_0) == slot; // lstore_0..3
-    if (op >= FSTORE_0 && op <= FSTORE_3) return (op - FSTORE_0) == slot; // fstore_0..3
-    if (op >= DSTORE_0 && op <= DSTORE_3) return (op - DSTORE_0) == slot; // dstore_0..3
-    if (op >= ASTORE_0 && op <= ASTORE_3) return (op - ASTORE_0) == slot; // astore_0..3
-    if (op >= ISTORE && op <= ASTORE && pos + 1 < code.length) { // xstore slot
-      return (code[pos + 1] & 0xFF) == slot;
+  // the local variable slot the instruction at pos stores to, or -1
+  private static int storedSlot(byte[] code, int pos) {
+    int op = code[pos] & 0xFF;
+    if (op >= (ISTORE_0 & 0xFF) && op <= (ASTORE_3 & 0xFF)) {
+      return (op - (ISTORE_0 & 0xFF)) % 4; // xstore_0..3
+    } else if (op >= (ISTORE & 0xFF) && op <= (ASTORE & 0xFF) && pos + 1 < code.length) {
+      return code[pos + 1] & 0xFF; // xstore slot
+    } else if (op == (WIDE & 0xFF) && pos + 3 < code.length) {
+      int wideOp = code[pos + 1] & 0xFF;
+      if (wideOp >= (ISTORE & 0xFF) && wideOp <= (ASTORE & 0xFF)) {
+        return ((code[pos + 2] & 0xFF) << 8) | (code[pos + 3] & 0xFF); // wide xstore slot
+      }
     }
-    return false;
+    return -1;
   }
 
   /**
