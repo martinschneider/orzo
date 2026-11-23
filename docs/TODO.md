@@ -19,12 +19,11 @@ About as large as javac's now (1.0x). Still:
 
 Failures of the last run of `compliance/jtreg.sh`, by cause (number of tests):
 
-1. **Parser gaps** (cheap): several `for` updates (`i++, j--`)
-2. **Nested classes**: `outer.new Inner()`, assignments to `Outer.this.field`, anonymous subclasses of inner classes; local classes are named like member classes (`Outer$Foo`, javac: `Outer$1Foo`), so two of the same name in one class clash
-3. **Method references**: bound and constructor method references (`obj::m`, `Foo::new`)
-4. **Semantic checks**: invalid programs that compile (343 in the last run, growing as more programs parse), e.g. annotation rules (about 50), incompatible types (29), definite assignment (10), ambiguous calls (12). `ClassChecker` checks overrides, unimplemented abstract methods, modifiers, cyclic inheritance (not yet: a class implementing its own nested interface) and file names.
-5. `switch` expressions and `->` cases, `var`, records, sealed classes, `instanceof` patterns, `assert`, `synchronized`, text blocks
-6. Multi-dimensional arrays, array casts (`(int[]) obj`), C-style array declarations of locals (`int a[]`)
+1. **Nested classes**: `outer.new Inner()`, assignments to `Outer.this.field`, anonymous subclasses of inner classes; local classes are named like member classes (`Outer$Foo`, javac: `Outer$1Foo`), so two of the same name in one class clash
+2. **Method references**: bound and constructor method references (`obj::m`, `Foo::new`)
+3. **Semantic checks**: invalid programs that compile (408 in the last run, growing as more programs parse), e.g. annotation rules (about 50), incompatible types (29), definite assignment (10), ambiguous calls (12). `ClassChecker` checks overrides, unimplemented abstract methods, modifiers, cyclic inheritance (not yet: a class implementing its own nested interface) and file names.
+4. `switch` expressions and `->` cases, `var`, records, sealed classes, `instanceof` patterns, `assert`, `synchronized`, text blocks
+5. Multi-dimensional arrays, array casts (`(int[]) obj`), C-style array declarations of locals (`int a[]`)
 
 ## 3. Compile time
 

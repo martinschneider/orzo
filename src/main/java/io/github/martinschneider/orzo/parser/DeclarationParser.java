@@ -13,6 +13,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
@@ -48,6 +49,15 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       }
     }
     return null;
+  }
+
+  // ", name" followed by "=", "," or ";"
+  private static boolean startsDeclarator(TokenList tokens) {
+    if (!tokens.curr().eq(sym(COMMA)) || !(tokens.peekNext() instanceof Identifier)) {
+      return false;
+    }
+    Token after = tokens.get(tokens.idx() + 2);
+    return after.eq(op(ASSIGN)) || after.eq(sym(COMMA)) || after.eq(sym(SEMICOLON));
   }
 
   @Override
@@ -151,6 +161,22 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
           values.add(value);
           arrDims.add(type.arr);
           if (!tokens.curr().eq(sym(COMMA))) {
+            break;
+          }
+          if (values.size() >= names.size() && startsDeclarator(tokens)) {
+            // further declarators, e.g. "j = 10" in "int i = 0, j = 10;"
+            while (startsDeclarator(tokens)) {
+              tokens.next();
+              names.add((Identifier) tokens.curr());
+              tokens.next();
+              Expression init = null;
+              if (tokens.curr().eq(op(ASSIGN))) {
+                tokens.next();
+                init = parseExpOrArrInit(tokens, type);
+              }
+              values.add(init);
+              arrDims.add(type.arr);
+            }
             break;
           }
           tokens.next();

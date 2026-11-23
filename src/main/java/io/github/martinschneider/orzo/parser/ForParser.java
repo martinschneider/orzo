@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FOR;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
@@ -10,6 +11,8 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
+import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.EmptyStatement;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ForStatement;
@@ -55,18 +58,37 @@ public class ForParser implements ProdParser<ForStatement> {
             LOG_NAME, "missing initialisation", new RuntimeException().getStackTrace());
         return null;
       }
-      condition = ctx.exprParser.parse(tokens);
+      condition =
+          tokens.curr().eq(sym(SEMICOLON))
+              ? new Expression(new ArrayList<>(List.of(new BoolLiteral(true)))) // "for (;;)"
+              : ctx.exprParser.parse(tokens);
       if (condition == null) {
         tokens.next(sym(RBRACE));
         ctx.errors.addError(LOG_NAME, "missing condition", new RuntimeException().getStackTrace());
       }
       tokens.next();
-      // TODO: several updates, e.g. "i++, j--"
-      loopStatement = ctx.stmtParser.parseWithoutSemicolon(tokens);
+      loopStatement =
+          tokens.curr().eq(sym(RPAREN))
+              ? new EmptyStatement()
+              : ctx.stmtParser.parseWithoutSemicolon(tokens);
       if (loopStatement == null) {
         tokens.next(sym(RBRACE));
         ctx.errors.addError(
             LOG_NAME, "missing loop statement", new RuntimeException().getStackTrace());
+      } else if (tokens.curr().eq(sym(COMMA))) {
+        // several updates, e.g. "i++, j--"
+        List<Statement> updates = new ArrayList<>(List.of(loopStatement));
+        while (tokens.curr().eq(sym(COMMA))) {
+          tokens.next();
+          Statement update = ctx.stmtParser.parseWithoutSemicolon(tokens);
+          if (update == null) {
+            ctx.errors.addError(
+                LOG_NAME, "missing loop statement", new RuntimeException().getStackTrace());
+            break;
+          }
+          updates.add(update);
+        }
+        loopStatement = new Block(updates);
       }
       if (!tokens.curr().eq(sym(RPAREN))) {
         ctx.errors.missingExpected(

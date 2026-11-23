@@ -62,6 +62,21 @@ public class DeclarationParserTest {
                     decl(emptyList(), id("a"), INT, expr("1")),
                     decl(emptyList(), id("b"), INT, expr("2")),
                     decl(emptyList(), id("c"), INT, expr("3"))))),
+        // Java declarators (once every name has a value)
+        args(
+            "int i = 0, j = 10, k;",
+            pDecl(
+                list(
+                    decl(emptyList(), id("i"), INT, expr("0")),
+                    decl(emptyList(), id("j"), INT, expr("10")),
+                    decl(emptyList(), id("k"), INT, null)))),
+        args(
+            "int a, b = 1, 2, c = 3;",
+            pDecl(
+                list(
+                    decl(emptyList(), id("a"), INT, expr("1")),
+                    decl(emptyList(), id("b"), INT, expr("2")),
+                    decl(emptyList(), id("c"), INT, expr("3"))))),
         args(
             "double a,b,c=1,2;",
             pDecl(
