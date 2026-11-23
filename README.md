@@ -2,7 +2,9 @@
 
 Orzo is a Java-based language for the JVM.
 
-It's named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorzo-barley) while coding it.
+It started during a compiler class at University back in 2010. It had a working lexer and some parts of its parser. I re-discovered the code during the COVID pandemic in 2020, added a JVM code generator and got it to compile some simple classes, including parts of its own source code. In 2025, I dug it out a second time to use it as a personal benchmark for new AI models. Claude and I finished self-compilation in 2026. The next steps are full Java-compliance and improvements to speed and class size.
+
+Orzo is named after [my beverage of choice](http://thecoffeeuniverse.org/caffe-dorzo-barley) ~while coding it~ during parts of its development.
 
 # Features
 
