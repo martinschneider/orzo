@@ -24,8 +24,8 @@ Failures of the last run of `compliance/jtreg.sh`, by cause (number of tests):
    - interface `default` and `static` methods (13)
    - several `for` updates (`i++, j--`)
 2. **Local and anonymous classes**; for inner classes, `outer.new Inner()` and assignments to `Outer.this.field`
-3. **Lambdas**: block bodies (`x -> { ... }`) and `void` functional interfaces (41), bound and constructor method references (`obj::m`, `Foo::new`)
-4. **Semantic checks**: invalid programs that compile (317 in the last run), e.g. annotation rules (about 50), incompatible types (29), definite assignment (10), ambiguous calls (12). `ClassChecker` checks overrides, unimplemented abstract methods, modifiers, cyclic inheritance and file names.
+3. **Method references**: bound and constructor method references (`obj::m`, `Foo::new`)
+4. **Semantic checks**: invalid programs that compile (343 in the last run, growing as more programs parse), e.g. annotation rules (about 50), incompatible types (29), definite assignment (10), ambiguous calls (12). `ClassChecker` checks overrides, unimplemented abstract methods, modifiers, cyclic inheritance and file names.
 5. `switch` expressions and `->` cases, `var`, records, sealed classes, `instanceof` patterns, `assert`, `synchronized`, text blocks
 6. Multi-dimensional arrays, array casts (`(int[]) obj`), C-style array declarations of locals (`int a[]`)
 

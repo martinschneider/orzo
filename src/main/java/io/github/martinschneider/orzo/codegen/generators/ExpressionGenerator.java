@@ -93,6 +93,7 @@ import io.github.martinschneider.orzo.codegen.GenericTypes;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.OperandStack;
+import io.github.martinschneider.orzo.codegen.Statements;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
@@ -120,6 +121,7 @@ import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.ExpressionStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
@@ -1624,13 +1626,6 @@ public class ExpressionGenerator {
           new RuntimeException().getStackTrace());
       return targetType;
     }
-    if (sam.getReturnType() == void.class) {
-      ctx.errors.addError(
-          "lambda expression",
-          "void-returning functional interfaces (e.g. Consumer) are not yet supported",
-          new RuntimeException().getStackTrace());
-      return targetType;
-    }
 
     String syntheticName = ctx.clazz.name + "$$Lambda$" + (++ctx.syntheticClassCounter);
     String syntheticFqn =
@@ -1648,7 +1643,13 @@ public class ExpressionGenerator {
     // Local variables of the enclosing method used in the lambda body are captured: they become
     // fields of the synthetic class, passed to its constructor.
     List<VariableInfo> captured = new ArrayList<>();
-    visitLambdaBody(lambda.body, lambda.params, captured);
+    if (lambda.block != null) {
+      for (Expression expr : Statements.expressions(lambda.block)) {
+        visitLambdaBody(expr, lambda.params, captured);
+      }
+    } else {
+      visitLambdaBody(lambda.body, lambda.params, captured);
+    }
     List<Argument> args = new ArrayList<>();
     List<Statement> body = new ArrayList<>();
     for (int i = 0; i < lambda.params.size(); i++) {
@@ -1669,7 +1670,13 @@ public class ExpressionGenerator {
         args.add(new Argument(erased, new Identifier(name)));
       }
     }
-    body.add(new ReturnStatement(lambda.body));
+    if (lambda.block != null) {
+      body.addAll(lambda.block);
+    } else if (sam.getReturnType() == void.class) {
+      body.add(new ExpressionStatement(lambda.body)); // e.g. "x -> list.add(x)" for a Consumer
+    } else {
+      body.add(new ReturnStatement(lambda.body));
+    }
     String returnType = sam.getReturnType().getName();
     Method samImpl =
         new Method(

@@ -3,7 +3,9 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.ARROW;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
@@ -13,6 +15,7 @@ import io.github.martinschneider.orzo.lexer.tokens.LambdaExpr;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +54,22 @@ public class LambdaParser implements ProdParser<Expression> {
       return null;
     }
     tokens.next(); // consume '->'
+    if (tokens.curr().eq(sym(LBRACE))) {
+      // a block body
+      tokens.next();
+      List<Statement> block = ctx.stmtParser.parseStmtSeq(tokens);
+      if (tokens.curr().eq(sym(RBRACE))) {
+        tokens.next();
+      } else {
+        ctx.errors.missingExpected(
+            LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
+      }
+      LambdaExpr lambda = new LambdaExpr(params, new Expression(new ArrayList<>()));
+      lambda.block = (block != null) ? block : new ArrayList<>();
+      List<Token> lambdaTokens = new ArrayList<>();
+      lambdaTokens.add(lambda);
+      return new Expression(lambdaTokens);
+    }
     Expression body = ctx.exprParser.parse(tokens);
     if (body == null) {
       ctx.errors.addError(LOG_NAME, "missing lambda body", new RuntimeException().getStackTrace());

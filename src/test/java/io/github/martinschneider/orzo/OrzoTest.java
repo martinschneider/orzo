@@ -319,6 +319,8 @@ public class OrzoTest {
         args(list("tests/InstanceInitializers")),
         args(list("tests/AbstractClasses")),
         args(list("tests/InnerClasses")),
+        args(list("tests/LambdaBlocks")),
+        args(list("tests/StaticFieldAssignment")),
         args(list("examples/Calculus")),
         args(list("tests/SuperMethodCall")),
         args(list("tests/UnboxedOperands")),

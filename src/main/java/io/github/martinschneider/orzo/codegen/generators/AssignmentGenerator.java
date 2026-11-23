@@ -256,6 +256,24 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
     Identifier id = startId;
     String currentType = null;
 
+    // a static field of a class, e.g. "Counter.total = 1"
+    FieldProcessor.StaticField staticField =
+        (id.next.next == null && ctx.classIdMap.variables.get(id) == null)
+            ? ctx.staticFieldMap.get(id.val + "." + id.next.val)
+            : null;
+    if (staticField != null) {
+      ExpressionResult result = ctx.exprGen.eval(out, staticField.fieldType, value);
+      if (result != null && !staticField.fieldType.equals(result.type)) {
+        ctx.basicGen.convert1(out, result.type, staticField.fieldType);
+      }
+      String owner = staticField.className.replace('.', '/');
+      String descr = TypeUtils.descr(staticField.fieldType);
+      ctx.constPool.addFieldRef(owner, staticField.fieldName, descr);
+      ctx.storeGen.putStatic(
+          out, ctx.constPool.indexOf(CONSTANT_FIELDREF, owner, staticField.fieldName, descr));
+      ctx.opStack.pop();
+      return out;
+    }
     // Load all intermediate identifiers, tracking the current object type
     while (id.next != null) {
       if (currentType == null) {

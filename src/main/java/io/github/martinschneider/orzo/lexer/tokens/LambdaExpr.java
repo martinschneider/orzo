@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.lexer.tokens;
 
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,6 +18,8 @@ public class LambdaExpr extends Token {
 
   public List<String> params;
   public Expression body;
+  // a block body ("x -> { ... }"), or null for an expression body
+  public List<Statement> block;
   // a method reference, e.g. "Math::min" (owner "Math", method "min"): expanded into a lambda once
   // the target functional interface's arity is known (params and body are empty until then)
   public String methodRefOwner;
@@ -43,6 +46,7 @@ public class LambdaExpr extends Token {
     LambdaExpr other = (LambdaExpr) obj;
     return params.equals(other.params)
         && body.equals(other.body)
+        && java.util.Objects.equals(block, other.block)
         && java.util.Objects.equals(methodRefOwner, other.methodRefOwner)
         && java.util.Objects.equals(methodRefName, other.methodRefName);
   }
