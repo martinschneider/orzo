@@ -1,8 +1,6 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.EXTENDS;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
@@ -18,15 +16,11 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
-import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_FINAL;
-import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_STATIC;
 import static io.github.martinschneider.orzo.parser.productions.Method.CONSTRUCTOR_NAME;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.EOF;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
-import io.github.martinschneider.orzo.lexer.tokens.Scope;
-import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
@@ -73,26 +67,13 @@ public class MethodParser implements ProdParser<Method> {
   public Method parse(TokenList tokens, boolean isInterface) {
     int idx = tokens.idx();
     List<AccessFlag> accFlags = new ArrayList<>();
-    Scope scope = null;
     Type type = null;
     Identifier name;
     boolean isConstr = false;
     List<Argument> arguments = new ArrayList<>();
     List<Statement> body;
     String qualifiedName;
-    if (tokens.curr() instanceof Scope) {
-      scope = (Scope) tokens.curr();
-      accFlags.add(((Scopes) scope.val).accFlag);
-      tokens.next();
-    }
-    if (tokens.curr().eq(keyword(STATIC))) {
-      accFlags.add(ACC_STATIC);
-      tokens.next();
-    }
-    if (tokens.curr().eq(keyword(FINAL))) {
-      accFlags.add(ACC_FINAL);
-      tokens.next();
-    }
+    accFlags.addAll(ctx.modifiersParser.parse(tokens));
     List<String> methodTypeVarsAdded = new ArrayList<>();
     if (tokens.curr().eq(op(LESS))) {
       tokens.next();

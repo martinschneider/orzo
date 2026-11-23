@@ -37,6 +37,7 @@ public class ParserContext {
   public LambdaParser lambdaParser;
   public MethodCallParser methodCallParser;
   public MethodParser methodParser;
+  public ModifiersParser modifiersParser;
   public PostIncrementParser postIncrementParser;
   public PreIncrementParser preIncrementParser;
   public RetParser retParser;
@@ -70,6 +71,7 @@ public class ParserContext {
     ctx.lambdaParser = new LambdaParser(ctx);
     ctx.methodCallParser = new MethodCallParser(ctx);
     ctx.methodParser = new MethodParser(ctx);
+    ctx.modifiersParser = new ModifiersParser();
     ctx.postIncrementParser = new PostIncrementParser(ctx);
     ctx.preIncrementParser = new PreIncrementParser(ctx);
     ctx.retParser = new RetParser(ctx);

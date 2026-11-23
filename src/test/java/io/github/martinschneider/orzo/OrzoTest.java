@@ -314,6 +314,8 @@ public class OrzoTest {
         args(list("tests/InlineAnnotations")),
         args(list("tests/LambdaArguments")),
         args(list("tests/FloatLiterals")),
+        args(list("tests/ModifierOrder")),
+        args(list("tests/GenericSupertypes")),
         args(list("examples/Calculus")),
         args(list("tests/SuperMethodCall")),
         args(list("tests/UnboxedOperands")),

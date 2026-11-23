@@ -10,6 +10,8 @@ public enum AccessFlag {
   ACC_SUPER((short) 0x0020),
   ACC_SYNCHRONIZED((short) 0x0020),
   ACC_BRIDGE((short) 0x0040),
+  ACC_VOLATILE((short) 0x0040),
+  ACC_TRANSIENT((short) 0x0080),
   ACC_VARARGS((short) 0x0080),
   ACC_NATIVE((short) 0x0100),
   ACC_ABSTRACT((short) 0x0400),

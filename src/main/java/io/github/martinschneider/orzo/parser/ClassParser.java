@@ -3,7 +3,6 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CLASS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.ENUM;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.EXTENDS;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IMPLEMENTS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IMPORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INTERFACE;
@@ -13,7 +12,6 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_AND;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
@@ -36,6 +34,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ClassMember;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
@@ -64,7 +63,7 @@ public class ClassParser implements ProdParser<Clazz> {
     ctx.importMap.clear();
     ctx.onDemandImports.clear();
     List<Import> imports = parseImports(tokens);
-    Scope scope = ctx.scopeParser.parse(tokens);
+    Scope scope = ModifiersParser.scope(ctx.modifiersParser.parse(tokens));
     boolean isInterface = false;
     boolean isEnum = false;
     if (tokens.curr() instanceof Keyword) {
@@ -159,7 +158,7 @@ public class ClassParser implements ProdParser<Clazz> {
       }
     }
     parseInterfaces(tokens, interfaces, packageDeclaration);
-    baseClass = parseBaseClass(tokens, isEnum, packageDeclaration);
+    baseClass = parseBaseClass(tokens, isEnum, isInterface, interfaces, packageDeclaration);
     if (interfaces.isEmpty()) {
       parseInterfaces(tokens, interfaces, packageDeclaration);
     }
@@ -227,16 +226,63 @@ public class ClassParser implements ProdParser<Clazz> {
     return ctx.currClazz;
   }
 
-  private String parseBaseClass(TokenList tokens, boolean isEnum, String packageDeclaration) {
+  // "extends Foo" (an interface's "extends A, B" are its superinterfaces)
+  private String parseBaseClass(
+      TokenList tokens,
+      boolean isEnum,
+      boolean isInterface,
+      List<String> interfaces,
+      String packageDeclaration) {
     if (tokens.curr().eq(keyword(EXTENDS))) {
       tokens.next();
-      if (tokens.curr() instanceof Identifier) {
-        String baseClass = (((Identifier) tokens.curr()).val.toString());
-        tokens.next();
-        return resolveClassName(baseClass, packageDeclaration);
+      if (isInterface) {
+        parseSupertypes(tokens, interfaces, packageDeclaration);
+      } else {
+        String baseClass = parseSupertype(tokens, packageDeclaration);
+        if (baseClass != null) {
+          return baseClass;
+        }
       }
     }
     return isEnum ? JAVA_LANG_ENUM : JAVA_LANG_OBJECT;
+  }
+
+  // A supertype, e.g. "Foo" or "java.util.AbstractList<T>" (the type arguments are erased), or null
+  // if there is none
+  private String parseSupertype(TokenList tokens, String packageDeclaration) {
+    if (!(tokens.curr() instanceof Identifier)) {
+      return null;
+    }
+    StringBuilder name = new StringBuilder(((Identifier) tokens.curr()).id());
+    tokens.next();
+    while (tokens.curr().eq(sym(DOT))
+        && (tokens.peekNext() instanceof Identifier || tokens.peekNext() instanceof Type)) {
+      Token segment = tokens.next();
+      name.append('.').append((segment instanceof Type) ? ((Type) segment).name : segment.val);
+      tokens.next();
+    }
+    if (tokens.curr().eq(op(LESS))) {
+      ctx.typeArgsParser.parse(tokens);
+    }
+    String type = name.toString();
+    if (type.contains(".")) {
+      return ctx.typeArgsParser.resolveQualified(type);
+    }
+    return resolveClassName(type, packageDeclaration);
+  }
+
+  // a comma-separated list of supertypes, e.g. "A, B<T>"
+  private void parseSupertypes(
+      TokenList tokens, List<String> supertypes, String packageDeclaration) {
+    String supertype = parseSupertype(tokens, packageDeclaration);
+    while (supertype != null) {
+      supertypes.add(supertype);
+      if (!tokens.curr().eq(sym(COMMA))) {
+        return;
+      }
+      tokens.next();
+      supertype = parseSupertype(tokens, packageDeclaration);
+    }
   }
 
   private String resolveClassName(String name, String packageDeclaration) {
@@ -276,38 +322,12 @@ public class ClassParser implements ProdParser<Clazz> {
     }
   }
 
+  // "implements A, B<T>"
   List<String> parseInterfaces(
       TokenList tokens, List<String> interfaces, String packageDeclaration) {
     if (tokens.curr().eq(keyword(IMPLEMENTS))) {
       tokens.next();
-      while (!tokens.curr().eq(keyword(EXTENDS))
-          && !(tokens.curr().eq(sym(LBRACE)))
-          && !(tokens.curr() instanceof EOF)) {
-        if (tokens.curr() instanceof Identifier) {
-          interfaces.add(
-              resolveClassName(((Identifier) tokens.curr()).val.toString(), packageDeclaration));
-          tokens.next();
-          // Skip generic type arguments e.g. ProdParser<Clazz>
-          if (tokens.curr().eq(op(LESS))) {
-            int depth = 1;
-            while (depth > 0) {
-              tokens.next();
-              if (tokens.curr().eq(op(LESS))) depth++;
-              else if (tokens.curr().eq(op(GREATER))) depth--;
-              else if (tokens.curr().eq(op(RSHIFT))) depth = Math.max(0, depth - 2);
-              else if (tokens.curr().eq(op(RSHIFTU))) depth = Math.max(0, depth - 3);
-            }
-            tokens.next();
-          }
-        } else {
-          tokens.next();
-        }
-        if (tokens.curr().equals(sym(COMMA))) {
-          tokens.next();
-        } else {
-          break;
-        }
-      }
+      parseSupertypes(tokens, interfaces, packageDeclaration);
     }
     return interfaces;
   }
@@ -370,12 +390,9 @@ public class ClassParser implements ProdParser<Clazz> {
   // class "Outer$Frame" (see ParserContext.nestedClazzes)
   private boolean parseNestedClass(TokenList tokens) {
     int idx = tokens.idx();
-    Scope scope = ctx.scopeParser.parse(tokens);
-    boolean isStatic = false;
-    while (tokens.curr().eq(keyword(STATIC)) || tokens.curr().eq(keyword(FINAL))) {
-      isStatic = isStatic || tokens.curr().eq(keyword(STATIC));
-      tokens.next();
-    }
+    List<AccessFlag> modifiers = ctx.modifiersParser.parse(tokens);
+    Scope scope = ModifiersParser.scope(modifiers);
+    boolean isStatic = modifiers.contains(AccessFlag.ACC_STATIC);
     boolean isInterface = tokens.curr().eq(keyword(INTERFACE));
     boolean isEnum = tokens.curr().eq(keyword(ENUM));
     if (!tokens.curr().eq(keyword(CLASS)) && !isInterface && !isEnum) {

@@ -83,9 +83,38 @@ public class MethodProcessor {
           methodMap.put(clazz.name + '.' + getKey(method), method);
           methodMap.put(clazz.fqn() + '.' + getKey(method), method);
         }
+        // (and those it inherits from supertypes of this compilation run, e.g. superinterfaces)
+        for (Clazz supertype : sourceSupertypes(clazz, clazzes)) {
+          for (Method method : supertype.methods) {
+            methodMap.putIfAbsent(clazz.name + '.' + getKey(method), method);
+            methodMap.putIfAbsent(clazz.fqn() + '.' + getKey(method), method);
+          }
+        }
       }
     }
     return methodMap;
+  }
+
+  // the supertypes of a class that are classes of this compilation run (transitively)
+  static List<Clazz> sourceSupertypes(Clazz clazz, List<Clazz> clazzes) {
+    List<Clazz> supertypes = new ArrayList<>();
+    List<String> names = new ArrayList<>();
+    if (clazz.baseClass != null) {
+      names.add(clazz.baseClass);
+    }
+    names.addAll(clazz.interfaces);
+    for (String name : names) {
+      Clazz supertype = TypeUtils.sourceClazz(name, clazzes);
+      if (supertype != null && !supertypes.contains(supertype)) {
+        supertypes.add(supertype);
+        for (Clazz inherited : sourceSupertypes(supertype, clazzes)) {
+          if (!supertypes.contains(inherited)) {
+            supertypes.add(inherited);
+          }
+        }
+      }
+    }
+    return supertypes;
   }
 
   private void addStaticImportMethods(

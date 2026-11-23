@@ -1242,7 +1242,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     List<List<String>> assignableDescrs = new ArrayList<>();
     for (String type : types) {
       List<String> descrs = new ArrayList<>();
-      for (String assignable : TypeUtils.assignableTo(type)) {
+      for (String assignable : TypeUtils.assignableTo(type, ctx.allClazzes)) {
         descrs.add(TypeUtils.descr(assignable));
       }
       assignableDescrs.add(descrs);
@@ -1306,7 +1306,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       return !TypeUtils.isPrimitive(TypeUtils.jvmDescriptorToTypeName(paramType));
     }
     String paramDescr = TypeUtils.descr(TypeUtils.jvmDescriptorToTypeName(paramType));
-    for (String assignable : TypeUtils.assignableTo(argType)) {
+    for (String assignable : TypeUtils.assignableTo(argType, ctx.allClazzes)) {
       if (TypeUtils.descr(assignable).equals(paramDescr)) {
         return true;
       }

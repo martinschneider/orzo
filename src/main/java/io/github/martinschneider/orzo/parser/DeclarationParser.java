@@ -1,7 +1,5 @@
 package io.github.martinschneider.orzo.parser;
 
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
-import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
@@ -9,15 +7,12 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
-import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
-import io.github.martinschneider.orzo.lexer.tokens.Scope;
-import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
@@ -63,18 +58,7 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
     List<Byte> arrDims = new ArrayList<>();
     List<Expression> values = new ArrayList<>();
     List<AccessFlag> accFlags = new ArrayList<>();
-    if (tokens.curr() instanceof Scope) {
-      accFlags.add(((Scopes) ((Scope) tokens.curr()).val).accFlag);
-      tokens.next();
-    }
-    if (tokens.curr().eq(keyword(STATIC))) {
-      accFlags.add(AccessFlag.ACC_STATIC);
-      tokens.next();
-    }
-    if (tokens.curr().eq(keyword(FINAL))) {
-      accFlags.add(AccessFlag.ACC_FINAL);
-      tokens.next();
-    }
+    accFlags.addAll(ctx.modifiersParser.parse(tokens));
     if (tokens.curr() instanceof Type && !tokens.curr().eq("VOID")) {
       type = (Type) tokens.curr();
     } else if (tokens.curr() instanceof Identifier

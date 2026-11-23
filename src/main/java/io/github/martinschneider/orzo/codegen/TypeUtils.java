@@ -380,6 +380,54 @@ public class TypeUtils {
   // (boxing conversions come after widening ones: a more specific overload is preferred)
   private static final String NUMBER = "java.lang.Number";
 
+  /** Like assignableTo(type), with the supertypes of the classes of this compilation run, too. */
+  public static List<String> assignableTo(String type, List<Clazz> clazzes) {
+    List<String> assignables = assignableTo(type);
+    Clazz clazz = sourceClazz(type, clazzes);
+    if (clazz == null) {
+      return assignables;
+    }
+    List<String> supertypes = new ArrayList<>();
+    if (clazz.baseClass != null) {
+      supertypes.add(clazz.baseClass);
+    }
+    supertypes.addAll(clazz.interfaces);
+    // (the type, its supertypes, then Object)
+    List<String> result = new ArrayList<>();
+    result.add(type);
+    for (String supertype : supertypes) {
+      for (String assignable : assignableTo(supertype, clazzes)) {
+        if (!result.contains(assignable) && !isObject(assignable)) {
+          result.add(assignable);
+        }
+      }
+    }
+    for (String assignable : assignables) {
+      if (!result.contains(assignable)) {
+        result.add(assignable);
+      }
+    }
+    return result;
+  }
+
+  // the class of this compilation run with the given (binary) name, or null
+  public static Clazz sourceClazz(String type, List<Clazz> clazzes) {
+    if (type == null || clazzes == null) {
+      return null;
+    }
+    String name = type.replace('/', '.');
+    for (Clazz clazz : clazzes) {
+      if (clazz.fqn().equals(name)) {
+        return clazz;
+      }
+    }
+    return null;
+  }
+
+  private static boolean isObject(String type) {
+    return type.equals("java.lang.Object") || type.equals("Object");
+  }
+
   public static List<String> assignableTo(String type) {
     if (type.contains("[")) {
       return List.of(type, "java.lang.Object", "Object"); // an array is an Object, too
