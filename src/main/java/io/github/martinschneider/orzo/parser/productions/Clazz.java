@@ -15,6 +15,8 @@ public class Clazz {
   public List<Method> methods;
   public List<Import> imports;
   public List<ParallelDeclaration> fields;
+  // the field declarations and instance initializer blocks, in source order (see MemberProcessor)
+  public List<Statement> instanceInits = new ArrayList<>();
   public List<String> interfaces;
   public String baseClass;
   public String name;
@@ -42,6 +44,9 @@ public class Clazz {
     this.name = name;
     this.methods = methods;
     this.fields = fields;
+    if (fields != null) {
+      instanceInits.addAll(fields); // (no initializer blocks)
+    }
     this.interfaces = interfaces;
     this.baseClass = baseClass;
     this.isInterface = isInterface;

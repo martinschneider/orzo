@@ -167,28 +167,19 @@ public class MemberProcessor {
     }
 
     List<ParallelDeclaration> staticInits = new ArrayList<>();
-    List<ParallelDeclaration> constrInits = new ArrayList<>();
     List<ParallelDeclaration> fields =
         (ctx.clazz.fields != null) ? ctx.clazz.fields : new ArrayList<>();
     for (ParallelDeclaration pDecl : fields) {
-      for (Declaration decl : pDecl.declarations) {
-        if (decl.enumArgs != null) {
-          continue; // an enum constant
-        }
-        // Constant final fields (primitive/String) are initialized via the ConstantValue attribute.
-        // Non-constant final fields (e.g. static final List = List.of(...)) need <clinit>.
-        boolean isConstantFinal =
-            decl.accFlags.contains(AccessFlag.ACC_FINAL)
-                && decl.val != null
-                && decl.val.getConstantValue(decl.type) != null;
-        if (decl.val != null && !isConstantFinal) {
-          if (decl.accFlags.contains(AccessFlag.ACC_STATIC)) {
-            staticInits.add(pDecl);
-          } else {
-            constrInits.add(pDecl);
-          }
-          break;
-        }
+      if (initializedIn(pDecl, true)) {
+        staticInits.add(pDecl);
+      }
+    }
+    // the instance field initializers and initializer blocks, in source order
+    List<Statement> constrInits = new ArrayList<>();
+    for (Statement init : ctx.clazz.instanceInits) {
+      if (!(init instanceof ParallelDeclaration)
+          || initializedIn((ParallelDeclaration) init, false)) {
+        constrInits.add(init);
       }
     }
     // Merge all static initializer blocks (in source order) into the first one: a class file may
@@ -251,6 +242,24 @@ public class MemberProcessor {
         constr.body = body;
       }
     }
+  }
+
+  // Whether a field declaration is initialized in <clinit> (static) or the constructors (a constant
+  // final field is initialized by its ConstantValue attribute instead)
+  private static boolean initializedIn(ParallelDeclaration pDecl, boolean isStatic) {
+    for (Declaration decl : pDecl.declarations) {
+      if (decl.enumArgs != null) {
+        continue; // an enum constant
+      }
+      boolean isConstantFinal =
+          decl.accFlags.contains(AccessFlag.ACC_FINAL)
+              && decl.val != null
+              && decl.val.getConstantValue(decl.type) != null;
+      if (decl.val != null && !isConstantFinal) {
+        return decl.accFlags.contains(AccessFlag.ACC_STATIC) == isStatic;
+      }
+    }
+    return false;
   }
 
   // Constant pool entries for the code of the enum methods values(), valueOf() and $values()

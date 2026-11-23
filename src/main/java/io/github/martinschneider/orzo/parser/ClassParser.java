@@ -36,11 +36,13 @@ import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
+import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.ClassMember;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Import;
+import io.github.martinschneider.orzo.parser.productions.InstanceInitializer;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.Statement;
@@ -198,6 +200,7 @@ public class ClassParser implements ProdParser<Clazz> {
     }
     methods = new ArrayList<>();
     decls = new ArrayList<>();
+    List<Statement> instanceInits = new ArrayList<>();
     boolean hasConstr = false;
     for (ClassMember member : members) {
       if (member instanceof Method) {
@@ -206,6 +209,9 @@ public class ClassParser implements ProdParser<Clazz> {
         methods.add(method);
       } else if (member instanceof ParallelDeclaration) {
         decls.add((ParallelDeclaration) member);
+        instanceInits.add((ParallelDeclaration) member);
+      } else if (member instanceof InstanceInitializer) {
+        instanceInits.add(new Block(((InstanceInitializer) member).body));
       }
     }
     if (!isInterface && !isEnum && !hasConstr) {
@@ -223,6 +229,7 @@ public class ClassParser implements ProdParser<Clazz> {
     ctx.currClazz.fields = decls;
     tokens.next();
     ctx.currClazz.baseClass = baseClass;
+    ctx.currClazz.instanceInits = instanceInits;
     return ctx.currClazz;
   }
 
@@ -461,6 +468,15 @@ public class ClassParser implements ProdParser<Clazz> {
   }
 
   private ClassMember parseClassMember(TokenList tokens, boolean isInterface) {
+    if (tokens.curr().eq(sym(LBRACE))) {
+      // an instance initializer block
+      tokens.next();
+      List<Statement> body = ctx.stmtParser.parseStmtSeq(tokens);
+      if (tokens.curr().eq(sym(RBRACE))) {
+        tokens.next();
+      }
+      return new InstanceInitializer((body != null) ? body : new ArrayList<>());
+    }
     if (tokens.curr().eq(keyword(STATIC))) {
       int savedIdx = tokens.idx();
       tokens.next();
