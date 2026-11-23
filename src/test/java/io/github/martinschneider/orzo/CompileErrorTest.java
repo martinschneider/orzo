@@ -252,6 +252,54 @@ public class CompileErrorTest {
 
   // Compiles the given files (name -> source, in name order), asserts that it fails without
   // writing class files and returns the errors
+  private static Stream<Arguments> classErrors() {
+    return Stream.of(
+        Arguments.of(
+            Map.of("B.java", "public class A {}\n"),
+            "B.java:1:14: error: class A is public, should be declared in a file named A.java"),
+        Arguments.of(
+            Map.of("A.java", "class A extends B {}\n", "B.java", "class B extends A {}\n"),
+            "A.java:1:7: error: cyclic inheritance involving A"),
+        Arguments.of(
+            Map.of("A.java", "abstract final class A {}\n"),
+            "A.java:1:22: error: illegal combination of modifiers: abstract and final"),
+        Arguments.of(
+            Map.of("A.java", "private class A {}\n"),
+            "A.java:1:15: error: modifier private not allowed here"),
+        Arguments.of(
+            Map.of(
+                "P.java", "class P {\n  public void m() {}\n}\n",
+                "Q.java", "class Q extends P {\n  void m() {}\n}\n"),
+            "Q.java:2:3: error: m() in Q cannot override m() in P; attempting to assign weaker access"
+                + " privileges; was public"),
+        Arguments.of(
+            Map.of(
+                "P.java", "class P {\n  int m(int x) { return x; }\n}\n",
+                "Q.java", "class Q extends P {\n  long m(int x) { return x; }\n}\n"),
+            "Q.java:2:3: error: m(int) in Q cannot override m(int) in P; return type long is not"
+                + " compatible"),
+        Arguments.of(
+            Map.of(
+                "P.java", "class P {\n  final void m() {}\n}\n",
+                "Q.java", "class Q extends P {\n  void m() {}\n}\n"),
+            "Q.java:2:3: error: m() in Q cannot override m() in P; overridden method is final"),
+        Arguments.of(
+            Map.of(
+                "P.java", "abstract class P {\n  abstract void m();\n}\n",
+                "Q.java", "class Q extends P {}\n"),
+            "Q.java:1:7: error: Q is not abstract and does not override abstract method m() in P"),
+        Arguments.of(
+            Map.of("R.java", "class R implements Runnable {}\n"),
+            "R.java:1:7: error: R is not abstract and does not override abstract method run() in"
+                + " Runnable"));
+  }
+
+  @ParameterizedTest
+  @MethodSource
+  public void classErrors(Map<String, String> sources, String expected) throws IOException {
+    assertEquals(expected, compile(sources).get(0));
+  }
+
   @Test
   public void instantiateAbstractClass() throws IOException {
     List<String> errors =

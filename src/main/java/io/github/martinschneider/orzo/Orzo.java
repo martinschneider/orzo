@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo;
 
+import io.github.martinschneider.orzo.codegen.ClassChecker;
 import io.github.martinschneider.orzo.codegen.CodeGenerator;
 import io.github.martinschneider.orzo.codegen.Output;
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -136,6 +137,11 @@ public class Orzo {
     for (Clazz nested : nestedClazzes) {
       clazzes.add(nested);
       outputs.add(inMemoryOutput());
+    }
+    new ClassChecker(errors, clazzes).check();
+    if (!errors.isEmpty()) {
+      System.err.print(errors.toString(verbose));
+      return false;
     }
     CodeGenerator codeGen = new CodeGenerator(clazzes, outputs, errors);
     codeGen.generate();

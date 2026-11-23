@@ -3,6 +3,7 @@ package io.github.martinschneider.orzo.parser.productions;
 import static io.github.martinschneider.orzo.parser.productions.Method.CONSTRUCTOR_NAME;
 
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
+import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.util.ObjectUtils;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,9 @@ public class Clazz {
   public boolean isInterface;
   public boolean isEnum;
   public boolean isAbstract;
+  // whether it has type parameters
+  public boolean isGeneric;
+  public List<AccessFlag> modifiers = new ArrayList<>();
   public List<Method> methods;
   public List<Import> imports;
   public List<ParallelDeclaration> fields;
@@ -42,6 +46,9 @@ public class Clazz {
     this.packageName = packageName;
     this.imports = imports;
     this.scope = scope;
+    if (scope != null && ((Scopes) scope.val) != Scopes.DEFAULT) {
+      modifiers.add(((Scopes) scope.val).accFlag);
+    }
     this.name = name;
     this.methods = methods;
     this.fields = fields;

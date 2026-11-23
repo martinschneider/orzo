@@ -80,6 +80,7 @@ public class ClassParser implements ProdParser<Clazz> {
             parseClassDeclaration(
                 tokens, packageDeclaration, imports, scope, isInterface, isEnum, null);
         if (clazz != null) {
+          clazz.modifiers = modifiers;
           clazz.isAbstract = modifiers.contains(AccessFlag.ACC_ABSTRACT);
         }
         return clazz;
@@ -104,6 +105,7 @@ public class ClassParser implements ProdParser<Clazz> {
     List<String> interfaces = new ArrayList<>();
     String baseClass = JAVA_LANG_OBJECT;
     tokens.next();
+    Token nameToken = tokens.curr();
     if (tokens.curr() instanceof Identifier) {
       name = tokens.curr().val.toString();
     } else {
@@ -114,6 +116,7 @@ public class ClassParser implements ProdParser<Clazz> {
     // Parse generic type parameters on class/interface declaration e.g. class Foo<T extends
     // Bound>
     ctx.classTypeParams.clear();
+    boolean isGeneric = tokens.curr().eq(op(LESS));
     if (tokens.curr().eq(op(LESS))) {
       tokens.next();
       while (!tokens.curr().eq(op(GREATER)) && !tokens.curr().eq(op(RSHIFT))) {
@@ -192,6 +195,8 @@ public class ClassParser implements ProdParser<Clazz> {
             null,
             null);
     ctx.currClazz.outerName = outerName;
+    ctx.currClazz.isGeneric = isGeneric;
+    ctx.errors.startTokens.put(ctx.currClazz, nameToken);
     if (isEnum) {
       ctx.enumParser.fqn = ctx.currClazz.fqn();
       members.add(ctx.enumParser.parse(tokens));
@@ -428,6 +433,7 @@ public class ClassParser implements ProdParser<Clazz> {
     ctx.classTypeParams.clear();
     ctx.classTypeParams.putAll(outerTypeParams);
     if (nested != null) {
+      nested.modifiers = modifiers;
       nested.isAbstract = modifiers.contains(AccessFlag.ACC_ABSTRACT);
       ctx.nestedClazzes.add(nested);
     }

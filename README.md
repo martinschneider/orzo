@@ -113,6 +113,6 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 | Self-compilation | 100.0% |
 | [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 31.5% (278 of 883) |
 | jtreg negative tests (must be rejected) | 62.6% (540 of 863) |
-| Compile time (Orzo's sources) | 1.9x javac (8.2 s vs. 4.2 s) |
-| Class size (Orzo's class files) | 1.0x javac (960.9 KiB vs. 951.2 KiB) |
+| Compile time (Orzo's sources) | 2.2x javac (8.8 s vs. 4.1 s) |
+| Class size (Orzo's class files) | 1.0x javac (978.9 KiB vs. 970.7 KiB) |
 <!-- metrics:end -->
