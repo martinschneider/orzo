@@ -410,18 +410,25 @@ public class TypeUtils {
     return result;
   }
 
+  // the classes of the last list passed to sourceClazz() by name (rebuilt when it changes)
+  private static List<Clazz> indexedClazzes;
+  private static int indexedSize;
+  private static Map<String, Clazz> clazzByName;
+
   // the class of this compilation run with the given (binary) name, or null
   public static Clazz sourceClazz(String type, List<Clazz> clazzes) {
     if (type == null || clazzes == null) {
       return null;
     }
-    String name = type.replace('/', '.');
-    for (Clazz clazz : clazzes) {
-      if (clazz.fqn().equals(name)) {
-        return clazz;
+    if (indexedClazzes != clazzes || indexedSize != clazzes.size()) {
+      clazzByName = new java.util.HashMap<>();
+      for (Clazz clazz : clazzes) {
+        clazzByName.putIfAbsent(clazz.fqn(), clazz);
       }
+      indexedClazzes = clazzes;
+      indexedSize = clazzes.size();
     }
-    return null;
+    return clazzByName.get(type.replace('/', '.'));
   }
 
   private static boolean isObject(String type) {
