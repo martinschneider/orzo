@@ -4,7 +4,7 @@ Prioritized for three goals (see the metrics in README.md):
 
 1. Smaller class files (1.0x javac)
 2. Pass all jtreg tests (27% of the positive, 68% of the negative tests)
-3. Faster compilation (1.4x javac)
+3. Faster compilation (1.1x javac)
 
 Within each goal, the items are ordered by expected impact.
 
@@ -31,10 +31,9 @@ Failures of the last run of `compliance/jtreg.sh`, by cause (number of tests):
 
 ## 3. Compile time
 
-Profile (JFR) Orzo compiling its own sources first. Known:
+About as fast as javac now (1.1x). Profile (JFR) Orzo compiling its own sources first. Known:
 
-1. **Per-class set-up**: `MethodProcessor.getMethodMap()` collects the methods of all classes again for every class.
-2. **Type decisions**: `NumExprTypeDecider` types the same expressions repeatedly (see REVIEW.md, recommendation 1: attribution).
+1. **Type decisions**: `NumExprTypeDecider` types the same expressions repeatedly (see REVIEW.md, recommendation 1: attribution).
 
 ## Other known issues
 

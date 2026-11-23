@@ -2,7 +2,7 @@
 
 State as of November 2026: Orzo compiles all of its own sources (about 21,600 lines in 170 files), and
 its three bootstrap passes produce identical class files. Its output is about as large as javac's, and it
-compiles about 1.4x slower than javac (see the metrics in README.md). This review describes how the
+compiles about as fast as javac (see the metrics in README.md). This review describes how the
 compiler is built, where the design causes recurring bugs, and what to change, roughly ordered by impact.
 Concrete open issues are tracked in [TODO.md](TODO.md).
 
@@ -223,10 +223,10 @@ deterministic.
 
 ### 10. Performance and output size (low, after 1–4)
 
-- **Compile time (mostly done, 1.4x javac)**: overload resolution scanned all methods of all
-  classes for every call, and the stack map frames' definite assignment analysis ran per slot and
-  target. Left: the method and field maps are rebuilt per class from all classes, expressions are
-  re-typed many times (attribution, recommendation 1, fixes this).
+- **Compile time (done, 1.1x javac)**: overload resolution scanned all methods of all classes for
+  every call, the stack map frames' definite assignment analysis ran per slot and target, and the
+  method map was rebuilt per class from all classes. Left: expressions are re-typed many times
+  (attribution, recommendation 1, fixes this).
 - **Class size (done, 1.0x javac)**: the constant pool didn't deduplicate its entries (6.6x javac's
   entries). Left: full stack map frames everywhere and unused constants (see TODO.md).
 

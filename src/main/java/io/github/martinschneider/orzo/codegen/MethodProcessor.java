@@ -16,15 +16,14 @@ import java.util.List;
 import java.util.Map;
 
 public class MethodProcessor {
+  // the methods of all classes of the last list passed to getMethodMap() (see shared())
+  private static List<Clazz> sharedClazzes;
+  private static int sharedSize;
+  private static Map<String, Method> shared;
+
   public Map<String, Method> getMethodMap(Clazz currentClazz, List<Clazz> clazzes) {
-    Map<String, Method> methodMap = new HashMap<>();
-    addImported(methodMap, currentClazz, clazzes);
+    Map<String, Method> methodMap = new HashMap<>(shared(clazzes));
     addStaticImportMethods(methodMap, currentClazz, clazzes);
-    for (Clazz clazz : clazzes) {
-      if (!currentClazz.equals(clazz)) {
-        addInherited(methodMap, clazz, List.of(clazz.name + '.', clazz.fqn() + '.'));
-      }
-    }
     addInherited(methodMap, currentClazz, List.of("", currentClazz.name + '.'));
     // the static methods of the enclosing classes of a nested class
     for (Clazz outer : FieldProcessor.enclosingClasses(currentClazz, clazzes)) {
@@ -40,6 +39,21 @@ public class MethodProcessor {
       methodMap.put(currentClazz.name + '.' + getKey(method), method);
     }
     return methodMap;
+  }
+
+  // The methods of all classes, by their qualified names (e.g. "Foo.bar(I)V"): the same for every
+  // class, so built once for a list of classes (rebuilt when it changes)
+  private Map<String, Method> shared(List<Clazz> clazzes) {
+    if (sharedClazzes != clazzes || sharedSize != clazzes.size()) {
+      shared = new HashMap<>();
+      addImported(shared, null, clazzes);
+      for (Clazz clazz : clazzes) {
+        addInherited(shared, clazz, List.of(clazz.name + '.', clazz.fqn() + '.'));
+      }
+      sharedClazzes = clazzes;
+      sharedSize = clazzes.size();
+    }
+    return shared;
   }
 
   // The public methods a class of this compilation run inherits from its (reflectively loadable)
@@ -78,7 +92,7 @@ public class MethodProcessor {
   private Map<String, Method> addImported(
       Map<String, Method> methodMap, Clazz currentClazz, List<Clazz> clazzes) {
     for (Clazz clazz : clazzes) {
-      if (!currentClazz.equals(clazz)) {
+      if (clazz != currentClazz) {
         for (Method method : clazz.methods) {
           methodMap.put(clazz.name + '.' + getKey(method), method);
           methodMap.put(clazz.fqn() + '.' + getKey(method), method);
