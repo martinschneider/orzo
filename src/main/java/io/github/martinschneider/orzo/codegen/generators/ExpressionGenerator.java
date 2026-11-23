@@ -1778,6 +1778,8 @@ public class ExpressionGenerator {
           visitLambdaBody(((CastMethodCall) root).innerExpr, lambdaParams, captured);
         } else if (root instanceof MethodCall && !((MethodCall) root).name.contains(".")) {
           qualifyStaticCall((MethodCall) root);
+        } else if (!(root instanceof MethodCall) && !(root instanceof ConstructorCall)) {
+          qualifyStaticField(root, lambdaParams);
         }
         String rootName =
             (root instanceof MethodCall)
@@ -1806,6 +1808,25 @@ public class ExpressionGenerator {
         }
       }
     }
+  }
+
+  // A static field of the enclosing class in a lambda body, e.g. "h" in "x -> x + h", becomes
+  // "Clazz.h" (the body is generated as a method of another class)
+  private void qualifyStaticField(Identifier root, List<String> lambdaParams) {
+    String name = root.val.toString();
+    if (lambdaParams.contains(name) || ctx.classIdMap.variables.localMap.containsKey(name)) {
+      return;
+    }
+    VariableInfo field = ctx.classIdMap.variables.fieldMap.get(name);
+    if (field == null || !field.accFlags.contains(AccessFlag.ACC_STATIC)) {
+      return;
+    }
+    Identifier link = new Identifier(name);
+    link.next = root.next;
+    link.arrSel = root.arrSel;
+    root.val = ctx.clazz.name;
+    root.next = link;
+    root.arrSel = null;
   }
 
   private void qualifyStaticCall(MethodCall call) {

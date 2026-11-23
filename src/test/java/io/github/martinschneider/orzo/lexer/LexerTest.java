@@ -6,6 +6,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Keywords.DO;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.ELSE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FOR;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IF;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INTERFACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.PACKAGE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.RETURN;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
@@ -55,6 +56,14 @@ public class LexerTest {
             new TokenList(list(integer(12), integer(13), integer(15), integer(17)))),
         args("0.9", new TokenList(list(fp(0.9)))),
         args(".87", new TokenList(list(fp(0.87)))),
+        args("1e-6", new TokenList(list(fp(1e-6)))),
+        args("2.5E3", new TokenList(list(fp(2500.0)))),
+        args("1.5e+2f", new TokenList(list(fp(150.0, true)))),
+        args("2f 3d", new TokenList(list(fp(2.0, true), fp(3.0)))),
+        // annotations are skipped (also their arguments), "@interface" is an interface
+        args("@Deprecated x", new TokenList(list(id("x")))),
+        args("@SuppressWarnings({\"a)\", \"b\"}) x", new TokenList(list(id("x")))),
+        args("@interface", new TokenList(list(keyword(INTERFACE)))),
         args(
             "1+2-3*4/5%6=7",
             new TokenList(

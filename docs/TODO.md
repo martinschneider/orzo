@@ -52,21 +52,18 @@ Priority: **H**igh / **M**edium / **L**ow.
 Found by compiling small probe programs (see README.md for the full feature checklist). Each of these
 currently fails with a compile error or produces a class file that doesn't verify.
 
-| Priority |                 Feature                  |                                                                                       Notes                                                                                       |
-|----------|------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| H        | Semantic checks                          | Orzo accepts many invalid programs: 267 of the 863 invalid test programs of `compliance/jtreg.sh` compile (e.g. annotation rules, definite assignment, override and enum checks). |
-| H        | `abstract` classes and methods           | The parser doesn't accept the `abstract` modifier.                                                                                                                                |
-| M        | Interface `default`/`static` methods     | Interface methods can't have a body.                                                                                                                                              |
-| M        | Annotations with arguments               | `@SuppressWarnings("unchecked")` breaks parsing (annotations without arguments are skipped).                                                                                      |
-| M        | Inner, local and anonymous classes       | Only static nested classes are supported.                                                                                                                                         |
-| H        | Lambdas as arguments of own methods      | `twice(x -> x + 1, 1.0)` for `static double twice(DoubleUnaryOperator f, double x)`: "cannot find method twice(<lambda>, double)" (lambdas work as arguments of JDK methods).     |
-| M        | A lambda as a return value               | `return x -> x * x;` in a method returning a `DoubleUnaryOperator`: "cannot resolve target functional interface".                                                                 |
-| M        | Floating-point literals with an exponent | `1e-6`, `2.5E3` aren't lexed.                                                                                                                                                     |
-| M        | Lambda block bodies, void SAMs           | See the lambda row above.                                                                                                                                                         |
-| L        | `switch` with `->`, switch expressions   |                                                                                                                                                                                   |
-| L        | `var`, records, `instanceof` patterns    |                                                                                                                                                                                   |
-| L        | `assert`, `synchronized`                 |                                                                                                                                                                                   |
-| L        | C-style array declarations of locals     | `int a[] = ...` (parameters are supported).                                                                                                                                       |
+| Priority |                Feature                 |                                                                                       Notes                                                                                       |
+|----------|----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| H        | Semantic checks                        | Orzo accepts many invalid programs: 267 of the 863 invalid test programs of `compliance/jtreg.sh` compile (e.g. annotation rules, definite assignment, override and enum checks). |
+| H        | `abstract` classes and methods         | The parser doesn't accept the `abstract` modifier.                                                                                                                                |
+| M        | Interface `default`/`static` methods   | Interface methods can't have a body.                                                                                                                                              |
+| M        | Annotations with arguments             | `@SuppressWarnings("unchecked")` breaks parsing (annotations without arguments are skipped).                                                                                      |
+| M        | Inner, local and anonymous classes     | Only static nested classes are supported.                                                                                                                                         |
+| M        | Lambda block bodies, void SAMs         | See the lambda row above.                                                                                                                                                         |
+| L        | `switch` with `->`, switch expressions |                                                                                                                                                                                   |
+| L        | `var`, records, `instanceof` patterns  |                                                                                                                                                                                   |
+| L        | `assert`, `synchronized`               |                                                                                                                                                                                   |
+| L        | C-style array declarations of locals   | `int a[] = ...` (parameters are supported).                                                                                                                                       |
 
 ---
 

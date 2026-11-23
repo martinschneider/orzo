@@ -267,6 +267,24 @@ public class Lexer {
     while (Character.isDigit(character = (char) inputReader.read())) {
       buffer.append(character);
     }
+    scanExponentAndSuffix();
+  }
+
+  // The rest of a floating-point literal after its digits (the current character): an optional
+  // exponent, e.g. "e-6" in "1.5e-6", and an optional suffix ("f" for a float, "d")
+  private void scanExponentAndSuffix() throws IOException {
+    if (character == 'e' || character == 'E') {
+      buffer.append(character);
+      character = (char) inputReader.read();
+      if (character == '+' || character == '-') {
+        buffer.append(character);
+        character = (char) inputReader.read();
+      }
+      while (Character.isDigit(character)) {
+        buffer.append(character);
+        character = (char) inputReader.read();
+      }
+    }
     boolean isFloat = false;
     if (character == 'd' || character == 'D') {
       // do nothing
@@ -359,6 +377,15 @@ public class Lexer {
       if (character == '.') {
         buffer.append(character);
         scanDouble();
+        return;
+      } else if (character == 'e'
+          || character == 'E'
+          || character == 'f'
+          || character == 'F'
+          || character == 'd'
+          || character == 'D') {
+        // a floating-point literal without a fraction, e.g. "1e-6" or "2f"
+        scanExponentAndSuffix();
         return;
       } else if (character == 'l' || character == 'L') {
         isLong = true;

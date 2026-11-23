@@ -24,6 +24,7 @@ import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
+import io.github.martinschneider.orzo.lexer.tokens.LambdaExpr;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
@@ -58,7 +59,7 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
     // run the enclosing finally blocks (innermost first), then return the saved value.
     VariableInfo tmp = null;
     if (retStmt.retValue != null) {
-      ctx.exprGen.eval(out, evalType(method.type), retStmt.retValue);
+      ctx.exprGen.eval(out, evalType(method.type, retStmt.retValue), retStmt.retValue);
       convertReturnValue(out, method.type);
       String tmpName = "$ret_" + ctx.classIdMap.variables.localSize;
       tmp =
@@ -98,7 +99,7 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
       out.write(RETURN);
       return out;
     }
-    ctx.exprGen.eval(out, evalType(type), retValue);
+    ctx.exprGen.eval(out, evalType(type, retValue), retValue);
     convertReturnValue(out, type);
     return returnOpcode(out, type);
   }
@@ -116,7 +117,10 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
   // The type to evaluate a returned expression in: a general reference return type (e.g. Object)
   // must not be imposed on the expression ("return a + b;" is still a String concatenation), and
   // neither must boolean (the operands of "return a - b == c;" are ints).
-  private static String evalType(String returnType) {
+  private static String evalType(String returnType, Expression retValue) {
+    if (retValue.tokens.size() == 1 && retValue.tokens.get(0) instanceof LambdaExpr) {
+      return returnType; // (the functional interface the lambda implements)
+    }
     return ((TypeUtils.isPrimitive(returnType) && !BOOLEAN.equals(returnType))
             || STRING.equals(returnType))
         ? returnType

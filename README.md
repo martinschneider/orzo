@@ -58,6 +58,35 @@ public double pi(int n) {
 }
 ```
 
+Numerical calculus with lambdas ([Newton's method](https://en.wikipedia.org/wiki/Newton%27s_method) and [Simpson's rule](https://en.wikipedia.org/wiki/Simpson%27s_rule)):
+
+```
+static DoubleUnaryOperator derivative(DoubleUnaryOperator f) {
+  return x -> (f.applyAsDouble(x + h) - f.applyAsDouble(x - h)) ÷ (2 * h);
+}
+
+static double root(DoubleUnaryOperator f, double x) {
+  DoubleUnaryOperator df = derivative(f);
+  repeat 10 {
+    x = x - f.applyAsDouble(x) / df.applyAsDouble(x);
+  }
+  return x;
+}
+
+static double integral(DoubleUnaryOperator f, double a, double b, int n) {
+  double dx, sum, x = (b - a) ÷ n, f.applyAsDouble(a) + f.applyAsDouble(b), a;
+  for (int i = 1; i < n; i++) {
+    x += dx;
+    sum += (i % 2 == 0 ? 2 : 4) * f.applyAsDouble(x);
+  }
+  return sum * dx ÷ 3;
+}
+
+root(x -> x ** 2 - x - 1, 1);                 // the golden ratio: 1.618033988749895
+root(x -> Math.cos(x) - x, 1);                // the Dottie number: 0.7390851332151607
+integral(x -> 4 ÷ (1 + x ** 2), 0, 1, 100);   // π: 3.141592653589754
+```
+
 More examples can be found [here](src/test/resources/io/github/martinschneider/orzo/examples).
 
 # Build
@@ -84,6 +113,6 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 | Self-compilation | 100.0% |
 | [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 26.8% (237 of 883) |
 | jtreg negative tests (must be rejected) | 68.4% (590 of 863) |
-| Compile time (Orzo's sources) | 5.2x javac (22.0 s vs. 4.2 s) |
-| Class size (Orzo's class files) | 4.3x javac (4028.6 KiB vs. 935.3 KiB) |
+| Compile time (Orzo's sources) | 5.5x javac (23.3 s vs. 4.2 s) |
+| Class size (Orzo's class files) | 4.3x javac (4041.3 KiB vs. 936.6 KiB) |
 <!-- metrics:end -->
