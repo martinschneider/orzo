@@ -81,24 +81,12 @@ public class ConstantPool {
     return array.getBytes();
   }
 
-  public int add(Constant entry) {
-    int idx = entries.indexOf(entry);
-    if (idx != -1) {
-      return idx;
-    } else {
-      if (entry instanceof ConstantLong || entry instanceof ConstantDouble) {
-        // JVM spec §4.4.5: Long and Double take two consecutive constant-pool slots; the entry's
-        // index is the first one
-        int first = size + 1;
-        size += 2;
-        entries.add(entry);
-        return first;
-      } else {
-        size++;
-        entries.add(entry);
-        return size;
-      }
-    }
+  // appends an entry, returns its index (a long or double takes two slots, JVM spec 4.4.5)
+  private int append(Constant entry) {
+    int idx = size + 1;
+    size += (entry instanceof ConstantLong || entry instanceof ConstantDouble) ? 2 : 1;
+    entries.add(entry);
+    return idx;
   }
 
   public short indexOf(byte entryType, String classKey, String key, String type) {
@@ -195,87 +183,121 @@ public class ConstantPool {
     return -1;
   }
 
+  // Each constant is added once (the maps below are keyed by the constant's content).
+
   public void addClass(String clazz) {
-    int idx = add(new ConstantClass((short) (size + 2)));
-    classMap.put(clazz, idx);
-    classNameByIdx.put(idx, clazz);
-    ldcTypeByIdx.put(idx, "Ljava/lang/Class;");
-    addUtf8(clazz);
+    classIdx(clazz);
+  }
+
+  private int classIdx(String clazz) {
+    Integer idx = classMap.get(clazz);
+    if (idx == null) {
+      idx = append(new ConstantClass((short) utf8Idx(clazz)));
+      classMap.put(clazz, idx);
+      classNameByIdx.put(idx, clazz);
+      ldcTypeByIdx.put(idx, "Ljava/lang/Class;");
+    }
+    return idx;
   }
 
   public void addUtf8(String text) {
-    utf8Map.put(text, add(new ConstantUtf8(text)));
+    utf8Idx(text);
+  }
+
+  private int utf8Idx(String text) {
+    Integer idx = utf8Map.get(text);
+    if (idx == null) {
+      idx = append(new ConstantUtf8(text));
+      utf8Map.put(text, idx);
+    }
+    return idx;
   }
 
   public void addString(String string) {
-    if (stringMap.containsKey(string)) {
-      return;
+    if (!stringMap.containsKey(string)) {
+      int idx = append(new ConstantString((short) utf8Idx(string)));
+      stringMap.put(string, idx);
+      ldcTypeByIdx.put(idx, "Ljava/lang/String;");
     }
-    int idx = add(new ConstantString((short) (size + 2)));
-    stringMap.put(string, idx);
-    ldcTypeByIdx.put(idx, "Ljava/lang/String;");
-    addUtf8(string);
   }
 
   public void addMethodRef(String classKey, String name, String type) {
-    int cpIdx =
-        add(
-            new ConstantMethodref(
-                indexOf(ConstantTypes.CONSTANT_CLASS, classKey), (short) (size + 2)));
-    methodRefMap.put(classKey + "_" + name + "_" + type, cpIdx);
-    methodDescByIdx.put(cpIdx, type);
-    addNameAndType(name, type);
+    String key = classKey + "_" + name + "_" + type;
+    if (!methodRefMap.containsKey(key)) {
+      int idx = append(new ConstantMethodref(clazz(classKey), nameAndType(name, type)));
+      methodRefMap.put(key, idx);
+      methodDescByIdx.put(idx, type);
+    }
   }
 
   public void addInterfaceMethodRef(String classKey, String name, String type) {
-    int cpIdx =
-        add(
-            new ConstantInterfaceMethodref(
-                indexOf(ConstantTypes.CONSTANT_CLASS, classKey), (short) (size + 2)));
-    interfaceMethodRefMap.put(classKey + "_" + name + "_" + type, cpIdx);
-    interfaceMethodDescByIdx.put(cpIdx, type);
-    addNameAndType(name, type);
+    String key = classKey + "_" + name + "_" + type;
+    if (!interfaceMethodRefMap.containsKey(key)) {
+      int idx = append(new ConstantInterfaceMethodref(clazz(classKey), nameAndType(name, type)));
+      interfaceMethodRefMap.put(key, idx);
+      interfaceMethodDescByIdx.put(idx, type);
+    }
   }
 
   public void addFieldRef(String classKey, String name, String type) {
-    int cpIdx =
-        add(
-            new ConstantFieldref(
-                indexOf(ConstantTypes.CONSTANT_CLASS, classKey), (short) (size + 2)));
-    fieldRefMap.put(classKey + "_" + name + "_" + type, cpIdx);
-    fieldDescByIdx.put(cpIdx, type);
-    addNameAndType(name, type);
+    String key = classKey + "_" + name + "_" + type;
+    if (!fieldRefMap.containsKey(key)) {
+      int idx = append(new ConstantFieldref(clazz(classKey), nameAndType(name, type)));
+      fieldRefMap.put(key, idx);
+      fieldDescByIdx.put(idx, type);
+    }
+  }
+
+  // (via indexOf(), which a test's mock constant pool overrides)
+  private short clazz(String classKey) {
+    addClass(classKey);
+    return indexOf(ConstantTypes.CONSTANT_CLASS, classKey);
   }
 
   public void addNameAndType(String name, String type) {
-    nameAndTypesMap.put(
-        name + "_" + type, add(new ConstantNameAndType((short) (size + 2), (short) (size + 3))));
-    addUtf8(name);
-    addUtf8(type);
+    nameAndType(name, type);
+  }
+
+  private short nameAndType(String name, String type) {
+    String key = name + "_" + type;
+    Integer idx = nameAndTypesMap.get(key);
+    if (idx == null) {
+      idx = append(new ConstantNameAndType((short) utf8Idx(name), (short) utf8Idx(type)));
+      nameAndTypesMap.put(key, idx);
+    }
+    return idx.shortValue();
   }
 
   public void addInteger(Integer val) {
-    int idx = add(new ConstantInteger(val));
-    integerMap.put(val, idx);
-    ldcTypeByIdx.put(idx, "I");
+    if (!integerMap.containsKey(val)) {
+      int idx = append(new ConstantInteger(val));
+      integerMap.put(val, idx);
+      ldcTypeByIdx.put(idx, "I");
+    }
   }
 
   public void addLong(Long val) {
-    int idx = add(new ConstantLong(val));
-    longMap.put(val, idx);
-    ldcTypeByIdx.put(idx, "J");
+    if (!longMap.containsKey(val)) {
+      int idx = append(new ConstantLong(val));
+      longMap.put(val, idx);
+      ldcTypeByIdx.put(idx, "J");
+    }
   }
 
   public void addDouble(Double val) {
-    int idx = add(new ConstantDouble(val));
-    doubleMap.put(val, idx);
-    ldcTypeByIdx.put(idx, "D");
+    if (!doubleMap.containsKey(val)) {
+      int idx = append(new ConstantDouble(val));
+      doubleMap.put(val, idx);
+      ldcTypeByIdx.put(idx, "D");
+    }
   }
 
   public void addFloat(Float val) {
-    int idx = add(new ConstantFloat(val));
-    floatMap.put(val, idx);
-    ldcTypeByIdx.put(idx, "F");
+    if (!floatMap.containsKey(val)) {
+      int idx = append(new ConstantFloat(val));
+      floatMap.put(val, idx);
+      ldcTypeByIdx.put(idx, "F");
+    }
   }
 
   public void addByType(String type, Object val) {
@@ -306,8 +328,6 @@ public class ConstantPool {
 
   /** Returns the class name (e.g. "java/lang/String") at the given CP index, or null. */
   public String getClassName(int cpIdx) {
-    // (not via classMap: adding a class again re-points its entry there to the new index, while
-    // instructions emitted earlier still reference the old one)
     return classNameByIdx.get(cpIdx);
   }
 

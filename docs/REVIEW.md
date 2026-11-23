@@ -1,7 +1,7 @@
 # Orzo design and architecture review
 
 State as of November 2026: Orzo compiles all of its own sources (about 21,600 lines in 170 files), and
-its three bootstrap passes produce class files of identical total size. Its output is 4.4x the size of javac's, and it
+its three bootstrap passes produce identical class files. Its output is about as large as javac's, and it
 compiles about 5x slower than javac (see the metrics in README.md). This review describes how the
 compiler is built, where the design causes recurring bugs, and what to change, roughly ordered by impact.
 Concrete open issues are tracked in [TODO.md](TODO.md).
@@ -228,10 +228,8 @@ deterministic.
   classes, which is O(n²). Expressions are re-typed many times (`new NumExprTypeDecider(...)` in 18
   places, often on sub-expressions). A symbol table (recommendation 3) and attribution
   (recommendation 1) fix most of this; profile with JFR first.
-- **Class size (4.4x javac)**: likely full stack map frames everywhere, redundant conversions and
-  `CHECKCAST`s, no constant folding, and constant pool entries added "just in case". A real assembler
-  (recommendation 4) emits compact frames and only the constants that are used. A per-method size
-  comparison against javac would show where the bytes go.
+- **Class size (done, 1.0x javac)**: the constant pool didn't deduplicate its entries (6.6x javac's
+  entries). Left: full stack map frames everywhere and unused constants (see TODO.md).
 
 ### 11. Smaller cleanups
 

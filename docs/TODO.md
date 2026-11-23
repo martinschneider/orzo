@@ -2,7 +2,7 @@
 
 Prioritized for three goals (see the metrics in README.md):
 
-1. Smaller class files (4.3x javac)
+1. Smaller class files (1.0x javac)
 2. Pass all jtreg tests (27% of the positive, 68% of the negative tests)
 3. Faster compilation (5.2x javac)
 
@@ -10,11 +10,10 @@ Within each goal, the items are ordered by expected impact.
 
 ## 1. Class file size
 
-Orzo's bytecode is about as large as javac's (148 KB vs. 137 KB for Orzo's sources), its constant pools are not (198,495 vs. 29,960 entries).
+About as large as javac's now (1.0x). Still:
 
-1. **Deduplicate constant pool entries.** `ConstantPool.add*()` appends a new entry on every call: `ExpressionGenerator.class` has 10,539 `Class` entries (javac: 101) and `java/lang/String` 2,159 times. Look up existing entries by their content (this also removes the linear search in `add()`).
-2. **Compact stack map frames.** `StackMapTableBuilder` only writes full frames; javac mostly writes `same`, `append` and `chop` frames.
-3. **Only add the constants a class uses.** `ConstantPoolProcessor` adds references to all of the class's own methods and fields, `CodeGenerator.supportPrint()` adds `System.out` to every class.
+1. **Compact stack map frames.** `StackMapTableBuilder` only writes full frames; javac mostly writes `same`, `append` and `chop` frames.
+2. **Only add the constants a class uses.** `ConstantPoolProcessor` adds references to all of the class's own methods and fields, `CodeGenerator.supportPrint()` adds `System.out` to every class (34,821 constant pool entries for Orzo's sources vs. javac's 29,960).
 
 ## 2. jtreg
 
