@@ -48,7 +48,7 @@ public class MethodGenerator {
   }
 
   public HasOutput generate(HasOutput out, Method method, Clazz clazz) {
-    out.write(method.accessFlags(clazz.isInterface));
+    out.write(method.accessFlags());
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, method.name.val));
     out.write(
         ctx.constPool.indexOf(
@@ -57,7 +57,7 @@ public class MethodGenerator {
     ctx.exceptionTable.clear();
     ctx.exceptionHandlerType.clear();
     String signature = GenericTypes.methodSignature(method, ctx.allClazzes, ctx.clazz);
-    if (!clazz.isInterface && !method.accFlags.contains(AccessFlag.ACC_ABSTRACT)) {
+    if (!method.accFlags.contains(AccessFlag.ACC_ABSTRACT)) {
       out.write((short) (signature != null ? 2 : 1)); // attribute size
       writeSignature(out, signature);
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Code"));

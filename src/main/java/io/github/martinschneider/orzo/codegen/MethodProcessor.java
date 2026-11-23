@@ -26,6 +26,17 @@ public class MethodProcessor {
     Map<String, Method> methodMap = new HashMap<>(shared(clazzes));
     addStaticImportMethods(methodMap, currentClazz, clazzes);
     addInherited(methodMap, currentClazz, List.of("", currentClazz.name + '.'));
+    // the methods it inherits from supertypes of this compilation run (before those of enclosing
+    // classes, which they shadow)
+    for (Clazz supertype : sourceSupertypes(currentClazz, clazzes)) {
+      for (Method method : supertype.methods) {
+        if (!(method instanceof Constructor)
+            && !method.accFlags.contains(AccessFlag.ACC_PRIVATE)
+            && !method.name.val.equals("<clinit>")) {
+          methodMap.putIfAbsent(getKey(method), method);
+        }
+      }
+    }
     // the static methods of the enclosing classes of a nested class
     for (Clazz outer : FieldProcessor.enclosingClasses(currentClazz, clazzes)) {
       for (Method method : outer.methods) {

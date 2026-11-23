@@ -40,15 +40,10 @@ public class Method implements ClassMember {
     }
   }
 
-  public short accessFlags(boolean isInterface) {
-    // TODO: default and static interface methods
+  public short accessFlags() {
     short flags = 0;
-    if (isInterface) {
-      flags += (short) 0x0401; // ACC_ABSTRACT, ACC_PUBLIC
-    } else {
-      for (AccessFlag accFlag : accFlags) {
-        flags += accFlag.val;
-      }
+    for (AccessFlag accFlag : accFlags) {
+      flags |= accFlag.val;
     }
     if (args != null && !args.isEmpty() && args.get(args.size() - 1).varargs) {
       flags |= AccessFlag.ACC_VARARGS.val; // so reflection (and javac) see a varargs method

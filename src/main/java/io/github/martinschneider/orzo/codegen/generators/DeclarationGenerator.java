@@ -12,6 +12,7 @@ import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
+import io.github.martinschneider.orzo.lexer.tokens.LambdaExpr;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
@@ -57,6 +58,10 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
                   "incompatible types: %s cannot be converted to %s", valueType, decl.type),
               new RuntimeException().getStackTrace());
           continue;
+        }
+        if (decl.val.tokens.size() == 1 && decl.val.tokens.get(0) instanceof LambdaExpr) {
+          // (its parameters get their types from the type arguments, e.g. Function<String, R>)
+          ctx.exprGen.lambdaTargetGeneric = decl.genericType;
         }
         ctx.exprGen.eval(out, decl.type, decl.val);
         String actualType = ctx.opStack.type();

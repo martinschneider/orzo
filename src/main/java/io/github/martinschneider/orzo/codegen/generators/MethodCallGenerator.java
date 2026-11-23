@@ -66,6 +66,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       types.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
     }
     String methodName = methodCall.name.toString();
+    if (methodName.startsWith("this.") && methodName.indexOf('.', 5) < 0) {
+      methodName = methodName.substring(5); // "this.m()" is "m()"
+    }
     Method method = findMatchingMethod(methodName, types);
     // For dotted names (e.g. identifier.toString), try to resolve via the receiver variable's type
     String receiverName = null;
@@ -1229,6 +1232,23 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       return "java.lang." + simpleName;
     } catch (ClassNotFoundException e) {
       // not in java.lang, try package prefix
+    }
+    // (a class of an on-demand import, e.g. "import java.util.*;")
+    if (ctx.clazz != null && ctx.clazz.imports != null) {
+      for (Import imp : ctx.clazz.imports) {
+        if (!imp.isStatic && imp.id.endsWith(".*")) {
+          String name = imp.id.substring(0, imp.id.length() - 1) + simpleName;
+          if (TypeUtils.sourceClazz(name, ctx.allClazzes) != null) {
+            return name;
+          }
+          try {
+            Class.forName(name);
+            return name;
+          } catch (ClassNotFoundException | LinkageError e) {
+            // not in this package
+          }
+        }
+      }
     }
     if (ctx.clazz != null && ctx.clazz.packageName != null && !ctx.clazz.packageName.isEmpty()) {
       return ctx.clazz.packageName + "." + simpleName;

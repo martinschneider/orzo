@@ -156,10 +156,16 @@ public class CodeGenerator {
   private void interfaces(Clazz clazz) {
     out.write((short) clazz.interfaces.size());
     for (String interfaceName : clazz.interfaces) {
+      // (e.g. a nested interface named before it was known)
+      Clazz source = TypeUtils.sourceClazz(interfaceName, ctx.allClazzes);
       String ifaceFqn =
-          (interfaceName.contains(".") || clazz.packageName == null || clazz.packageName.isEmpty())
-              ? interfaceName
-              : (clazz.packageName + "." + interfaceName);
+          (source != null)
+              ? source.fqn()
+              : (interfaceName.contains(".")
+                      || clazz.packageName == null
+                      || clazz.packageName.isEmpty())
+                  ? interfaceName
+                  : (clazz.packageName + "." + interfaceName);
       out.write((short) ctx.constPool.indexOf(CONSTANT_CLASS, ifaceFqn.replace('.', '/')));
     }
   }
@@ -170,6 +176,8 @@ public class CodeGenerator {
     if (!clazz.isInterface) {
       ctx.constPool.addUtf8("Code");
       ctx.memberProc.addClInit(methods);
+    } else if (methods.stream().anyMatch(m -> !m.accFlags.contains(AccessFlag.ACC_ABSTRACT))) {
+      ctx.constPool.addUtf8("Code"); // (default, static or private methods)
     }
     List<String[]> bridges = clazz.isInterface ? new ArrayList<>() : collectBridges(clazz);
     out.write((short) (methods.size() + bridges.size()));

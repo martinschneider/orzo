@@ -316,7 +316,7 @@ public class ClassChecker {
       isStatic = method.accFlags.contains(ACC_STATIC);
       isPrivate = method.accFlags.contains(ACC_PRIVATE);
       isFinal = method.accFlags.contains(ACC_FINAL);
-      isAbstract = method.accFlags.contains(ACC_ABSTRACT) || (clazz.isInterface && !isStatic);
+      isAbstract = method.accFlags.contains(ACC_ABSTRACT);
       isGenericDeclarer = clazz.isGeneric;
     }
 

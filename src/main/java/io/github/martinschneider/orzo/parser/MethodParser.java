@@ -3,6 +3,8 @@ package io.github.martinschneider.orzo.parser;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.EXTENDS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
@@ -76,9 +78,31 @@ public class MethodParser implements ProdParser<Method> {
     accFlags.addAll(ctx.modifiersParser.parse(tokens));
     List<String> methodTypeVarsAdded = new ArrayList<>();
     if (tokens.curr().eq(op(LESS))) {
-      tokens.next();
-      while (!tokens.curr().eq(op(GREATER)) && !(tokens.curr() instanceof EOF)) {
-        if (tokens.curr() instanceof Identifier) {
+      // the type parameters, e.g. "<T, R extends Comparable<R> & Serializable>" (their type
+      // arguments and further bounds are skipped)
+      int depth = 0;
+      boolean expectTypeVar = false;
+      do {
+        if (tokens.curr() instanceof EOF || tokens.curr().eq(sym(LPAREN))) {
+          break;
+        } else if (tokens.curr().eq(op(LESS))) {
+          depth++;
+          expectTypeVar = depth == 1;
+          tokens.next();
+        } else if (tokens.curr().eq(op(GREATER))) {
+          depth--;
+          tokens.next();
+        } else if (tokens.curr().eq(op(RSHIFT))) {
+          depth -= 2;
+          tokens.next();
+        } else if (tokens.curr().eq(op(RSHIFTU))) {
+          depth -= 3;
+          tokens.next();
+        } else if (depth == 1 && tokens.curr().eq(sym(COMMA))) {
+          expectTypeVar = true;
+          tokens.next();
+        } else if (depth == 1 && expectTypeVar && tokens.curr() instanceof Identifier) {
+          expectTypeVar = false;
           String typeVarName = tokens.curr().toString();
           tokens.next();
           String bound = "java.lang.Object";
@@ -109,8 +133,7 @@ public class MethodParser implements ProdParser<Method> {
         } else {
           tokens.next();
         }
-      }
-      tokens.next();
+      } while (depth > 0);
     }
     if (tokens.curr() instanceof Type) {
       type = ((Type) tokens.curr());
@@ -192,8 +215,23 @@ public class MethodParser implements ProdParser<Method> {
       return null;
     }
     body = null;
-    // (an abstract method, like an interface method, has no body)
-    if (!isInterface && !accFlags.contains(AccessFlag.ACC_ABSTRACT)) {
+    // (an abstract method has no body, like an interface method unless default, static or private)
+    boolean hasBody = !isInterface && !accFlags.contains(AccessFlag.ACC_ABSTRACT);
+    if (isInterface) {
+      int paramsEnd = tokens.idx();
+      tokens.next();
+      skipThrowsClause(tokens);
+      hasBody = tokens.curr().eq(sym(LBRACE));
+      tokens.setIdx(paramsEnd);
+      // (interface methods are public unless private, and abstract without a body)
+      if (!accFlags.contains(AccessFlag.ACC_PRIVATE) && !accFlags.contains(AccessFlag.ACC_PUBLIC)) {
+        accFlags.add(AccessFlag.ACC_PUBLIC);
+      }
+      if (!hasBody && !accFlags.contains(AccessFlag.ACC_ABSTRACT)) {
+        accFlags.add(AccessFlag.ACC_ABSTRACT);
+      }
+    }
+    if (hasBody) {
       tokens.next();
       skipThrowsClause(tokens);
       if (!tokens.curr().eq(sym(LBRACE))) {

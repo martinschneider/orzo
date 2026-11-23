@@ -1601,17 +1601,28 @@ public class ExpressionGenerator {
   // A lambda is a synthetic class implementing the target type's single abstract method (see
   // ctx.addSyntheticClazz()), instantiated here. Captured variables are constructor arguments.
   private String generateLambda(DynamicByteArray out, String targetType, LambdaExpr lambda) {
-    Class<?> iface;
+    String ifaceName = null;
+    Sam sam = null;
     try {
-      iface = Class.forName(targetType);
+      Class<?> iface = Class.forName(targetType);
+      ifaceName = iface.getName();
+      sam = Sam.of(findSingleAbstractMethod(iface));
     } catch (ClassNotFoundException | NullPointerException e) {
-      ctx.errors.addError(
-          "lambda expression",
-          "cannot resolve target functional interface: " + targetType,
-          new RuntimeException().getStackTrace());
-      return targetType;
+      Clazz source =
+          (targetType != null)
+              ? TypeUtils.sourceClazz(
+                  convertToJVMClassName(targetType).replace('/', '.'), ctx.allClazzes)
+              : null;
+      if (source == null || !source.isInterface) {
+        ctx.errors.addError(
+            "lambda expression",
+            "cannot resolve target functional interface: " + targetType,
+            new RuntimeException().getStackTrace());
+        return targetType;
+      }
+      ifaceName = source.fqn();
+      sam = Sam.of(source, ctx.allClazzes);
     }
-    java.lang.reflect.Method sam = findSingleAbstractMethod(iface);
     if (sam == null) {
       ctx.errors.addError(
           "lambda expression",
@@ -1620,14 +1631,14 @@ public class ExpressionGenerator {
       return targetType;
     }
     if (lambda.methodRefName != null) {
-      lambda = methodRefAsLambda(lambda, sam.getParameterCount());
+      lambda = methodRefAsLambda(lambda, sam.paramTypes.size());
     }
-    if (sam.getParameterCount() != lambda.params.size()) {
+    if (sam.paramTypes.size() != lambda.params.size()) {
       ctx.errors.addError(
           "lambda expression",
           String.format(
               "lambda has %d parameter(s) but %s.%s expects %d",
-              lambda.params.size(), targetType, sam.getName(), sam.getParameterCount()),
+              lambda.params.size(), targetType, sam.name, sam.paramTypes.size()),
           new RuntimeException().getStackTrace());
       return targetType;
     }
@@ -1641,8 +1652,8 @@ public class ExpressionGenerator {
     // type known, a parameter gets its real type via a casting local of the same name, e.g.
     // "Argument arg = (Argument) $lambda_arg;"
     List<String> typedParams =
-        (lambdaTargetGeneric != null)
-            ? GenericTypes.samParameterTypes(lambdaTargetGeneric, sam)
+        (lambdaTargetGeneric != null) && sam.reflected != null
+            ? GenericTypes.samParameterTypes(lambdaTargetGeneric, sam.reflected)
             : emptyList();
     lambdaTargetGeneric = null;
     // Local variables of the enclosing method used in the lambda body are captured: they become
@@ -1658,7 +1669,7 @@ public class ExpressionGenerator {
     List<Argument> args = new ArrayList<>();
     List<Statement> body = new ArrayList<>();
     for (int i = 0; i < lambda.params.size(); i++) {
-      String erased = sam.getParameterTypes()[i].getName();
+      String erased = sam.paramTypes.get(i);
       String typed = (i < typedParams.size()) ? typedParams.get(i) : null;
       String name = lambda.params.get(i);
       if (typed != null && typed.indexOf('<') < 0 && !typed.equals(erased)) {
@@ -1677,18 +1688,18 @@ public class ExpressionGenerator {
     }
     if (lambda.block != null) {
       body.addAll(lambda.block);
-    } else if (sam.getReturnType() == void.class) {
+    } else if (sam.returnType.equals(VOID)) {
       body.add(new ExpressionStatement(lambda.body)); // e.g. "x -> list.add(x)" for a Consumer
     } else {
       body.add(new ReturnStatement(lambda.body));
     }
-    String returnType = sam.getReturnType().getName();
+    String returnType = sam.returnType;
     Method samImpl =
         new Method(
             syntheticFqn,
             List.of(AccessFlag.ACC_PUBLIC),
             returnType,
-            Token.id(sam.getName()),
+            Token.id(sam.name),
             args,
             body);
     List<Argument> ctorArgs = new ArrayList<>();
@@ -1735,7 +1746,7 @@ public class ExpressionGenerator {
             syntheticName,
             false,
             false,
-            List.of(iface.getName()),
+            List.of(ifaceName),
             Clazz.JAVA_LANG_OBJECT,
             List.of(ctor, samImpl),
             fields,
@@ -1859,11 +1870,52 @@ public class ExpressionGenerator {
 
   // The single non-default, non-static abstract method of a functional interface, or null if
   // zero or more than one such method exists (not a valid functional interface).
+  // The single abstract method of a functional interface: of the JDK (by reflection) or of this
+  // compilation
+  private static class Sam {
+    String name;
+    List<String> paramTypes = new ArrayList<>();
+    String returnType;
+    java.lang.reflect.Method reflected;
+
+    static Sam of(java.lang.reflect.Method method) {
+      if (method == null) {
+        return null;
+      }
+      Sam sam = new Sam();
+      sam.name = method.getName();
+      for (Class<?> type : method.getParameterTypes()) {
+        sam.paramTypes.add(type.getName());
+      }
+      sam.returnType = method.getReturnType().getName();
+      sam.reflected = method;
+      return sam;
+    }
+
+    static Sam of(Clazz iface, List<Clazz> clazzes) {
+      Sam sam = null;
+      for (Method method : iface.methods) {
+        if (!method.accFlags.contains(AccessFlag.ACC_ABSTRACT)) {
+          continue;
+        } else if (sam != null) {
+          return null;
+        }
+        sam = new Sam();
+        sam.name = method.name.val.toString();
+        for (Argument arg : method.args) {
+          sam.paramTypes.add(TypeUtils.resolveSimpleType(arg.type, clazzes, iface));
+        }
+        sam.returnType = TypeUtils.resolveSimpleType(method.type, clazzes, iface);
+      }
+      return sam;
+    }
+  }
+
   private java.lang.reflect.Method findSingleAbstractMethod(Class<?> iface) {
     java.lang.reflect.Method found = null;
     for (java.lang.reflect.Method m : iface.getMethods()) {
       int mods = m.getModifiers();
-      if (java.lang.reflect.Modifier.isAbstract(mods) && !m.isDefault()) {
+      if (java.lang.reflect.Modifier.isAbstract(mods) && !m.isDefault() && !isObjectMethod(m)) {
         if (found != null) {
           return null; // more than one abstract method — not a SAM interface
         }
@@ -1871,6 +1923,16 @@ public class ExpressionGenerator {
       }
     }
     return found;
+  }
+
+  // e.g. Comparator's "boolean equals(Object)" (not one of its abstract methods)
+  private static boolean isObjectMethod(java.lang.reflect.Method method) {
+    try {
+      Object.class.getMethod(method.getName(), method.getParameterTypes());
+      return true;
+    } catch (NoSuchMethodException e) {
+      return false;
+    }
   }
 
   String generateConstructorCall(

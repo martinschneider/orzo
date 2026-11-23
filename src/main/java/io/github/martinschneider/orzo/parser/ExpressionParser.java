@@ -462,7 +462,22 @@ public class ExpressionParser implements ProdParser<Expression> {
     while (true) {
       Token curr = tokens.curr();
       Token next = tokens.peekNext();
-      if (curr.eq(sym(DOT)) && next instanceof Identifier) {
+      if (curr.eq(sym(DOT)) && next.eq(op(LESS))) {
+        // explicit type arguments of a call, e.g. "Foo.<String>bar()" (ignored)
+        int idx = tokens.idx();
+        tokens.next();
+        int errorCount = ctx.errors.errors.size();
+        if (ctx.typeArgsParser.parse(tokens) == null
+            || ctx.errors.errors.size() > errorCount
+            || !(tokens.curr() instanceof Identifier)
+            || !tokens.peekNext().eq(sym(LPAREN))) {
+          tokens.setIdx(idx);
+          return node;
+        }
+        String name = ((Identifier) tokens.curr()).id();
+        tokens.next();
+        node = new CallNode(node, name, parseArguments(tokens));
+      } else if (curr.eq(sym(DOT)) && next instanceof Identifier) {
         tokens.next();
         tokens.next();
         String name = ((Identifier) next).id();

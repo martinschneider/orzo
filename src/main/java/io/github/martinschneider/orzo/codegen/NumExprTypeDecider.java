@@ -140,7 +140,11 @@ public class NumExprTypeDecider {
         for (Expression exp : methodCall.params) {
           argTypes.add(new NumExprTypeDecider(ctx).getType(classIdMap, exp));
         }
-        Method method = ctx.methodCallGen.findMatchingMethod(methodCall.name.toString(), argTypes);
+        String name = methodCall.name.toString();
+        if (name.startsWith("this.") && name.indexOf('.', 5) < 0) {
+          name = name.substring(5); // (see MethodCallGenerator)
+        }
+        Method method = ctx.methodCallGen.findMatchingMethod(name, argTypes);
         String methodType = (method != null) ? method.type : null;
         String genericType = null;
         if (method == null && methodCall.name.contains(".")) {

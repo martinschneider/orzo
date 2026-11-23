@@ -422,8 +422,23 @@ public class TypeUtils {
     }
     if (indexedClazzes != clazzes || indexedSize != clazzes.size()) {
       clazzByName = new java.util.HashMap<>();
+      Map<String, Clazz> bySimpleName = new java.util.HashMap<>();
+      java.util.Set<String> ambiguous = new java.util.HashSet<>();
       for (Clazz clazz : clazzes) {
         clazzByName.putIfAbsent(clazz.fqn(), clazz);
+        if (bySimpleName.putIfAbsent(clazz.name, clazz) != null) {
+          ambiguous.add(clazz.name);
+        }
+      }
+      // also by the canonical name of a nested class (e.g. "Outer.Inner") and by a unique simple
+      // name (e.g. a supertype named before the nested classes were known)
+      for (Clazz clazz : clazzes) {
+        clazzByName.putIfAbsent(clazz.fqn().replace('$', '.'), clazz);
+      }
+      for (Map.Entry<String, Clazz> entry : bySimpleName.entrySet()) {
+        if (!ambiguous.contains(entry.getKey())) {
+          clazzByName.putIfAbsent(entry.getKey(), entry.getValue());
+        }
       }
       indexedClazzes = clazzes;
       indexedSize = clazzes.size();
@@ -441,25 +456,50 @@ public class TypeUtils {
     }
     switch (type) {
       case STRING:
-        return List.of("Ljava/lang/String;", "Ljava/lang/Object;", "java.lang.Object", "Object");
+        return List.of(
+            "Ljava/lang/String;",
+            "java.lang.CharSequence",
+            COMPARABLE,
+            "Ljava/lang/Object;",
+            "java.lang.Object",
+            "Object");
       case INT:
         return List.of(
-            INT, LONG, DOUBLE, "java.lang.Integer", NUMBER, "java.lang.Object", "Object");
+            INT,
+            LONG,
+            DOUBLE,
+            "java.lang.Integer",
+            NUMBER,
+            COMPARABLE,
+            "java.lang.Object",
+            "Object");
       case BYTE:
         return List.of(
-            BYTE, SHORT, INT, LONG, "java.lang.Byte", NUMBER, "java.lang.Object", "Object");
+            BYTE,
+            SHORT,
+            INT,
+            LONG,
+            "java.lang.Byte",
+            NUMBER,
+            COMPARABLE,
+            "java.lang.Object",
+            "Object");
       case SHORT:
-        return List.of(SHORT, INT, LONG, "java.lang.Short", NUMBER, "java.lang.Object", "Object");
+        return List.of(
+            SHORT, INT, LONG, "java.lang.Short", NUMBER, COMPARABLE, "java.lang.Object", "Object");
       case LONG:
-        return List.of(LONG, "java.lang.Long", NUMBER, "java.lang.Object", "Object");
+        return List.of(LONG, "java.lang.Long", NUMBER, COMPARABLE, "java.lang.Object", "Object");
       case DOUBLE:
-        return List.of(DOUBLE, "java.lang.Double", NUMBER, "java.lang.Object", "Object");
+        return List.of(
+            DOUBLE, "java.lang.Double", NUMBER, COMPARABLE, "java.lang.Object", "Object");
       case FLOAT:
-        return List.of(FLOAT, DOUBLE, "java.lang.Float", NUMBER, "java.lang.Object", "Object");
+        return List.of(
+            FLOAT, DOUBLE, "java.lang.Float", NUMBER, COMPARABLE, "java.lang.Object", "Object");
       case CHAR:
-        return List.of(CHAR, INT, LONG, "java.lang.Character", "java.lang.Object", "Object");
+        return List.of(
+            CHAR, INT, LONG, "java.lang.Character", COMPARABLE, "java.lang.Object", "Object");
       case BOOLEAN:
-        return List.of(BOOLEAN, "java.lang.Boolean", "java.lang.Object", "Object");
+        return List.of(BOOLEAN, "java.lang.Boolean", COMPARABLE, "java.lang.Object", "Object");
     }
     // Reference types are assignable to java.lang.Object for method lookup purposes.
     if (type != null && !type.isEmpty()) {
@@ -509,6 +549,9 @@ public class TypeUtils {
   }
 
   /** The primitive type of a wrapper class, e.g. "int" for "java.lang.Integer" (else null). */
+  // (with boxing, e.g. for "<T extends Comparable<T>> T max(T a, T b)")
+  private static final String COMPARABLE = "java.lang.Comparable";
+
   public static String unboxedType(String type) {
     return (type == null) ? null : UNBOXED.get(type.replace('/', '.'));
   }
