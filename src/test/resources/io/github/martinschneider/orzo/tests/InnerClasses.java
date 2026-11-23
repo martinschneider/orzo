@@ -15,6 +15,8 @@ public class InnerClasses {
 
   class Counter {
     int step;
+    // (an initializer using the enclosing instance)
+    String label = name + "!";
 
     Counter(int step) {
       this.step = step;
@@ -60,7 +62,7 @@ public class InnerClasses {
     new Counter().tick();
     counter.twin().tick();
     System.out.println(count + " " + log);
-    System.out.println(counter.hello());
+    System.out.println(counter.hello() + " " + counter.label);
     System.out.println(counter.detail().describe());
     System.out.println(counter.detail().qualified());
   }

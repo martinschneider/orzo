@@ -1,4 +1,4 @@
 8 [tick 3, tick 5, tick 8]
-hello counter from outer
+hello counter from outer outer!
 outer 2 8
 outer 2 hello x from outer

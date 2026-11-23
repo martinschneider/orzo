@@ -454,6 +454,13 @@ public class ClassParser implements ProdParser<Clazz> {
     field.isField = true;
     inner.fields.add(new ParallelDeclaration(new ArrayList<>(List.of(field))));
     Lexer lexer = new Lexer();
+    // (set first, before the field initializers run, see MemberProcessor)
+    List<Statement> inits = new ArrayList<>();
+    inits.add(
+        ctx.stmtParser.parse(
+            lexer.getTokens("this." + OUTER_INSTANCE + " = " + OUTER_INSTANCE + ";")));
+    inits.addAll(inner.instanceInits);
+    inner.instanceInits = inits;
     for (Method method : inner.methods) {
       if (!(method instanceof Constructor)) {
         continue;
@@ -461,21 +468,14 @@ public class ClassParser implements ProdParser<Clazz> {
       List<Argument> args = new ArrayList<>(method.args);
       args.add(0, new Argument(outer.fqn(), id(OUTER_INSTANCE)));
       method.args = args;
-      boolean startsWithCall = !method.body.isEmpty() && method.body.get(0) instanceof MethodCall;
-      String call = startsWithCall ? ((MethodCall) method.body.get(0)).name : "";
-      if (call.equals("this")) {
+      if (!method.body.isEmpty()
+          && method.body.get(0) instanceof MethodCall
+          && ((MethodCall) method.body.get(0)).name.equals("this")) {
         // (the other constructor sets it)
         MethodCall thisCall = (MethodCall) method.body.get(0);
         List<Expression> params = new ArrayList<>(thisCall.params);
         params.add(0, ctx.exprParser.parse(lexer.getTokens(OUTER_INSTANCE)));
         thisCall.params = params;
-      } else {
-        List<Statement> body = new ArrayList<>(method.body);
-        body.add(
-            call.equals("super") ? 1 : 0,
-            ctx.stmtParser.parse(
-                lexer.getTokens("this." + OUTER_INSTANCE + " = " + OUTER_INSTANCE + ";")));
-        method.body = body;
       }
     }
   }
