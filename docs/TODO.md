@@ -4,7 +4,7 @@ Prioritized for three goals (see the metrics in README.md):
 
 1. Smaller class files (1.0x javac)
 2. Pass all jtreg tests (27% of the positive, 68% of the negative tests)
-3. Faster compilation (5.2x javac)
+3. Faster compilation (2.6x javac)
 
 Within each goal, the items are ordered by expected impact.
 
@@ -37,9 +37,9 @@ Failures of the last run of `compliance/jtreg.sh`, by cause (number of tests):
 
 A profile (JFR) of Orzo compiling its own sources:
 
-1. **Method lookup** (52% of the samples): `MethodCallGenerator.findBestMatch()` and `findVarargsMethod()` iterate over all methods of all classes for every call. Index `ctx.methodMap` by name.
-2. **Stack map frames** (26%): `StackMapTableBuilder.computeExtendedCutForSlot()` (the definite assignment analysis per slot and branch target). Use one data-flow pass.
-3. **Type decisions** (15%): `NumExprTypeDecider` types the same expressions repeatedly (see REVIEW.md, recommendation 1: attribution).
+1. **Stack map frames** (61% of the samples): `StackMapTableBuilder.computeExtendedCutForSlot()` (the definite assignment analysis per slot and branch target). Use one data-flow pass.
+2. **Per-class set-up** (about 10%): `MethodProcessor.getMethodMap()` collects the methods of all classes again for every class.
+3. **Type decisions**: `NumExprTypeDecider` types the same expressions repeatedly (see REVIEW.md, recommendation 1: attribution).
 
 ## Other known issues
 

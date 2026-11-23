@@ -21,6 +21,7 @@ import io.github.martinschneider.orzo.parser.productions.Method;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +40,9 @@ public class CGContext {
   public int syntheticClassCounter;
   public ConstantPool constPool;
   public Map<String, Method> methodMap;
+  // the methods of methodMap by their (possibly qualified) name, e.g. "foo" or "Clazz.foo"
+  private Map<String, List<Method>> methodsByName;
+  private Map<String, Method> indexedMethodMap;
   public Map<String, FieldProcessor.StaticField> staticFieldMap;
   public StatementDelegator delegator;
   public AssignmentGenerator assignGen;
@@ -115,6 +119,20 @@ public class CGContext {
     delegator.ctx = this;
     exprGen.ctx = this;
     delegator.init();
+  }
+
+  /** The methods of methodMap with the given name, e.g. "foo" or "Clazz.foo" (in map order). */
+  public List<Method> methods(String name) {
+    if (methodsByName == null || indexedMethodMap != methodMap) {
+      methodsByName = new HashMap<>();
+      for (Map.Entry<String, Method> entry : methodMap.entrySet()) {
+        String key = entry.getKey();
+        String methodName = key.substring(0, key.indexOf('('));
+        methodsByName.computeIfAbsent(methodName, k -> new ArrayList<>()).add(entry.getValue());
+      }
+      indexedMethodMap = methodMap;
+    }
+    return methodsByName.getOrDefault(name, Collections.emptyList());
   }
 
   // Registers a new class to be generated once the current class-list loop reaches it — used for

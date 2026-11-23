@@ -1249,11 +1249,8 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     }
     Method best = null;
     int bestScore = Integer.MAX_VALUE;
-    for (java.util.Map.Entry<String, Method> entry : ctx.methodMap.entrySet()) {
-      Method candidate = entry.getValue();
-      if (!entry.getKey().startsWith(keyPrefix + "(")
-          || candidate.args.size() != types.size()
-          || (filter != null && !filter.test(candidate))) {
+    for (Method candidate : ctx.methods(keyPrefix)) {
+      if (candidate.args.size() != types.size() || (filter != null && !filter.test(candidate))) {
         continue;
       }
       int score = 0;
@@ -1283,11 +1280,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
    * that matches a call with its trailing arguments unpacked, e.g. sum(1, 2, 3) for sum(int...).
    */
   public Method findVarargsMethod(String methodName, List<String> types) {
-    for (java.util.Map.Entry<String, Method> entry : ctx.methodMap.entrySet()) {
-      Method candidate = entry.getValue();
+    for (Method candidate : ctx.methods(methodName)) {
       int paramCount = candidate.args.size();
-      if (!entry.getKey().startsWith(methodName + "(")
-          || paramCount == 0
+      if (paramCount == 0
           || !candidate.args.get(paramCount - 1).varargs
           || types.size() < paramCount - 1) {
         continue;
