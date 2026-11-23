@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -251,6 +252,20 @@ public class CompileErrorTest {
 
   // Compiles the given files (name -> source, in name order), asserts that it fails without
   // writing class files and returns the errors
+  @Test
+  public void unterminatedTypeArguments() throws IOException {
+    // (the parser used to scan for the ">" forever)
+    List<String> errors =
+        assertTimeoutPreemptively(
+            java.time.Duration.ofSeconds(20),
+            () ->
+                compile(
+                    Map.of(
+                        "U.java",
+                        "public class U {\n  java.util.List<String x;\n  java.util.List<Long\n")));
+    assertEquals("U.java:2:26: error: expected '>' but found ';'", errors.get(0));
+  }
+
   @Test
   public void integerDivisionInFloatingPointContext() throws IOException {
     List<String> warnings =

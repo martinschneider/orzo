@@ -1,15 +1,22 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.EXTENDS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.QUESTION;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.eof;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
@@ -26,6 +33,7 @@ import java.util.Map;
  * fully-qualified type names, e.g. {@code <java.lang.String,java.util.List<a.b.Statement>>}.
  */
 public class TypeArgsParser {
+  private static final String LOG_NAME = "parse type arguments";
   private static final String OBJECT = "java.lang.Object";
   private static final Map<String, String> PRIMITIVE_ARRAY_CODES =
       Map.of(
@@ -48,7 +56,18 @@ public class TypeArgsParser {
     int depth = 1;
     while (depth > 0) {
       Token curr = tokens.next();
-      if (curr.eq(op(LESS))) {
+      if (curr.eq(eof())
+          || curr.eq(sym(SEMICOLON))
+          || curr.eq(sym(LBRACE))
+          || curr.eq(sym(RBRACE))
+          || curr.eq(sym(LPAREN))
+          || curr.eq(sym(RPAREN))
+          || curr.eq(op(ASSIGN))) {
+        // (e.g. "List<String x;": it used to scan for the ">" forever at the end of the input)
+        ctx.errors.missingExpected(
+            LOG_NAME, op(GREATER), tokens, new RuntimeException().getStackTrace());
+        return null;
+      } else if (curr.eq(op(LESS))) {
         depth++;
         str.append('<');
       } else if (curr.eq(op(GREATER))) {

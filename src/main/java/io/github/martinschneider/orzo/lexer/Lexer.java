@@ -183,14 +183,52 @@ public class Lexer {
     }
   }
 
+  // An annotation, e.g. "@Override" or "@SuppressWarnings("unchecked")": skipped (annotations are
+  // ignored), except for "@interface" (an annotation type is compiled like an interface).
   private void scanAnnotation() throws IOException {
-    if ((character == '@')) {
-      // we do not support annotation -> ignore
-      int c;
-      do {
-        c = inputReader.read();
-      } while (c != 10 && c != 13 && c != -1);
+    if (character != '@') {
+      return;
+    }
+    int c = inputReader.read();
+    while (c == ' ' || c == '\t') {
+      c = inputReader.read();
+    }
+    StringBuilder name = new StringBuilder();
+    while (c != -1 && (Character.isJavaIdentifierPart((char) c) || c == '.')) {
+      name.append((char) c);
+      c = inputReader.read();
+    }
+    if (name.toString().equals("interface")) {
       inputReader.unread(c);
+      tokenList.add(keyword(Keywords.INTERFACE));
+      return;
+    }
+    // (the arguments may follow on the next line)
+    while (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+      c = inputReader.read();
+    }
+    if (c != '(') {
+      inputReader.unread(c);
+      return;
+    }
+    int depth = 1;
+    while (depth > 0 && c != -1) {
+      c = inputReader.read();
+      if (c == '(') {
+        depth++;
+      } else if (c == ')') {
+        depth--;
+      } else if (c == '"' || c == '\'') {
+        // a String or char literal (which may contain parentheses)
+        int quote = c;
+        c = inputReader.read();
+        while (c != quote && c != -1 && c != '\n') {
+          if (c == '\\') {
+            inputReader.read();
+          }
+          c = inputReader.read();
+        }
+      }
     }
   }
 

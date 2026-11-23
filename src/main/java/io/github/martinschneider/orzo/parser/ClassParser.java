@@ -110,7 +110,17 @@ public class ClassParser implements ProdParser<Clazz> {
     if (tokens.curr().eq(op(LESS))) {
       tokens.next();
       while (!tokens.curr().eq(op(GREATER)) && !tokens.curr().eq(op(RSHIFT))) {
-        if (tokens.curr() instanceof Identifier) {
+        if (!(tokens.curr() instanceof Identifier)) {
+          // e.g. an annotation, "class C<@A T>" (it used to loop forever here)
+          ctx.errors.addError(
+              LOG_NAME,
+              "expected a type parameter but found " + tokens.curr().display(),
+              new RuntimeException().getStackTrace());
+          while (!endsTypeParameters(tokens.curr())) {
+            tokens.next();
+          }
+          break;
+        } else {
           String typeVarName = tokens.curr().toString();
           String erasure = "java.lang.Object";
           tokens.next();
@@ -119,8 +129,7 @@ public class ClassParser implements ProdParser<Clazz> {
             // Collect bound type (until , or > or &)
             StringBuilder bound = new StringBuilder();
             while (!tokens.curr().eq(sym(COMMA))
-                && !tokens.curr().eq(op(GREATER))
-                && !tokens.curr().eq(op(RSHIFT))
+                && !endsTypeParameters(tokens.curr())
                 && !tokens.curr().eq(op(BITWISE_AND))) {
               if (bound.length() > 0 && tokens.curr().toString().equals(".")) {
                 bound.append(".");
@@ -140,12 +149,14 @@ public class ClassParser implements ProdParser<Clazz> {
           tokens.next();
         } else if (tokens.curr().eq(op(BITWISE_AND))) {
           // Skip additional bounds (e.g. T extends A & B) - use first bound only
-          while (!tokens.curr().eq(sym(COMMA)) && !tokens.curr().eq(op(GREATER))) {
+          while (!tokens.curr().eq(sym(COMMA)) && !endsTypeParameters(tokens.curr())) {
             tokens.next();
           }
         }
       }
-      tokens.next(); // consume >
+      if (tokens.curr().eq(op(GREATER)) || tokens.curr().eq(op(RSHIFT))) {
+        tokens.next(); // consume >
+      }
     }
     parseInterfaces(tokens, interfaces, packageDeclaration);
     baseClass = parseBaseClass(tokens, isEnum, packageDeclaration);
@@ -466,6 +477,14 @@ public class ClassParser implements ProdParser<Clazz> {
       return pDecl;
     }
     return null;
+  }
+
+  // the end of the type parameters of a class, e.g. ">" (or the end of the input)
+  private static boolean endsTypeParameters(Token token) {
+    return token.eq(op(GREATER))
+        || token.eq(op(RSHIFT))
+        || token.eq(sym(LBRACE))
+        || token.eq(Token.eof());
   }
 
   List<Import> parseImports(TokenList tokens) {

@@ -78,10 +78,13 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 
 Besides, self-compilation, we keep track of a few other metrics for each build.
 
+Java compliance is the share of the self-contained javac tests of the [OpenJDK](https://github.com/openjdk/jdk) test suite (`test/langtools/tools/javac`, run by [jtreg](https://github.com/openjdk/jtreg)) that Orzo passes: a valid test program must compile (and run), an invalid one must be rejected. Only the tests that javac passes count. It is measured separately by `compliance/jtreg.sh`.
+
 <!-- metrics:start -->
 | Metric | Value |
 |--------|-------|
 | Self-compilation (share of source lines compiled by Orzo) | 100.0% |
-| Compile time (compiling Orzo's sources) | 4.7x javac (22.4 s vs. 4.8 s) |
-| Class size (Orzo's class files) | 4.3x javac (4010.9 KiB vs. 933.7 KiB) |
+| Compile time (compiling Orzo's sources) | 4.4x javac (25.2 s vs. 5.7 s) |
+| Class size (Orzo's class files) | 4.3x javac (4028.6 KiB vs. 935.3 KiB) |
+| Java compliance (OpenJDK javac tests, see compliance/jtreg.sh) | 47.4% (827 of 1746 tests: 237 of 883 valid programs, 590 of 863 invalid ones rejected) |
 <!-- metrics:end -->

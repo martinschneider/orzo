@@ -313,6 +313,7 @@ public class OrzoTest {
         args(list("tests/ConcatComparison")),
         args(list("tests/FloorOperator")),
         args(list("tests/UnboxedArrayElement")),
+        args(list("tests/InlineAnnotations")),
         args(list("tests/SuperMethodCall")),
         args(list("tests/UnboxedOperands")),
         args(list("tests/TypeVariables")),

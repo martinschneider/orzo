@@ -1,0 +1,37 @@
+#!/bin/bash
+# A javac-compatible wrapper around Orzo, installed as bin/javac of the JDK image that jtreg uses
+# to compile the tests (-compilejdk, see jtreg.sh). It translates the javac options Orzo
+# understands, puts -classpath entries on Orzo's own classpath (Orzo resolves classes by
+# reflection) and ignores options that only affect javac's output or diagnostics.
+home=$(cd "$(dirname "$0")/.." && pwd)
+files=()
+out=.
+cp=""
+expand() { # @argfiles
+  for a in "$@"; do
+    if [[ $a == @* ]]; then xargs -n1 < "${a:1}"; else printf '%s\n' "$a"; fi
+  done
+}
+mapfile -t args < <(expand "$@")
+i=0
+while [ $i -lt ${#args[@]} ]; do
+  a=${args[$i]}
+  case "$a" in
+    -d) i=$((i + 1)); out=${args[$i]} ;;
+    -cp | -classpath | --class-path) i=$((i + 1)); cp=${args[$i]} ;;
+    -sourcepath | --source-path | -encoding | --add-modules | --add-exports | --add-reads | \
+      -processorpath | --module-path | -p | --patch-module | -h | -s | --release | -source | -target)
+      i=$((i + 1)) ;;
+    -version) echo "javac (orzo)"; exit 0 ;;
+    -J* | -X* | -g* | -nowarn | -implicit:* | -proc:* | -parameters | -Werror | -deprecation | -verbose) ;;
+    *.java) files+=("$a") ;;
+    -*) echo "orzo javac wrapper: unsupported option $a" >&2; exit 2 ;;
+  esac
+  i=$((i + 1))
+done
+if [ ${#files[@]} -eq 0 ]; then
+  echo "orzo javac wrapper: no source files" >&2
+  exit 2
+fi
+mkdir -p "$out"
+exec "$home/bin/java" -cp "$home/orzo.jar${cp:+:$cp}" io.github.martinschneider.orzo.Orzo "${files[@]}" -d "$out"
