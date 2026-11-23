@@ -12,6 +12,7 @@ public class Clazz {
   public static final String JAVA_LANG_ENUM = "java.lang.Enum";
   public boolean isInterface;
   public boolean isEnum;
+  public boolean isAbstract;
   public List<Method> methods;
   public List<Import> imports;
   public List<ParallelDeclaration> fields;

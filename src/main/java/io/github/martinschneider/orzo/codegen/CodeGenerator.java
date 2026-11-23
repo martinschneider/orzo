@@ -65,6 +65,8 @@ public class CodeGenerator {
                   + AccessFlag.ACC_FINAL.val
                   + AccessFlag.ACC_SUPER.val
                   + AccessFlag.ACC_ENUM.val);
+    } else if (clazz.isAbstract) {
+      modifiers += AccessFlag.ACC_ABSTRACT.val;
     }
     out.write(modifiers);
   }

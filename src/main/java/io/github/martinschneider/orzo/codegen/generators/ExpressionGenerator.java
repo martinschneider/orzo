@@ -1831,6 +1831,14 @@ public class ExpressionGenerator {
           new RuntimeException().getStackTrace());
       return className;
     }
+    Clazz source = TypeUtils.sourceClazz(jvmClassName.replace('/', '.'), ctx.allClazzes);
+    if (source != null && (source.isAbstract || source.isInterface)) {
+      ctx.errors.addError(
+          "constructor call generator",
+          className + " is abstract; cannot be instantiated",
+          new RuntimeException().getStackTrace());
+      return className;
+    }
 
     // Add class to constant pool before generating NEW instruction
     ctx.constPool.addClass(jvmClassName);

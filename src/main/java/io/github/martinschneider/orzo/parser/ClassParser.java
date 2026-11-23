@@ -65,7 +65,8 @@ public class ClassParser implements ProdParser<Clazz> {
     ctx.importMap.clear();
     ctx.onDemandImports.clear();
     List<Import> imports = parseImports(tokens);
-    Scope scope = ModifiersParser.scope(ctx.modifiersParser.parse(tokens));
+    List<AccessFlag> modifiers = ctx.modifiersParser.parse(tokens);
+    Scope scope = ModifiersParser.scope(modifiers);
     boolean isInterface = false;
     boolean isEnum = false;
     if (tokens.curr() instanceof Keyword) {
@@ -75,8 +76,13 @@ public class ClassParser implements ProdParser<Clazz> {
         isEnum = true;
       }
       if (tokens.curr().eq(keyword(CLASS)) || isInterface || isEnum) {
-        return parseClassDeclaration(
-            tokens, packageDeclaration, imports, scope, isInterface, isEnum, null);
+        Clazz clazz =
+            parseClassDeclaration(
+                tokens, packageDeclaration, imports, scope, isInterface, isEnum, null);
+        if (clazz != null) {
+          clazz.isAbstract = modifiers.contains(AccessFlag.ACC_ABSTRACT);
+        }
+        return clazz;
       }
     }
     return null;
@@ -422,6 +428,7 @@ public class ClassParser implements ProdParser<Clazz> {
     ctx.classTypeParams.clear();
     ctx.classTypeParams.putAll(outerTypeParams);
     if (nested != null) {
+      nested.isAbstract = modifiers.contains(AccessFlag.ACC_ABSTRACT);
       ctx.nestedClazzes.add(nested);
     }
     return true;

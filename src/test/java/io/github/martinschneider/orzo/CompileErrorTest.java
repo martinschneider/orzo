@@ -253,6 +253,18 @@ public class CompileErrorTest {
   // Compiles the given files (name -> source, in name order), asserts that it fails without
   // writing class files and returns the errors
   @Test
+  public void instantiateAbstractClass() throws IOException {
+    List<String> errors =
+        compile(
+            Map.of(
+                "A.java",
+                "public abstract class A {\n  abstract int f();\n}\n",
+                "B.java",
+                "public class B {\n  Object o() {\n    return new A();\n  }\n}\n"));
+    assertEquals(List.of("B.java:3:5: error: A is abstract; cannot be instantiated"), errors);
+  }
+
+  @Test
   public void unterminatedTypeArguments() throws IOException {
     // (the parser used to scan for the ">" forever)
     List<String> errors =

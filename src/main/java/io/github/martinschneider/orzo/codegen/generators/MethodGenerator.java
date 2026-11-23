@@ -14,6 +14,7 @@ import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.StackMapTableBuilder;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.Break;
 import io.github.martinschneider.orzo.parser.productions.CatchBlock;
@@ -56,7 +57,7 @@ public class MethodGenerator {
     ctx.exceptionTable.clear();
     ctx.exceptionHandlerType.clear();
     String signature = GenericTypes.methodSignature(method, ctx.allClazzes, ctx.clazz);
-    if (!clazz.isInterface) {
+    if (!clazz.isInterface && !method.accFlags.contains(AccessFlag.ACC_ABSTRACT)) {
       out.write((short) (signature != null ? 2 : 1)); // attribute size
       writeSignature(out, signature);
       out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "Code"));

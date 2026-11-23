@@ -192,7 +192,8 @@ public class MethodParser implements ProdParser<Method> {
       return null;
     }
     body = null;
-    if (!isInterface) {
+    // (an abstract method, like an interface method, has no body)
+    if (!isInterface && !accFlags.contains(AccessFlag.ACC_ABSTRACT)) {
       tokens.next();
       skipThrowsClause(tokens);
       if (!tokens.curr().eq(sym(LBRACE))) {

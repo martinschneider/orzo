@@ -20,10 +20,6 @@ About as large as javac's now (1.0x). Still:
 Failures of the last run of `compliance/jtreg.sh`, by cause (number of tests):
 
 1. **Parser gaps** (cheap):
-   - instance initializer blocks (`{ ... }` in a class body) (88)
-   - type arguments, qualified names and several types in `extends`/`implements` (`extends A<Integer>`, `extends java.util.List`, `extends A, B`) (about 100)
-   - modifiers in any order (`static public`) (about 60)
-   - `abstract` classes and methods (31)
    - generic methods (`<T> void m()`) (23)
    - interface `default` and `static` methods (13)
    - several `for` updates (`i++, j--`)

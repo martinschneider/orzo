@@ -26,7 +26,7 @@ Orzo compiles a large subset of Java, enough to compile itself (see [Metrics](#m
 Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md) for details):
 
 - multi-dimensional arrays and C-style array declarations of locals and fields (`int a[]`)
-- `abstract` classes and methods, `default` and `static` interface methods
+- `default` and `static` interface methods
 - inner (non-static), local and anonymous classes, records
 - generics are only partially supported: the type arguments of your own generic classes aren't tracked (e.g. `box.get().length()` on a `Box<String>`)
 - `var`, `instanceof` patterns (`o instanceof String s`), casts to array types (`(int[]) obj`)
@@ -111,8 +111,8 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 | Metric | Value |
 |--------|-------|
 | Self-compilation | 100.0% |
-| [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 27.0% (238 of 883) |
-| jtreg negative tests (must be rejected) | 68.4% (590 of 863) |
-| Compile time (Orzo's sources) | 2.0x javac (8.4 s vs. 4.1 s) |
-| Class size (Orzo's class files) | 1.0x javac (959.1 KiB vs. 949.8 KiB) |
+| [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 31.5% (278 of 883) |
+| jtreg negative tests (must be rejected) | 62.6% (540 of 863) |
+| Compile time (Orzo's sources) | 1.9x javac (8.2 s vs. 4.2 s) |
+| Class size (Orzo's class files) | 1.0x javac (960.9 KiB vs. 951.2 KiB) |
 <!-- metrics:end -->

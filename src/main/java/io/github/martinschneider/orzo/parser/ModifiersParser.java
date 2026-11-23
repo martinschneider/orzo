@@ -1,6 +1,8 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CLASS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INTERFACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 
@@ -19,6 +21,7 @@ public class ModifiersParser {
   // modifiers that aren't keywords of the lexer (they are identifiers)
   private static final Map<String, AccessFlag> NAMED =
       Map.of(
+          "abstract", AccessFlag.ACC_ABSTRACT,
           "synchronized", AccessFlag.ACC_SYNCHRONIZED,
           "transient", AccessFlag.ACC_TRANSIENT,
           "volatile", AccessFlag.ACC_VOLATILE,
@@ -63,6 +66,9 @@ public class ModifiersParser {
         || next instanceof io.github.martinschneider.orzo.lexer.tokens.Type
         || next instanceof Scope
         || next.eq(keyword(STATIC))
-        || next.eq(keyword(FINAL));
+        || next.eq(keyword(FINAL))
+        || next.eq(keyword(CLASS))
+        || next.eq(keyword(INTERFACE))
+        || next.eq(Token.op(io.github.martinschneider.orzo.lexer.tokens.Operators.LESS));
   }
 }
