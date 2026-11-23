@@ -7,6 +7,7 @@ import static java.util.Collections.emptyList;
 import static java.util.List.of;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
+import io.github.martinschneider.orzo.codegen.EnclosingInstances;
 import io.github.martinschneider.orzo.codegen.FieldProcessor;
 import io.github.martinschneider.orzo.codegen.GenericTypes;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
@@ -98,6 +99,40 @@ public class MemberProcessor {
                   null);
           inheritedVar.genericType = inheritedField.genericType;
           ctx.classIdMap.variables.putInheritedField(fieldName, inheritedVar);
+        }
+      }
+    }
+    // the instance fields of the enclosing instances of an inner class (the innermost first)
+    List<Clazz> outers = FieldProcessor.enclosingClasses(ctx.clazz, ctx.allClazzes);
+    for (int i = outers.size() - 1; i >= 0; i--) {
+      Clazz outer = outers.get(i);
+      List<Integer> path = EnclosingInstances.path(ctx, ctx.clazz, outer);
+      if (path == null) {
+        break;
+      }
+      for (ParallelDeclaration pDecl : outer.fields) {
+        for (Declaration decl : pDecl.declarations) {
+          String name = decl.name.id().toString();
+          if (decl.accFlags.contains(AccessFlag.ACC_STATIC)
+              || ctx.classIdMap.variables.fieldMap.containsKey(name)) {
+            continue;
+          }
+          VariableInfo field =
+              new VariableInfo(
+                  name,
+                  (decl.arrDim > 0) ? REF : decl.type,
+                  (decl.arrDim > 0) ? decl.type : null,
+                  decl.accFlags,
+                  true,
+                  ctx.constPool.indexOf(
+                      CONSTANT_FIELDREF,
+                      outer.fqn('/'),
+                      name,
+                      TypeUtils.descr(decl.type, decl.arrDim)),
+                  null);
+          field.outerPath = path;
+          field.genericType = decl.genericType;
+          ctx.classIdMap.variables.putInheritedField(name, field);
         }
       }
     }

@@ -130,7 +130,7 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
               if (!thisLoaded
                   && varInfo.isField
                   && !varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
-                ctx.loadGen.loadReference(out, varInfo.objectRef);
+                ctx.loadGen.loadOwner(out, varInfo);
               }
               ctx.exprGen.eval(out, type, right);
               // (eval() converts primitives; boxing and reference casts, e.g. of

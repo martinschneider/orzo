@@ -257,12 +257,20 @@ public class LoadGenerator {
     }
   }
 
+  /** The object an instance field belongs to: "this" or an enclosing instance. */
+  public void loadOwner(DynamicByteArray out, VariableInfo varInfo) {
+    loadReference(out, varInfo.objectRef);
+    for (int field : varInfo.outerPath) {
+      getField(out, (short) field);
+    }
+  }
+
   public void load(DynamicByteArray out, VariableInfo varInfo) {
     if (varInfo.isField) {
       if (varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
         getStatic(out, varInfo.idx);
       } else {
-        ctx.loadGen.loadReference(out, varInfo.objectRef);
+        loadOwner(out, varInfo);
         getField(out, varInfo.idx);
       }
       ctx.opStack.push(varInfo.type); // like a local variable load below

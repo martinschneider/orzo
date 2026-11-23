@@ -18,6 +18,7 @@ import static io.github.martinschneider.orzo.util.FactoryHelper.defaultConstr;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
+import io.github.martinschneider.orzo.codegen.EnclosingInstances;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.GenericTypes;
 import io.github.martinschneider.orzo.codegen.HasOutput;
@@ -29,6 +30,7 @@ import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
+import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -303,6 +305,17 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         }
       } else {
         ctx.loadGen.loadReference(out, (short) 0); // push 'this' for invokevirtual
+        // (or the enclosing instance of an inner class whose method it is)
+        Clazz owner = TypeUtils.sourceClazz(method.fqClassName, ctx.allClazzes);
+        List<Integer> path =
+            (owner != null && owner != ctx.clazz)
+                ? EnclosingInstances.path(ctx, ctx.clazz, owner)
+                : null;
+        if (path != null) {
+          for (int field : path) {
+            ctx.loadGen.getField(out, (short) field);
+          }
+        }
         ctx.opStack.push(REF);
       }
     }

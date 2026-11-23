@@ -133,7 +133,7 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
     if (decl.isField) {
       VariableInfo varInfo = ctx.classIdMap.variables.get(decl.name);
       if (varInfo != null && !varInfo.accFlags.contains(AccessFlag.ACC_STATIC)) {
-        ctx.loadGen.loadReference(out, varInfo.objectRef);
+        ctx.loadGen.loadOwner(out, varInfo);
       }
     }
     ctx.exprGen.generateArray(out, classIdMap, arrInit);

@@ -301,6 +301,20 @@ public class CompileErrorTest {
   }
 
   @Test
+  public void innerClassInStaticContext() throws IOException {
+    List<String> errors =
+        compile(
+            Map.of(
+                "O.java",
+                "public class O {\n  class I {}\n  static Object f() {\n    return new I();\n  }\n}\n"));
+    assertEquals(
+        List.of(
+            "O.java:4:5: error: non-static variable this cannot be referenced from a static"
+                + " context"),
+        errors);
+  }
+
+  @Test
   public void instantiateAbstractClass() throws IOException {
     List<String> errors =
         compile(

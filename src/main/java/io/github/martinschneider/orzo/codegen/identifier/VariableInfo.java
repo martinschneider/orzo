@@ -2,6 +2,7 @@ package io.github.martinschneider.orzo.codegen.identifier;
 
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Expression;
+import java.util.ArrayList;
 import java.util.List;
 
 public class VariableInfo implements IdentifierInfo {
@@ -14,6 +15,9 @@ public class VariableInfo implements IdentifierInfo {
   public short idx;
   // the slot of the object a field is loaded from (0: this)
   public short objectRef = 0;
+  // a field of an enclosing instance: the fields ("this$0") to load it from (see
+  // EnclosingInstances)
+  public List<Integer> outerPath = new ArrayList<>();
   public Expression val;
   // full generic type, e.g. "java.util.List<a.b.Foo>" (null if not generic or unknown)
   public String genericType;

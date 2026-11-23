@@ -28,6 +28,7 @@ import static io.github.martinschneider.orzo.util.FactoryHelper.defaultConstr;
 import static io.github.martinschneider.orzo.util.FactoryHelper.enumMethods;
 import static java.util.Collections.emptyList;
 
+import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.EOF;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
@@ -36,14 +37,17 @@ import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
+import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.ClassMember;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
+import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.InstanceInitializer;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.ArrayList;
@@ -52,6 +56,9 @@ import java.util.List;
 import java.util.Map;
 
 public class ClassParser implements ProdParser<Clazz> {
+  /** The field of an inner class that holds its enclosing instance. */
+  public static final String OUTER_INSTANCE = "this$0";
+
   public ParserContext ctx;
   private static final String LOG_NAME = "parse class";
 
@@ -417,13 +424,8 @@ public class ClassParser implements ProdParser<Clazz> {
       tokens.setIdx(idx);
       return false;
     }
-    if (!isStatic && !isInterface && !isEnum) {
-      ctx.errors.addError(
-          LOG_NAME,
-          "inner (non-static nested) classes are not supported",
-          new RuntimeException().getStackTrace());
-    }
     Clazz outer = ctx.currClazz;
+    boolean isInner = !isStatic && !isInterface && !isEnum && !outer.isInterface;
     Map<String, String> outerTypeParams = new HashMap<>(ctx.classTypeParams);
     String outerName = (outer.outerName != null ? outer.outerName + "$" : "") + outer.name;
     Clazz nested =
@@ -432,12 +434,50 @@ public class ClassParser implements ProdParser<Clazz> {
     ctx.currClazz = outer;
     ctx.classTypeParams.clear();
     ctx.classTypeParams.putAll(outerTypeParams);
+    if (nested != null && isInner) {
+      makeInner(nested, outer);
+    }
     if (nested != null) {
       nested.modifiers = modifiers;
       nested.isAbstract = modifiers.contains(AccessFlag.ACC_ABSTRACT);
       ctx.nestedClazzes.add(nested);
     }
     return true;
+  }
+
+  // An inner class holds its enclosing instance in the field "this$0", passed to its constructors
+  // as their first argument (like javac does).
+  private void makeInner(Clazz inner, Clazz outer) {
+    inner.isInner = true;
+    Declaration field =
+        new Declaration(List.of(AccessFlag.ACC_FINAL), outer.fqn(), id(OUTER_INSTANCE), null);
+    field.isField = true;
+    inner.fields.add(new ParallelDeclaration(new ArrayList<>(List.of(field))));
+    Lexer lexer = new Lexer();
+    for (Method method : inner.methods) {
+      if (!(method instanceof Constructor)) {
+        continue;
+      }
+      List<Argument> args = new ArrayList<>(method.args);
+      args.add(0, new Argument(outer.fqn(), id(OUTER_INSTANCE)));
+      method.args = args;
+      boolean startsWithCall = !method.body.isEmpty() && method.body.get(0) instanceof MethodCall;
+      String call = startsWithCall ? ((MethodCall) method.body.get(0)).name : "";
+      if (call.equals("this")) {
+        // (the other constructor sets it)
+        MethodCall thisCall = (MethodCall) method.body.get(0);
+        List<Expression> params = new ArrayList<>(thisCall.params);
+        params.add(0, ctx.exprParser.parse(lexer.getTokens(OUTER_INSTANCE)));
+        thisCall.params = params;
+      } else {
+        List<Statement> body = new ArrayList<>(method.body);
+        body.add(
+            call.equals("super") ? 1 : 0,
+            ctx.stmtParser.parse(
+                lexer.getTokens("this." + OUTER_INSTANCE + " = " + OUTER_INSTANCE + ";")));
+        method.body = body;
+      }
+    }
   }
 
   List<ClassMember> parseClassBody(TokenList tokens, boolean isInterface) {

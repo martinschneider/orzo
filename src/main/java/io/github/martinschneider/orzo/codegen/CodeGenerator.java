@@ -174,6 +174,7 @@ public class CodeGenerator {
     List<String[]> bridges = clazz.isInterface ? new ArrayList<>() : collectBridges(clazz);
     out.write((short) (methods.size() + bridges.size()));
     for (Method method : methods) {
+      ctx.method = method;
       ctx.classIdMap.variables.localMap.clear();
       ctx.classIdMap.variables.allLocalsBySlot.clear();
       ctx.classIdMap.variables.localSize = 0;

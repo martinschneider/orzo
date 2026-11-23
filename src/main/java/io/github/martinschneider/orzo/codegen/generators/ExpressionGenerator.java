@@ -85,6 +85,7 @@ import static java.util.Collections.emptyList;
 import io.github.martinschneider.orzo.codegen.ByteUtils;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
+import io.github.martinschneider.orzo.codegen.EnclosingInstances;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.ExpressionTypes;
 import io.github.martinschneider.orzo.codegen.FieldProcessor;
@@ -503,7 +504,7 @@ public class ExpressionGenerator {
           // the RHS is evaluated) so PUTFIELD sees [this, rhsValue] in the right order later.
           VariableInfo skipTarget = skipLoad.get(i);
           if (skipTarget.isField && !skipTarget.accFlags.contains(AccessFlag.ACC_STATIC)) {
-            ctx.loadGen.loadReference(out, (short) 0);
+            ctx.loadGen.loadOwner(out, skipTarget);
             ctx.opStack.push(REF);
           }
         } else {
@@ -1852,6 +1853,14 @@ public class ExpressionGenerator {
 
     // Phase 1: collect argument types without emitting bytecode
     List<String> argTypes = new ArrayList<>();
+    // (an inner class's constructors take its enclosing instance first)
+    boolean inner = source != null && source.isInner;
+    if (inner && !pushEnclosingInstance(out, source)) {
+      return className;
+    }
+    if (inner) {
+      argTypes.add(EnclosingInstances.outerOf(source, ctx.allClazzes).fqn());
+    }
     for (Expression arg : constructorCall.args) {
       argTypes.add(new NumExprTypeDecider(ctx).getType(classIdMap, arg));
     }
@@ -1877,12 +1886,48 @@ public class ExpressionGenerator {
     }
 
     // Phase 2: eval each argument and box if needed
-    ctx.methodCallGen.pushArgs(out, constructorCall.args, argTypes, constructor);
+    if (inner) {
+      // (the enclosing instance is on the stack already)
+      Method withoutOuter =
+          new Method(
+              constructor.fqClassName,
+              constructor.accFlags,
+              constructor.type,
+              constructor.name,
+              constructor.args.subList(1, constructor.args.size()),
+              constructor.body);
+      ctx.methodCallGen.pushArgs(
+          out, constructorCall.args, argTypes.subList(1, argTypes.size()), withoutOuter);
+    } else {
+      ctx.methodCallGen.pushArgs(out, constructorCall.args, argTypes, constructor);
+    }
 
     // Generate INVOKESPECIAL <init>
     ctx.invokeGen.invokeSpecial(out, constructor);
 
     return className; // Return the object type
+  }
+
+  // Pushes the enclosing instance for a new instance of an inner class, e.g. "this" for "new
+  // Inner()"
+  // in a method of its enclosing class (an error in a static method)
+  private boolean pushEnclosingInstance(DynamicByteArray out, Clazz inner) {
+    Clazz outer = EnclosingInstances.outerOf(inner, ctx.allClazzes);
+    List<Integer> path = EnclosingInstances.path(ctx, ctx.clazz, outer);
+    if (path == null
+        || (ctx.method != null && ctx.method.accFlags.contains(AccessFlag.ACC_STATIC))) {
+      ctx.errors.addError(
+          "constructor call generator",
+          "non-static variable this cannot be referenced from a static context",
+          new RuntimeException().getStackTrace());
+      return false;
+    }
+    ctx.loadGen.loadReference(out, (short) 0);
+    for (int field : path) {
+      ctx.loadGen.getField(out, (short) field);
+    }
+    ctx.opStack.push(REF);
+    return true;
   }
 
   Method findMatchingConstructor(String className, List<String> argTypes) {

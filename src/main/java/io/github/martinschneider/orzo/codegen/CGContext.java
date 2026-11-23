@@ -40,6 +40,8 @@ public class CGContext {
   public int syntheticClassCounter;
   public ConstantPool constPool;
   public Map<String, Method> methodMap;
+  // the method whose code is being generated
+  public Method method;
   // the methods of methodMap by their (possibly qualified) name, e.g. "foo" or "Clazz.foo"
   private Map<String, List<Method>> methodsByName;
   private Map<String, Method> indexedMethodMap;

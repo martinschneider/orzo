@@ -14,6 +14,8 @@ public class Clazz {
   public boolean isInterface;
   public boolean isEnum;
   public boolean isAbstract;
+  // a non-static member class (see ClassParser.makeInner())
+  public boolean isInner;
   // whether it has type parameters
   public boolean isGeneric;
   public List<AccessFlag> modifiers = new ArrayList<>();

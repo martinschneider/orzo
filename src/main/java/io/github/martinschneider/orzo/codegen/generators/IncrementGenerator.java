@@ -110,7 +110,7 @@ public class IncrementGenerator implements StatementGenerator<IncrementStatement
         ctx.loadGen.load(out, varInfo); // load old value for post-increment return
       }
       if (!isStatic) {
-        ctx.loadGen.loadReference(out, varInfo.objectRef); // objectref for PUTFIELD
+        ctx.loadGen.loadOwner(out, varInfo); // objectref for PUTFIELD
       }
       ctx.loadGen.load(out, varInfo); // load current field value
       ctx.pushGen.push(out, INT, 1);

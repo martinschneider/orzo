@@ -6,6 +6,7 @@ import static java.util.List.of;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
+import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.Import;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.lang.reflect.Modifier;
@@ -32,6 +33,17 @@ public class MethodProcessor {
           methodMap.put(getKey(method), method);
         }
       }
+    }
+    // the instance methods of the enclosing instances of an inner class (the innermost first)
+    List<Clazz> outers = FieldProcessor.enclosingClasses(currentClazz, clazzes);
+    Clazz inner = currentClazz;
+    for (int i = outers.size() - 1; i >= 0 && inner.isInner; i--) {
+      for (Method method : outers.get(i).methods) {
+        if (!method.accFlags.contains(AccessFlag.ACC_STATIC) && !(method instanceof Constructor)) {
+          methodMap.putIfAbsent(getKey(method), method);
+        }
+      }
+      inner = outers.get(i);
     }
     // last: the class's own methods shadow same-named ones registered under a bare name above
     for (Method method : currentClazz.methods) {
