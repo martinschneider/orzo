@@ -44,7 +44,7 @@ fi
 python3 "$dir/select.py" "$tests" "$work/tests.txt"
 
 # 2. a JDK image whose javac is Orzo
-(cd "$orzo" && mvn -q package -DskipTests)
+(cd "$orzo" && mvn -q clean package -DskipTests)
 fake=$work/orzo-jdk
 rm -rf "$fake"
 mkdir -p "$fake/bin"

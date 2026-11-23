@@ -99,6 +99,9 @@
             <includes>
               <include>**/*.md</include>
             </includes>
+            <excludes>
+              <exclude>compliance/work/**</exclude>
+            </excludes>
             <flexmark/>
           </markdown>
         </configuration>

@@ -33,26 +33,29 @@ fi
 
 # measured separately by compliance/jtreg.sh (it takes a while)
 compliance_file="compliance/result.properties"
-compliance_row="n/a"
-if [ -f "$compliance_file" ]; then
-  compliance_row=$(awk -F= '
-    { v[$1] = $2 }
-    END {
-      printf("%.1f%% (%d of %d tests: %d of %d valid programs, %d of %d invalid ones rejected)",
-        100 * v["passed"] / v["total"], v["passed"], v["total"], v["positive_passed"],
-        v["positive_total"], v["negative_passed"], v["negative_total"])
-    }' "$compliance_file")
-fi
+compliance() { # "47.4% (827 of 1746)" for positive or negative
+  if [ -f "$compliance_file" ]; then
+    awk -F= -v kind="$1" '
+      { v[$1] = $2 }
+      END {
+        printf("%.1f%% (%d of %d)", 100 * v[kind "_passed"] / v[kind "_total"], v[kind "_passed"],
+          v[kind "_total"])
+      }' "$compliance_file"
+  else
+    echo "n/a"
+  fi
+}
 
 table=$(
   cat <<EOF
 <!-- metrics:start -->
 | Metric | Value |
 |--------|-------|
-| Self-compilation (share of source lines compiled by Orzo) | $progress_row |
-| Compile time (compiling Orzo's sources) | $time_row |
+| Self-compilation | $progress_row |
+| [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | $(compliance positive) |
+| jtreg negative tests (must be rejected) | $(compliance negative) |
+| Compile time (Orzo's sources) | $time_row |
 | Class size (Orzo's class files) | $size_row |
-| Java compliance (OpenJDK javac tests, see compliance/jtreg.sh) | $compliance_row |
 <!-- metrics:end -->
 EOF
 )
