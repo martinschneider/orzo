@@ -1,7 +1,5 @@
 package io.github.martinschneider.orzo.parser.productions;
 
-import static java.lang.Math.toIntExact;
-
 import io.github.martinschneider.orzo.codegen.constants.ConstantPool;
 import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
@@ -45,7 +43,8 @@ public class Expression {
       Token token = tokens.get(0);
       if (token instanceof IntLiteral) {
         if (ConstantPool.INT_CONSTANT_TYPES.contains(type)) {
-          return toIntExact(((IntLiteral) token).intValue());
+          // (e.g. 0xFFFFFFFF is -1)
+          return (int) ((IntLiteral) token).intValue();
         } else if ("long".equals(type)) {
           return ((IntLiteral) token).intValue();
         }

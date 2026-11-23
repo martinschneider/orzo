@@ -581,10 +581,12 @@ public class ExpressionGenerator {
         exprTypeStack.push(BOOLEAN);
       } else if (token instanceof FPLiteral) {
         BigDecimal bigDec = (BigDecimal) ((FPLiteral) token).val;
-        // Use DOUBLE (natural type) instead of STRING to ensure bytecode is generated.
-        ctx.pushGen.push(out, STRING.equals(type) ? DOUBLE : type, bigDec);
+        // (a double, or a float, for a reference type, e.g. String or Double)
+        String pushType =
+            TypeUtils.isPrimitive(type) ? type : ("java.lang.Float".equals(type) ? FLOAT : DOUBLE);
+        ctx.pushGen.push(out, pushType, bigDec);
         val = bigDec;
-        exprTypeStack.push(FLOAT.equals(type) ? FLOAT : DOUBLE);
+        exprTypeStack.push(FLOAT.equals(pushType) ? FLOAT : DOUBLE);
       } else if (token instanceof Str) {
         ctx.loadGen.ldc(out, CONSTANT_STRING, ((Str) token).strValue());
         // Do NOT set type = STRING here; let exprTypeStack track the actual element type.
@@ -985,12 +987,14 @@ public class ExpressionGenerator {
             prevLoadedRef = isNonPrimitive(varType);
           } else {
             // look ahead for ++ or -- operators because in that case we do not push the
-            // value to the stack
-            if (i + 1 == tokens.size()
-                || (!tokens.get(i + 1).eq(op(POST_DECREMENT))
-                    && !tokens.get(i + 1).eq(op(POST_INCREMENT))
-                    && !tokens.get(i + 1).eq(op(PRE_INCREMENT))
-                    && !tokens.get(i + 1).eq(op(PRE_DECREMENT)))) {
+            // value to the stack (the increment does, of the variable's type)
+            boolean incremented =
+                i + 1 < tokens.size()
+                    && (tokens.get(i + 1).eq(op(POST_DECREMENT))
+                        || tokens.get(i + 1).eq(op(POST_INCREMENT))
+                        || tokens.get(i + 1).eq(op(PRE_INCREMENT))
+                        || tokens.get(i + 1).eq(op(PRE_DECREMENT)));
+            if (!incremented) {
               if (curr.arrSel != null) {
                 // array
                 ctx.loadGen.loadValueFromArray(out, classIdMap, curr.arrSel.exprs, varInfo);
@@ -1011,7 +1015,9 @@ public class ExpressionGenerator {
                     && !DOUBLE.equals(type)
                     && !FLOAT.equals(type)
                     && (i + 1 < tokens.size());
-            if (!type.equals(varType)
+            if (incremented) {
+              returnType = varType;
+            } else if (!type.equals(varType)
                 && arrType == null
                 && !deferNarrowing
                 && !(isNonPrimitive(varType) && isNonPrimitive(type))
@@ -1563,8 +1569,17 @@ public class ExpressionGenerator {
   }
 
   // "Owner::method" as a lambda with the given number of parameters: "(a, b) -> Owner.method(a, b)"
-  // for a static method, "(a, b) -> a.method(b)" for an instance method of Owner
+  // for a static method, "(a, b) -> a.method(b)" for an instance method of Owner, "(a, b) ->
+  // owner.method(a, b)" for a local variable owner (null after an error)
   private LambdaExpr methodRefAsLambda(LambdaExpr ref, int arity) {
+    if (ref.methodRefOwner.equals("this") || ref.methodRefOwner.equals("super")) {
+      ctx.errors.addError(
+          "lambda expression",
+          ref.methodRefOwner + "::" + ref.methodRefName + " is not supported yet",
+          new RuntimeException().getStackTrace());
+      return null;
+    }
+    boolean bound = ctx.classIdMap.variables.localMap.containsKey(ref.methodRefOwner);
     boolean isStatic = true;
     try {
       Class<?> owner = Class.forName(resolveJvmClassName(ref.methodRefOwner).replace('/', '.'));
@@ -1585,6 +1600,14 @@ public class ExpressionGenerator {
         }
       }
     }
+    if (!bound && !isStatic && arity == 0) {
+      ctx.errors.addError(
+          "lambda expression",
+          "invalid method reference " + ref.methodRefOwner + "::" + ref.methodRefName,
+          new RuntimeException().getStackTrace());
+      return null;
+    }
+    isStatic = isStatic || bound;
     List<String> params = new ArrayList<>();
     List<Expression> args = new ArrayList<>();
     for (int i = 0; i < arity; i++) {
@@ -1632,6 +1655,9 @@ public class ExpressionGenerator {
     }
     if (lambda.methodRefName != null) {
       lambda = methodRefAsLambda(lambda, sam.paramTypes.size());
+      if (lambda == null) {
+        return targetType;
+      }
     }
     if (sam.paramTypes.size() != lambda.params.size()) {
       ctx.errors.addError(

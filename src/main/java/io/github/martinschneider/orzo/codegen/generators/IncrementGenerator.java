@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IINC;
 import static io.github.martinschneider.orzo.codegen.OpCodes.WIDE;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.ARITHMETIC_OPS;
@@ -14,6 +15,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
@@ -76,6 +78,27 @@ public class IncrementGenerator implements StatementGenerator<IncrementStatement
     }
     if (incrOp.equals(PRE_DECREMENT) || incrOp.equals(POST_DECREMENT)) {
       op = MINUS;
+    }
+    // a boxed local variable, e.g. "Integer i; i++": unboxed, incremented and boxed again
+    String unboxed = TypeUtils.unboxedType(varInfo.type);
+    if (unboxed != null && !varInfo.isField && ARITHMETIC_OPS.get(op).containsKey(unboxed)) {
+      // (the old or the new boxed value is left, unless evalOnly)
+      ctx.loadGen.load(out, varInfo);
+      if (!pre && !evalOnly) {
+        out.write(DUP);
+        ctx.opStack.push(varInfo.type);
+      }
+      ctx.basicGen.convert1(out, varInfo.type, unboxed);
+      ctx.pushGen.push(out, unboxed, 1);
+      out.write(ARITHMETIC_OPS.get(op).get(unboxed));
+      ctx.opStack.pop();
+      ctx.basicGen.convert1(out, unboxed, varInfo.type);
+      if (pre && !evalOnly) {
+        out.write(DUP);
+        ctx.opStack.push(varInfo.type);
+      }
+      ctx.storeGen.store(out, varInfo);
+      return out;
     }
     // special handling for integer because there is IINC
     if (varInfo.type.equals(INT)) {

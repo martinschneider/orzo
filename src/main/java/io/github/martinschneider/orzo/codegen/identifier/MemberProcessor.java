@@ -70,9 +70,13 @@ public class MemberProcessor {
           ctx.constPool.addUtf8("Signature");
           ctx.constPool.addUtf8(GenericTypes.toSignature(decl.genericType));
         }
-        if (decl.accFlags.contains(AccessFlag.ACC_FINAL) && decl.val != null) {
+        Object constant =
+            (decl.accFlags.contains(AccessFlag.ACC_FINAL) && decl.val != null)
+                ? decl.val.getConstantValue(decl.type)
+                : null;
+        if (constant != null) {
           ctx.constPool.addUtf8("ConstantValue");
-          ctx.constPool.addByType(decl.type, decl.val.getConstantValue(decl.type));
+          ctx.constPool.addByType(decl.type, constant);
         }
       }
     }

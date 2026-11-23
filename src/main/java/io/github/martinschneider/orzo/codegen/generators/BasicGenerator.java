@@ -144,6 +144,15 @@ public class BasicGenerator {
           && !from.equals("void")
           && !TypeUtils.isPrimitive(to)
           && !to.startsWith("[")) {
+        // (widened first for another wrapper, e.g. a long literal pushed as an int for a Long)
+        String unboxedTo = TypeUtils.unboxedType(to);
+        if (unboxedTo != null && !unboxedTo.equals(from)) {
+          out.write(
+              CAST_OPS_1
+                  .getOrDefault(from, Collections.emptyMap())
+                  .getOrDefault(unboxedTo, new byte[0]));
+          from = unboxedTo;
+        }
         autobox(out, from);
       } else {
         addCastingErrors(from, to);

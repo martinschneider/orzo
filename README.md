@@ -30,7 +30,7 @@ Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md)
 - generics are only partially supported: the type arguments of your own generic classes aren't tracked (e.g. `box.get().length()` on a `Box<String>`)
 - `var`, `instanceof` patterns (`o instanceof String s`), casts to array types (`(int[]) obj`)
 - annotations with arguments (annotations without arguments are ignored)
-- bound and constructor method references (`obj::method`, `Foo::new`)
+- method references `this::m`, `super::m` and `Foo::new`
 - `switch` with `->` cases and switch expressions
 - `assert`, `synchronized`
 - `finally` isn't run when `break` or `continue` leave the `try` block
@@ -112,6 +112,6 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 | Self-compilation | 100.0% |
 | [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 47.9% (423 of 883) |
 | jtreg negative tests (must be rejected) | 52.5% (453 of 863) |
-| Compile time (Orzo's sources) | 1.3x javac (5.5 s vs. 4.2 s) |
-| Class size (Orzo's class files) | 1.0x javac (1030.3 KiB vs. 1017.5 KiB) |
+| Compile time (Orzo's sources) | 1.2x javac (5.7 s vs. 4.6 s) |
+| Class size (Orzo's class files) | 1.0x javac (1033.6 KiB vs. 1019.9 KiB) |
 <!-- metrics:end -->

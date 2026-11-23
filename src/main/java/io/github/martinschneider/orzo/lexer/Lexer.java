@@ -360,6 +360,12 @@ public class Lexer {
           } else {
             inputReader.unread(character);
           }
+          if (buffer.length() > 2
+              && new java.math.BigInteger(buffer.substring(2), 16).bitLength()
+                  > (isLong ? 64 : 32)) {
+            errors.addError(
+                "scan number", "integer number too large", new RuntimeException().getStackTrace());
+          }
           tokenList.add(integer(buffer.toString(), isLong));
           buffer.setLength(0);
           return;
@@ -391,8 +397,23 @@ public class Lexer {
       } else {
         inputReader.unread(character);
       }
+      checkRange(buffer.toString(), isLong);
       tokenList.add(integer(buffer.toString(), isLong));
       buffer.setLength(0);
+    }
+  }
+
+  // A decimal literal must fit into an int (a long), e.g. not 3000000000 (2147483648 only after
+  // "-")
+  private void checkRange(String digits, boolean isLong) {
+    java.math.BigInteger max =
+        java.math.BigInteger.valueOf(isLong ? Long.MAX_VALUE : Integer.MAX_VALUE);
+    java.math.BigInteger value = new java.math.BigInteger(digits);
+    boolean negated =
+        !tokenList.isEmpty() && tokenList.get(tokenList.size() - 1).eq(Token.op(MINUS));
+    if (value.compareTo(negated ? max.add(java.math.BigInteger.ONE) : max) > 0) {
+      errors.addError(
+          "scan number", "integer number too large", new RuntimeException().getStackTrace());
     }
   }
 

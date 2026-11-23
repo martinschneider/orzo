@@ -255,6 +255,18 @@ public class CompileErrorTest {
   private static Stream<Arguments> classErrors() {
     return Stream.of(
         Arguments.of(
+            Map.of("A.java", "class A {\n  int i = 3000000000;\n}\n"),
+            "A.java:2:11: error: integer number too large"),
+        Arguments.of(
+            Map.of("A.java", "class A {\n  long l = 0x1FFFFFFFFFFFFFFFFL;\n}\n"),
+            "A.java:2:12: error: integer number too large"),
+        Arguments.of(
+            Map.of(
+                "A.java",
+                "class A {\n  int m() {\n    return 1;\n  }\n\n"
+                    + "  java.util.function.IntSupplier s() {\n    return this::m;\n  }\n}\n"),
+            "A.java:7:5: error: this::m is not supported yet"),
+        Arguments.of(
             Map.of("B.java", "public class A {}\n"),
             "B.java:1:14: error: class A is public, should be declared in a file named A.java"),
         Arguments.of(
