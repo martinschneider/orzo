@@ -693,10 +693,8 @@ public class Lexer {
         errors.addError(
             "scan string", "missing \" in string", new RuntimeException().getStackTrace());
       } else if (buffer.length() == 0 && peek() == '"') {
-        errors.addError(
-            "scan string", "text blocks are not supported", new RuntimeException().getStackTrace());
-        skipTextBlock();
-        tokenList.add(str("")); // (so that parsing continues without follow-up errors)
+        inputReader.read(); // (the third ")
+        tokenList.add(str(scanTextBlock()));
       } else {
         tokenList.add(str(buffer.toString()));
       }
@@ -704,14 +702,96 @@ public class Lexer {
     buffer.setLength(0);
   }
 
-  // skips the rest of a text block (the opening """ has been read except for its last ")
-  private void skipTextBlock() throws IOException {
-    inputReader.read();
-    int quotes = 0;
+  // The value of a text block (its opening """ has been read): its lines without their incidental
+  // indentation and trailing white space, then its escape sequences translated (JLS 3.10.6)
+  private String scanTextBlock() throws IOException {
+    StringBuilder raw = new StringBuilder();
     int c;
-    while (quotes < 3 && (c = inputReader.read()) != -1) {
+    int quotes = 0;
+    while ((c = inputReader.read()) != -1) {
+      if (c == '\\') {
+        raw.append((char) c);
+        c = inputReader.read();
+        if (c == -1) {
+          break;
+        }
+        raw.append((char) c);
+        quotes = 0;
+        continue;
+      }
+      raw.append((char) c);
       quotes = (c == '"') ? quotes + 1 : 0;
+      if (quotes == 3) {
+        break;
+      }
     }
+    if (quotes < 3) {
+      errors.addError(
+          "scan string", "missing \"\"\" in text block", new RuntimeException().getStackTrace());
+      return "";
+    }
+    String content = raw.substring(0, raw.length() - 3).replace("\r\n", "\n").replace('\r', '\n');
+    int newline = content.indexOf('\n');
+    if (newline < 0 || !content.substring(0, newline).isBlank()) {
+      errors.addError(
+          "scan string",
+          "illegal text block open delimiter sequence, missing line terminator",
+          new RuntimeException().getStackTrace());
+      return "";
+    }
+    String[] lines = content.substring(newline + 1).split("\n", -1);
+    // the smallest indentation of the non-blank lines and of the last line (that of the closing
+    // delimiter, if it is on a line of its own)
+    int indentation = Integer.MAX_VALUE;
+    for (int i = 0; i < lines.length; i++) {
+      if (!lines[i].isBlank() || i == lines.length - 1) {
+        int spaces = 0;
+        while (spaces < lines[i].length() && Character.isWhitespace(lines[i].charAt(spaces))) {
+          spaces++;
+        }
+        indentation = Math.min(indentation, spaces);
+      }
+    }
+    StringBuilder value = new StringBuilder();
+    for (int i = 0; i < lines.length; i++) {
+      String line = lines[i].isBlank() ? "" : lines[i].substring(indentation).stripTrailing();
+      value.append(line);
+      if (i < lines.length - 1) {
+        value.append('\n');
+      }
+    }
+    return unescapeTextBlock(value.toString());
+  }
+
+  // the escape sequences of a text block, also "\<line terminator>" (no line break) and "\s"
+  private String unescapeTextBlock(String text) {
+    StringBuilder value = new StringBuilder();
+    for (int i = 0; i < text.length(); i++) {
+      char c = text.charAt(i);
+      if (c != '\\' || i + 1 >= text.length()) {
+        value.append(c);
+        continue;
+      }
+      char next = text.charAt(++i);
+      if (next == '\n') {
+        continue;
+      } else if (next == 's') {
+        value.append(' ');
+      } else if (next >= '0' && next <= '7') {
+        int end = i;
+        while (end < text.length()
+            && end < i + 3
+            && text.charAt(end) >= '0'
+            && text.charAt(end) <= '7') {
+          end++;
+        }
+        value.append((char) Integer.parseInt(text.substring(i, end), 8));
+        i = end - 1;
+      } else {
+        value.append(unescape(next));
+      }
+    }
+    return value.toString();
   }
 
   // Whether the word just scanned ("repeat" or "unless") starts an Orzo statement, e.g.

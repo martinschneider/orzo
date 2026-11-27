@@ -65,6 +65,7 @@ public class ClassParser implements ProdParser<Clazz> {
 
   @Override
   public Clazz parse(TokenList tokens) {
+    SealedRewriter.rewrite(tokens);
     RecordRewriter.rewrite(tokens);
     String packageDeclaration = parsePackageDeclaration(tokens);
     ctx.importMap.clear();

@@ -354,6 +354,8 @@ public class OrzoTest {
         args(list("tests/MethodReferenceForms")),
         args(list("tests/SwitchExpressionArguments")),
         args(list("tests/Records")),
+        args(list("tests/SealedClasses")),
+        args(list("tests/TextBlocks")),
         args(list("tests/LambdaBlocks")),
         args(list("tests/StaticFieldAssignment")),
         args(list("examples/Calculus")),

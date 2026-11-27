@@ -64,8 +64,9 @@ public class CompileErrorTest {
             "int[][] m = new int[2][3];",
             "N.java:5:5: error: multi-dimensional arrays are not supported"),
         Arguments.of(
-            "String q = \"\"\"\n  a\n  \"\"\";",
-            "N.java:5:16: error: text blocks are not supported"),
+            "String q = \"\"\"a\n  \"\"\";",
+            "N.java:5:16: error: illegal text block open delimiter sequence, missing line"
+                + " terminator"),
         Arguments.of("int x = 2;", "N.java:5:5: error: variable x is already defined"),
         Arguments.of(
             "for (int i = 0; i < 2; i++) { int i = 1; }",
