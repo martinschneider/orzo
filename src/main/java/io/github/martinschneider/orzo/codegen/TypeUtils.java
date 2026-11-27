@@ -65,6 +65,14 @@ public class TypeUtils {
     }
   }
 
+  // "Ljava/lang/String;" → "java.lang.String"; anything else is returned as-is (unlike
+  // jvmDescriptorToTypeName(), a class named like a primitive type's descriptor, e.g. "C", stays)
+  public static String referenceTypeName(String type) {
+    return (type.startsWith("L") && type.endsWith(";"))
+        ? type.substring(1, type.length() - 1).replace('/', '.')
+        : type;
+  }
+
   // "I" → "int", "Ljava/lang/String;" → "java.lang.String"; anything else is returned as-is
   public static String jvmDescriptorToTypeName(String descriptor) {
     switch (descriptor) {

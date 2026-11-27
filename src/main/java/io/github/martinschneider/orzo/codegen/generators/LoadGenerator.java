@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.AALOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ALOAD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ALOAD_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ALOAD_1;
@@ -148,10 +149,17 @@ public class LoadGenerator {
     for (Expression arrIdx : indices) {
       ctx.exprGen.eval(out, INT, arrIdx);
     }
-    out.write(getLoadOpCode(type.replace("[", "")));
+    // the element type: of an array type (a descriptor, e.g. "[I", or "[int"), or the name of an
+    // element type, e.g. a variable's "int" or "C" (a class named like a primitive type's
+    // descriptor)
+    String element =
+        type.startsWith("[")
+            ? TypeUtils.jvmDescriptorToTypeName(type.substring(1))
+            : TypeUtils.referenceTypeName(type);
+    out.write(TypeUtils.isPrimitive(element) ? getLoadOpCode(element) : AALOAD);
     // xALOAD consumes the array reference and the index, leaving the element
     ctx.opStack.pop(indices.size() + 1);
-    ctx.opStack.push(TypeUtils.jvmDescriptorToTypeName(type.replace("[", "")));
+    ctx.opStack.push(element);
     return out;
   }
 

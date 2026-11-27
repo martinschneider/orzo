@@ -192,7 +192,7 @@ public class NumExprTypeDecider {
           if (resolvedClass != null) {
             // a method of a class of this compilation run (by its simple or binary name, see
             // MethodCallGenerator), or loaded by reflection
-            String binary = TypeUtils.jvmDescriptorToTypeName(resolvedClass).replace('/', '.');
+            String binary = TypeUtils.referenceTypeName(resolvedClass).replace('/', '.');
             String simple = binary.substring(binary.lastIndexOf('.') + 1);
             simple = simple.substring(simple.lastIndexOf('$') + 1);
             method = ctx.methodCallGen.findMatchingMethod(simple + "." + simpleName, argTypes);

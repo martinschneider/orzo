@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen.generators;
 
+import static io.github.martinschneider.orzo.codegen.OpCodes.AASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_0;
 import static io.github.martinschneider.orzo.codegen.OpCodes.ASTORE_1;
@@ -154,7 +155,9 @@ public class StoreGenerator {
   }
 
   public HasOutput storeInArray(HasOutput out, String type) {
-    out.write(TypeUtils.getStoreOpCode(type));
+    // (a class named like a primitive type's descriptor, e.g. "C", is a reference type)
+    boolean namedClass = type.length() == 1 && TypeUtils.sourceClazz(type, ctx.allClazzes) != null;
+    out.write(namedClass ? AASTORE : TypeUtils.getStoreOpCode(type));
     return out;
   }
 

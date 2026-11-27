@@ -941,9 +941,11 @@ public class ExpressionGenerator {
         prevLoadedRef = isNonPrimitive(returnType) && curr.arrSel == null;
       } else {
         VariableInfo prevInfo = (prev != null) ? ctx.classIdMap.variables.get(prev) : null;
+        // ("length" of an array, not a field of an element, e.g. "arr[0].v")
         boolean prevWasArray =
-            (prevInfo != null && prevInfo.arrType != null)
-                || (returnType != null && returnType.startsWith("["));
+            "length".equals(curr.val.toString())
+                && ((prevInfo != null && prevInfo.arrType != null && prev.arrSel == null)
+                    || (returnType != null && returnType.startsWith("[")));
         if (prev != null && prevWasArray) {
           ctx.basicGen.arrayLength(out);
           returnType = INT;
@@ -1007,12 +1009,9 @@ public class ExpressionGenerator {
               ctx.opStack.push(fieldType);
               returnType = fieldType;
               if (curr.arrSel != null && fieldType.startsWith("[")) {
-                String elemDescriptor = fieldType.substring(1);
                 ctx.loadGen.loadValueFromArrayOnStack(
-                    out, classIdMap, curr.arrSel.exprs, elemDescriptor);
-                ctx.opStack.pop();
-                String elemType = TypeUtils.jvmDescriptorToTypeName(elemDescriptor);
-                ctx.opStack.push(elemType);
+                    out, classIdMap, curr.arrSel.exprs, fieldType);
+                String elemType = ctx.opStack.type();
                 returnType = elemType;
                 prevLoadedRef = isNonPrimitive(elemType);
               } else {

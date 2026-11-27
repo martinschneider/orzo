@@ -84,7 +84,7 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
       }
       if (receiverVar != null && receiverVar.type != null) {
         // e.g. "Lpkg/Color;" for an enum constant
-        String receiverType = TypeUtils.jvmDescriptorToTypeName(receiverVar.type).replace('/', '.');
+        String receiverType = TypeUtils.referenceTypeName(receiverVar.type).replace('/', '.');
         // Try simple class name prefix (also of a nested class, e.g. "Inner" of "a.Outer$Inner")
         String simpleType = receiverType.substring(receiverType.lastIndexOf('.') + 1);
         simpleType = simpleType.substring(simpleType.lastIndexOf('$') + 1);

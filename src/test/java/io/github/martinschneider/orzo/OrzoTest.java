@@ -387,6 +387,39 @@ public class OrzoTest {
     assertTrue(new File(dir, "Deep.class").exists());
   }
 
+  // classes (of the default package) named like the descriptors of primitive types, e.g. "C" and
+  // "I", and fields of array elements
+  @Test
+  public void testClassesNamedLikeDescriptors(@TempDir File dir) throws Exception {
+    Files.writeString(
+        new File(dir, "C.java").toPath(),
+        "public class C {\n"
+            + "  int v = 1;\n"
+            + "  int[] w = {5};\n"
+            + "  int u() { return v; }\n"
+            + "  public static void main(String[] args) {\n"
+            + "    C c = new C();\n"
+            + "    C[] arr = {c};\n"
+            + "    I[] is = new I[1];\n"
+            + "    is[0] = new I();\n"
+            + "    System.out.print(c.u() + arr[0].v + arr[0].w[0] + is[0].x + arr.length);\n"
+            + "  }\n"
+            + "}\n"
+            + "class I { int x = 2; }\n");
+    Orzo orzo = new Orzo(list(new File(dir, "C.java")), dir.getAbsolutePath(), 0);
+    assertTrue(orzo.compile(), () -> orzo.errors.toString());
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    PrintStream old = System.out;
+    try (java.net.URLClassLoader loader =
+        new java.net.URLClassLoader(new java.net.URL[] {dir.toURI().toURL()}, null)) {
+      System.setOut(new PrintStream(out));
+      loader.loadClass("C").getMethod("main", String[].class).invoke(null, (Object) new String[0]);
+    } finally {
+      System.setOut(old);
+    }
+    assertEquals("10", out.toString());
+  }
+
   @Test
   public void testCompileKeepsClazzesAndOutputsAligned() throws IOException {
     List<File> inputs =
