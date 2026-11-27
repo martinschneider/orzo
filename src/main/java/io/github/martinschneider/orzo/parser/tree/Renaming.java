@@ -52,7 +52,9 @@ public class Renaming {
       return new CastNode(cast.type, apply(cast.operand));
     } else if (node instanceof InstanceOfNode) {
       InstanceOfNode test = (InstanceOfNode) node;
-      return new InstanceOfNode(apply(test.operand), test.type);
+      InstanceOfNode copy = new InstanceOfNode(apply(test.operand), test.type);
+      copy.binding = test.binding;
+      return copy;
     }
     return node; // (a literal, e.g. a nested lambda, or an opaque expression)
   }

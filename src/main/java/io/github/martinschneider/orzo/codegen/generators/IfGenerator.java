@@ -35,8 +35,23 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
     // for another type would break StackMapTableBuilder).
     java.util.Map<String, VariableInfo> localMapSnapshot =
         new java.util.HashMap<>(ctx.classIdMap.variables.localMap);
+    // the pattern variables of the condition of "if (!(o instanceof T v)) return;" (in scope after
+    // the if statement)
+    java.util.Map<String, VariableInfo> patternVars = new java.util.HashMap<>();
     for (int i = 0; i < ifStmt.ifBlks.size(); i++) {
       IfBlock ifBlock = ifStmt.ifBlks.get(i);
+      // (the condition first: its pattern variables are in scope in the body, e.g. "s" in "if (o
+      // instanceof String s) ...", its branch offset is added after the body)
+      DynamicByteArray conditionOut = new DynamicByteArray();
+      if (ifBlock.cond != null) { // null for else blocks
+        ctx.exprGen.eval(conditionOut, null, ifBlock.cond, false, true);
+        for (java.util.Map.Entry<String, VariableInfo> local :
+            ctx.classIdMap.variables.localMap.entrySet()) {
+          if (localMapSnapshot.get(local.getKey()) != local.getValue()) {
+            patternVars.put(local.getKey(), local.getValue());
+          }
+        }
+      }
       int etStart = ctx.exceptionTable.size();
       DynamicByteArray bodyOut = new DynamicByteArray();
       for (Statement innerStmt : ifBlock.body) {
@@ -46,18 +61,19 @@ public class IfGenerator implements StatementGenerator<IfStatement> {
       bodyEtEnds.add(ctx.exceptionTable.size());
       ctx.classIdMap.variables.localMap.clear();
       ctx.classIdMap.variables.localMap.putAll(localMapSnapshot);
-      DynamicByteArray conditionOut = new DynamicByteArray();
-      if (ifBlock.cond != null) { // null for else blocks
+      if (ifBlock.cond != null) {
         boolean bodyReturns = blockAlwaysReturns(ifBlock.body);
         short branchBytes = (short) (3 + bodyOut.getBytes().length);
         if (i != ifStmt.ifBlks.size() - 1 && !bodyReturns) {
           branchBytes += 3;
         }
-        ctx.exprGen.eval(conditionOut, null, ifBlock.cond, false, true);
         conditionOut.write(branchBytes);
       }
       bodyOutputs.add(bodyOut);
       condOutputs.add(conditionOut);
+    }
+    if (ifStmt.ifBlks.size() == 1 && blockAlwaysReturns(ifStmt.ifBlks.get(0).body)) {
+      ctx.classIdMap.variables.localMap.putAll(patternVars);
     }
     int blocks = bodyOutputs.size();
     short offset = (short) (3 + bodyOutputs.get(blocks - 1).size());

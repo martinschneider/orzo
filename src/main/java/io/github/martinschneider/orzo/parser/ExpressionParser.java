@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CLASS;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INSTANCEOF;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.NEW;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
@@ -196,7 +197,21 @@ public class ExpressionParser implements ProdParser<Expression> {
         left = new TernaryNode(left, ifTrue, ifFalse);
       } else if (curr.eq(keyword(INSTANCEOF)) && minPrecedence <= RELATIONAL) {
         tokens.next();
-        left = new InstanceOfNode(left, parseInstanceofType(tokens));
+        boolean pattern = tokens.curr().eq(keyword(FINAL)); // e.g. "o instanceof final String s"
+        if (pattern) {
+          tokens.next();
+        }
+        InstanceOfNode test = new InstanceOfNode(left, parseInstanceofType(tokens));
+        if (tokens.curr() instanceof Identifier && ((Identifier) tokens.curr()).next == null) {
+          test.binding = ((Identifier) tokens.curr()).id(); // a type pattern
+          tokens.next();
+        } else if (pattern) {
+          ctx.errors.addError(
+              LOG_NAME,
+              "expected an identifier but found " + tokens.curr().display(),
+              new RuntimeException().getStackTrace());
+        }
+        left = test;
       } else if (isBinaryOperator(curr) && ((Operator) curr).precedence() >= minPrecedence) {
         Operator operator = (Operator) curr;
         int precedence = operator.precedence();
@@ -526,7 +541,12 @@ public class ExpressionParser implements ProdParser<Expression> {
   private String parseInstanceofType(TokenList tokens) {
     Token curr = tokens.curr();
     if (curr instanceof Identifier) {
-      return qualifiedName(tokens);
+      String name = qualifiedName(tokens);
+      int end = typeArgumentsEnd(tokens, tokens.idx());
+      if (end > 0) {
+        tokens.setIdx(end); // (erased, e.g. "List<?>")
+      }
+      return name;
     } else if (curr instanceof Type) {
       tokens.next();
       return ((Type) curr).name;

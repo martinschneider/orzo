@@ -30,7 +30,7 @@ Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md)
 - multi-dimensional arrays and C-style array declarations of locals and fields (`int a[]`)
 - records
 - generics are only partially supported: the type arguments of your own generic classes aren't tracked (e.g. `box.get().length()` on a `Box<String>`)
-- `instanceof` patterns (`o instanceof String s`)
+- record patterns (`o instanceof Point(int x, int y)`)
 - annotations with arguments (annotations without arguments are ignored)
 - method references `super::m`
 - `switch` with `->` cases and switch expressions
@@ -85,6 +85,6 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 | Self-compilation | 100.0% |
 | [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 57.9% (511 of 883) |
 | jtreg negative tests (must be rejected) | 52.8% (456 of 863) |
-| Compile time (Orzo's sources) | 1.4x javac (16.6 s vs. 12.3 s) |
-| Class size (Orzo's class files) | 1.0x javac (1140.4 KiB vs. 1106.0 KiB) |
+| Compile time (Orzo's sources) | 1.4x javac (16.3 s vs. 11.7 s) |
+| Class size (Orzo's class files) | 1.0x javac (1144.3 KiB vs. 1109.9 KiB) |
 <!-- metrics:end -->

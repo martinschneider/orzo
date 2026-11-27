@@ -101,11 +101,14 @@ public class PostfixLowering {
     } else if (node instanceof TernaryNode) {
       TernaryNode ternary = (TernaryNode) node;
       Expression condition = new Expression(tokens(ternary.condition));
+      condition.tree = ternary.condition; // (e.g. for a type pattern)
       out.add(new TernaryExpression(condition, lower(ternary.ifTrue), lower(ternary.ifFalse)));
     } else if (node instanceof InstanceOfNode) {
       InstanceOfNode test = (InstanceOfNode) node;
       add(test.operand, out);
-      out.add(new InstanceofToken(test.type));
+      InstanceofToken token = new InstanceofToken(test.type);
+      token.binding = test.binding;
+      out.add(token);
     } else if (node instanceof CastNode) {
       CastNode cast = (CastNode) node;
       if (TypeUtils.isPrimitive(cast.type)) {

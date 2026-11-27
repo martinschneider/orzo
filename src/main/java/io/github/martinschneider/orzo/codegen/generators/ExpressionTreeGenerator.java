@@ -10,8 +10,11 @@ import static io.github.martinschneider.orzo.codegen.ExpressionTypes.isShift;
 import static io.github.martinschneider.orzo.codegen.ExpressionTypes.isString;
 import static io.github.martinschneider.orzo.codegen.ExpressionTypes.literalType;
 import static io.github.martinschneider.orzo.codegen.ExpressionTypes.promote;
+import static io.github.martinschneider.orzo.codegen.OpCodes.ACONST_NULL;
+import static io.github.martinschneider.orzo.codegen.OpCodes.CHECKCAST;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DDIV;
 import static io.github.martinschneider.orzo.codegen.OpCodes.DNEG;
+import static io.github.martinschneider.orzo.codegen.OpCodes.DUP;
 import static io.github.martinschneider.orzo.codegen.OpCodes.FNEG;
 import static io.github.martinschneider.orzo.codegen.OpCodes.GOTO;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IAND;
@@ -38,6 +41,7 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.IOR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.IXOR;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LNEG;
 import static io.github.martinschneider.orzo.codegen.OpCodes.LXOR;
+import static io.github.martinschneider.orzo.codegen.OpCodes.POP;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_CLASS;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_STRING;
 import static io.github.martinschneider.orzo.codegen.generators.OperatorMaps.ARITHMETIC_OPS;
@@ -68,12 +72,14 @@ import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.LONG;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.REF;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
+import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.ExpressionResult;
 import io.github.martinschneider.orzo.codegen.ExpressionTypes;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
+import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.BoolLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Chr;
 import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
@@ -203,12 +209,60 @@ public class ExpressionTreeGenerator {
       return cast.type;
     }
     InstanceOfNode test = (InstanceOfNode) node;
+    if (test.binding != null) {
+      return pattern(out, test);
+    }
     value(out, test.operand, null);
     String jvmType = ctx.exprGen.resolveJvmClassName(test.type);
     ctx.constPool.addClass(jvmType);
     out.write(INSTANCEOF);
     out.write(ctx.constPool.indexOf(CONSTANT_CLASS, jvmType));
     replaceTop(BOOLEAN);
+    return BOOLEAN;
+  }
+
+  // "o instanceof T v": v = (T) o if the test succeeds (v is a new local variable, initialized
+  // with null first, so that it has the same type on all paths)
+  private String pattern(DynamicByteArray out, InstanceOfNode test) {
+    String jvmType = ctx.exprGen.resolveJvmClassName(test.type);
+    String type = "java/lang/String".equals(jvmType) ? STRING : jvmType.replace('/', '.');
+    VariableInfo var =
+        new VariableInfo(
+            test.binding,
+            type,
+            emptyList(),
+            false,
+            (short) ctx.classIdMap.variables.localSize,
+            null);
+    ctx.classIdMap.variables.putLocal(Token.id(test.binding), var);
+    out.write(ACONST_NULL);
+    ctx.opStack.push(type);
+    ctx.storeGen.store(out, var);
+    value(out, test.operand, null);
+    out.write(DUP);
+    ctx.opStack.push(REF);
+    ctx.constPool.addClass(jvmType);
+    out.write(INSTANCEOF);
+    out.write(ctx.constPool.indexOf(CONSTANT_CLASS, jvmType));
+    replaceTop(BOOLEAN);
+    int branch = out.size();
+    out.write(IFEQ);
+    out.write((short) 0); // (the offset, see below)
+    ctx.opStack.pop();
+    out.write(CHECKCAST);
+    out.write(ctx.constPool.indexOf(CONSTANT_CLASS, jvmType));
+    replaceTop(type);
+    ctx.storeGen.store(out, var);
+    out.write(ICONST_1);
+    int jump = out.size();
+    out.write(GOTO);
+    out.write((short) 0);
+    int failed = out.size();
+    out.write(POP);
+    out.write(ICONST_0);
+    out.patch(branch + 1, shortToByteArray((short) (failed - branch)));
+    out.patch(jump + 1, shortToByteArray((short) (out.size() - jump)));
+    ctx.opStack.push(BOOLEAN);
     return BOOLEAN;
   }
 

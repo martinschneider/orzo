@@ -2,6 +2,8 @@ package io.github.martinschneider.orzo.lexer.tokens;
 
 public class InstanceofToken extends Token {
   public String targetType;
+  // the pattern variable, e.g. "s" in "o instanceof String s" (null for none)
+  public String binding;
 
   public InstanceofToken(String targetType) {
     super("instanceof " + targetType);

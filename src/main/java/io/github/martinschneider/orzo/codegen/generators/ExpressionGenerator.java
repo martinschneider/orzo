@@ -614,6 +614,12 @@ public class ExpressionGenerator {
         exprTypeStack.push(CHAR);
       } else if (token instanceof InstanceofToken) {
         InstanceofToken instof = (InstanceofToken) token;
+        if (instof.binding != null) {
+          ctx.errors.addError(
+              "expression generator",
+              "type patterns are not supported here",
+              new RuntimeException().getStackTrace());
+        }
         String jvmType = resolveJvmClassName(instof.targetType);
         ctx.constPool.addClass(jvmType);
         out.write(INSTANCEOF);
