@@ -77,6 +77,20 @@ public class DeclarationParserTest {
                     decl(emptyList(), id("a"), INT, expr("1")),
                     decl(emptyList(), id("b"), INT, expr("2")),
                     decl(emptyList(), id("c"), INT, expr("3"))))),
+        // Java's multiple declarators, where only the last name of a group has a value
+        args(
+            "int a, b = 1;",
+            pDecl(
+                list(
+                    decl(emptyList(), id("a"), INT, null),
+                    decl(emptyList(), id("b"), INT, expr("1"))))),
+        args(
+            "int a, b = 1, c = 2;",
+            pDecl(
+                list(
+                    decl(emptyList(), id("a"), INT, null),
+                    decl(emptyList(), id("b"), INT, expr("1")),
+                    decl(emptyList(), id("c"), INT, expr("2"))))),
         args(
             "double a,b,c=1,2;",
             pDecl(

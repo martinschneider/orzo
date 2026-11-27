@@ -52,6 +52,11 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
   }
 
   // ", name" followed by "=", "," or ";"
+  // e.g. ", c = 2" in "int a, b = 1, c = 2;" (not a value of a parallel declaration)
+  private static boolean startsInitializedDeclarator(TokenList tokens) {
+    return tokens.get(tokens.idx() + 2).eq(op(ASSIGN));
+  }
+
   private static boolean startsDeclarator(TokenList tokens) {
     if (!tokens.curr().eq(sym(COMMA)) || !(tokens.peekNext() instanceof Identifier)) {
       return false;
@@ -154,16 +159,20 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
         }
       }
       Expression value = null;
+      int grouped = names.size();
+      int groupValues = 0; // (the number of values of these names)
       if (tokens.curr().eq(op(ASSIGN))) {
         tokens.next();
         // (parallel declarations: values separated by commas, e.g. "int a, b = 1, 2;")
         while ((value = parseExpOrArrInit(tokens, type)) != null) {
           values.add(value);
+          groupValues = values.size();
           arrDims.add(type.arr);
           if (!tokens.curr().eq(sym(COMMA))) {
             break;
           }
-          if (values.size() >= names.size() && startsDeclarator(tokens)) {
+          if ((values.size() >= names.size() || startsInitializedDeclarator(tokens))
+              && startsDeclarator(tokens)) {
             // further declarators, e.g. "j = 10" in "int i = 0, j = 10;"
             while (startsDeclarator(tokens)) {
               tokens.next();
@@ -180,6 +189,12 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
             break;
           }
           tokens.next();
+        }
+        if (grouped > 1 && groupValues == 1) {
+          // not a parallel declaration but Java's "int a, b = 1;": the value is b's
+          for (int i = 1; i < grouped; i++) {
+            values.add(0, null);
+          }
         }
         if (values.isEmpty() && !names.isEmpty()) {
           ctx.errors.addError(

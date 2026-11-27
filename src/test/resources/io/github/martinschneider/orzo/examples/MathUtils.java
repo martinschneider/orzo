@@ -19,7 +19,7 @@ public class MathUtils {
 
   // Calculate pi using Viete's series
   public static double pi2(int n) {
-    double pi, d = 1;
+    double pi, d = 1, 1;
     for(int i = n; i > 1; i--) {
       d = 2;
       for(int j = 1; j < i; j++){

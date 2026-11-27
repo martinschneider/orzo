@@ -13,7 +13,7 @@ Orzo compiles a large subset of Java, enough to compile itself (see [Metrics](#m
 ## Orzo-only features ✨
 
 - [parallel assignment](https://en.wikipedia.org/wiki/Assignment_(computer_science)#Parallel_assignment), e.g. `a, b = b, a + b;`
-- parallel declarations, e.g. `int a, b, c = 1, 2, 3;`
+- parallel declarations, e.g. `int a, b, c = 1, 2, 3;` (a single value is the last name's, like in Java: `int a, b = 1;` only initialises `b`)
 - `**` power operator, e.g. `int b = a ** 5` (binds tighter than `*`, left-associative)
 - `√` square root, e.g. `double x = √n + √(n + 1)`
 - `⌊x⌋` floor, e.g. `long n = ⌊x⌋`
@@ -85,6 +85,6 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 | Self-compilation | 100.0% |
 | [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 56.4% (498 of 883) |
 | jtreg negative tests (must be rejected) | 53.1% (458 of 863) |
-| Compile time (Orzo's sources) | 1.2x javac (16.4 s vs. 13.3 s) |
-| Class size (Orzo's class files) | 1.0x javac (1119.3 KiB vs. 1090.0 KiB) |
+| Compile time (Orzo's sources) | 1.2x javac (15.5 s vs. 12.8 s) |
+| Class size (Orzo's class files) | 1.0x javac (1120.0 KiB vs. 1090.3 KiB) |
 <!-- metrics:end -->
