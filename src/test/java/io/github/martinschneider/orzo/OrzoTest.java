@@ -331,6 +331,7 @@ public class OrzoTest {
         args(list("tests/CheckedExceptions")),
         args(list("tests/LambdaInstanceMembers")),
         args(list("tests/NestedNames")),
+        args(list("tests/TypedLambdaParameters")),
         args(list("tests/LambdaBlocks")),
         args(list("tests/StaticFieldAssignment")),
         args(list("examples/Calculus")),

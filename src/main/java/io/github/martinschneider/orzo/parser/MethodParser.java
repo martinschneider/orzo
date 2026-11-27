@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.EXTENDS;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
@@ -298,6 +299,9 @@ public class MethodParser implements ProdParser<Method> {
       Identifier name = null;
       String qualifiedName;
       boolean varargs = false;
+      if (tokens.curr().eq(keyword(FINAL))) {
+        tokens.next(); // (a final parameter)
+      }
       if (tokens.curr() instanceof Type && !tokens.curr().eq("VOID")) {
         type = tokens.curr().toString();
       } else if (tokens.curr() instanceof Identifier

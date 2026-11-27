@@ -1,12 +1,19 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.ARROW;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
@@ -66,6 +73,7 @@ public class LambdaParser implements ProdParser<Expression> {
       }
       LambdaExpr lambda = new LambdaExpr(params, new Expression(new ArrayList<>()));
       lambda.block = (block != null) ? block : new ArrayList<>();
+      lambda.paramTypes = paramTypes;
       List<Token> lambdaTokens = new ArrayList<>();
       lambdaTokens.add(lambda);
       return new Expression(lambdaTokens);
@@ -77,7 +85,9 @@ public class LambdaParser implements ProdParser<Expression> {
       return null;
     }
     List<Token> bodyTokens = new ArrayList<>();
-    bodyTokens.add(new LambdaExpr(params, body));
+    LambdaExpr lambda = new LambdaExpr(params, body);
+    lambda.paramTypes = paramTypes;
+    bodyTokens.add(lambda);
     return new Expression(bodyTokens);
   }
 
@@ -86,15 +96,63 @@ public class LambdaParser implements ProdParser<Expression> {
   // `tokens` untouched) if the upcoming tokens don't match either shape - this does NOT by itself
   // confirm a lambda (an "->" could still be missing after it, e.g. a plain parenthesized
   // expression "(x)"), so the caller still checks for "->" before committing.
+  // Whether the "(" is followed by "->" after its ")" (only then the parameters are parsed: their
+  // types are parsed with error reporting, e.g. "a" in "(a < b ? a : b)" isn't a type)
+  private static boolean followedByArrow(TokenList tokens) {
+    int depth = 0;
+    for (int i = tokens.idx(); i < tokens.list().size(); i++) {
+      Token token = tokens.get(i);
+      if (token.eq(sym(LPAREN))) {
+        depth++;
+      } else if (token.eq(sym(RPAREN)) && --depth == 0) {
+        return i + 1 < tokens.list().size() && tokens.get(i + 1).eq(sym(ARROW));
+      }
+    }
+    return false;
+  }
+
+  // the declared types of the parameters of the lambda being parsed (null for an inferred one)
+  private List<String> paramTypes;
+
+  // the type of an explicitly typed parameter, e.g. "String" or "java.util.List" (erased) in
+  // "(String s, java.util.List<T> l) -> ...", null if there is none
+  private String parseParamType(TokenList tokens) {
+    Token first = tokens.curr();
+    Token next = tokens.peekNext();
+    if (!(first instanceof Identifier || first instanceof Type)
+        || next.eq(sym(COMMA))
+        || next.eq(sym(RPAREN))) {
+      return null;
+    }
+    StringBuilder type =
+        new StringBuilder((first instanceof Type) ? ((Type) first).name : first.val.toString());
+    tokens.next();
+    while (tokens.curr().eq(sym(DOT)) && tokens.peekNext() instanceof Identifier) {
+      tokens.next();
+      type.append('.').append(tokens.curr().val);
+      tokens.next();
+    }
+    if (tokens.curr().eq(op(LESS))) {
+      ctx.typeArgsParser.parse(tokens);
+    }
+    while (tokens.curr().eq(sym(LBRAK)) && tokens.peekNext().eq(sym(RBRAK))) {
+      tokens.next();
+      tokens.next();
+      type.insert(0, '[');
+    }
+    return type.toString();
+  }
+
   private List<String> tryParseParams(TokenList tokens) {
     int idx = tokens.idx();
+    paramTypes = null;
     if (tokens.curr() instanceof Identifier && ((Identifier) tokens.curr()).next == null) {
       List<String> params = new ArrayList<>();
       params.add(((Identifier) tokens.curr()).id());
       tokens.next();
       return params;
     }
-    if (!tokens.curr().eq(sym(LPAREN))) {
+    if (!tokens.curr().eq(sym(LPAREN)) || !followedByArrow(tokens)) {
       return null;
     }
     tokens.next(); // consume '('
@@ -103,13 +161,19 @@ public class LambdaParser implements ProdParser<Expression> {
       tokens.next();
       return params;
     }
+    paramTypes = new ArrayList<>();
     while (true) {
+      if (tokens.curr().eq(keyword(FINAL))) {
+        tokens.next();
+      }
+      String type = parseParamType(tokens);
       Token t = tokens.curr();
       if (!(t instanceof Identifier) || ((Identifier) t).next != null) {
         tokens.setIdx(idx);
         return null;
       }
       params.add(((Identifier) t).id());
+      paramTypes.add(type);
       tokens.next();
       if (tokens.curr().eq(sym(COMMA))) {
         tokens.next();

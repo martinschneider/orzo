@@ -9,6 +9,7 @@ import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Keywords;
 import io.github.martinschneider.orzo.lexer.tokens.Scopes;
+import io.github.martinschneider.orzo.lexer.tokens.Symbols;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import java.io.*;
 import java.util.ArrayList;
@@ -306,9 +307,11 @@ public class Lexer {
       }
       inputReader.unread(character);
       String str = buffer.toString();
-      // keywords
+      // keywords (but Orzo's own ones may be names in Java code, e.g. String.repeat())
+      boolean name = isName();
       for (Keywords keyword : Keywords.values()) {
-        if (str.equals(keyword.name().toLowerCase())) {
+        if (str.equals(keyword.name().toLowerCase())
+            && !(name && (keyword == Keywords.REPEAT || keyword == Keywords.UNLESS))) {
           tokenList.add(keyword(str));
           buffer.setLength(0);
         }
@@ -661,6 +664,19 @@ public class Lexer {
     while (quotes < 3 && (c = inputReader.read()) != -1) {
       quotes = (c == '"') ? quotes + 1 : 0;
     }
+  }
+
+  // Whether the word just scanned is a name: it follows a "." or is followed by one of "=.;,)[:"
+  // (not the start of an Orzo statement, e.g. "repeat n { ... }")
+  private boolean isName() {
+    if (!tokenList.isEmpty() && tokenList.get(tokenList.size() - 1).eq(sym(Symbols.DOT))) {
+      return true;
+    }
+    int i = inputReader.offset;
+    while (i < source.length() && Character.isWhitespace(source.charAt(i))) {
+      i++;
+    }
+    return i < source.length() && "=.;,)[:".indexOf(source.charAt(i)) >= 0;
   }
 
   private int peek() throws IOException {

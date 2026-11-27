@@ -1754,6 +1754,13 @@ public class ExpressionGenerator {
     for (int i = 0; i < lambda.params.size(); i++) {
       String erased = sam.paramTypes.get(i);
       String typed = (i < typedParams.size()) ? typedParams.get(i) : null;
+      if (typed == null
+          && lambda.paramTypes != null
+          && lambda.paramTypes.get(i) != null
+          && !lambda.paramTypes.get(i).startsWith("[")) {
+        // a declared type, e.g. "(String s) -> ..."
+        typed = TypeUtils.resolveSimpleType(lambda.paramTypes.get(i), ctx.allClazzes, ctx.clazz);
+      }
       String name = lambda.params.get(i);
       if (typed != null && typed.indexOf('<') < 0 && !typed.equals(erased)) {
         args.add(new Argument(erased, new Identifier("$lambda_" + name)));

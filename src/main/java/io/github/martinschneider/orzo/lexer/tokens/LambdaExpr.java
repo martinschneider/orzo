@@ -20,6 +20,8 @@ public class LambdaExpr extends Token {
   public Expression body;
   // a block body ("x -> { ... }"), or null for an expression body
   public List<Statement> block;
+  // the declared parameter types, e.g. "String" for "(String s) -> ..." (null for inferred ones)
+  public List<String> paramTypes;
   // a method reference, e.g. "Math::min" (owner "Math", method "min"): expanded into a lambda once
   // the target functional interface's arity is known (params and body are empty until then)
   public String methodRefOwner;
