@@ -101,7 +101,8 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
             ctx.errors.addError(
                 LOG_NAME,
                 String.format(
-                    "incompatible types: %s cannot be converted to %s", valueType, varInfo.type),
+                    "incompatible types: %s cannot be converted to %s",
+                    TypeUtils.displayName(valueType), TypeUtils.displayName(varInfo.type)),
                 new RuntimeException().getStackTrace());
           } else {
             String type = varInfo.type;
@@ -141,6 +142,9 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
               // (eval() converts primitives; boxing and reference casts, e.g. of
               // Deque<String>.pop(), are left)
               String actualType = ctx.opStack.type();
+              if (varInfo.arrType == null) {
+                ctx.basicGen.checkAssignable(valueType, actualType, type);
+              }
               boolean needsAutobox =
                   actualType != null
                       && TypeUtils.isPrimitive(actualType)

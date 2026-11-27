@@ -19,6 +19,7 @@ import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
+import io.github.martinschneider.orzo.lexer.tokens.Type;
 import java.util.Collections;
 import java.util.Map;
 
@@ -319,5 +320,42 @@ public class BasicGenerator {
     } catch (ClassNotFoundException e) {
       return typeName.replace('.', '/');
     }
+  }
+
+  /**
+   * Reports a value that can't be assigned to the target type (see TypeUtils): its type as decided
+   * before it was generated (more precise for literals, e.g. a long one pushed as an int) and as
+   * generated (more precise for calls); no error if they disagree on whether it's primitive.
+   */
+  public void checkAssignable(String decidedType, String actualType, String targetType) {
+    check(decidedType, actualType, targetType, false);
+  }
+
+  /** Reports a cast between classes neither of which is a subclass of the other. */
+  public void checkCastable(String decidedType, String actualType, String targetType) {
+    check(decidedType, actualType, targetType, true);
+  }
+
+  private void check(String decidedType, String actualType, String targetType, boolean cast) {
+    // (an unknown type, e.g. the operand stack's "reference", doesn't contradict the other)
+    boolean decidedFails = decidedType == null || fails(decidedType, targetType, cast);
+    boolean actualFails =
+        actualType == null || Type.REF.equals(actualType) || fails(actualType, targetType, cast);
+    String valueType = (decidedType != null && decidedFails) ? decidedType : actualType;
+    if (decidedFails && actualFails && valueType != null && !Type.REF.equals(valueType)) {
+      ctx.errors.addError(
+          "type checker",
+          String.format(
+              "incompatible types: %s cannot be converted to %s",
+              TypeUtils.displayName(valueType, ctx.allClazzes),
+              TypeUtils.displayName(targetType, ctx.allClazzes)),
+          new RuntimeException().getStackTrace());
+    }
+  }
+
+  private boolean fails(String valueType, String targetType, boolean cast) {
+    return cast
+        ? TypeUtils.isInconvertible(valueType, targetType, ctx.allClazzes)
+        : TypeUtils.isIncompatible(valueType, targetType, ctx.allClazzes);
   }
 }

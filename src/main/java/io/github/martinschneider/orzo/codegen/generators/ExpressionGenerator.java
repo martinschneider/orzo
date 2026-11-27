@@ -620,6 +620,7 @@ public class ExpressionGenerator {
       } else if (token instanceof CastOperator) {
         // e.g. "(int) b" in "a + (int) b": converts the operand on top of the stack
         String castType = ((CastOperator) token).type;
+        ctx.basicGen.checkCastable(null, exprTypeStack.type(), castType);
         ctx.basicGen.convert(out, exprTypeStack.type(), castType);
         exprTypeStack.pop();
         exprTypeStack.push(castType);
@@ -806,6 +807,7 @@ public class ExpressionGenerator {
       }
     }
     if (expr.cast != null) {
+      ctx.basicGen.checkCastable(null, ctx.opStack.type(), expr.cast.name);
       String currType = ctx.opStack.pop();
       ctx.basicGen.convert(out, currType, expr.cast.name);
       type = expr.cast.name;
@@ -839,8 +841,13 @@ public class ExpressionGenerator {
       }
       if (curr instanceof CastMethodCall) {
         CastMethodCall castCall = (CastMethodCall) curr;
+        String decided =
+            (castCall.castType != null)
+                ? new NumExprTypeDecider(ctx).getType(classIdMap, castCall.innerExpr)
+                : null;
         ExpressionResult innerResult = eval(out, null, castCall.innerExpr);
         if (castCall.castType != null) {
+          ctx.basicGen.checkCastable(decided, innerResult.type, castCall.castType);
           ctx.basicGen.convert(out, innerResult.type, castCall.castType);
           returnType = castCall.castType;
         } else {

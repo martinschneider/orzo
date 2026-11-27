@@ -176,6 +176,136 @@ public class TypeUtils {
    * String to an int or an int to a String (only these clear cases are detected; there is no full
    * type check yet).
    */
+  /**
+   * Whether a value can't be assigned to a variable of the target type (also with boxing): see
+   * isIncompatible(), a primitive boxed to another wrapper class (e.g. "Long l = 12;", but "Byte b
+   * = 1;" for a constant) or class, or two classes neither of which is a subclass of the other
+   * (also an error for a cast, see isInconvertible()).
+   */
+  public static boolean isIncompatible(String valueType, String targetType, List<Clazz> clazzes) {
+    if (isIncompatible(valueType, targetType) || isInconvertible(valueType, targetType, clazzes)) {
+      return true;
+    } else if (valueType == null
+        || targetType == null
+        || !isPrimitive(valueType)
+        || "void".equals(valueType)
+        || isPrimitive(targetType)
+        || targetType.startsWith("[")) {
+      return false;
+    }
+    String target = className(targetType);
+    String unboxed = unboxedType(target);
+    if (unboxed != null) {
+      return !unboxed.equals(valueType)
+          && !(INT.equals(valueType) && List.of(BYTE, SHORT, CHAR).contains(unboxed));
+    }
+    Class<?> boxed = boxedClass(valueType);
+    Class<?> reflected = reflect(target);
+    if (sourceClazz(target, clazzes) != null) {
+      return true; // (no wrapper class is a subclass of a class of this compilation run)
+    }
+    return boxed != null && reflected != null && !reflected.isAssignableFrom(boxed);
+  }
+
+  /**
+   * Whether a value of one class type can't be cast to another: both are classes (not interfaces)
+   * and neither is a subclass of the other.
+   */
+  public static boolean isInconvertible(String valueType, String targetType, List<Clazz> clazzes) {
+    if (valueType == null
+        || targetType == null
+        || isPrimitive(valueType)
+        || isPrimitive(targetType)
+        || valueType.startsWith("[")
+        || targetType.startsWith("[")) {
+      return false;
+    }
+    String value = canonical(valueType, clazzes);
+    String target = canonical(targetType, clazzes);
+    if (value.equals(target) || !isClass(value, clazzes) || !isClass(target, clazzes)) {
+      return false;
+    }
+    return !superclasses(value, clazzes).contains(target)
+        && !superclasses(target, clazzes).contains(value);
+  }
+
+  /** The name of a type as javac displays it, e.g. "String" or "Outer.Inner". */
+  public static String displayName(String type) {
+    return displayName(type, null);
+  }
+
+  /** (also a class of this compilation run named by its simple name) */
+  public static String displayName(String type, List<Clazz> clazzes) {
+    String name = (clazzes != null) ? canonical(type, clazzes) : className(type);
+    return name.substring(name.lastIndexOf('.') + 1).replace('$', '.');
+  }
+
+  // a class (not an interface) of this compilation run or loaded by reflection
+  private static boolean isClass(String type, List<Clazz> clazzes) {
+    Clazz source = sourceClazz(type, clazzes);
+    if (source != null) {
+      return !source.isInterface;
+    }
+    Class<?> reflected = reflect(type);
+    return reflected != null && !reflected.isInterface() && !reflected.isPrimitive();
+  }
+
+  /** The class and its superclasses (of this compilation run or loaded by reflection). */
+  public static List<String> superclasses(String type, List<Clazz> clazzes) {
+    List<String> supertypes = new ArrayList<>();
+    String name = canonical(type, clazzes);
+    while (name != null && !supertypes.contains(name)) {
+      supertypes.add(name);
+      Clazz source = sourceClazz(name, clazzes);
+      if (source != null) {
+        name = canonical(source.baseClass, clazzes);
+        continue;
+      }
+      Class<?> reflected = reflect(name);
+      for (Class<?> c = (reflected != null) ? reflected.getSuperclass() : null;
+          c != null;
+          c = c.getSuperclass()) {
+        supertypes.add(c.getName());
+      }
+      break;
+    }
+    return supertypes;
+  }
+
+  // e.g. "java.lang.String" for "String", "Ljava/lang/String;" or "java/lang/String"
+  private static String className(String type) {
+    if (type == null) {
+      return null;
+    } else if (type.startsWith("L") && type.endsWith(";")) {
+      type = type.substring(1, type.length() - 1);
+    }
+    return STRING.equals(type) ? "java.lang.String" : type.replace('/', '.');
+  }
+
+  // the binary name, also of a class of this compilation run named by its simple name
+  private static String canonical(String type, List<Clazz> clazzes) {
+    String name = className(type);
+    Clazz source = sourceClazz(name, clazzes);
+    return (source != null) ? source.fqn() : name;
+  }
+
+  private static Class<?> reflect(String type) {
+    try {
+      return Class.forName(type);
+    } catch (ClassNotFoundException | LinkageError e) {
+      return null;
+    }
+  }
+
+  private static Class<?> boxedClass(String primitive) {
+    for (Map.Entry<String, String> entry : UNBOXED.entrySet()) {
+      if (entry.getValue().equals(primitive)) {
+        return reflect(entry.getKey());
+      }
+    }
+    return null;
+  }
+
   public static boolean isIncompatible(String valueType, String targetType) {
     if (valueType == null || targetType == null) {
       return false;

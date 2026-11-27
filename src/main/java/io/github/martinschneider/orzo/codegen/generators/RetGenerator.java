@@ -22,6 +22,7 @@ import static java.util.Collections.emptyList;
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
 import io.github.martinschneider.orzo.codegen.HasOutput;
+import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.LambdaExpr;
@@ -59,7 +60,9 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
     // run the enclosing finally blocks (innermost first), then return the saved value.
     VariableInfo tmp = null;
     if (retStmt.retValue != null) {
+      String decided = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, retStmt.retValue);
       ctx.exprGen.eval(out, evalType(method.type, retStmt.retValue), retStmt.retValue);
+      check(decided, method.type);
       convertReturnValue(out, method.type);
       String tmpName = "$ret_" + ctx.classIdMap.variables.localSize;
       tmp =
@@ -99,9 +102,17 @@ public class RetGenerator implements StatementGenerator<ReturnStatement> {
       out.write(RETURN);
       return out;
     }
+    String decided = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, retValue);
     ctx.exprGen.eval(out, evalType(type, retValue), retValue);
+    check(decided, type);
     convertReturnValue(out, type);
     return returnOpcode(out, type);
+  }
+
+  private void check(String decided, String type) {
+    if (!type.startsWith("[")) {
+      ctx.basicGen.checkAssignable(decided, ctx.opStack.type(), type);
+    }
   }
 
   private void convertReturnValue(DynamicByteArray out, String type) {

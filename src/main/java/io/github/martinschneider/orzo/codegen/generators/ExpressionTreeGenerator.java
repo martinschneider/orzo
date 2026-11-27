@@ -198,6 +198,7 @@ public class ExpressionTreeGenerator {
     } else if (node instanceof CastNode) {
       CastNode cast = (CastNode) node;
       String operandType = value(out, cast.operand, cast.type);
+      ctx.basicGen.checkCastable(null, operandType, cast.type);
       ctx.basicGen.convert(out, operandType, cast.type);
       return cast.type;
     }

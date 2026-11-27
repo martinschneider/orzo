@@ -55,7 +55,8 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
           ctx.errors.addError(
               "declaration generator",
               String.format(
-                  "incompatible types: %s cannot be converted to %s", valueType, decl.type),
+                  "incompatible types: %s cannot be converted to %s",
+                  TypeUtils.displayName(valueType), TypeUtils.displayName(decl.type)),
               new RuntimeException().getStackTrace());
           continue;
         }
@@ -65,6 +66,9 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
         }
         ctx.exprGen.eval(out, decl.type, decl.val);
         String actualType = ctx.opStack.type();
+        if (decl.arrDim == 0) {
+          ctx.basicGen.checkAssignable(valueType, actualType, decl.type);
+        }
         // Primitive<->primitive mismatches are already handled by eval()'s own widening (it was
         // given decl.type as its target-type hint). The two remaining cases needing an explicit
         // conversion: autobox (e.g. "Integer x = 5;" — actualType primitive, decl.type a boxed

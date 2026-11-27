@@ -103,13 +103,13 @@ public class NumExprTypeDecider {
         types.add(((CastOperator) token).type); // (its operand has been removed)
       } else if (token instanceof IntLiteral) {
         long intValue = ((BigInteger) token.val).longValue();
-        if (intValue > Integer.MAX_VALUE) {
+        if (intValue > Integer.MAX_VALUE || ((IntLiteral) token).isLong) {
           types.add(LONG);
         } else {
           types.add(INT);
         }
       } else if (token instanceof FPLiteral) {
-        types.add(DOUBLE);
+        types.add(((FPLiteral) token).isFloat ? FLOAT : DOUBLE);
       } else if (token instanceof Chr) {
         types.add(CHAR);
       } else if (token instanceof BoolLiteral) {

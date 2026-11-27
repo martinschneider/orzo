@@ -255,6 +255,25 @@ public class CompileErrorTest {
   private static Stream<Arguments> classErrors() {
     return Stream.of(
         Arguments.of(
+            Map.of("A.java", "class A {}\n\nclass B {\n  void m() {\n    Long l = 12;\n  }\n}\n"),
+            "A.java:5:5: error: incompatible types: int cannot be converted to Long"),
+        Arguments.of(
+            Map.of("A.java", "class A {}\n\nclass B {\n  void m() {\n    A a = new B();\n  }\n}\n"),
+            "A.java:5:5: error: incompatible types: B cannot be converted to A"),
+        Arguments.of(
+            Map.of("A.java", "class A {}\n\nclass B {\n  A m() {\n    return new B();\n  }\n}\n"),
+            "A.java:5:5: error: incompatible types: B cannot be converted to A"),
+        Arguments.of(
+            Map.of(
+                "A.java",
+                "class A {}\n\nclass B {\n  Object m(A a) {\n    return (B) a;\n  }\n}\n"),
+            "A.java:5:5: error: incompatible types: A cannot be converted to B"),
+        Arguments.of(
+            Map.of(
+                "A.java",
+                "class A {}\n\nclass B {\n  void m() {\n    try {\n    } catch (String e) {\n    }\n  }\n}\n"),
+            "A.java:5:5: error: incompatible types: String cannot be converted to Throwable"),
+        Arguments.of(
             Map.of(
                 "A.java",
                 "class A {\n  static class S {}\n\n  Object m(A a) {\n    return a.new S();\n  }\n}\n"),

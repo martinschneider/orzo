@@ -44,6 +44,13 @@ public class ExceptionChecker {
     List<String> types = new ArrayList<>();
     for (String type : caught) {
       types.add(name(type));
+      if (TypeUtils.classExists(type, ctx.allClazzes)
+          && !TypeUtils.superclasses(name(type), ctx.allClazzes).contains("java.lang.Throwable")) {
+        report(
+            "incompatible types: "
+                + TypeUtils.displayName(type, ctx.allClazzes)
+                + " cannot be converted to Throwable");
+      }
     }
     tryBlocks.push(new TryBlock(types));
   }
@@ -124,37 +131,14 @@ public class ExceptionChecker {
 
   /** A subclass of Throwable, but not of RuntimeException or Error. */
   public static boolean isChecked(String type, List<Clazz> clazzes) {
-    List<String> supertypes = superclasses(type, clazzes);
+    List<String> supertypes = TypeUtils.superclasses(type, clazzes);
     return supertypes.contains("java.lang.Throwable")
         && !supertypes.contains("java.lang.RuntimeException")
         && !supertypes.contains("java.lang.Error");
   }
 
   public static boolean isSubtype(String type, String of, List<Clazz> clazzes) {
-    return superclasses(type, clazzes).contains(name(of));
-  }
-
-  // the class and its superclasses (of this compilation run or loaded by reflection)
-  private static List<String> superclasses(String type, List<Clazz> clazzes) {
-    List<String> supertypes = new ArrayList<>();
-    String name = name(type);
-    while (name != null && !supertypes.contains(name)) {
-      supertypes.add(name);
-      Clazz source = TypeUtils.sourceClazz(name, clazzes);
-      if (source != null) {
-        name = name(source.baseClass);
-        continue;
-      }
-      try {
-        for (Class<?> c = Class.forName(name).getSuperclass(); c != null; c = c.getSuperclass()) {
-          supertypes.add(c.getName());
-        }
-      } catch (ClassNotFoundException | LinkageError e) {
-        // unknown
-      }
-      break;
-    }
-    return supertypes;
+    return TypeUtils.superclasses(type, clazzes).contains(name(of));
   }
 
   // e.g. "java.io.IOException" for "java/io/IOException" or "Ljava/io/IOException;"
