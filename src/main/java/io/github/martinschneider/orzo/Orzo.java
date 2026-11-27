@@ -45,12 +45,13 @@ public class Orzo {
           i++;
         }
       }
-      if (!new Orzo(inputs, outputPath, verbose).compile()) {
+      if (!new Orzo(inputs, outputPath, verbose).compileWithLargeStack()) {
         System.exit(1);
       }
     }
   }
 
+  private static final long COMPILER_STACK_SIZE = 1L << 29; // (512 MiB)
   private List<File> inputs;
   private String outputPath;
   private int verbose;
@@ -67,6 +68,35 @@ public class Orzo {
 
   public boolean compile() throws IOException {
     return compile(new ArrayList<>());
+  }
+
+  // Compiles in a thread with a large stack: parsing and generating (deeply) nested expressions
+  // recurses, e.g. for a concatenation of thousands of Strings
+  boolean compileWithLargeStack() throws IOException {
+    boolean[] result = new boolean[1];
+    IOException[] failure = new IOException[1];
+    Thread compiler =
+        new Thread(
+            null,
+            () -> {
+              try {
+                result[0] = compile();
+              } catch (IOException e) {
+                failure[0] = e;
+              }
+            },
+            "orzo",
+            COMPILER_STACK_SIZE);
+    compiler.start();
+    try {
+      compiler.join();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    if (failure[0] != null) {
+      throw failure[0];
+    }
+    return result[0];
   }
 
   /**

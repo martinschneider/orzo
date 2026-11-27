@@ -224,7 +224,10 @@ public class ExpressionParser implements ProdParser<Expression> {
           rightPrecedence = precedence;
         }
         ExprNode right = operand(tokens, parseBinary(tokens, rightPrecedence));
-        left = new BinaryNode(operator.opValue(), left, right);
+        left =
+            (operator.opValue() == PLUS)
+                ? concatenation(left, right)
+                : new BinaryNode(operator.opValue(), left, right);
       } else {
         return left;
       }
@@ -481,6 +484,25 @@ public class ExpressionParser implements ProdParser<Expression> {
     }
     expect(tokens, sym(RPAREN));
     return args;
+  }
+
+  // "a + b", with adjacent String literals concatenated (like javac does for constants): "x" + "y"
+  // is "xy", and s + "x" + "y" is s + "xy" (s + "x" is a String)
+  private static ExprNode concatenation(ExprNode left, ExprNode right) {
+    if (right instanceof LiteralNode && ((LiteralNode) right).value instanceof Str) {
+      String suffix = ((Str) ((LiteralNode) right).value).strValue();
+      if (left instanceof LiteralNode && ((LiteralNode) left).value instanceof Str) {
+        return new LiteralNode(new Str(((Str) ((LiteralNode) left).value).strValue() + suffix));
+      } else if (left instanceof BinaryNode
+          && ((BinaryNode) left).op == PLUS
+          && ((BinaryNode) left).right instanceof LiteralNode
+          && ((LiteralNode) ((BinaryNode) left).right).value instanceof Str) {
+        BinaryNode concatenation = (BinaryNode) left;
+        String prefix = ((Str) ((LiteralNode) concatenation.right).value).strValue();
+        return new BinaryNode(PLUS, concatenation.left, new LiteralNode(new Str(prefix + suffix)));
+      }
+    }
+    return new BinaryNode(PLUS, left, right);
   }
 
   // the selectors and postfix operators after a primary expression, e.g. ".b", ".f(x)", "[i]",

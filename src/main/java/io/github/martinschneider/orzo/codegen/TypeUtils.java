@@ -1,5 +1,6 @@
 package io.github.martinschneider.orzo.codegen;
 
+import static io.github.martinschneider.orzo.codegen.ArrayTypes.BOOLEAN_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.BYTE_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.CHAR_ARRAY;
 import static io.github.martinschneider.orzo.codegen.ArrayTypes.DOUBLE_ARRAY;
@@ -472,6 +473,8 @@ public class TypeUtils {
         return IALOAD;
       case BYTE:
       case "B":
+      case BOOLEAN:
+      case "Z":
         return BALOAD;
       case SHORT:
       case "S":
@@ -497,6 +500,7 @@ public class TypeUtils {
       case INT:
         return IASTORE;
       case BYTE:
+      case BOOLEAN:
         return BASTORE;
       case SHORT:
         return SASTORE;
@@ -528,6 +532,8 @@ public class TypeUtils {
         return FLOAT_ARRAY;
       case CHAR:
         return CHAR_ARRAY;
+      case BOOLEAN:
+        return BOOLEAN_ARRAY;
     }
     return 0;
   }

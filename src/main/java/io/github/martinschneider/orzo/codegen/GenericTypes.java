@@ -369,15 +369,29 @@ public class GenericTypes {
     return null;
   }
 
+  // e.g. "java.lang.Comparable" for Comparable<T>
+  private static String erasure(Type type) {
+    if (type instanceof Class) {
+      return ((Class<?>) type).getName();
+    } else if (type instanceof ParameterizedType) {
+      return ((Class<?>) ((ParameterizedType) type).getRawType()).getName();
+    }
+    return "java.lang.Object";
+  }
+
   private static String resolve(Type type, Map<String, String> bindings) {
     if (type instanceof Class) {
       return ((Class<?>) type).getName();
     } else if (type instanceof TypeVariable) {
-      String bound = bindings.get(((TypeVariable<?>) type).getName());
+      TypeVariable<?> variable = (TypeVariable<?>) type;
+      String bound = bindings.get(variable.getName());
       if (bound != null) {
         return bound;
       }
-      return resolve(((TypeVariable<?>) type).getBounds()[0], new HashMap<>());
+      // (the variable is its bound's erasure in its bound, e.g. "T extends Comparable<T>")
+      Map<String, String> self = new HashMap<>(bindings);
+      self.put(variable.getName(), erasure(variable.getBounds()[0]));
+      return resolve(variable.getBounds()[0], self);
     } else if (type instanceof ParameterizedType) {
       ParameterizedType pt = (ParameterizedType) type;
       StringBuilder str = new StringBuilder(((Class<?>) pt.getRawType()).getName());

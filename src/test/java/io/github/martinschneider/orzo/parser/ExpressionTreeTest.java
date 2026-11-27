@@ -34,6 +34,10 @@ public class ExpressionTreeTest {
         Arguments.of("((String) o).length()", "((java.lang.String) o).length()"),
         Arguments.of("√x + ⌊y⌋", "PLUS(Math.sqrt(x), Math.round(Math.floor(y)))"),
         Arguments.of("int[].class", "int[].class"),
+        // adjacent String literals are concatenated
+        Arguments.of("\"a\" + \"b\" + \"c\"", "STR(abc)"),
+        Arguments.of("s + \"a\" + \"b\" + t + \"c\"", "PLUS(PLUS(PLUS(s, STR(ab)), t), STR(c))"),
+        Arguments.of("1 + 2 + \"a\"", "PLUS(PLUS(INT(1), INT(2)), STR(a))"),
         // (not modelled by the tree yet)
         Arguments.of("f(Math::min)", "f([Math::min])"));
   }

@@ -344,6 +344,8 @@ public class OrzoTest {
         args(list("tests/SwitchExpressions")),
         args(list("tests/AnnotationTypes")),
         args(list("tests/NestedLambdaCaptures")),
+        args(list("tests/RecursiveTypeBounds")),
+        args(list("tests/BooleanArrays")),
         args(list("tests/LambdaBlocks")),
         args(list("tests/StaticFieldAssignment")),
         args(list("examples/Calculus")),
@@ -362,6 +364,22 @@ public class OrzoTest {
   // and the class actually read at that index was a second reference to an EARLIER class's
   // Output - so the two classes' bytecode got concatenated into one buffer ("Extra bytes at the
   // end of class file").
+  // a deeply nested expression (thousands of concatenations) recurses deeper than a thread's
+  // default stack allows
+  @Test
+  public void testCompileDeepExpressionWithLargeStack(@TempDir File dir) throws IOException {
+    StringBuilder source = new StringBuilder("class Deep {\n  String v = \"\";\n  String s = v");
+    for (int i = 0; i < 4000; i++) {
+      source.append(" + \"x\" + v");
+    }
+    source.append(";\n}\n");
+    File file = new File(dir, "Deep.java");
+    Files.writeString(file.toPath(), source.toString());
+    Orzo orzo = new Orzo(list(file), dir.getAbsolutePath(), 0);
+    assertTrue(orzo.compileWithLargeStack(), () -> orzo.errors.toString());
+    assertTrue(new File(dir, "Deep.class").exists());
+  }
+
   @Test
   public void testCompileKeepsClazzesAndOutputsAligned() throws IOException {
     List<File> inputs =
