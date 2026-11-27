@@ -2166,6 +2166,20 @@ public class ExpressionGenerator {
 
     // Convert to JVM class name format (e.g., String -> java/lang/String)
     String jvmClassName = convertToJVMClassName(className);
+    if (constructorCall.outer != null && !className.contains(".")) {
+      // (a class nested in the enclosing instance's class)
+      Clazz outerClazz =
+          TypeUtils.sourceClazz(
+              new NumExprTypeDecider(ctx).getType(classIdMap, constructorCall.outer),
+              ctx.allClazzes);
+      Clazz member =
+          (outerClazz != null)
+              ? TypeUtils.sourceClazzNamed(className, ctx.allClazzes, outerClazz)
+              : null;
+      if (member != null) {
+        jvmClassName = member.fqn('/');
+      }
+    }
     if (!TypeUtils.classExists(jvmClassName, ctx.allClazzes)) {
       ctx.errors.addError(
           "constructor call generator",
@@ -2265,7 +2279,9 @@ public class ExpressionGenerator {
     // Generate INVOKESPECIAL <init>
     ctx.invokeGen.invokeSpecial(out, constructor);
 
-    return className; // Return the object type
+    // the object type (the binary name of a class of this compilation run: there may be several of
+    // the same simple name, e.g. nested in different classes)
+    return (source != null) ? source.fqn() : className;
   }
 
   // (constructors have the method name "<init>")
@@ -2454,6 +2470,11 @@ public class ExpressionGenerator {
     Clazz outer = EnclosingInstances.outerOf(inner, ctx.allClazzes);
     List<Integer> path = EnclosingInstances.path(ctx, ctx.clazz, outer);
     if (path == null
+        && outer != null
+        && TypeUtils.superclasses(ctx.clazz.fqn(), ctx.allClazzes).contains(outer.fqn())) {
+      path = new ArrayList<>(); // (this is an instance of the outer class, e.g. a subclass)
+    }
+    if (path == null
         || (ctx.method != null && ctx.method.accFlags.contains(AccessFlag.ACC_STATIC))) {
       ctx.errors.addError(
           "constructor call generator",
@@ -2522,10 +2543,9 @@ public class ExpressionGenerator {
           return ctx.localClasses.get(className).fqn('/');
         }
         // Check if it's a user-defined class in the current compilation unit
-        for (io.github.martinschneider.orzo.parser.productions.Clazz clazz : ctx.allClazzes) {
-          if (clazz.name.equals(className)) {
-            return clazz.fqn('/');
-          }
+        Clazz source = TypeUtils.sourceClazzNamed(className, ctx.allClazzes, ctx.clazz);
+        if (source != null) {
+          return source.fqn('/');
         }
         // Try resolving via import list
         if (ctx.clazz != null && ctx.clazz.imports != null && !className.contains(".")) {

@@ -245,7 +245,11 @@ public class MethodParser implements ProdParser<Method> {
       }
       tokens.next();
       int errorCount = ctx.errors.errors.size();
+      // (methods of local and anonymous classes in it are parsed, too)
+      List<String> declared = new ArrayList<>(thrown);
       body = ctx.stmtParser.parseStmtSeq(tokens);
+      thrown.clear();
+      thrown.addAll(declared);
       if (!tokens.curr().eq(sym(RBRACE))) {
         // The body ended before its "}" (at the end of the input): report it unless a statement
         // already

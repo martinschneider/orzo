@@ -139,8 +139,10 @@ public class ClassParser implements ProdParser<Clazz> {
     }
     tokens.next();
     // Parse generic type parameters on class/interface declaration e.g. class Foo<T extends
-    // Bound>
-    ctx.classTypeParams.clear();
+    // Bound> (those of the enclosing classes are in scope in a nested class)
+    if (outerName == null) {
+      ctx.classTypeParams.clear();
+    }
     boolean isGeneric = tokens.curr().eq(op(LESS));
     if (tokens.curr().eq(op(LESS))) {
       tokens.next();

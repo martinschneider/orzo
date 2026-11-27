@@ -340,7 +340,9 @@ public class BasicGenerator {
     // (an unknown type, e.g. the operand stack's "reference", doesn't contradict the other)
     boolean decidedFails = decidedType == null || fails(decidedType, targetType, cast);
     boolean actualFails =
-        actualType == null || Type.REF.equals(actualType) || fails(actualType, targetType, cast);
+        actualType == null
+            || (Type.REF.equals(actualType) && !TypeUtils.isPrimitive(decidedType))
+            || fails(actualType, targetType, cast);
     String valueType = (decidedType != null && decidedFails) ? decidedType : actualType;
     if (decidedFails && actualFails && valueType != null && !Type.REF.equals(valueType)) {
       ctx.errors.addError(

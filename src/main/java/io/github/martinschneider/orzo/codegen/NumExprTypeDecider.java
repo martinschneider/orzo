@@ -26,6 +26,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
+import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
@@ -177,6 +178,17 @@ public class NumExprTypeDecider {
             }
           }
           if (resolvedClass != null) {
+            // a method of a class of this compilation run (by its simple or binary name, see
+            // MethodCallGenerator), or loaded by reflection
+            String binary = TypeUtils.jvmDescriptorToTypeName(resolvedClass).replace('/', '.');
+            String simple = binary.substring(binary.lastIndexOf('.') + 1);
+            simple = simple.substring(simple.lastIndexOf('$') + 1);
+            method = ctx.methodCallGen.findMatchingMethod(simple + "." + simpleName, argTypes);
+            if (method == null) {
+              method = ctx.methodCallGen.findMatchingMethod(binary + "." + simpleName, argTypes);
+            }
+          }
+          if (resolvedClass != null && method == null) {
             method =
                 ctx.methodCallGen.findMethodViaReflectionTyped(resolvedClass, simpleName, argTypes);
             if (method == null) {
@@ -208,6 +220,18 @@ public class NumExprTypeDecider {
         // the class name as written, resolved via the imports (for overload resolution)
         String constructed =
             TypeUtils.resolveSimpleType(token.val.toString(), ctx.allClazzes, ctx.clazz);
+        Expression outer = ((ConstructorCall) token).outer;
+        if (outer != null) {
+          // (a class nested in the enclosing instance's class, e.g. "outer.new Inner()")
+          Clazz outerClazz =
+              TypeUtils.sourceClazz(
+                  new NumExprTypeDecider(ctx).getType(classIdMap, outer), ctx.allClazzes);
+          Clazz member =
+              (outerClazz != null)
+                  ? TypeUtils.sourceClazzNamed(token.val.toString(), ctx.allClazzes, outerClazz)
+                  : null;
+          constructed = (member != null) ? member.fqn() : constructed;
+        }
         // a call chain on the new object, e.g. "new Lexer().getTokens(input)"
         if (((ConstructorCall) token).next != null) {
           constructed = followChain(classIdMap, constructed, null, ((ConstructorCall) token).next);

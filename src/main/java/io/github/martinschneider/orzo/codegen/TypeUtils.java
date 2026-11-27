@@ -374,6 +374,34 @@ public class TypeUtils {
     }
   }
 
+  /**
+   * The class of this compilation run with a simple name: of several, the one nested in the given
+   * class or its innermost enclosing class (e.g. "Inner" in "class A { class Inner {} }" and "class
+   * B { class Inner {} }"), else the first one (null if there's none).
+   */
+  public static Clazz sourceClazzNamed(String name, List<Clazz> clazzes, Clazz scope) {
+    List<Clazz> matches = new ArrayList<>();
+    for (Clazz clazz : (clazzes != null) ? clazzes : List.<Clazz>of()) {
+      if (name.equals(clazz.name)) {
+        matches.add(clazz);
+      }
+    }
+    if (matches.size() > 1 && scope != null) {
+      List<Clazz> scopes = new ArrayList<>(FieldProcessor.enclosingClasses(scope, clazzes));
+      scopes.add(scope);
+      for (int i = scopes.size() - 1; i >= 0; i--) {
+        String binary = scopes.get(i).fqn();
+        binary = binary.substring(binary.lastIndexOf('.') + 1);
+        for (Clazz match : matches) {
+          if (binary.equals(match.outerName)) {
+            return match;
+          }
+        }
+      }
+    }
+    return matches.isEmpty() ? null : matches.get(0);
+  }
+
   public static String resolveSimpleType(String type, List<Clazz> allClazzes, Clazz currentClazz) {
     if (type == null) return null;
     if (isPrimitive(type)
@@ -384,12 +412,9 @@ public class TypeUtils {
         || "Object".equals(type)) {
       return type;
     }
-    if (allClazzes != null) {
-      for (Clazz clazz : allClazzes) {
-        if (type.equals(clazz.name)) {
-          return clazz.fqn();
-        }
-      }
+    Clazz source = sourceClazzNamed(type, allClazzes, currentClazz);
+    if (source != null) {
+      return source.fqn();
     }
     if (currentClazz != null && currentClazz.imports != null) {
       for (Import imp : currentClazz.imports) {
