@@ -52,6 +52,7 @@ public class Lexer {
   }
 
   public TokenList getTokens(String string) {
+    string = translateUnicodeEscapes(string);
     source = string;
     if (errors.file != null) {
       errors.sources.put(errors.file, string);
@@ -300,6 +301,49 @@ public class Lexer {
     }
     tokenList.add(fp(buffer.toString(), isFloat));
     buffer.setLength(0);
+  }
+
+  /**
+   * The input with its Unicode escapes translated, e.g. "\u0041" to "A" (like javac does first,
+   * also in comments and literals). A backslash only starts an escape if it is preceded by an even
+   * number of backslashes ("\\u0041" is a backslash and "u0041").
+   */
+  static String translateUnicodeEscapes(String input) {
+    if (input.indexOf("\\u") < 0) {
+      return input;
+    }
+    StringBuilder out = new StringBuilder(input.length());
+    int backslashes = 0;
+    for (int i = 0; i < input.length(); i++) {
+      char c = input.charAt(i);
+      if (c == '\\'
+          && backslashes % 2 == 0
+          && i + 1 < input.length()
+          && input.charAt(i + 1) == 'u') {
+        int j = i + 1;
+        while (j < input.length() && input.charAt(j) == 'u') {
+          j++;
+        }
+        if (j + 4 <= input.length() && isHex(input.substring(j, j + 4))) {
+          out.append((char) Integer.parseInt(input.substring(j, j + 4), 16));
+          i = j + 3;
+          backslashes = 0;
+          continue;
+        }
+      }
+      backslashes = (c == '\\') ? backslashes + 1 : 0;
+      out.append(c);
+    }
+    return out.toString();
+  }
+
+  private static boolean isHex(String digits) {
+    for (char digit : digits.toCharArray()) {
+      if (Character.digit(digit, 16) < 0) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /** Scans for identifiers, primitive types and keywords */

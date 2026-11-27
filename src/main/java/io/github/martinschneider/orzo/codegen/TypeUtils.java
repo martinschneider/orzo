@@ -516,6 +516,22 @@ public class TypeUtils {
     return AASTORE;
   }
 
+  /**
+   * The class of the given name loaded by reflection, also a nested class named with dots (e.g.
+   * "java.lang.Thread.State" for java.lang.Thread$State), or null.
+   */
+  public static Class<?> loadClass(String name) {
+    for (String binary = name; binary != null; ) {
+      try {
+        return Class.forName(binary);
+      } catch (ClassNotFoundException | LinkageError e) {
+        int dot = binary.lastIndexOf('.');
+        binary = (dot > 0) ? binary.substring(0, dot) + '$' + binary.substring(dot + 1) : null;
+      }
+    }
+    return null;
+  }
+
   public static byte getArrayType(String type) {
     switch (type) {
       case INT:

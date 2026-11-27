@@ -5,7 +5,9 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
@@ -52,6 +54,21 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
   }
 
   // ", name" followed by "=", "," or ";"
+  private static Type withDims(Type type, int extraDims) {
+    return (extraDims == 0) ? type : new Type(type.name, (byte) (type.arr + extraDims));
+  }
+
+  // The dimensions of a C-style array declarator, e.g. 1 for "a[]" in "int a[] = {1};"
+  private static int cStyleDims(TokenList tokens) {
+    int dims = 0;
+    while (tokens.curr().eq(sym(LBRAK)) && tokens.peekNext().eq(sym(RBRAK))) {
+      tokens.next();
+      tokens.next();
+      dims++;
+    }
+    return dims;
+  }
+
   // e.g. ", c = 2" in "int a, b = 1, c = 2;" (not a value of a parallel declaration)
   private static boolean startsInitializedDeclarator(TokenList tokens) {
     return tokens.get(tokens.idx() + 2).eq(op(ASSIGN));
@@ -153,10 +170,12 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
           type.arr = ctx.arrayDefParser.parse(tokens); // e.g. TypeVariable<?>[] params
         }
       }
+      List<Integer> extraDims = new ArrayList<>(); // e.g. 1 for "int a[]"
       while (tokens.curr() instanceof Identifier || tokens.curr().eq(sym(COMMA))) {
         if (tokens.curr() instanceof Identifier) {
           Identifier id = (Identifier) tokens.curr();
           tokens.next();
+          extraDims.add(cStyleDims(tokens));
           id.arrSel = ctx.arraySelectorParser.parse(tokens);
           names.add(id);
         } else {
@@ -169,7 +188,9 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       if (tokens.curr().eq(op(ASSIGN))) {
         tokens.next();
         // (parallel declarations: values separated by commas, e.g. "int a, b = 1, 2;")
-        while ((value = parseExpOrArrInit(tokens, type)) != null) {
+        Type valueType =
+            withDims(type, extraDims.isEmpty() ? 0 : extraDims.get(extraDims.size() - 1));
+        while ((value = parseExpOrArrInit(tokens, valueType)) != null) {
           values.add(value);
           groupValues = values.size();
           arrDims.add(type.arr);
@@ -183,10 +204,12 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
               tokens.next();
               names.add((Identifier) tokens.curr());
               tokens.next();
+              extraDims.add(cStyleDims(tokens));
               Expression init = null;
               if (tokens.curr().eq(op(ASSIGN))) {
                 tokens.next();
-                init = parseExpOrArrInit(tokens, type);
+                init =
+                    parseExpOrArrInit(tokens, withDims(type, extraDims.get(extraDims.size() - 1)));
               }
               values.add(init);
               arrDims.add(type.arr);
@@ -218,7 +241,8 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       List<Declaration> declarations = new ArrayList<>();
       for (int i = 0; i < names.size(); i++) {
         Expression val = (values.size() <= i) ? null : values.get(i);
-        Declaration decl = new Declaration(accFlags, type.name, type.arr, names.get(i), val);
+        int dims = type.arr + ((i < extraDims.size()) ? extraDims.get(i) : 0);
+        Declaration decl = new Declaration(accFlags, type.name, dims, names.get(i), val);
         if (typeArgs != null && type.arr == 0) {
           decl.genericType = type.name.replace('/', '.') + typeArgs;
         }
@@ -234,6 +258,9 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
       // array initializer shorthand, e.g. "int[] a = {1, 2};"
       int idx = tokens.idx();
       tokens.next();
+      if (tokens.curr().eq(sym(COMMA)) && tokens.peekNext().eq(sym(RBRACE))) {
+        tokens.next(); // no elements: "{,}"
+      }
       List<Expression> vals = new ArrayList<>();
       Expression val;
       while ((val = ctx.exprParser.parse(tokens)) != null) {

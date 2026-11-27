@@ -108,6 +108,9 @@ public class ArrayInitParser implements ProdParser<ArrayInit> {
         } else {
           vals.add(new ArrayList<>());
           tokens.next();
+          if (tokens.curr().eq(sym(COMMA)) && tokens.peekNext().eq(sym(RBRACE))) {
+            tokens.next(); // no elements: "{,}"
+          }
           Expression expr;
           while ((expr = ctx.exprParser.parse(tokens)) != null) {
             vals.get(0).add(expr);

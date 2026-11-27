@@ -83,6 +83,9 @@ public class LexerTest {
                     sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN),
                     id("y")))),
         args("$x a$b", new TokenList(list(id("$x"), id("a$b")))),
+        // Unicode escapes are translated first (not after an escaped backslash)
+        args("\\u0061\\uuu0062 \"\\u0041\"", new TokenList(list(id("ab"), str("A")))),
+        args("\"\\\\u0041\"", new TokenList(list(str("\\u0041")))),
         args(
             "12  13 15 17",
             new TokenList(list(integer(12), integer(13), integer(15), integer(17)))),

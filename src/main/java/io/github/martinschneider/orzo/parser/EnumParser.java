@@ -40,6 +40,9 @@ public class EnumParser implements ProdParser<ParallelDeclaration> {
         tokens.next(); // a trailing comma, e.g. "RED, GREEN,;"
       }
     }
+    if (decls.isEmpty() && tokens.curr().eq(sym(COMMA))) {
+      tokens.next(); // no constants, e.g. "enum E { , }"
+    }
     if (tokens.curr().eq(sym(SEMICOLON))) {
       tokens.next();
     }

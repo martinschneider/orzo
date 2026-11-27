@@ -48,7 +48,8 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
         continue;
       }
       if (decl.arrDim > 0) {
-        return generateArray(out, ctx.classIdMap, method, decl);
+        generateArray(out, ctx.classIdMap, method, decl);
+        continue; // (e.g. "int a[] = {1}, b = 2;")
       }
       if (decl.val != null) {
         VariableInfo fieldVarInfo =

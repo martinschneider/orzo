@@ -24,14 +24,17 @@ import io.github.martinschneider.orzo.lexer.tokens.Str;
 import io.github.martinschneider.orzo.lexer.tokens.SwitchExpr;
 import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
+import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
+import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -178,6 +181,12 @@ public class NumExprTypeDecider {
                       .get(parts[p]);
               resolvedClass = (field != null) ? field.fieldType : null;
               receiverGeneric = (field != null) ? field.genericType : null;
+            }
+          } else if (receiverVar == null && parts.length >= 2) {
+            // a static field of a class, e.g. the enum constant "Color.RED" in "Color.RED.name()"
+            String fieldType = staticFieldType(parts);
+            if (fieldType != null) {
+              resolvedClass = fieldType;
             }
           }
           if (resolvedClass != null) {
@@ -498,6 +507,61 @@ public class NumExprTypeDecider {
       return "java.lang.String".equals(type) ? STRING : type;
     }
     return null;
+  }
+
+  // The type of a static field of a class of this compilation run or of the JDK (optionally
+  // followed by instance fields), e.g. "Color.RED", "Thread.State.NEW" or "Foo.BAR.baz", or null
+  private String staticFieldType(String[] parts) {
+    for (int split = parts.length - 1; split >= 1; split--) {
+      String className = String.join(".", java.util.Arrays.asList(parts).subList(0, split));
+      String type = null;
+      Clazz source =
+          (split == 1)
+              ? TypeUtils.sourceClazzNamed(className, ctx.allClazzes, ctx.clazz)
+              : TypeUtils.sourceClazz(className, ctx.allClazzes);
+      if (source != null) {
+        for (ParallelDeclaration fields : source.fields) {
+          for (Declaration field : fields.declarations) {
+            if (field.name.val.toString().equals(parts[split])
+                && field.accFlags.contains(AccessFlag.ACC_STATIC)
+                && field.arrDim == 0) {
+              type = field.type;
+            }
+          }
+        }
+      } else {
+        // (the first name resolved, e.g. "java.lang.Thread.State" for "Thread.State")
+        String binary =
+            TypeUtils.resolveSimpleType(parts[0], ctx.allClazzes, ctx.clazz)
+                + className.substring(parts[0].length());
+        type = reflectedStaticFieldType(binary, parts[split]);
+        if (type == null && split > 1) {
+          type = reflectedStaticFieldType(className, parts[split]); // (fully qualified)
+        }
+      }
+      for (int i = split + 1; i < parts.length && type != null; i++) {
+        FieldProcessor.InstanceField field =
+            new FieldProcessor().getInstanceFieldMap(type, ctx.allClazzes).get(parts[i]);
+        type = (field != null) ? field.fieldType : null;
+      }
+      if (type != null) {
+        return type;
+      }
+    }
+    return null;
+  }
+
+  // (the class name may name a nested class with dots, e.g. "java.lang.Thread.State")
+  private static String reflectedStaticFieldType(String className, String fieldName) {
+    Class<?> owner = TypeUtils.loadClass(className);
+    try {
+      java.lang.reflect.Field field = (owner != null) ? owner.getField(fieldName) : null;
+      return (field != null && java.lang.reflect.Modifier.isStatic(field.getModifiers()))
+          ? field.getType().getName()
+          : null;
+    } catch (NoSuchFieldException | LinkageError e) {
+      return null;
+    }
   }
 
   private String resolveChainedType(String className, String fieldName) {

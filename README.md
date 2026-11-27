@@ -27,7 +27,7 @@ Orzo compiles a large subset of Java, enough to compile itself (see [Metrics](#m
 
 Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md) for details):
 
-- multi-dimensional arrays and C-style array declarations of locals and fields (`int a[]`)
+- multi-dimensional arrays
 - records
 - generics are only partially supported: the type arguments of your own generic classes aren't tracked (e.g. `box.get().length()` on a `Box<String>`)
 - record patterns (`o instanceof Point(int x, int y)`)

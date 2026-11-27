@@ -1422,8 +1422,11 @@ public class ExpressionGenerator {
         ctx.constPool.addFieldRef(wrapper, "TYPE", "Ljava/lang/Class;");
         ctx.invokeGen.getStatic(out, wrapper, "TYPE", "Ljava/lang/Class;");
       } else {
+        Class<?> nested = (classIdx == 1) ? null : TypeUtils.loadClass(className);
         String jvmClass =
-            (classIdx == 1) ? resolveJvmClassName(className) : className.replace('.', '/');
+            (classIdx == 1)
+                ? resolveJvmClassName(className)
+                : ((nested != null) ? nested.getName() : className).replace('.', '/');
         ctx.constPool.addClass(jvmClass);
         ctx.loadGen.ldc(out, CONSTANT_CLASS, jvmClass);
       }
@@ -1444,16 +1447,23 @@ public class ExpressionGenerator {
       if (split == identifierParts.size() - 1 && split == 1) {
         continue; // "Class.FIELD" is handled below
       }
-      String fqnClass =
-          (split == 1)
-              ? resolveJvmClassName(identifierParts.get(0)).replace('/', '.')
-              : String.join(".", identifierParts.subList(0, split));
+      String first = resolveJvmClassName(identifierParts.get(0)).replace('/', '.');
+      String rest = String.join(".", identifierParts.subList(1, split));
+      // (e.g. "java.util.Map.Entry" or "Thread.State": a nested class with dots)
+      Class<?> fieldOwner = TypeUtils.loadClass(rest.isEmpty() ? first : first + "." + rest);
+      if (fieldOwner == null && split > 1) {
+        fieldOwner = TypeUtils.loadClass(String.join(".", identifierParts.subList(0, split)));
+      }
       java.lang.reflect.Field reflField;
       try {
-        reflField = Class.forName(fqnClass).getField(identifierParts.get(split));
-      } catch (ClassNotFoundException | NoSuchFieldException | LinkageError e) {
+        if (fieldOwner == null) {
+          continue; // try a shorter class name
+        }
+        reflField = fieldOwner.getField(identifierParts.get(split));
+      } catch (NoSuchFieldException | LinkageError e) {
         continue; // try a shorter class name
       }
+      String fqnClass = fieldOwner.getName();
       if (!java.lang.reflect.Modifier.isStatic(reflField.getModifiers())) {
         break;
       }
