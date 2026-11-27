@@ -103,6 +103,9 @@ public class MethodProcessor {
                 id(m.getName()),
                 mapArgs(m.getParameters()),
                 null);
+        for (Class<?> exception : m.getExceptionTypes()) {
+          method.exceptions.add(exception.getName());
+        }
         for (String prefix : prefixes) {
           methodMap.putIfAbsent(prefix + getKey(method), method);
         }
@@ -203,6 +206,9 @@ public class MethodProcessor {
                     id(m.getName()),
                     args,
                     null);
+            for (Class<?> exception : m.getExceptionTypes()) {
+              method.exceptions.add(exception.getName());
+            }
             methodMap.put(getKey(method), method);
           }
         }

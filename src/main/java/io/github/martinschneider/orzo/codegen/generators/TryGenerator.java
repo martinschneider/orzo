@@ -66,6 +66,11 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
         caught.add(resolveExceptionType(exceptionType));
       }
     }
+    // (a finally block that can't complete normally, e.g. returns, discards any exception)
+    boolean discards = finallyBody != null && MethodGenerator.alwaysReturns(finallyBody);
+    if (discards) {
+      caught.add("java/lang/Throwable");
+    }
     ctx.exceptionChecker.enterTry(caught);
     for (Statement s : stmt.tryBody) {
       ctx.delegator.generate(out, method, s);
@@ -85,9 +90,11 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
     // Normal completion of the try body: run finally, skip the handlers
     if (!endsWithReturn(stmt.tryBody)) {
       inlineFinally(out, method, finallyBody);
-      out.write(GOTO);
-      gotoOffsetPositions.add(out.size());
-      out.write((short) 0);
+      if (!discards) { // (else the finally block returned)
+        out.write(GOTO);
+        gotoOffsetPositions.add(out.size());
+        out.write((short) 0);
+      }
     }
 
     for (int ci = 0; ci < stmt.catchBlocks.size(); ci++) {
@@ -116,8 +123,14 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
 
       // Generate catch body
       boolean added = ctx.catchParameters.add(catchBlock.varName);
+      if (discards) {
+        ctx.exceptionChecker.enterTry(List.of("java/lang/Throwable"));
+      }
       for (Statement s : catchBlock.body) {
         ctx.delegator.generate(out, method, s);
+      }
+      if (discards) {
+        ctx.exceptionChecker.exitTry();
       }
       if (added) {
         ctx.catchParameters.remove(catchBlock.varName);
@@ -130,7 +143,7 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
       // catch block returns; the last one falls through to the end if there's no finally.
       if (!endsWithReturn(catchBlock.body)) {
         inlineFinally(out, method, finallyBody);
-        if (ci < stmt.catchBlocks.size() - 1 || finallyBody != null) {
+        if (!discards && (ci < stmt.catchBlocks.size() - 1 || finallyBody != null)) {
           out.write(GOTO);
           gotoOffsetPositions.add(out.size());
           out.write((short) 0);

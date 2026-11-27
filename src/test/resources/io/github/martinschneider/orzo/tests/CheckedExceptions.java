@@ -66,6 +66,31 @@ public class CheckedExceptions {
     }
   }
 
+  interface Task {
+    void run();
+  }
+
+  // (Object.wait() on an interface throws InterruptedException)
+  static String waitOn(Task task) {
+    try {
+      task.wait(1);
+      return "waited";
+    } catch (InterruptedException e) {
+      return "interrupted";
+    } catch (IllegalMonitorStateException e) {
+      return "not the owner";
+    }
+  }
+
+  // (a finally block that returns discards the exception)
+  static String discarded() {
+    try {
+      check(-1);
+    } finally {
+      return "discarded";
+    }
+  }
+
   // checked exceptions caught or declared
   public static void main(String[] args) throws Exception {
     try {
@@ -83,5 +108,6 @@ public class CheckedExceptions {
     System.out.println(rethrow("a") + " " + check(2) + " " + forever() + " " + forever2());
     Callable<Integer> callable = () -> check(5);
     System.out.println(callable.call() + " " + new Values().sum());
+    System.out.println(waitOn(() -> {}) + " " + discarded());
   }
 }
