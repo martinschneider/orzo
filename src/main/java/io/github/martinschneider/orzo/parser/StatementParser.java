@@ -182,7 +182,10 @@ public class StatementParser implements ProdParser<Statement> {
 
   private Statement parseStatement(TokenList tokens) {
     Statement stmt;
-    if (tokens.curr().eq(sym(LBRACE))) {
+    if (tokens.curr().eq(sym(SEMICOLON))) {
+      tokens.next(); // an empty statement, e.g. after a block: "{ ... };"
+      return new EmptyStatement();
+    } else if (tokens.curr().eq(sym(LBRACE))) {
       // a block, e.g. "{ int x = 1; ... }"
       int idx = tokens.idx();
       tokens.next();

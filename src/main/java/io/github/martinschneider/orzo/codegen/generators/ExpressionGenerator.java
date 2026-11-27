@@ -854,6 +854,13 @@ public class ExpressionGenerator {
           returnType = innerResult.type; // "(expr).method()": no cast
         }
         prevLoadedRef = true;
+        if (curr.arrSel != null && returnType != null && returnType.startsWith("[")) {
+          // an element, e.g. "((int[]) o)[2]"
+          ctx.loadGen.loadValueFromArrayOnStack(out, classIdMap, curr.arrSel.exprs, returnType);
+          returnType =
+              TypeUtils.jvmDescriptorToTypeName(returnType.substring(curr.arrSel.exprs.size()));
+          prevLoadedRef = isNonPrimitive(returnType);
+        }
         ctx.methodCallGen.lastGenericType = null;
       } else if (curr instanceof ConstructorCall) {
         ConstructorCall constructorCall = (ConstructorCall) curr;

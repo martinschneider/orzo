@@ -554,12 +554,22 @@ public class ExpressionParser implements ProdParser<Expression> {
         tokens.setIdx(end); // erased
       }
     }
+    // (an array type, e.g. "(int[]) o")
+    int dims = 0;
+    while (type != null && tokens.curr().eq(sym(LBRAK)) && tokens.peekNext().eq(sym(RBRAK))) {
+      tokens.next();
+      tokens.next();
+      dims++;
+    }
     if (type != null && tokens.curr().eq(sym(RPAREN))) {
       tokens.next();
-      boolean primitive = TypeUtils.isPrimitive(type);
+      boolean primitive = dims == 0 && TypeUtils.isPrimitive(type);
       if (startsCastOperand(tokens, primitive)) {
         if (primitive) {
           return type;
+        } else if (dims > 0) {
+          String element = TypeUtils.isPrimitive(type) ? type : resolveCastType(type);
+          return TypeUtils.descr(element, dims);
         }
         return resolveCastType(type);
       }

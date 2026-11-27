@@ -8,10 +8,10 @@ import static io.github.martinschneider.orzo.lexer.tokens.Keywords.IMPORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INTERFACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.PACKAGE;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.STATIC;
-import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_AND;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.TIMES;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
@@ -145,55 +145,64 @@ public class ClassParser implements ProdParser<Clazz> {
     }
     boolean isGeneric = tokens.curr().eq(op(LESS));
     if (tokens.curr().eq(op(LESS))) {
-      tokens.next();
-      while (!tokens.curr().eq(op(GREATER)) && !tokens.curr().eq(op(RSHIFT))) {
-        if (!(tokens.curr() instanceof Identifier)) {
+      // e.g. "<K, V extends Comparable<V> & Serializable>" (bounds erased to the first one)
+      int depth = 0;
+      boolean expectTypeVar = false;
+      do {
+        Token token = tokens.curr();
+        if (token instanceof EOF || token.eq(sym(LBRACE))) {
+          break;
+        } else if (token.eq(op(LESS))) {
+          depth++;
+          expectTypeVar = depth == 1;
+          tokens.next();
+        } else if (token.eq(op(GREATER))) {
+          depth--;
+          tokens.next();
+        } else if (token.eq(op(RSHIFT))) {
+          depth -= 2;
+          tokens.next();
+        } else if (token.eq(op(RSHIFTU))) {
+          depth -= 3;
+          tokens.next();
+        } else if (depth == 1 && token.eq(sym(COMMA))) {
+          expectTypeVar = true;
+          tokens.next();
+        } else if (depth == 1 && expectTypeVar && !(token instanceof Identifier)) {
           // e.g. an annotation, "class C<@A T>" (it used to loop forever here)
           ctx.errors.addError(
               LOG_NAME,
-              "expected a type parameter but found " + tokens.curr().display(),
+              "expected a type parameter but found " + token.display(),
               new RuntimeException().getStackTrace());
           while (!endsTypeParameters(tokens.curr())) {
             tokens.next();
           }
+          if (!(tokens.curr() instanceof EOF)) {
+            tokens.next();
+          }
           break;
-        } else {
-          String typeVarName = tokens.curr().toString();
+        } else if (depth == 1 && expectTypeVar) {
+          expectTypeVar = false;
+          String typeVarName = token.toString();
           String erasure = "java.lang.Object";
           tokens.next();
           if (tokens.curr().eq(keyword(EXTENDS))) {
             tokens.next();
-            // Collect bound type (until , or > or &)
-            StringBuilder bound = new StringBuilder();
-            while (!tokens.curr().eq(sym(COMMA))
-                && !endsTypeParameters(tokens.curr())
-                && !tokens.curr().eq(op(BITWISE_AND))) {
-              if (bound.length() > 0 && tokens.curr().toString().equals(".")) {
-                bound.append(".");
-              } else if (bound.length() > 0) {
-                bound.append(".");
-                bound.append(tokens.curr().toString());
-              } else {
-                bound.append(tokens.curr().toString());
-              }
+            // (the first bound's class, e.g. "a.b.Foo" of "a.b.Foo<T>")
+            StringBuilder bound = new StringBuilder(tokens.curr().toString());
+            tokens.next();
+            while (tokens.curr().eq(sym(DOT))) {
+              tokens.next();
+              bound.append('.').append(tokens.curr());
               tokens.next();
             }
-            erasure = ctx.importMap.getOrDefault(bound.toString(), bound.toString());
+            erasure = resolveBound(bound.toString());
           }
           ctx.classTypeParams.put(typeVarName, erasure);
-        }
-        if (tokens.curr().eq(sym(COMMA))) {
+        } else {
           tokens.next();
-        } else if (tokens.curr().eq(op(BITWISE_AND))) {
-          // Skip additional bounds (e.g. T extends A & B) - use first bound only
-          while (!tokens.curr().eq(sym(COMMA)) && !endsTypeParameters(tokens.curr())) {
-            tokens.next();
-          }
         }
-      }
-      if (tokens.curr().eq(op(GREATER)) || tokens.curr().eq(op(RSHIFT))) {
-        tokens.next(); // consume >
-      }
+      } while (depth > 0);
     }
     parseInterfaces(tokens, interfaces, packageDeclaration);
     baseClass = parseBaseClass(tokens, isEnum, isInterface, interfaces, packageDeclaration);
@@ -618,6 +627,23 @@ public class ClassParser implements ProdParser<Clazz> {
       return pDecl;
     }
     return null;
+  }
+
+  // the class of a bound, e.g. "java.lang.Number" for "Number" (as written if unknown)
+  private String resolveBound(String bound) {
+    if (bound.contains(".")) {
+      return ctx.typeArgsParser.resolveQualified(bound);
+    } else if (ctx.importMap.containsKey(bound)) {
+      return ctx.importMap.get(bound);
+    } else if (ctx.classTypeParams.containsKey(bound)) {
+      return ctx.classTypeParams.get(bound); // e.g. "U extends T"
+    }
+    try {
+      Class.forName("java.lang." + bound);
+      return "java.lang." + bound;
+    } catch (ClassNotFoundException e) {
+      return bound;
+    }
   }
 
   // the end of the type parameters of a class, e.g. ">" (or the end of the input)
