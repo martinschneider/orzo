@@ -254,6 +254,16 @@ public class CompileErrorTest {
   // writing class files and returns the errors
   private static Stream<Arguments> classErrors() {
     return Stream.of(
+        // "var" needs an initializer with a type, and is only allowed for single local variables
+        Arguments.of(
+            Map.of("A.java", "class A {\n  void m() {\n    var x = null;\n  }\n}\n"),
+            "A.java:3:5: error: cannot infer type for local variable x"),
+        Arguments.of(
+            Map.of("A.java", "class A {\n  void m() {\n    var f = () -> 1;\n  }\n}\n"),
+            "A.java:3:5: error: cannot infer type for local variable f"),
+        Arguments.of(
+            Map.of("A.java", "class A {\n  void m() {\n    var a = 1, b = 2;\n  }\n}\n"),
+            "A.java:3:5: error: 'var' is not allowed in a compound declaration"),
         Arguments.of(
             Map.of("A.java", "class A {}\n\nclass B {\n  void m() {\n    Long l = 12;\n  }\n}\n"),
             "A.java:5:5: error: incompatible types: int cannot be converted to Long"),

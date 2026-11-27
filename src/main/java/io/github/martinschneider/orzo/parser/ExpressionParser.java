@@ -370,6 +370,10 @@ public class ExpressionParser implements ProdParser<Expression> {
       return new OpaqueNode(new Expression());
     }
     int end = typeArgumentsEnd(tokens, tokens.idx());
+    String typeArgs = null;
+    if (end > tokens.idx() + 2) { // (not "<>")
+      typeArgs = ctx.typeArgsParser.parse(tokens);
+    }
     if (end > 0) {
       tokens.setIdx(end);
     }
@@ -379,6 +383,7 @@ public class ExpressionParser implements ProdParser<Expression> {
       return new OpaqueNode(new Expression());
     }
     NewNode creation = new NewNode(type, parseArguments(tokens));
+    creation.typeArgs = typeArgs;
     if (tokens.curr().eq(sym(LBRACE))) {
       // an anonymous class
       tokens.next();

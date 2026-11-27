@@ -16,6 +16,8 @@ public class Type extends Token {
   public static final String BOOLEAN = "boolean";
   public static final String REF = "reference";
   public static final String STRING = "String";
+  // the type of "var x = ...", inferred from the initializer (or the iterable of a for-each loop)
+  public static final String VAR = "var";
   public static final List<String> BASIC_TYPES =
       List.of(VOID, INT, LONG, BYTE, SHORT, DOUBLE, FLOAT, CHAR, BOOLEAN, STRING);
   public String name;

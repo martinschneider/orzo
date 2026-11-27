@@ -34,6 +34,7 @@ public class Renaming {
       NewNode creation = (NewNode) node;
       NewNode copy = new NewNode(creation.type, apply(creation.args));
       copy.body = creation.body;
+      copy.typeArgs = creation.typeArgs;
       copy.outer = (creation.outer != null) ? apply(creation.outer) : null;
       return copy;
     } else if (node instanceof BinaryNode) {

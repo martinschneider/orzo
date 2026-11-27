@@ -24,16 +24,21 @@ import static java.util.Collections.emptyList;
 
 import io.github.martinschneider.orzo.codegen.CGContext;
 import io.github.martinschneider.orzo.codegen.DynamicByteArray;
+import io.github.martinschneider.orzo.codegen.GenericTypes;
 import io.github.martinschneider.orzo.codegen.HasOutput;
 import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
+import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.ForEachStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.Statement;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
@@ -76,10 +81,44 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, ForEachStatement stmt) {
-    if (isArrayIterable(stmt)) {
+    boolean array = isArrayIterable(stmt);
+    if (Type.VAR.equals(stmt.elemType)) {
+      inferElementType(stmt, array);
+    }
+    if (array) {
       return generateArray(out, method, stmt);
     }
     return generateIterable(out, method, stmt);
+  }
+
+  // The element type of "for (var x : iterable)": an array's component type or the type argument
+  // of an Iterable (if known, otherwise Object)
+  private void inferElementType(ForEachStatement stmt, boolean array) {
+    NumExprTypeDecider decider = new NumExprTypeDecider(ctx);
+    String type = decider.getType(ctx.classIdMap, stmt.iterable);
+    if (array && type != null && type.startsWith("[")) {
+      stmt.elemArrDim = 0;
+      for (type = type.substring(1); type.startsWith("["); type = type.substring(1)) {
+        stmt.elemArrDim++;
+      }
+      stmt.elemType = TypeUtils.jvmDescriptorToTypeName(type);
+      return;
+    }
+    String generic = decider.chainGeneric;
+    List<Token> tokens = stmt.iterable.tokens;
+    if (tokens.size() == 1
+        && tokens.get(0) instanceof Identifier
+        && !(tokens.get(0) instanceof MethodCall)
+        && ((Identifier) tokens.get(0)).next == null) {
+      VariableInfo var = ctx.classIdMap.variables.get((Identifier) tokens.get(0));
+      generic = (var != null) ? var.genericType : null;
+    }
+    String iterator =
+        (generic != null) ? GenericTypes.returnType(generic, "iterator", List.of()) : null;
+    List<String> args = (iterator != null) ? GenericTypes.typeArgs(iterator) : List.of();
+    String element = args.isEmpty() ? "java.lang.Object" : args.get(0);
+    stmt.elemType = GenericTypes.erasure(element);
+    stmt.elemGenericType = element.contains("<") ? element : null;
   }
 
   private boolean isArrayIterable(ForEachStatement stmt) {

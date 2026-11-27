@@ -211,6 +211,8 @@ public class NumExprTypeDecider {
           }
           if (methodCall.next != null) {
             methodType = followChain(classIdMap, methodType, genericType, methodCall.next);
+          } else {
+            chainGeneric = genericType;
           }
           if (methodType != null) {
             types.add(methodType);
@@ -333,6 +335,10 @@ public class NumExprTypeDecider {
     return getSmallestType(types);
   }
 
+  // the generic type of the last call chain's result (if known), e.g. "java.util.Set<String>" for
+  // "map.keySet()" on a Map<String, Integer>
+  public String chainGeneric;
+
   // Generic type of the most recent genericReturnType() result (null if not generic)
   private String lastGeneric;
 
@@ -428,6 +434,7 @@ public class NumExprTypeDecider {
       }
       link = link.next;
     }
+    chainGeneric = generic;
     return type;
   }
 

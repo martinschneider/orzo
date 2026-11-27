@@ -11,6 +11,7 @@ import io.github.martinschneider.orzo.codegen.EnclosingInstances;
 import io.github.martinschneider.orzo.codegen.FieldProcessor;
 import io.github.martinschneider.orzo.codegen.GenericTypes;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
+import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
@@ -147,8 +148,8 @@ public class MemberProcessor {
       if (stmt instanceof ParallelDeclaration) {
         ParallelDeclaration pDecl = (ParallelDeclaration) stmt;
         for (Declaration decl : pDecl.declarations) {
-          if (decl.isField) {
-            continue; // field declarations are in fieldMap, not localMap
+          if (decl.isField || Type.VAR.equals(decl.type)) {
+            continue; // (fields are in fieldMap, the type of "var x" is inferred later)
           }
           VariableInfo localVar =
               new VariableInfo(

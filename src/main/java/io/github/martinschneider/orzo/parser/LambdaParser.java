@@ -200,7 +200,7 @@ public class LambdaParser implements ProdParser<Expression> {
         return null;
       }
       params.add(((Identifier) t).id());
-      paramTypes.add(type);
+      paramTypes.add(Type.VAR.equals(type) ? null : type); // ("var x" is an implicit type)
       tokens.next();
       if (tokens.curr().eq(sym(COMMA))) {
         tokens.next();

@@ -77,6 +77,11 @@ public class DeclarationParser implements ProdParser<ParallelDeclaration> {
     if (tokens.curr() instanceof Type && !tokens.curr().eq("VOID")) {
       type = (Type) tokens.curr();
     } else if (tokens.curr() instanceof Identifier
+        && Type.VAR.equals(tokens.curr().toString())
+        && ((Identifier) tokens.curr()).next == null
+        && tokens.peekNext() instanceof Identifier) {
+      type = new Type(Type.VAR); // e.g. "var x = 1;"
+    } else if (tokens.curr() instanceof Identifier
         && ctx.typeMap.TYPES.containsKey(tokens.curr().toString())) {
       type = ctx.typeMap.TYPES.get(tokens.curr().toString());
     } else if (tokens.curr() instanceof Identifier

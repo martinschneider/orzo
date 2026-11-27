@@ -12,11 +12,16 @@ import io.github.martinschneider.orzo.codegen.NumExprTypeDecider;
 import io.github.martinschneider.orzo.codegen.TypeUtils;
 import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
+import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.LambdaExpr;
+import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.ArrayInit;
+import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
+import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 
 public class DeclarationGenerator implements StatementGenerator<ParallelDeclaration> {
@@ -32,6 +37,9 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, ParallelDeclaration pDecl) {
     for (Declaration decl : pDecl.declarations) {
+      if (Type.VAR.equals(decl.type) && !inferType(decl, pDecl.declarations.size())) {
+        continue;
+      }
       if (!decl.isField && !TypeUtils.typeExists(decl.type, ctx.allClazzes, ctx.clazz)) {
         ctx.errors.addError(
             "declaration generator",
@@ -148,6 +156,63 @@ public class DeclarationGenerator implements StatementGenerator<ParallelDeclarat
     ctx.exprGen.generateArray(out, classIdMap, arrInit);
     ctx.assignGen.assignArray(out, classIdMap, type, decl.arrDim, decl.name);
     return out;
+  }
+
+  // The type of "var x = value;": the value's (an array's element type and dimensions)
+  private boolean inferType(Declaration decl, int declarators) {
+    if (declarators > 1) {
+      ctx.errors.addError(
+          "declaration generator",
+          "'var' is not allowed in a compound declaration",
+          new RuntimeException().getStackTrace());
+      return false;
+    }
+    NumExprTypeDecider decider = new NumExprTypeDecider(ctx);
+    String type =
+        (decl.val == null || decl.val instanceof ArrayInit && ((ArrayInit) decl.val).type == null)
+            ? null
+            : decider.getType(ctx.classIdMap, decl.val);
+    if (decl.val != null
+        && decl.val.tokens.size() == 1
+        && decl.val.tokens.get(0) instanceof LambdaExpr) {
+      type = null; // (a lambda needs a target type)
+    }
+    if (type == null || type.equals(NumExprTypeDecider.NULL_TYPE)) {
+      ctx.errors.addError(
+          "declaration generator",
+          "cannot infer type for local variable " + decl.name,
+          new RuntimeException().getStackTrace());
+      return false;
+    }
+    int dims = 0;
+    while (type.startsWith("[")) {
+      type = type.substring(1);
+      dims++;
+    }
+    if (dims > 0 && type.startsWith("L") && type.endsWith(";")) {
+      type = type.substring(1, type.length() - 1); // e.g. "[Ljava.lang.reflect.Method;"
+    }
+    decl.type = type;
+    decl.arrDim = dims;
+    decl.genericType = (dims == 0) ? genericType(type, decl.val, decider) : null;
+    return true;
+  }
+
+  // The generic type of a value, e.g. "java.util.ArrayList<String>" for "new ArrayList<String>()",
+  // a local variable with a generic type or a call returning one (null if unknown)
+  private String genericType(String type, Expression value, NumExprTypeDecider decider) {
+    if (value.tokens.size() != 1 || !(value.tokens.get(0) instanceof Identifier)) {
+      return null;
+    }
+    Identifier root = (Identifier) value.tokens.get(0);
+    if (root instanceof ConstructorCall && root.next == null) {
+      ConstructorCall call = (ConstructorCall) root;
+      return (call.typeArgs == null) ? null : type.replace('/', '.') + call.typeArgs;
+    } else if (!(root instanceof MethodCall) && root.next == null) {
+      VariableInfo var = ctx.classIdMap.variables.get(root);
+      return (var != null) ? var.genericType : null;
+    }
+    return decider.chainGeneric;
   }
 
   // e.g. "Foo" for "pkg.Foo"
