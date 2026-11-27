@@ -21,7 +21,7 @@ Failures of the last run of `compliance/jtreg.sh`, by cause (number of tests):
 
 1. **Nested classes**: `outer.new Inner()`, assignments to `Outer.this.field`, anonymous subclasses of inner classes; local classes are named like member classes (`Outer$Foo`, javac: `Outer$1Foo`), so two of the same name in one class clash
 2. **Method references**: `this::m`, `super::m`, `field::m` and constructor references (`Foo::new`); references on local variables (`list::add`) work
-3. **Semantic checks**: invalid programs that compile (394 in the last run, growing as more programs parse), e.g. annotation rules (about 50), incompatible types (29), definite assignment (10), ambiguous calls (12). `ClassChecker` checks overrides, unimplemented abstract methods, duplicate members, modifiers, cyclic inheritance, supertypes (final, class or interface) and file names.
+3. **Semantic checks**: invalid programs that compile (394 in the last run, growing as more programs parse), e.g. incompatible types (35), ambiguous calls (30), annotation rules (about 50), unreported checked exceptions (9), blank final fields that are never assigned. `DefiniteAssignment` checks local variables. `ClassChecker` checks overrides, unimplemented abstract methods, duplicate members, modifiers, cyclic inheritance, supertypes (final, class or interface) and file names.
 4. `switch` expressions and `->` cases, `var`, records, sealed classes, `instanceof` patterns, `assert`, `synchronized`, text blocks
 5. Multi-dimensional arrays, array casts (`(int[]) obj`), C-style array declarations of locals (`int a[]`)
 

@@ -18,10 +18,15 @@ import io.github.martinschneider.orzo.codegen.identifier.GlobalIdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.IdentifierMap;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
+import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
+import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
+import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import java.util.List;
 import java.util.Map;
 
@@ -242,13 +247,52 @@ public class AssignmentGenerator implements StatementGenerator<Assignment> {
     Identifier tmpId = new Identifier("tmp_" + idx, null);
     boolean retValue = false;
     for (Expression expression : expressions) {
-      expression.tokens.replaceAll(x -> (x.eq(id)) ? tmpId : x);
-      if (expression.tokens.contains(tmpId)) {
-        retValue = true;
-        expression.tree = null; // (now generated from the changed tokens)
-      }
+      retValue |= replaceId(expression, id, tmpId);
     }
     return retValue;
+  }
+
+  // (also in nested expressions, e.g. the argument of the call "√(x * b)")
+  private static boolean replaceId(Expression expression, Identifier id, Identifier tmpId) {
+    if (expression == null) {
+      return false;
+    }
+    boolean replaced = false;
+    for (int i = 0; i < expression.tokens.size(); i++) {
+      Token token = expression.tokens.get(i);
+      if (token.eq(id)) {
+        expression.tokens.set(i, tmpId);
+        replaced = true;
+      } else if (token instanceof TernaryExpression) {
+        TernaryExpression ternary = (TernaryExpression) token;
+        replaced |= replaceId(ternary.condition, id, tmpId);
+        replaced |= replaceId(ternary.trueBranch, id, tmpId);
+        replaced |= replaceId(ternary.falseBranch, id, tmpId);
+      } else if (token instanceof Identifier) {
+        for (Identifier link = (Identifier) token; link != null; link = link.next) {
+          if (link instanceof CastMethodCall) {
+            replaced |= replaceId(((CastMethodCall) link).innerExpr, id, tmpId);
+          } else if (link instanceof MethodCall) {
+            for (Expression param : ((MethodCall) link).params) {
+              replaced |= replaceId(param, id, tmpId);
+            }
+          } else if (link instanceof ConstructorCall) {
+            for (Expression arg : ((ConstructorCall) link).args) {
+              replaced |= replaceId(arg, id, tmpId);
+            }
+          }
+          if (link.arrSel != null) {
+            for (Expression index : link.arrSel.exprs) {
+              replaced |= replaceId(index, id, tmpId);
+            }
+          }
+        }
+      }
+    }
+    if (replaced) {
+      expression.tree = null; // (now generated from the changed tokens)
+    }
+    return replaced;
   }
 
   private HasOutput handleChainedFieldAssignment(

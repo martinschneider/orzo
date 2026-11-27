@@ -38,7 +38,7 @@ public class MathUtils {
     double a, b, t, p, x = 1, 1/√2, 1÷4, 1;
     repeat n
     {
-      x, a, b  =  a, (a + b) / 2, √(x*b);
+      x, a, b  =  a, (a + b) / 2, √(a*b);
       t, p     =  t - p * ((x-a) ** 2), 2 * p;
     }
     return ((a+b) ** 2) / (4 * t);

@@ -255,6 +255,28 @@ public class CompileErrorTest {
   private static Stream<Arguments> classErrors() {
     return Stream.of(
         Arguments.of(
+            Map.of(
+                "A.java",
+                "class A {\n  int m(boolean c) {\n    int y;\n    if (c) {\n      y = 1;\n    }\n"
+                    + "    return y;\n  }\n}\n"),
+            "A.java:7:5: error: variable y might not have been initialized"),
+        Arguments.of(
+            Map.of(
+                "A.java",
+                "class A {\n  int m(boolean c) {\n    int y;\n    while (c) {\n      y = 1;\n"
+                    + "      break;\n    }\n    return y;\n  }\n}\n"),
+            "A.java:8:5: error: variable y might not have been initialized"),
+        Arguments.of(
+            Map.of("A.java", "enum A {\n  X;\n\n  abstract void m();\n}\n"),
+            "A.java:1:6: error: A is not abstract and does not override abstract method m() in A"),
+        Arguments.of(
+            Map.of(
+                "A.java",
+                "class A {\n  public void f(Object[] a) {}\n}\n\n"
+                    + "class B extends A {\n  void f(Object... a) {}\n}\n"),
+            "A.java:6:3: error: f(Object...) in B cannot override f(Object[]) in A; attempting to"
+                + " assign weaker access privileges; was public"),
+        Arguments.of(
             Map.of("A.java", "synchronized class A {}\n"),
             "A.java:1:20: error: modifier synchronized not allowed here"),
         Arguments.of(

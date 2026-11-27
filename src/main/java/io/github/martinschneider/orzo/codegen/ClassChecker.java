@@ -94,11 +94,10 @@ public class ClassChecker {
       String descr = TypeUtils.methodDescr(method, clazzes, clazz);
       if (!signatures.add(name + descr.substring(0, descr.indexOf(')') + 1))) {
         errors.position = errors.startTokens.getOrDefault(method, errors.position);
-        Overridable overridable = new Overridable(clazz, method, clazzes);
         error(
             (method instanceof Constructor ? "constructor " + clazz.name : "method " + name)
                 + "("
-                + overridable.params
+                + params(method)
                 + ") is already defined in class "
                 + clazz.name);
       }
@@ -264,7 +263,8 @@ public class ClassChecker {
   // A class that isn't abstract must implement the abstract methods of its supertypes (only checked
   // for supertypes without type parameters: their erased signatures may differ).
   private void checkAbstractMethodsImplemented(Clazz clazz) {
-    if (clazz.isAbstract || clazz.isInterface || clazz.isEnum) {
+    // (enum constants with a class body aren't supported)
+    if (clazz.isAbstract || clazz.isInterface) {
       return;
     }
     List<Overridable> abstractMethods = new ArrayList<>();
@@ -390,11 +390,30 @@ public class ClassChecker {
   }
 
   private static String signature(Method method) {
+    return method.name.val + "(" + params(method) + ")";
+  }
+
+  // the parameter types as written, e.g. "int,Object..."
+  private static String params(Method method) {
     List<String> types = new ArrayList<>();
     for (io.github.martinschneider.orzo.parser.productions.Argument arg : method.args) {
-      types.add(arg.type);
+      // e.g. "Object..." or "int[]" for "[java/lang/Object" or "[I"
+      String type = arg.type.replace('/', '.');
+      int dims = 0;
+      while (type.startsWith("[")) {
+        type = type.substring(1);
+        dims++;
+      }
+      if (dims > 0) {
+        type = TypeUtils.jvmDescriptorToTypeName(type).replace('/', '.');
+      }
+      type = type.substring(type.lastIndexOf('.') + 1);
+      for (int i = 0; i < dims; i++) {
+        type += (arg.varargs && i == dims - 1) ? "..." : "[]";
+      }
+      types.add(type);
     }
-    return method.name.val + "(" + String.join(",", types) + ")";
+    return String.join(",", types);
   }
 
   // 3: public, 2: protected, 1: package, 0: private
@@ -445,11 +464,7 @@ public class ClassChecker {
 
     Overridable(Clazz clazz, Method method, List<Clazz> clazzes) {
       name = method.name.val.toString();
-      List<String> types = new ArrayList<>();
-      for (io.github.martinschneider.orzo.parser.productions.Argument arg : method.args) {
-        types.add(arg.type.substring(arg.type.lastIndexOf('.') + 1));
-      }
-      params = String.join(",", types);
+      params = params(method);
       descr = TypeUtils.methodDescr(method, clazzes, clazz);
       owner = clazz.name;
       // (interface methods are public)

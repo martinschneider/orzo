@@ -220,7 +220,11 @@ public class NumExprTypeDecider {
         if ("null".equals(id.val.toString()) && id.next == null) {
           types.add(NULL_TYPE);
         } else if ("this".equals(id.val.toString())) {
-          types.add("java.lang.Object");
+          // (the current class, e.g. for overload resolution; a chain on it, e.g. "this.count")
+          String thisType = (ctx.clazz != null) ? ctx.clazz.fqn() : "java.lang.Object";
+          String chainType =
+              (id.next != null) ? followChain(classIdMap, thisType, null, id.next) : thisType;
+          types.add(chainType != null ? chainType : "java.lang.Object");
         } else {
           VariableInfo var = ctx.classIdMap.variables.get(token);
           if (var != null) {

@@ -50,7 +50,7 @@ public double pi(int n) {
   double a, b, t, p, x = 1, 1/√2, 1÷4, 1;
   repeat n
   {
-    x, a, b  =  a, (a + b) / 2, √(x*b);
+    x, a, b  =  a, (a + b) / 2, √(a*b);
     t, p     =  t - p * ((x-a) ** 2), 2 * p;
   }
   return ((a+b) ** 2) / (4 * t);
@@ -110,8 +110,8 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 | Metric | Value |
 |--------|-------|
 | Self-compilation | 100.0% |
-| [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 48.0% (424 of 883) |
-| jtreg negative tests (must be rejected) | 54.1% (467 of 863) |
-| Compile time (Orzo's sources) | 1.5x javac (18.7 s vs. 12.7 s) |
-| Class size (Orzo's class files) | 1.0x javac (1041.2 KiB vs. 1026.0 KiB) |
+| [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 47.8% (422 of 883) |
+| jtreg negative tests (must be rejected) | 56.0% (483 of 863) |
+| Compile time (Orzo's sources) | 1.2x javac (14.4 s vs. 12.5 s) |
+| Class size (Orzo's class files) | 1.0x javac (1067.2 KiB vs. 1052.0 KiB) |
 <!-- metrics:end -->

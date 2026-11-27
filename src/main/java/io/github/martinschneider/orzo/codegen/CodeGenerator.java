@@ -21,6 +21,7 @@ import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CON
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_UTF8;
 
+import io.github.martinschneider.orzo.codegen.identifier.DefiniteAssignment;
 import io.github.martinschneider.orzo.codegen.identifier.LocalVariableChecker;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.error.CompilerErrors;
@@ -72,10 +73,58 @@ public class CodeGenerator {
   }
 
   private void attributes() {
-    out.write((short) 1);
+    out.write((short) (1 + (nestHost != null ? 1 : 0) + (nestMembers.isEmpty() ? 0 : 1)));
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "SourceFile"));
     out.write(2);
     out.write(ctx.constPool.indexOf(CONSTANT_UTF8, ctx.clazz.sourceFile));
+    if (nestHost != null) {
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "NestHost"));
+      out.write(2);
+      out.write(ctx.constPool.indexOf(CONSTANT_CLASS, nestHost.fqn('/')));
+    }
+    if (!nestMembers.isEmpty()) {
+      out.write(ctx.constPool.indexOf(CONSTANT_UTF8, "NestMembers"));
+      out.write(2 + 2 * nestMembers.size());
+      out.write((short) nestMembers.size());
+      for (Clazz member : nestMembers) {
+        out.write(ctx.constPool.indexOf(CONSTANT_CLASS, member.fqn('/')));
+      }
+    }
+  }
+
+  // A nested class and its (outermost) enclosing class are nestmates: they may access each other's
+  // private members (the classes of lambdas and anonymous classes, generated later, aren't).
+  private void nest(Clazz clazz) {
+    nestHost = nestHost(clazz);
+    nestMembers = new ArrayList<>();
+    if (nestHost != null) {
+      ctx.constPool.addUtf8("NestHost");
+      ctx.constPool.addClass(nestHost.fqn('/'));
+      return;
+    }
+    for (Clazz other : clazzes) {
+      if (nestHost(other) == clazz) {
+        nestMembers.add(other);
+        ctx.constPool.addClass(other.fqn('/'));
+      }
+    }
+    if (!nestMembers.isEmpty()) {
+      ctx.constPool.addUtf8("NestMembers");
+    }
+  }
+
+  // the outermost class enclosing a class (also a lambda's, e.g. "Outer$$Lambda$1"), null for a
+  // top-level class
+  private Clazz nestHost(Clazz clazz) {
+    String fqn = clazz.fqn();
+    int lambda = fqn.indexOf("$$Lambda$");
+    if (lambda > 0) {
+      Clazz owner = TypeUtils.sourceClazz(fqn.substring(0, lambda), clazzes);
+      Clazz host = (owner != null) ? nestHost(owner) : null;
+      return (host != null) ? host : owner;
+    }
+    List<Clazz> outers = FieldProcessor.enclosingClasses(clazz, clazzes);
+    return outers.isEmpty() ? null : outers.get(0);
   }
 
   private void classIndex() {
@@ -98,6 +147,10 @@ public class CodeGenerator {
       }
     }
   }
+
+  // see nest()
+  private Clazz nestHost;
+  private List<Clazz> nestMembers = new ArrayList<>();
 
   private void init(int idx) {
     out = outputs.get(idx);
@@ -135,6 +188,7 @@ public class CodeGenerator {
     supportPrint(clazz);
     ctx.memberProc.processFields();
     HasOutput methods = methods(new DynamicByteArray(), clazz);
+    nest(clazz);
     HasOutput constPool = constPool(new DynamicByteArray());
     out.write(constPool.getBytes());
     accessModifiers(clazz);
@@ -195,6 +249,7 @@ public class CodeGenerator {
       ctx.memberProc.processLocalVars(method);
       errors.position = errors.startTokens.get(method);
       new LocalVariableChecker(errors).check(method);
+      new DefiniteAssignment(errors).check(method);
       ctx.methodGen.generate(out, method, clazz);
     }
     for (String[] bridge : bridges) {
