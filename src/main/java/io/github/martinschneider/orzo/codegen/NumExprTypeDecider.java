@@ -21,6 +21,7 @@ import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
+import io.github.martinschneider.orzo.lexer.tokens.SwitchExpr;
 import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Argument;
@@ -119,6 +120,8 @@ public class NumExprTypeDecider {
         types.add(STRING);
       } else if (token instanceof io.github.martinschneider.orzo.lexer.tokens.LambdaExpr) {
         types.add(io.github.martinschneider.orzo.lexer.tokens.LambdaExpr.PSEUDO_TYPE);
+      } else if (token instanceof SwitchExpr) {
+        types.add(switchType(classIdMap, (SwitchExpr) token));
       } else if (token instanceof TernaryExpression) {
         // cond ? a : b - the type of its branches (combined like any other operands)
         TernaryExpression ternary = (TernaryExpression) token;
@@ -333,6 +336,17 @@ public class NumExprTypeDecider {
       }
     }
     return getSmallestType(types);
+  }
+
+  // The type of a switch expression: its results' (combined like the branches of "c ? a : b"; a
+  // result whose type isn't known yet, e.g. a variable declared in its case, is ignored)
+  private String switchType(GlobalIdentifierMap classIdMap, SwitchExpr expr) {
+    String type = null;
+    for (Expression result : expr.results) {
+      String resultType = new NumExprTypeDecider(ctx).getType(classIdMap, result);
+      type = ExpressionTypes.conditionalType(type, resultType, null);
+    }
+    return (type != null) ? type : "java.lang.Object";
   }
 
   // the generic type of the last call chain's result (if known), e.g. "java.util.Set<String>" for

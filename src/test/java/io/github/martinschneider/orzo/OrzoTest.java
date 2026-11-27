@@ -341,6 +341,7 @@ public class OrzoTest {
         args(list("tests/NullConcatenation")),
         args(list("tests/VarDeclarations")),
         args(list("tests/TypePatterns")),
+        args(list("tests/SwitchExpressions")),
         args(list("tests/LambdaBlocks")),
         args(list("tests/StaticFieldAssignment")),
         args(list("examples/Calculus")),

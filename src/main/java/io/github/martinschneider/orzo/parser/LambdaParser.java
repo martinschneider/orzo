@@ -39,6 +39,9 @@ public class LambdaParser implements ProdParser<Expression> {
 
   @Override
   public Expression parse(TokenList tokens) {
+    if (ctx.inCaseLabel) {
+      return null; // (e.g. "case A -> ..." isn't a lambda)
+    }
     int idx = tokens.idx();
     LambdaExpr ref = parseMethodRef(tokens);
     if (ref != null) {

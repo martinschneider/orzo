@@ -4,6 +4,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CLASS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INSTANCEOF;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.NEW;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.SWITCH;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_NOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.CAST;
@@ -46,6 +47,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Keyword;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
+import io.github.martinschneider.orzo.lexer.tokens.SwitchExpr;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
 import io.github.martinschneider.orzo.parser.productions.Expression;
@@ -307,6 +309,12 @@ public class ExpressionParser implements ProdParser<Expression> {
   // a literal, a name, a call without a target, "new Foo()", "(expr)", ...
   private ExprNode parsePrimary(TokenList tokens) {
     Token curr = tokens.curr();
+    if (curr.eq(keyword(SWITCH))) {
+      SwitchExpr expr = ctx.switchParser.parseExpression(tokens);
+      if (expr != null) {
+        return new OpaqueNode(new Expression(new ArrayList<>(List.of(expr))));
+      }
+    }
     if (curr instanceof IntLiteral
         || curr instanceof FPLiteral
         || curr instanceof BoolLiteral

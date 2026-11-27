@@ -26,6 +26,8 @@ public class ParserContext {
   public CompilerErrors errors;
   // whether the class being parsed has an assert statement (see AssertParser)
   public boolean usesAssert;
+  // whether a case label is being parsed (where "A -> ..." isn't a lambda)
+  public boolean inCaseLabel;
   public ArrayDefParser arrayDefParser;
   public AssertParser assertParser;
   public ArrayInitParser arrayInitParser;

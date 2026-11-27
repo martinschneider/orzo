@@ -110,6 +110,7 @@ import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Scope;
 import io.github.martinschneider.orzo.lexer.tokens.Scopes;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
+import io.github.martinschneider.orzo.lexer.tokens.SwitchExpr;
 import io.github.martinschneider.orzo.lexer.tokens.TernaryExpression;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.InnerClasses;
@@ -633,6 +634,9 @@ public class ExpressionGenerator {
         exprTypeStack.push(type);
       } else if (token instanceof LambdaExpr) {
         type = generateLambda(out, type, (LambdaExpr) token);
+        exprTypeStack.push(type);
+      } else if (token instanceof SwitchExpr) {
+        type = generateSwitch(out, type, (SwitchExpr) token);
         exprTypeStack.push(type);
       } else if (token instanceof CastOperator) {
         // e.g. "(int) b" in "a + (int) b": converts the operand on top of the stack
@@ -1577,6 +1581,31 @@ public class ExpressionGenerator {
           "multi-dimensional arrays are not supported",
           new RuntimeException().getStackTrace());
     }
+  }
+
+  // A switch expression: its statement (see SwitchExpr) assigns the result to a temporary variable
+  // (of the target type, if there is one), which is initialized first (a switch over an enum
+  // without a default case assigns it on all paths, too)
+  private String generateSwitch(DynamicByteArray out, String type, SwitchExpr expr) {
+    if (type == null || LambdaExpr.PSEUDO_TYPE.equals(type)) {
+      type = "java.lang.Object";
+    }
+    VariableInfo result =
+        new VariableInfo(
+            expr.var, type, emptyList(), false, (short) ctx.classIdMap.variables.localSize, null);
+    ctx.classIdMap.variables.putLocal(Token.id(expr.var), result);
+    if (BOOLEAN.equals(type)) {
+      ctx.pushGen.pushBool(out, false);
+    } else if (TypeUtils.isPrimitive(type)) {
+      ctx.pushGen.push(out, type, 0);
+    } else {
+      out.write(ACONST_NULL);
+      ctx.opStack.push(type);
+    }
+    ctx.storeGen.store(out, result);
+    ctx.delegator.generate(out, ctx.method, expr.statement);
+    ctx.loadGen.load(out, result);
+    return type;
   }
 
   private String generateTernary(DynamicByteArray out, String type, TernaryExpression ternary) {
