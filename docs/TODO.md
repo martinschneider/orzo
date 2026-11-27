@@ -7,6 +7,7 @@ Prioritized for three goals (see the metrics in README.md), and a fourth one, na
 2. Pass all jtreg tests (65% of the positive, 48% of the negative tests)
 3. Faster compilation (1.1x javac)
 4. Native backends for x86-64 and AArch64 (planned, see [NATIVE.md](NATIVE.md))
+5. 128-bit numbers: `int128` and `float128` (planned, see [NUMBERS128.md](NUMBERS128.md))
 
 Within each goal, the items are ordered by expected impact.
 
@@ -47,6 +48,19 @@ for the design. Milestones:
 7. **M6**: garbage collector, `aarch64-macos`.
 
 Prerequisites shared with the JVM backend: the attribution pass and symbol table (REVIEW.md, recommendations 1 and 3); moving the lambda, inner class and enum desugarings out of the JVM code generator.
+
+## 5. 128-bit numbers
+
+`int128` (two's complement) and `float128` (IEEE 754 binary128), see [NUMBERS128.md](NUMBERS128.md).
+First immutable runtime classes the operators are compiled to, later unboxed locals. Milestones:
+
+1. `int128` runtime class (arithmetic, conversions, `toString`/`parse`), tested against `BigInteger`.
+2. `int128` in the language: type, `LL` literals, promotion and casts, operators, printing, defaults, constant folding.
+3. `float128` runtime class: encoding, conversions, the four basic operations, comparisons.
+4. `float128` completed: `sqrt`, `fma`, `%`, correctly rounded `toString`/`parse`.
+5. `float128` in the language (`Q` literals), mixed arithmetic.
+6. Unboxed `int128` locals with inlined arithmetic (needs the attribution pass).
+7. Lowering for the native backends.
 
 ## Other known issues
 
