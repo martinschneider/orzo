@@ -30,7 +30,7 @@ Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md)
 - generics are only partially supported: the type arguments of your own generic classes aren't tracked (e.g. `box.get().length()` on a `Box<String>`)
 - `var`, `instanceof` patterns (`o instanceof String s`)
 - annotations with arguments (annotations without arguments are ignored)
-- method references `super::m` and `Foo::new`
+- method references `super::m`
 - `switch` with `->` cases and switch expressions
 - `assert`, `synchronized`
 - `finally` isn't run when `break` or `continue` leave the `try` block
@@ -81,8 +81,8 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 | Metric | Value |
 |--------|-------|
 | Self-compilation | 100.0% |
-| [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 51.9% (458 of 883) |
-| jtreg negative tests (must be rejected) | 56.7% (489 of 863) |
-| Compile time (Orzo's sources) | 1.4x javac (16.2 s vs. 11.5 s) |
-| Class size (Orzo's class files) | 1.0x javac (1116.5 KiB vs. 1088.1 KiB) |
+| [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 56.4% (498 of 883) |
+| jtreg negative tests (must be rejected) | 53.1% (458 of 863) |
+| Compile time (Orzo's sources) | 1.4x javac (16.8 s vs. 11.7 s) |
+| Class size (Orzo's class files) | 1.0x javac (1118.6 KiB vs. 1089.6 KiB) |
 <!-- metrics:end -->

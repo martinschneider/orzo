@@ -1610,7 +1610,18 @@ public class ExpressionGenerator {
   // for a static method, "(a, b) -> a.method(b)" for an instance method of Owner, "(a, b) ->
   // owner.method(a, b)" for a local variable owner (null after an error)
   private LambdaExpr methodRefAsLambda(LambdaExpr ref, int arity) {
-    if (ref.methodRefOwner.equals("super")) {
+    if (ref.methodRefName.equals("new")) {
+      // a constructor reference, e.g. "ArrayList::new": "(a, b) -> new ArrayList(a, b)"
+      List<String> params = new ArrayList<>();
+      List<Expression> args = new ArrayList<>();
+      for (int i = 0; i < arity; i++) {
+        params.add("$ref" + i);
+        args.add(new Expression(new ArrayList<>(List.of(new Identifier("$ref" + i)))));
+      }
+      return new LambdaExpr(
+          params,
+          new Expression(new ArrayList<>(List.of(new ConstructorCall(ref.methodRefOwner, args)))));
+    } else if (ref.methodRefOwner.equals("super")) {
       ctx.errors.addError(
           "lambda expression",
           ref.methodRefOwner + "::" + ref.methodRefName + " is not supported yet",
@@ -1678,8 +1689,15 @@ public class ExpressionGenerator {
       }
     }
     String callee = (isStatic ? ref.methodRefOwner : params.get(0)) + "." + ref.methodRefName;
-    return new LambdaExpr(
-        params, new Expression(new ArrayList<>(List.of(new MethodCall(callee, args)))));
+    LambdaExpr lambda =
+        new LambdaExpr(
+            params, new Expression(new ArrayList<>(List.of(new MethodCall(callee, args)))));
+    if (!isStatic) {
+      // (the receiver is an instance of the owner, e.g. a Map.Entry for "Map.Entry::getKey")
+      lambda.paramTypes = new ArrayList<>(Collections.nCopies(arity, (String) null));
+      lambda.paramTypes.set(0, resolveJvmClassName(ref.methodRefOwner).replace('/', '.'));
+    }
+    return lambda;
   }
 
   // A lambda is a synthetic class implementing the target type's single abstract method (see
@@ -1769,16 +1787,18 @@ public class ExpressionGenerator {
         typed = TypeUtils.resolveSimpleType(lambda.paramTypes.get(i), ctx.allClazzes, ctx.clazz);
       }
       String name = lambda.params.get(i);
-      if (typed != null && typed.indexOf('<') < 0 && !typed.equals(erased)) {
+      // (a generic type is erased, e.g. java.util.Map$Entry for Map.Entry<String, Integer>)
+      String generic = (typed != null && typed.indexOf('<') > 0) ? typed : null;
+      typed = (generic != null) ? typed.substring(0, typed.indexOf('<')) : typed;
+      if (typed != null && !typed.equals(erased)) {
         args.add(new Argument(erased, new Identifier("$lambda_" + name)));
         Expression cast =
             new Expression(
                 List.of(new Identifier("$lambda_" + name)),
                 new io.github.martinschneider.orzo.lexer.tokens.Type(typed));
-        body.add(
-            new ParallelDeclaration(
-                new ArrayList<>(
-                    List.of(new Declaration(emptyList(), typed, new Identifier(name), cast)))));
+        Declaration local = new Declaration(emptyList(), typed, new Identifier(name), cast);
+        local.genericType = generic;
+        body.add(new ParallelDeclaration(new ArrayList<>(List.of(local))));
       } else {
         args.add(new Argument(erased, new Identifier(name)));
       }

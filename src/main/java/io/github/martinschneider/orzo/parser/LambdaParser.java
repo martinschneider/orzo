@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.NEW;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.ARROW;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
@@ -39,20 +40,10 @@ public class LambdaParser implements ProdParser<Expression> {
   @Override
   public Expression parse(TokenList tokens) {
     int idx = tokens.idx();
-    if (((tokens.curr() instanceof Identifier && ((Identifier) tokens.curr()).next == null)
-            || tokens.curr() instanceof Type)
-        && tokens.peekNext().eq(sym(COLON))
-        && tokens.get(idx + 2).eq(sym(COLON))
-        && tokens.get(idx + 3) instanceof Identifier) {
-      // a method reference, e.g. "Math::min", "String::length"
-      String owner =
-          (tokens.curr() instanceof Type)
-              ? ((Type) tokens.curr()).name
-              : ((Identifier) tokens.curr()).id();
-      String method = ((Identifier) tokens.get(idx + 3)).id();
-      tokens.setIdx(idx + 4);
+    LambdaExpr ref = parseMethodRef(tokens);
+    if (ref != null) {
       List<Token> refTokens = new ArrayList<>();
-      refTokens.add(LambdaExpr.methodRef(owner, method));
+      refTokens.add(ref);
       return new Expression(refTokens);
     }
     List<String> params = tryParseParams(tokens);
@@ -96,6 +87,42 @@ public class LambdaParser implements ProdParser<Expression> {
   // `tokens` untouched) if the upcoming tokens don't match either shape - this does NOT by itself
   // confirm a lambda (an "->" could still be missing after it, e.g. a plain parenthesized
   // expression "(x)"), so the caller still checks for "->" before committing.
+  // A method reference, e.g. "Math::min", "String::length", "Map.Entry::getKey" or "Foo::new"
+  // (null with the tokens unchanged if there's none)
+  private LambdaExpr parseMethodRef(TokenList tokens) {
+    int idx = tokens.idx();
+    if (!((tokens.curr() instanceof Identifier && ((Identifier) tokens.curr()).next == null)
+        || tokens.curr() instanceof Type)) {
+      return null;
+    }
+    StringBuilder owner =
+        new StringBuilder(
+            (tokens.curr() instanceof Type)
+                ? ((Type) tokens.curr()).name
+                : ((Identifier) tokens.curr()).id());
+    int i = idx + 1;
+    while (tokens.get(i).eq(sym(DOT))
+        && (tokens.get(i + 1) instanceof Identifier || tokens.get(i + 1) instanceof Type)) {
+      Token segment = tokens.get(i + 1);
+      owner.append('.').append((segment instanceof Type) ? ((Type) segment).name : segment.val);
+      i += 2;
+    }
+    Token name = tokens.get(i + 2);
+    if (!tokens.get(i).eq(sym(COLON))
+        || !tokens.get(i + 1).eq(sym(COLON))
+        || !(name instanceof Identifier || name.eq(keyword(NEW)))) {
+      return null;
+    }
+    tokens.setIdx(i + 3);
+    String ownerName = owner.toString();
+    if (ownerName.contains(".") && !ownerName.startsWith("this.")) {
+      // e.g. "java.util.Map$Entry" for "Map.Entry"
+      ownerName = ctx.typeArgsParser.resolveQualified(ownerName);
+    }
+    return LambdaExpr.methodRef(
+        ownerName, name.eq(keyword(NEW)) ? "new" : ((Identifier) name).id());
+  }
+
   // Whether the "(" is followed by "->" after its ")" (only then the parameters are parsed: their
   // types are parsed with error reporting, e.g. "a" in "(a < b ? a : b)" isn't a type)
   private static boolean followedByArrow(TokenList tokens) {
