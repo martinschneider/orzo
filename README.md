@@ -37,7 +37,7 @@ Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md)
 
 ## Notes
 
-- Orzo creates class files with major version 71 (Java 27) and emits a [StackMapTable attribute](https://docs.oracle.com/javase/specs/jvms/se18/html/jvms-4.html#jvms-4.7.4) for methods with branch targets, as required by the JVM spec.
+- Orzo creates class files with major version 71 (Java 27).
 - Classes the compiled code uses are resolved by reflection on Orzo's own classpath (the JDK and Orzo itself) or are part of the same compilation run; there is no `-classpath` option yet.
 - Static nested classes are compiled without `InnerClasses`/`NestHost` attributes.
 
@@ -55,35 +55,6 @@ public double pi(int n) {
   }
   return ((a+b) ** 2) / (4 * t);
 }
-```
-
-Numerical calculus with lambdas ([Newton's method](https://en.wikipedia.org/wiki/Newton%27s_method) and [Simpson's rule](https://en.wikipedia.org/wiki/Simpson%27s_rule)):
-
-```java
-static DoubleUnaryOperator derivative(DoubleUnaryOperator f) {
-  return x -> (f.applyAsDouble(x + h) - f.applyAsDouble(x - h)) ÷ (2 * h);
-}
-
-static double root(DoubleUnaryOperator f, double x) {
-  DoubleUnaryOperator df = derivative(f);
-  repeat 10 {
-    x = x - f.applyAsDouble(x) / df.applyAsDouble(x);
-  }
-  return x;
-}
-
-static double integral(DoubleUnaryOperator f, double a, double b, int n) {
-  double dx, sum, x = (b - a) ÷ n, f.applyAsDouble(a) + f.applyAsDouble(b), a;
-  for (int i = 1; i < n; i++) {
-    x += dx;
-    sum += (i % 2 == 0 ? 2 : 4) * f.applyAsDouble(x);
-  }
-  return sum * dx ÷ 3;
-}
-
-root(x -> x ** 2 - x - 1, 1);                 // the golden ratio: 1.618033988749895
-root(x -> Math.cos(x) - x, 1);                // the Dottie number: 0.7390851332151607
-integral(x -> 4 ÷ (1 + x ** 2), 0, 1, 100);   // π: 3.141592653589754
 ```
 
 More examples can be found [here](src/test/resources/io/github/martinschneider/orzo/examples).
