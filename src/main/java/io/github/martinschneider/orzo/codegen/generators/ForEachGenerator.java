@@ -32,6 +32,7 @@ import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.lexer.tokens.Type;
+import io.github.martinschneider.orzo.parser.productions.ArrayInit;
 import io.github.martinschneider.orzo.parser.productions.ForEachStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
@@ -122,6 +123,9 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
   }
 
   private boolean isArrayIterable(ForEachStatement stmt) {
+    if (stmt.iterable instanceof ArrayInit) {
+      return true; // e.g. "for (int i : new int[] {1, 2})"
+    }
     if (stmt.iterable == null || stmt.iterable.tokens == null || stmt.iterable.tokens.size() != 1) {
       return false;
     }
@@ -139,8 +143,10 @@ public class ForEachGenerator implements StatementGenerator<ForEachStatement> {
 
   private HasOutput generateArray(DynamicByteArray out, Method method, ForEachStatement stmt) {
     // Look up the iterable's type info so $arr inherits the correct array type for StackMapTable
-    Identifier iterableId = (Identifier) stmt.iterable.tokens.get(0);
-    VariableInfo iterableInfo = ctx.classIdMap.variables.get(iterableId);
+    VariableInfo iterableInfo =
+        (stmt.iterable.tokens.size() == 1 && stmt.iterable.tokens.get(0) instanceof Identifier)
+            ? ctx.classIdMap.variables.get(stmt.iterable.tokens.get(0))
+            : null;
     String arrVarType = iterableInfo != null ? iterableInfo.type : REF;
     String arrVarArrType = iterableInfo != null ? iterableInfo.arrType : stmt.elemType;
 

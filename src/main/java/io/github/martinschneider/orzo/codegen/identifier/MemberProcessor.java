@@ -284,7 +284,8 @@ public class MemberProcessor {
   }
 
   // Whether a field declaration is initialized in <clinit> (static) or the constructors (a constant
-  // final field is initialized by its ConstantValue attribute instead)
+  // static final field is initialized by its ConstantValue attribute instead, which the JVM
+  // ignores for an instance field)
   private static boolean initializedIn(ParallelDeclaration pDecl, boolean isStatic) {
     for (Declaration decl : pDecl.declarations) {
       if (decl.enumArgs != null) {
@@ -292,6 +293,7 @@ public class MemberProcessor {
       }
       boolean isConstantFinal =
           decl.accFlags.contains(AccessFlag.ACC_FINAL)
+              && decl.accFlags.contains(AccessFlag.ACC_STATIC)
               && decl.val != null
               && decl.val.getConstantValue(decl.type) != null;
       if (decl.val != null && !isConstantFinal) {

@@ -8,7 +8,10 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.IF_ICMPEQ;
 import static io.github.martinschneider.orzo.codegen.OpCodes.INVOKEVIRTUAL;
 import static io.github.martinschneider.orzo.codegen.constants.ConstantTypes.CONSTANT_METHODREF;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.BYTE;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.CHAR;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.INT;
+import static io.github.martinschneider.orzo.lexer.tokens.Type.SHORT;
 import static io.github.martinschneider.orzo.lexer.tokens.Type.STRING;
 import static java.util.Collections.emptyList;
 
@@ -36,9 +39,21 @@ public class SwitchGenerator implements StatementGenerator<SwitchStatement> {
     this.ctx = ctx;
   }
 
+  private static final java.util.Map<String, String> UNBOXED =
+      java.util.Map.of(
+          "java.lang.Integer", INT,
+          "java.lang.Character", CHAR,
+          "java.lang.Short", SHORT,
+          "java.lang.Byte", BYTE);
+
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, SwitchStatement switchStmt) {
     String switchType = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, switchStmt.switchExpr);
+    // (a wrapper is unboxed, e.g. an Integer is switched on as an int)
+    String unboxed = UNBOXED.get(switchType);
+    if (unboxed != null) {
+      switchType = unboxed;
+    }
 
     // Allocate temp local for switch expression value
     short tmpSlot = (short) ctx.classIdMap.variables.localSize;
@@ -48,6 +63,9 @@ public class SwitchGenerator implements StatementGenerator<SwitchStatement> {
 
     // Evaluate switch expression and store in temp slot
     ctx.exprGen.eval(out, null, switchStmt.switchExpr);
+    if (unboxed != null) {
+      ctx.basicGen.convert1(out, ctx.opStack.type(), unboxed);
+    }
     ctx.storeGen.store(out, ctx.classIdMap.variables.get(id(tmpName)));
 
     // Find default case index

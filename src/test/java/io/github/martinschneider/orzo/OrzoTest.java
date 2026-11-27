@@ -352,6 +352,7 @@ public class OrzoTest {
         args(list("tests/SynchronizedStatements")),
         args(list("tests/StatementExpressions")),
         args(list("tests/MethodReferenceForms")),
+        args(list("tests/SwitchExpressionArguments")),
         args(list("tests/LambdaBlocks")),
         args(list("tests/StaticFieldAssignment")),
         args(list("examples/Calculus")),

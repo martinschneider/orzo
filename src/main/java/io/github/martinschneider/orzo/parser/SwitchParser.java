@@ -193,7 +193,11 @@ public class SwitchParser implements ProdParser<SwitchStatement> {
       return null;
     }
     body.add(stmt);
-    body.add(new Break());
+    if (expr == null) {
+      // (in a switch expression, a block yields or throws: a break would be dead code, whose
+      // stack map frame wouldn't match the operands of the expression around the switch)
+      body.add(new Break());
+    }
     return body;
   }
 
