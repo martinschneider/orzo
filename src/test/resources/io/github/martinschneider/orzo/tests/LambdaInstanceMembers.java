@@ -31,6 +31,29 @@ public class LambdaInstanceMembers {
     List.of("x", "y").forEach(LambdaInstanceMembers::show); // (an erased element type)
     Function<Integer, Integer> doubler = this::twice;
     System.out.println(doubler.apply(21));
+    // ("this" in operations: indexes, object creations, conditionals, casts and instanceof)
+    Supplier<String> mixed =
+        () ->
+            this.values[1]
+                + " "
+                + new Wrapper(this).owner.base
+                + " "
+                + (this.base > 5 ? this.base : -this.base)
+                + " "
+                + ((Object) this).hashCode() / Math.max(1, this.hashCode())
+                + " "
+                + (this instanceof Object);
+    System.out.println(mixed.get());
+  }
+
+  int[] values = {4, 5};
+
+  static class Wrapper {
+    LambdaInstanceMembers owner;
+
+    Wrapper(LambdaInstanceMembers owner) {
+      this.owner = owner;
+    }
   }
 
   class Inner {

@@ -34,7 +34,7 @@ Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md)
 - annotations with arguments (annotations without arguments are ignored)
 - method references `super::m`
 - `switch` with `->` cases and switch expressions
-- `assert`, `synchronized`
+- `synchronized`
 - `finally` isn't run when `break` or `continue` leave the `try` block
 
 ## Notes
@@ -83,8 +83,8 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 | Metric | Value |
 |--------|-------|
 | Self-compilation | 100.0% |
-| [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 56.4% (498 of 883) |
-| jtreg negative tests (must be rejected) | 53.1% (458 of 863) |
-| Compile time (Orzo's sources) | 1.2x javac (15.5 s vs. 12.8 s) |
-| Class size (Orzo's class files) | 1.0x javac (1120.0 KiB vs. 1090.3 KiB) |
+| [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 57.9% (511 of 883) |
+| jtreg negative tests (must be rejected) | 52.8% (456 of 863) |
+| Compile time (Orzo's sources) | 1.3x javac (15.8 s vs. 12.2 s) |
+| Class size (Orzo's class files) | 1.0x javac (1135.1 KiB vs. 1101.9 KiB) |
 <!-- metrics:end -->

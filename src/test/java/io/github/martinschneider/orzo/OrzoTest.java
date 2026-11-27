@@ -337,6 +337,8 @@ public class OrzoTest {
         args(list("tests/MethodReferences")),
         args(list("tests/OrzoKeywordsAsNames")),
         args(list("tests/MultipleDeclarators")),
+        args(list("tests/Asserts")),
+        args(list("tests/NullConcatenation")),
         args(list("tests/LambdaBlocks")),
         args(list("tests/StaticFieldAssignment")),
         args(list("examples/Calculus")),
@@ -407,6 +409,7 @@ public class OrzoTest {
     List<String> classNames = new ArrayList<>();
     List<ByteArrayOutputStream> streams = new ArrayList<>();
     ByteClassLoader classLoader = new ByteClassLoader(ClassLoader.getSystemClassLoader());
+    classLoader.setDefaultAssertionStatus(true); // (like "java -ea", as jtreg runs tests)
     for (int i = 0; i < programs.size(); i++) {
       String[] tmp = programs.get(i).split("/");
       inputs.add(

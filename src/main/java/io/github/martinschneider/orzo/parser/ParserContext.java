@@ -24,7 +24,10 @@ public class ParserContext {
   // Maps class-level type variable names to their erasure types (e.g. T → java.lang.Object)
   public Map<String, String> classTypeParams = new HashMap<>();
   public CompilerErrors errors;
+  // whether the class being parsed has an assert statement (see AssertParser)
+  public boolean usesAssert;
   public ArrayDefParser arrayDefParser;
+  public AssertParser assertParser;
   public ArrayInitParser arrayInitParser;
   public ArraySelectorParser arraySelectorParser;
   public AssignmentParser assignParser;
@@ -85,6 +88,7 @@ public class ParserContext {
     ctx.stmtParser = new StatementParser(ctx);
     ctx.whileParser = new WhileParser(ctx);
     ctx.repeatParser = new RepeatParser(ctx);
+    ctx.assertParser = new AssertParser(ctx);
     ctx.switchParser = new SwitchParser(ctx);
     ctx.throwParser = new ThrowParser(ctx);
     ctx.tryParser = new TryParser(ctx);

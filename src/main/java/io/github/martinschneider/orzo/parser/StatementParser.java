@@ -227,7 +227,9 @@ public class StatementParser implements ProdParser<Statement> {
       tokens.setIdx(idx);
     }
     // Check constructor calls first to avoid conflicts with other parsers
-    if ((stmt = ctx.classParser.parseLocalClass(tokens)) != null) {
+    if ((stmt = ctx.assertParser.parse(tokens)) != null) {
+      return stmt;
+    } else if ((stmt = ctx.classParser.parseLocalClass(tokens)) != null) {
       return stmt;
     } else if ((stmt = ctx.constrCallParser.parse(tokens)) != null) {
       return stmt;

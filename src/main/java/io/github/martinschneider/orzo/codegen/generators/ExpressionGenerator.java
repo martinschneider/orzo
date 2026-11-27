@@ -132,6 +132,7 @@ import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
+import io.github.martinschneider.orzo.parser.tree.Renaming;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -454,10 +455,17 @@ public class ExpressionGenerator {
       return new ExpressionResult(BOOLEAN, null);
     }
     // "!(a && b)", "!(a | b)" etc.: evaluate the (short-circuiting) operand as a 0/1 value and
-    // invert it, rather than processing its tokens one by one below.
+    // invert it, rather than processing its tokens one by one below (also a negated comparison
+    // whose value is used, e.g. "!(n > 3)" in "!b && !(n > 3)": its branch opcode is completed
+    // to a value first)
     if (tokens.size() > 1 && tokens.get(tokens.size() - 1).eq(op(NEGATE))) {
       List<Token> operand = new ArrayList<>(tokens.subList(0, tokens.size() - 1));
-      if (findOutermostLogicalOp(operand) >= 0 || findOutermostBooleanBitOp(operand) != null) {
+      Token last = operand.get(operand.size() - 1);
+      boolean comparison =
+          last instanceof Operator && COMPARATORS.contains(((Operator) last).opValue());
+      if (findOutermostLogicalOp(operand) >= 0
+          || findOutermostBooleanBitOp(operand) != null
+          || (comparison && !reverseComp)) {
         out.write(evalAsValue(null, new Expression(operand)).getBytes());
         out.write(ICONST_1);
         out.write(IXOR);
@@ -518,6 +526,9 @@ public class ExpressionGenerator {
           }
         } else {
           String operandType = handleId(out, ctx.classIdMap, tokens, i, token, type);
+          if ("java.lang.String".equals(operandType)) {
+            operandType = STRING; // (e.g. a lambda parameter typed by a type argument)
+          }
           exprTypeStack.push(operandType);
           // In a string concatenation (e.g. "i + str"), a primitive operand's own type must not
           // replace the expression type: the next operand would be "converted" to it.
@@ -662,17 +673,26 @@ public class ExpressionGenerator {
           String leftType = exprTypeStack.secondType();
           // topType is the actual type of the right operand (top of expression type stack)
           String topType = exprTypeStack.type();
-          if (STRING.equals(leftType)) {
-            // String + X: convert X to String if needed, then concat
-            if (!STRING.equals(topType)) {
-              if (isNonPrimitive(topType)) {
-                ctx.invokeGen.invokeStatic(
-                    out,
-                    new Method("java.lang.String", "valueOf", STRING, List.of("java.lang.Object")));
-              } else {
-                ctx.basicGen.primitiveToString(out, topType);
-              }
+          // (a String that may be null becomes "null", like an Object: concat() would throw)
+          if (STRING.equals(topType) && mayBeNull(tokens.get(i - 1))) {
+            topType = REF;
+          }
+          if (STRING.equals(leftType)
+              && mayBeNull(tokens.get(findRightOperandStart(tokens, i) - 1))) {
+            leftType = REF;
+          }
+          // the right operand as a String, then the left one (under it)
+          if (!STRING.equals(topType)) {
+            if (isNonPrimitive(topType)) {
+              ctx.invokeGen.invokeStatic(
+                  out,
+                  new Method("java.lang.String", "valueOf", STRING, List.of("java.lang.Object")));
+            } else {
+              ctx.basicGen.primitiveToString(out, topType);
             }
+          }
+          if (STRING.equals(leftType)) {
+            // (already a String)
           } else if (!LONG.equals(leftType) && !DOUBLE.equals(leftType)) {
             // X + String (single-slot X): SWAP, valueOf(X), SWAP, then concat
             out.write(SWAP);
@@ -1769,7 +1789,7 @@ public class ExpressionGenerator {
     List<Expression> bodyExprs =
         (lambda.block != null) ? Statements.expressions(lambda.block) : List.of(lambda.body);
     for (Expression expr : bodyExprs) {
-      visitLambdaBody(expr, lambda.params, captured);
+      visitBody(expr, lambda.params, captured);
       if (inner) {
         replaceThis(expr);
       }
@@ -1895,7 +1915,9 @@ public class ExpressionGenerator {
     if (expr == null) {
       return;
     }
-    expr.tree = null; // (generated from the changed tokens)
+    if (expr.tree != null) {
+      expr.tree = new Renaming("this", InnerClasses.OUTER_INSTANCE).apply(expr.tree);
+    }
     for (Token token : expr.tokens) {
       if (token instanceof TernaryExpression) {
         replaceThis(((TernaryExpression) token).condition);
@@ -2019,27 +2041,15 @@ public class ExpressionGenerator {
     return false;
   }
 
-  // Finds the enclosing method's local variables a lambda body uses (to be captured), and
-  // qualifies unqualified calls of the enclosing class's static methods with its name (the body
-  // is compiled as part of a synthetic class, where they wouldn't resolve otherwise).
-  private void visitLambdaBody(
-      Expression expr, List<String> lambdaParams, List<VariableInfo> captured) {
-    visitBody(expr, lambdaParams, captured, true);
-  }
-
-  // (qualify: qualify the static members of the enclosing class, for a lambda body)
-  private void visitBody(
-      Expression expr, List<String> lambdaParams, List<VariableInfo> captured, boolean qualify) {
-    if (qualify) {
-      // (its calls may be qualified below, so it is generated from its tokens, not from its tree)
-      expr.tree = null;
-    }
+  // Finds the enclosing method's local variables a lambda body (or local class) uses (to be
+  // captured)
+  private void visitBody(Expression expr, List<String> lambdaParams, List<VariableInfo> captured) {
     for (Token token : expr.tokens) {
       if (token instanceof TernaryExpression) {
         TernaryExpression ternary = (TernaryExpression) token;
-        visitBody(ternary.condition, lambdaParams, captured, qualify);
-        visitBody(ternary.trueBranch, lambdaParams, captured, qualify);
-        visitBody(ternary.falseBranch, lambdaParams, captured, qualify);
+        visitBody(ternary.condition, lambdaParams, captured);
+        visitBody(ternary.trueBranch, lambdaParams, captured);
+        visitBody(ternary.falseBranch, lambdaParams, captured);
       } else if (token instanceof LambdaExpr) {
         // (a nested lambda: its own parameters and locals aren't captured)
         LambdaExpr nested = (LambdaExpr) token;
@@ -2051,18 +2061,12 @@ public class ExpressionGenerator {
           exprs = Statements.expressions(nested.block);
         }
         for (Expression nestedExpr : exprs) {
-          visitBody(nestedExpr, names, captured, false);
+          visitBody(nestedExpr, names, captured);
         }
       } else if (token instanceof Identifier) {
         Identifier root = (Identifier) token;
         if (root instanceof CastMethodCall) {
-          visitBody(((CastMethodCall) root).innerExpr, lambdaParams, captured, qualify);
-        } else if (qualify
-            && root instanceof MethodCall
-            && !((MethodCall) root).name.contains(".")) {
-          qualifyStaticCall((MethodCall) root);
-        } else if (qualify && !(root instanceof MethodCall) && !(root instanceof ConstructorCall)) {
-          qualifyStaticField(root, lambdaParams);
+          visitBody(((CastMethodCall) root).innerExpr, lambdaParams, captured);
         }
         String rootName =
             (root instanceof MethodCall)
@@ -2076,48 +2080,19 @@ public class ExpressionGenerator {
         for (Identifier link = root; link != null; link = link.next) {
           if (link instanceof MethodCall) {
             for (Expression param : ((MethodCall) link).params) {
-              visitBody(param, lambdaParams, captured, qualify);
+              visitBody(param, lambdaParams, captured);
             }
           } else if (link instanceof ConstructorCall) {
             for (Expression arg : ((ConstructorCall) link).args) {
-              visitBody(arg, lambdaParams, captured, qualify);
+              visitBody(arg, lambdaParams, captured);
             }
           }
           if (link.arrSel != null) {
             for (Expression index : link.arrSel.exprs) {
-              visitBody(index, lambdaParams, captured, qualify);
+              visitBody(index, lambdaParams, captured);
             }
           }
         }
-      }
-    }
-  }
-
-  // A static field of the enclosing class in a lambda body, e.g. "h" in "x -> x + h", becomes
-  // "Clazz.h" (the body is generated as a method of another class)
-  private void qualifyStaticField(Identifier root, List<String> lambdaParams) {
-    String name = root.val.toString();
-    if (lambdaParams.contains(name) || ctx.classIdMap.variables.localMap.containsKey(name)) {
-      return;
-    }
-    VariableInfo field = ctx.classIdMap.variables.fieldMap.get(name);
-    if (field == null || !field.accFlags.contains(AccessFlag.ACC_STATIC)) {
-      return;
-    }
-    Identifier link = new Identifier(name);
-    link.next = root.next;
-    link.arrSel = root.arrSel;
-    root.val = ctx.clazz.name;
-    root.next = link;
-    root.arrSel = null;
-  }
-
-  private void qualifyStaticCall(MethodCall call) {
-    for (Method m : ctx.clazz.methods) {
-      if (m.name.val.toString().equals(call.name) && m.accFlags.contains(AccessFlag.ACC_STATIC)) {
-        call.name = ctx.clazz.name + "." + call.name;
-        call.val = call.name;
-        return;
       }
     }
   }
@@ -2462,7 +2437,7 @@ public class ExpressionGenerator {
     }
     List<VariableInfo> captured = new ArrayList<>();
     for (Expression expr : exprs) {
-      visitBody(expr, declared, captured, false);
+      visitBody(expr, declared, captured);
     }
     return captured;
   }
@@ -2652,6 +2627,12 @@ public class ExpressionGenerator {
         && !BOOLEAN.equals(type)
         && !VOID.equals(type)
         && !"int_zero".equals(type);
+  }
+
+  // Whether a String operand ending with this (postfix) token may be null: not a literal or a
+  // concatenation
+  private static boolean mayBeNull(Token last) {
+    return !(last instanceof Str) && !last.eq(op(PLUS));
   }
 
   // Evaluates an expression with reverseComp=false and ensures the result is a 0/1 value.

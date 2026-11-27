@@ -89,6 +89,7 @@ public class DifferentialTest {
         new URLClassLoader(
             new URL[] {classes.toUri().toURL(), orzoClasses},
             ClassLoader.getPlatformClassLoader())) {
+      loader.setDefaultAssertionStatus(true); // (like "java -ea")
       loader
           .loadClass(mainClass)
           .getMethod("main", String[].class)

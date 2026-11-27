@@ -393,11 +393,20 @@ public class ExpressionTreeGenerator {
 
   // "s + x" or "x + s" for a String s: both operands as Strings, then String.concat()
   private String concatenation(DynamicByteArray out, BinaryNode binary) {
-    toString(out, value(out, binary.left, null));
-    toString(out, value(out, binary.right, null));
+    concatOperand(out, binary.left);
+    concatOperand(out, binary.right);
     ctx.invokeGen.invokeVirtual(
         out, new Method("java.lang.String", "concat", STRING, List.of(STRING)));
     return STRING;
+  }
+
+  // (a String that may be null becomes "null", like an Object: String.concat() would throw)
+  private void concatOperand(DynamicByteArray out, ExprNode node) {
+    String type = value(out, node, null);
+    boolean nonNull =
+        (node instanceof LiteralNode && ((LiteralNode) node).value instanceof Str)
+            || (node instanceof BinaryNode && ((BinaryNode) node).op == PLUS);
+    toString(out, (isString(type) && !nonNull) ? REF : type);
   }
 
   private void toString(DynamicByteArray out, String type) {

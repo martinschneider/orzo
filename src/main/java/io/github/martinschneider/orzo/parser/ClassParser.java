@@ -28,6 +28,7 @@ import static io.github.martinschneider.orzo.util.FactoryHelper.defaultConstr;
 import static io.github.martinschneider.orzo.util.FactoryHelper.enumMethods;
 import static java.util.Collections.emptyList;
 
+import io.github.martinschneider.orzo.lexer.Lexer;
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.EOF;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
@@ -235,6 +236,8 @@ public class ClassParser implements ProdParser<Clazz> {
     ctx.localPrefix = null;
     ctx.currClazz.isGeneric = isGeneric;
     ctx.errors.startTokens.put(ctx.currClazz, nameToken);
+    boolean outerUsesAssert = ctx.usesAssert;
+    ctx.usesAssert = false;
     if (isEnum) {
       ctx.enumParser.fqn = ctx.currClazz.fqn();
       members.add(ctx.enumParser.parse(tokens));
@@ -274,12 +277,44 @@ public class ClassParser implements ProdParser<Clazz> {
       ctx.errors.missingExpected(
           LOG_NAME, sym(RBRACE), tokens, new RuntimeException().getStackTrace());
     }
+    if (ctx.usesAssert) {
+      addAssertionsField(name, isInterface, isEnum, decls, instanceInits);
+    }
+    ctx.usesAssert = outerUsesAssert;
     ctx.currClazz.methods = methods;
     ctx.currClazz.fields = decls;
     tokens.next();
     ctx.currClazz.baseClass = baseClass;
     ctx.currClazz.instanceInits = instanceInits;
     return ctx.currClazz;
+  }
+
+  // "static final boolean $assertionsDisabled = !Name.class.desiredAssertionStatus();" for the
+  // assert statements of a class (see AssertParser), initialized first (after an enum's constants)
+  private void addAssertionsField(
+      String name,
+      boolean isInterface,
+      boolean isEnum,
+      List<ParallelDeclaration> decls,
+      List<Statement> inits) {
+    ParallelDeclaration field =
+        ctx.declParser.parse(
+            new Lexer()
+                .getTokens(
+                    (isInterface ? "public " : "")
+                        + "static final boolean "
+                        + AssertParser.FIELD
+                        + " = !"
+                        + name
+                        + ".class.desiredAssertionStatus();"));
+    for (Declaration decl : field.declarations) {
+      decl.isField = true;
+      decl.accFlags = new ArrayList<>(decl.accFlags);
+      decl.accFlags.add(AccessFlag.ACC_SYNTHETIC);
+    }
+    int idx = (isEnum && !decls.isEmpty()) ? 1 : 0;
+    decls.add(idx, field);
+    inits.add(Math.min(idx, inits.size()), field);
   }
 
   // "extends Foo" (an interface's "extends A, B" are its superinterfaces)
