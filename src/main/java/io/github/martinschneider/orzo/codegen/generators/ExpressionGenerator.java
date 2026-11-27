@@ -1716,7 +1716,18 @@ public class ExpressionGenerator {
   // for a static method, "(a, b) -> a.method(b)" for an instance method of Owner, "(a, b) ->
   // owner.method(a, b)" for a local variable owner (null after an error)
   private LambdaExpr methodRefAsLambda(LambdaExpr ref, int arity) {
-    if (ref.methodRefName.equals("new")) {
+    if (ref.methodRefOwner.endsWith("[]") && ref.methodRefName.equals("new") && arity == 1) {
+      // an array constructor reference, e.g. "int[]::new": "n -> new int[n]"
+      String element = ref.methodRefOwner.substring(0, ref.methodRefOwner.length() - 2);
+      if (!TypeUtils.isPrimitive(element)) {
+        element = resolveJvmClassName(element).replace('/', '.');
+      }
+      List<Expression> dims =
+          new ArrayList<>(
+              List.of(new Expression(new ArrayList<>(List.of(new Identifier("$ref0"))))));
+      return new LambdaExpr(
+          new ArrayList<>(List.of("$ref0")), new ArrayInit(element, dims, new ArrayList<>()));
+    } else if (ref.methodRefName.equals("new")) {
       // a constructor reference, e.g. "ArrayList::new": "(a, b) -> new ArrayList(a, b)"
       List<String> params = new ArrayList<>();
       List<Expression> args = new ArrayList<>();
@@ -1847,6 +1858,25 @@ public class ExpressionGenerator {
       return targetType;
     }
     if (lambda.methodRefName != null) {
+      if (lambda.methodRefReceiver != null) {
+        // e.g. "new Foo()::bar": the receiver is evaluated once (into a variable of the lambda)
+        String receiver = "$receiver" + ctx.classIdMap.variables.localSize;
+        String receiverType =
+            new NumExprTypeDecider(ctx).getType(ctx.classIdMap, lambda.methodRefReceiver);
+        ExpressionResult result = eval(out, receiverType, lambda.methodRefReceiver);
+        VariableInfo var =
+            new VariableInfo(
+                receiver,
+                (result.type != null) ? result.type : receiverType,
+                emptyList(),
+                false,
+                (short) ctx.classIdMap.variables.localSize,
+                null);
+        ctx.classIdMap.variables.putLocal(Token.id(receiver), var);
+        ctx.storeGen.store(out, var);
+        LambdaExpr named = LambdaExpr.methodRef(receiver, lambda.methodRefName);
+        lambda = named;
+      }
       lambda = methodRefAsLambda(lambda, sam.paramTypes.size());
       if (lambda == null) {
         return targetType;

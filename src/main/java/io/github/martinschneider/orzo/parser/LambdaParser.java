@@ -1,8 +1,12 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.EXTENDS;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.NEW;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.ARROW;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
@@ -10,6 +14,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.QUESTION;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRAK;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN;
@@ -18,6 +23,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
+import io.github.martinschneider.orzo.lexer.tokens.EOF;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.LambdaExpr;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
@@ -96,6 +102,9 @@ public class LambdaParser implements ProdParser<Expression> {
   // (null with the tokens unchanged if there's none)
   private LambdaExpr parseMethodRef(TokenList tokens) {
     int idx = tokens.idx();
+    if (tokens.curr().eq(keyword(NEW)) || tokens.curr().eq(sym(LPAREN))) {
+      return parseReceiverMethodRef(tokens);
+    }
     if (!((tokens.curr() instanceof Identifier && ((Identifier) tokens.curr()).next == null)
         || tokens.curr() instanceof Type)) {
       return null;
@@ -112,6 +121,11 @@ public class LambdaParser implements ProdParser<Expression> {
       owner.append('.').append((segment instanceof Type) ? ((Type) segment).name : segment.val);
       i += 2;
     }
+    i = skipTypeArguments(tokens, i); // e.g. "ArrayList<String>::new" (erased)
+    while (tokens.get(i).eq(sym(LBRAK)) && tokens.get(i + 1).eq(sym(RBRAK))) {
+      owner.append("[]"); // an array type, e.g. "int[]::new"
+      i += 2;
+    }
     Token name = tokens.get(i + 2);
     if (!tokens.get(i).eq(sym(COLON))
         || !tokens.get(i + 1).eq(sym(COLON))
@@ -120,7 +134,7 @@ public class LambdaParser implements ProdParser<Expression> {
     }
     tokens.setIdx(i + 3);
     String ownerName = owner.toString();
-    if (ownerName.contains(".") && !ownerName.startsWith("this.")) {
+    if (ownerName.contains(".") && !ownerName.startsWith("this.") && !ownerName.endsWith("[]")) {
       // e.g. "java.util.Map$Entry" for "Map.Entry"
       ownerName = ctx.typeArgsParser.resolveQualified(ownerName);
     }
@@ -173,6 +187,92 @@ public class LambdaParser implements ProdParser<Expression> {
       type.insert(0, '[');
     }
     return type.toString();
+  }
+
+  // The index after type arguments starting at the given index (e.g. "<String, List<T>>"), or the
+  // given index if there are none
+  private static int skipTypeArguments(TokenList tokens, int start) {
+    if (!tokens.get(start).eq(op(LESS))) {
+      return start;
+    }
+    int depth = 0;
+    int i = start;
+    do {
+      Token token = tokens.get(i);
+      if (token.eq(op(LESS))) {
+        depth++;
+      } else if (token.eq(op(GREATER))) {
+        depth--;
+      } else if (token.eq(op(RSHIFT))) {
+        depth -= 2;
+      } else if (token.eq(op(RSHIFTU))) {
+        depth -= 3;
+      } else if (!(token instanceof Identifier
+          || token instanceof Type
+          || token.eq(sym(DOT))
+          || token.eq(sym(COMMA))
+          || token.eq(sym(QUESTION))
+          || token.eq(sym(LBRAK))
+          || token.eq(sym(RBRAK))
+          || token.eq(keyword(EXTENDS)))) {
+        return start; // (not type arguments, e.g. "a < b")
+      }
+      i++;
+    } while (depth > 0);
+    return i;
+  }
+
+  // A method reference on an object creation or a parenthesized expression, e.g. "new Foo()::bar"
+  // or "(a ? b : c)::bar" (only parsed if a "::" follows, see endOfReceiver)
+  private LambdaExpr parseReceiverMethodRef(TokenList tokens) {
+    int end = endOfReceiver(tokens, tokens.idx());
+    if (end < 0
+        || !tokens.get(end).eq(sym(COLON))
+        || !tokens.get(end + 1).eq(sym(COLON))
+        || !(tokens.get(end + 2) instanceof Identifier)) {
+      return null;
+    }
+    int idx = tokens.idx();
+    receiverStart = idx;
+    Expression receiver = ctx.exprParser.parse(tokens);
+    receiverStart = -1;
+    if (receiver == null || tokens.idx() != end) {
+      tokens.setIdx(idx);
+      return null;
+    }
+    tokens.setIdx(end + 3);
+    LambdaExpr ref = LambdaExpr.methodRef(null, ((Identifier) tokens.get(end + 2)).id());
+    ref.methodRefReceiver = receiver;
+    return ref;
+  }
+
+  // (the start of the receiver being parsed: its "::" isn't parsed again there)
+  private int receiverStart = -1;
+
+  // The index after "(...)" or "new Foo<...>(...)" at the given index, or -1
+  private int endOfReceiver(TokenList tokens, int start) {
+    if (start == receiverStart) {
+      return -1;
+    }
+    int i = start;
+    if (tokens.get(i).eq(keyword(NEW))) {
+      i++;
+      while (tokens.get(i) instanceof Identifier || tokens.get(i).eq(sym(DOT))) {
+        i++;
+      }
+      i = skipTypeArguments(tokens, i);
+    }
+    if (!tokens.get(i).eq(sym(LPAREN))) {
+      return -1;
+    }
+    for (int depth = 0; !(tokens.get(i) instanceof EOF); i++) {
+      if (tokens.get(i).eq(sym(LPAREN))) {
+        depth++;
+      } else if (tokens.get(i).eq(sym(RPAREN)) && --depth == 0) {
+        return i + 1;
+      }
+    }
+    return -1;
   }
 
   private List<String> tryParseParams(TokenList tokens) {

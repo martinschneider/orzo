@@ -28,6 +28,9 @@ public class LambdaParserTest {
         args("x -> x.toString()", expr(list(new LambdaExpr(list("x"), expr("x.toString()"))))),
         args("(a, b) -> a", expr(list(new LambdaExpr(list("a", "b"), expr("a"))))),
         args("() -> 1", expr(list(new LambdaExpr(list(), expr("1"))))),
+        // method references with type arguments (erased) and on array types
+        args("Box<String>::getX", expr(list(LambdaExpr.methodRef("Box", "getX")))),
+        args("int[]::new", expr(list(LambdaExpr.methodRef("int[]", "new")))),
         // Not a valid untyped lambda param list - "a.b" is a dotted identifier chain, not a bare
         // name - so this isn't a lambda at all; must leave `tokens` untouched.
         args("(a.b, c) -> a", null));

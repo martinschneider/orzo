@@ -29,6 +29,9 @@ public class LambdaExpr extends Token {
   // the target functional interface's arity is known (params and body are empty until then)
   public String methodRefOwner;
   public String methodRefName;
+  // the receiver of a method reference on an expression, e.g. "new Foo()" in "new Foo()::bar"
+  // (null for none: the owner is a name)
+  public Expression methodRefReceiver;
 
   public LambdaExpr(List<String> params, Expression body) {
     super("->");
