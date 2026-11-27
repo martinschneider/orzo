@@ -2419,6 +2419,11 @@ public class ExpressionGenerator {
       constructor = ctx.methodCallGen.findConstructorViaReflectionTyped(jvmClassName, argTypes);
     }
     if (constructor == null) {
+      // (by the binary name, e.g. "p.Outer$Inner", for a class in a package)
+      constructor =
+          ctx.methodCallGen.findVarargsMethod(jvmClassName.replace('/', '.') + ".<init>", argTypes);
+    }
+    if (constructor == null) {
       String simpleName = jvmClassName.substring(jvmClassName.lastIndexOf('/') + 1);
       constructor = ctx.methodCallGen.findVarargsMethod(simpleName + ".<init>", argTypes);
     }

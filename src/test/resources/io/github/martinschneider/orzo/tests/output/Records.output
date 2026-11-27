@@ -1,0 +1,10 @@
+Point[x=1, y=2] 1 2 3 Point[x=0, y=0]
+true false true
+Named[name=a, weight=1.5, tags=[t]] true -1
+Empty[] true 0
+C4 40
+9.0 true 33
+bad x
+Pair[first=a, second=1] a 2
+Doubled[a=1, b=4] 12 Checked[s=c]
+Local[s=l]
