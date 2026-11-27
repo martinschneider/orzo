@@ -1,10 +1,12 @@
 package io.github.martinschneider.orzo.parser;
 
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.CATCH;
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINAL;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.FINALLY;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.TRY;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_OR;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.NOTEQUAL;
+import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
@@ -87,13 +89,14 @@ public class TryParser implements ProdParser<TryStatement> {
         return null;
       }
       tokens.next(); // consume '('
+      if (tokens.curr().eq(keyword(FINAL))) {
+        tokens.next();
+      }
       List<String> exceptionTypes = new ArrayList<>();
-      exceptionTypes.add(tokens.curr().val.toString());
-      tokens.next(); // consume exception type
+      exceptionTypes.add(parseCatchType(tokens));
       while (tokens.curr().eq(op(BITWISE_OR))) { // multi-catch
         tokens.next();
-        exceptionTypes.add(tokens.curr().val.toString());
-        tokens.next();
+        exceptionTypes.add(parseCatchType(tokens));
       }
       String varName = tokens.curr().val.toString();
       tokens.next(); // consume variable name
@@ -169,5 +172,17 @@ public class TryParser implements ProdParser<TryStatement> {
     TryStatement tryStmt = new TryStatement(tryBody, catchBlocks);
     tryStmt.finallyBody = finallyBody;
     return tryStmt;
+  }
+
+  // e.g. "IOException" or "java.io.IOException"
+  private static String parseCatchType(TokenList tokens) {
+    StringBuilder name = new StringBuilder(tokens.curr().val.toString());
+    tokens.next();
+    while (tokens.curr().eq(sym(DOT))) {
+      tokens.next();
+      name.append('.').append(tokens.curr().val);
+      tokens.next();
+    }
+    return name.toString();
   }
 }

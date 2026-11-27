@@ -1,6 +1,7 @@
 package io.github.martinschneider.orzo.codegen;
 
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Assignment;
 import io.github.martinschneider.orzo.parser.productions.Block;
@@ -24,6 +25,14 @@ import io.github.martinschneider.orzo.parser.productions.SwitchCase;
 import io.github.martinschneider.orzo.parser.productions.SwitchStatement;
 import io.github.martinschneider.orzo.parser.productions.ThrowStatement;
 import io.github.martinschneider.orzo.parser.productions.TryStatement;
+import io.github.martinschneider.orzo.parser.tree.BinaryNode;
+import io.github.martinschneider.orzo.parser.tree.CallNode;
+import io.github.martinschneider.orzo.parser.tree.CastNode;
+import io.github.martinschneider.orzo.parser.tree.ExprNode;
+import io.github.martinschneider.orzo.parser.tree.NameNode;
+import io.github.martinschneider.orzo.parser.tree.SelectNode;
+import io.github.martinschneider.orzo.parser.tree.TernaryNode;
+import io.github.martinschneider.orzo.parser.tree.UnaryNode;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -56,8 +65,44 @@ public class Statements {
    */
   public static Set<String> assignedNames(List<Statement> statements) {
     Set<String> assigned = new HashSet<>();
-    addAll(statements, new ArrayList<>(), new HashSet<>(), assigned);
+    List<Expression> exprs = new ArrayList<>();
+    addAll(statements, exprs, new HashSet<>(), assigned);
+    // (also assignments in expressions, e.g. "b" in "a = b = 0")
+    for (Expression expr : exprs) {
+      if (expr.tree != null) {
+        addAssigned(expr.tree, assigned);
+      }
+    }
     return assigned;
+  }
+
+  private static void addAssigned(ExprNode node, Set<String> assigned) {
+    if (node instanceof BinaryNode) {
+      BinaryNode binary = (BinaryNode) node;
+      if (binary.op == Operators.ASSIGN && binary.left instanceof NameNode) {
+        assigned.add(((NameNode) binary.left).name);
+      } else if (binary.op == Operators.ASSIGN
+          && binary.left instanceof SelectNode
+          && ((SelectNode) binary.left).target instanceof NameNode
+          && ((NameNode) ((SelectNode) binary.left).target).name.equals("this")) {
+        assigned.add(((SelectNode) binary.left).name);
+      }
+      addAssigned(binary.left, assigned);
+      addAssigned(binary.right, assigned);
+    } else if (node instanceof UnaryNode) {
+      addAssigned(((UnaryNode) node).operand, assigned);
+    } else if (node instanceof TernaryNode) {
+      addAssigned(((TernaryNode) node).condition, assigned);
+      addAssigned(((TernaryNode) node).ifTrue, assigned);
+      addAssigned(((TernaryNode) node).ifFalse, assigned);
+    } else if (node instanceof CallNode) {
+      addAssigned(((CallNode) node).target, assigned);
+      for (ExprNode arg : ((CallNode) node).args) {
+        addAssigned(arg, assigned);
+      }
+    } else if (node instanceof CastNode) {
+      addAssigned(((CastNode) node).operand, assigned);
+    }
   }
 
   private static void addStatement(

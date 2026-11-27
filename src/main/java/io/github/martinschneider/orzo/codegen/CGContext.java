@@ -23,8 +23,10 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class CGContext {
   public Clazz clazz;
@@ -42,6 +44,9 @@ public class CGContext {
   public Map<String, Method> methodMap;
   // the method whose code is being generated
   public Method method;
+  public ExceptionChecker exceptionChecker;
+  // the names of the parameters of the catch blocks being generated
+  public Set<String> catchParameters = new HashSet<>();
   // the local classes declared so far in the method, by their names (see LocalClassGenerator)
   public Map<String, Clazz> localClasses = new HashMap<>();
   // the methods of methodMap by their (possibly qualified) name, e.g. "foo" or "Clazz.foo"
@@ -113,6 +118,7 @@ public class CGContext {
     assignGen = new AssignmentGenerator(this);
     basicGen = new BasicGenerator(this);
     invokeGen = new InvokeGenerator(this);
+    exceptionChecker = new ExceptionChecker(this);
     pushGen = new PushGenerator(this);
     loadGen = new LoadGenerator(this);
     storeGen = new StoreGenerator(this);

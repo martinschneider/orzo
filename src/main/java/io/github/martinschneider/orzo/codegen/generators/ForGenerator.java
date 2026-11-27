@@ -29,9 +29,12 @@ public class ForGenerator implements StatementGenerator<ForStatement> {
     int incStart = bodyOut.size();
     ctx.delegator.generate(bodyOut, method, forStmt.loopStmt);
     DynamicByteArray conditionOut = new DynamicByteArray();
-    short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
-    ctx.exprGen.eval(conditionOut, null, forStmt.cond, false, true);
-    conditionOut.write(branchBytes);
+    // (no check for a literal "true", e.g. "for (;;)", see WhileGenerator)
+    if (!MethodGenerator.isLiteralTrue(forStmt.cond)) {
+      short branchBytes = (short) (3 + bodyOut.getBytes().length + 3);
+      ctx.exprGen.eval(conditionOut, null, forStmt.cond, false, true);
+      conditionOut.write(branchBytes);
+    }
     // Fix up ET entries: init bytes already in out; body starts after condition
     TryGenerator.adjustExceptionTableEntries(
         ctx, etStart, ctx.exceptionTable.size(), out.size() + conditionOut.getBytes().length);

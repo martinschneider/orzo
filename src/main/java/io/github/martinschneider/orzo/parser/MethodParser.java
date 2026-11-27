@@ -66,8 +66,12 @@ public class MethodParser implements ProdParser<Method> {
     return parse(tokens, false);
   }
 
+  // the exceptions of the throws clause of the method being parsed
+  private final List<String> thrown = new ArrayList<>();
+
   public Method parse(TokenList tokens, boolean isInterface) {
     int idx = tokens.idx();
+    thrown.clear();
     List<AccessFlag> accFlags = new ArrayList<>();
     Type type = null;
     Identifier name;
@@ -272,11 +276,12 @@ public class MethodParser implements ProdParser<Method> {
       }
       String fqn = (ctx.currClazz == null) ? null : ctx.currClazz.fqn();
       for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
-      if (isConstr) {
-        return new Constructor(fqn, accFlags, name, arguments, body);
-      } else {
-        return new Method(fqn, accFlags, type.descr(), name, arguments, body);
-      }
+      Method method =
+          isConstr
+              ? new Constructor(fqn, accFlags, name, arguments, body)
+              : new Method(fqn, accFlags, type.descr(), name, arguments, body);
+      method.exceptions = new ArrayList<>(thrown);
+      return method;
     }
     for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
     return null;
@@ -405,14 +410,22 @@ public class MethodParser implements ProdParser<Method> {
 
   // Orzo does not check exceptions, so a method's "throws T1, T2, ..." clause is parsed only to
   // be discarded. "throws" lexes as a plain Identifier (there is no THROWS keyword token).
+  // (the types of a throws clause, see thrown)
   private void skipThrowsClause(TokenList tokens) {
     if (tokens.curr() instanceof Identifier && "throws".equals(tokens.curr().val.toString())) {
+      thrown.clear();
       tokens.next();
       while (tokens.curr() instanceof Identifier) {
+        StringBuilder name = new StringBuilder(tokens.curr().val.toString());
         tokens.next();
         while (tokens.curr().eq(sym(DOT))) {
           tokens.next();
+          name.append('.').append(tokens.curr().val);
           tokens.next();
+        }
+        String type = resolveThrown(name.toString());
+        if (type != null) {
+          thrown.add(type);
         }
         if (tokens.curr().eq(sym(COMMA))) {
           tokens.next();
@@ -421,5 +434,30 @@ public class MethodParser implements ProdParser<Method> {
         }
       }
     }
+  }
+
+  // the class of a thrown exception (null for a type variable, e.g. "throws E")
+  private String resolveThrown(String name) {
+    if (name.contains(".")) {
+      return ctx.typeArgsParser.resolveQualified(name);
+    } else if (ctx.classTypeParams.containsKey(name)) {
+      return null;
+    } else if (ctx.importMap.containsKey(name)) {
+      return ctx.importMap.get(name);
+    }
+    try {
+      Class.forName("java.lang." + name);
+      return "java.lang." + name;
+    } catch (ClassNotFoundException e) {
+      String fqn = resolveWithWildcards(name);
+      if (fqn != null) {
+        return fqn;
+      }
+    }
+    return (ctx.currClazz != null
+            && ctx.currClazz.packageName != null
+            && !ctx.currClazz.packageName.isEmpty())
+        ? ctx.currClazz.packageName + "." + name
+        : name;
   }
 }

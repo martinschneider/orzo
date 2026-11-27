@@ -59,10 +59,18 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
     }
     int startPc = out.size();
 
-    // Generate try body
+    // Generate try body (and check the exceptions it throws)
+    List<String> caught = new ArrayList<>();
+    for (CatchBlock catchBlock : stmt.catchBlocks) {
+      for (String exceptionType : catchBlock.exceptionTypes) {
+        caught.add(resolveExceptionType(exceptionType));
+      }
+    }
+    ctx.exceptionChecker.enterTry(caught);
     for (Statement s : stmt.tryBody) {
       ctx.delegator.generate(out, method, s);
     }
+    ctx.exceptionChecker.exitTry();
 
     int endPc = out.size(); // exclusive end of protected region
     // Regions covered by the finally block's catch-all handler: the try body and every catch body
@@ -107,8 +115,12 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
       storeRef(out, catchVarSlot);
 
       // Generate catch body
+      boolean added = ctx.catchParameters.add(catchBlock.varName);
       for (Statement s : catchBlock.body) {
         ctx.delegator.generate(out, method, s);
+      }
+      if (added) {
+        ctx.catchParameters.remove(catchBlock.varName);
       }
       if (finallyBody != null) {
         finallyRanges.add(new int[] {handlerPc, out.size()});

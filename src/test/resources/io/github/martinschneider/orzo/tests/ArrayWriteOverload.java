@@ -1,9 +1,10 @@
 package io.github.martinschneider.orzo.tests;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 public class ArrayWriteOverload {
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
     byte[] data = new byte[] {72, 105};
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     baos.write(data);

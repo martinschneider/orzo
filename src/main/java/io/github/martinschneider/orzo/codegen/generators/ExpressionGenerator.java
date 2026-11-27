@@ -1750,6 +1750,7 @@ public class ExpressionGenerator {
             Token.id(sam.name),
             args,
             body);
+    samImpl.exceptions = sam.exceptions; // (e.g. Callable.call() throws Exception)
     List<Argument> ctorArgs = new ArrayList<>();
     List<Statement> ctorBody = new ArrayList<>();
     ctorBody.add(new MethodCall("super", emptyList()));
@@ -1924,6 +1925,7 @@ public class ExpressionGenerator {
     String name;
     List<String> paramTypes = new ArrayList<>();
     String returnType;
+    List<String> exceptions = new ArrayList<>();
     java.lang.reflect.Method reflected;
 
     static Sam of(java.lang.reflect.Method method) {
@@ -1936,6 +1938,9 @@ public class ExpressionGenerator {
         sam.paramTypes.add(type.getName());
       }
       sam.returnType = method.getReturnType().getName();
+      for (Class<?> exception : method.getExceptionTypes()) {
+        sam.exceptions.add(exception.getName());
+      }
       sam.reflected = method;
       return sam;
     }
@@ -1954,6 +1959,7 @@ public class ExpressionGenerator {
           sam.paramTypes.add(TypeUtils.resolveSimpleType(arg.type, clazzes, iface));
         }
         sam.returnType = TypeUtils.resolveSimpleType(method.type, clazzes, iface);
+        sam.exceptions = method.exceptions;
       }
       return sam;
     }
@@ -2176,6 +2182,9 @@ public class ExpressionGenerator {
     }
     InnerClasses.addFields(anon, false, asArguments(captured));
     Method ctor = anon.getConstructors().get(0);
+    if (superConstructor != null) {
+      ctor.exceptions = superConstructor.exceptions;
+    }
     ctx.addSyntheticClazz(anon);
 
     String anonClassName = anon.fqn('/');

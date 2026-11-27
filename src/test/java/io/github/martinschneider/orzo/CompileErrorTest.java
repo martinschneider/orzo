@@ -255,6 +255,20 @@ public class CompileErrorTest {
   private static Stream<Arguments> classErrors() {
     return Stream.of(
         Arguments.of(
+            Map.of(
+                "A.java",
+                "class A {\n  static void io() throws java.io.IOException {}\n\n"
+                    + "  static void m() {\n    io();\n  }\n}\n"),
+            "A.java:5:5: error: unreported exception IOException; must be caught or declared to be"
+                + " thrown"),
+        Arguments.of(
+            Map.of(
+                "A.java",
+                "class A {\n  static void m() {\n    try {\n      m();\n"
+                    + "    } catch (java.io.IOException e) {\n    }\n  }\n}\n"),
+            "A.java:3:5: error: exception IOException is never thrown in body of corresponding try"
+                + " statement"),
+        Arguments.of(
             Map.of("A.java", "class A {\n  static final int X;\n}\n"),
             "A.java:2:3: error: variable X might not have been initialized"),
         Arguments.of(

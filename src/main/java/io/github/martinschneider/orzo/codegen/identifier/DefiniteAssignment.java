@@ -105,6 +105,18 @@ public class DefiniteAssignment {
     this.errors = errors;
   }
 
+  /**
+   * Whether the statements (e.g. the body of a constructor) definitely assign a variable or field
+   * (also if they can't complete normally, e.g. by throwing an exception).
+   */
+  public static boolean assigns(List<Statement> statements, String name) {
+    // (errors aren't reported)
+    DefiniteAssignment analysis = new DefiniteAssignment(new CompilerErrors());
+    analysis.scopes.push(new HashSet<>(Set.of(name)));
+    Set<String> out = analysis.block(statements, new HashSet<>());
+    return out == null || out.contains(name);
+  }
+
   public void check(Method method) {
     scopes.clear();
     targets.clear();
@@ -156,14 +168,21 @@ public class DefiniteAssignment {
       for (Identifier target : assignment.left) {
         if (target.next == null && target.arrSel == null && !(target instanceof MethodCall)) {
           assign(target.val.toString(), in);
+        } else if (isThisField(target)) {
+          assign(target.next.val.toString(), in); // e.g. "this.x = 1;"
         } else {
           in = token(target, in);
         }
       }
       return in;
     } else if (stmt instanceof FieldAssignment) {
-      in = token(((FieldAssignment) stmt).target, in);
-      return expr(((FieldAssignment) stmt).value, in);
+      Identifier target = ((FieldAssignment) stmt).target;
+      in = expr(((FieldAssignment) stmt).value, in);
+      if (isThisField(target)) {
+        assign(target.next.val.toString(), in);
+        return in;
+      }
+      return token(target, in);
     } else if (stmt instanceof MethodCall || stmt instanceof ConstructorCall) {
       return token((Token) stmt, in);
     } else if (stmt instanceof ExpressionStatement) {
@@ -381,6 +400,12 @@ public class DefiniteAssignment {
       if (binary.op == ASSIGN && binary.left instanceof NameNode) {
         in = node(binary.right, in);
         assign(((NameNode) binary.left).name, in);
+      } else if (binary.op == ASSIGN
+          && binary.left instanceof SelectNode
+          && ((SelectNode) binary.left).target instanceof NameNode
+          && ((NameNode) ((SelectNode) binary.left).target).name.equals("this")) {
+        in = node(binary.right, in);
+        assign(((SelectNode) binary.left).name, in); // e.g. "this.x = 1"
       } else if (binary.op == LOGICAL_AND || binary.op == LOGICAL_OR) {
         Cond cond = cond(node, in);
         in = meet(cond.whenTrue, cond.whenFalse);
@@ -481,6 +506,14 @@ public class DefiniteAssignment {
       }
     }
     return in;
+  }
+
+  private static boolean isThisField(Identifier target) {
+    return "this".equals(target.val.toString())
+        && target.next != null
+        && target.next.next == null
+        && target.next.arrSel == null
+        && !(target.next instanceof MethodCall);
   }
 
   private void declare(String name, boolean assigned, Set<String> in) {

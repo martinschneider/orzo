@@ -10,6 +10,7 @@ import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_S
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_TRANSIENT;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_VOLATILE;
 
+import io.github.martinschneider.orzo.codegen.identifier.DefiniteAssignment;
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
@@ -89,6 +90,7 @@ public class ClassChecker {
       }
     }
     Set<String> initAssigned = Statements.assignedNames(clazz.instanceInits);
+    staticAssigned.addAll(Statements.assignedNames(new ArrayList<>(clazz.fields)));
     for (ParallelDeclaration pDecl : clazz.fields) {
       for (Declaration decl : pDecl.declarations) {
         String name = decl.name.val.toString();
@@ -114,7 +116,7 @@ public class ClassChecker {
           !method.body.isEmpty()
               && method.body.get(0) instanceof MethodCall
               && ((MethodCall) method.body.get(0)).name.equals("this");
-      if (!delegates && !Statements.assignedNames(method.body).contains(name)) {
+      if (!delegates && !DefiniteAssignment.assigns(method.body, name)) {
         return false;
       }
     }

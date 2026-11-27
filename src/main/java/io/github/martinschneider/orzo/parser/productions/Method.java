@@ -13,6 +13,8 @@ public class Method implements ClassMember {
   public List<AccessFlag> accFlags;
   public String type;
   public String fqClassName;
+  // the checked exceptions it declares ("throws"), e.g. "java.io.IOException"
+  public List<String> exceptions = new ArrayList<>();
   public static final String CONSTRUCTOR_NAME = "<init>";
 
   public Method(

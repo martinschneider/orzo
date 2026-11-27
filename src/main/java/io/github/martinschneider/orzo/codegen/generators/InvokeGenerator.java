@@ -42,6 +42,7 @@ public class InvokeGenerator {
   }
 
   public HasOutput invokeInterface(DynamicByteArray out, Method method) {
+    ctx.exceptionChecker.thrown(method);
     String clazzName = method.fqClassName.replaceAll("\\.", "/");
     String methodName = method.name.id();
     String descr = TypeUtils.methodDescr(method, ctx.allClazzes, ctx.clazz);
@@ -63,6 +64,7 @@ public class InvokeGenerator {
   }
 
   public HasOutput invokeVirtual(DynamicByteArray out, Method method) {
+    ctx.exceptionChecker.thrown(method);
     String clazzName = method.fqClassName.replaceAll("\\.", "/");
     String methodName = method.name.id();
     String descr = TypeUtils.methodDescr(method, ctx.allClazzes, ctx.clazz);
@@ -78,6 +80,7 @@ public class InvokeGenerator {
   }
 
   public HasOutput invokeSpecial(HasOutput out, Method method) {
+    ctx.exceptionChecker.thrown(method);
     String clazzName = method.fqClassName.replace('.', '/');
     String descr = TypeUtils.methodDescr(method, ctx.allClazzes, ctx.clazz);
     out.write(INVOKESPECIAL);
@@ -88,6 +91,7 @@ public class InvokeGenerator {
   }
 
   public HasOutput invokeStatic(DynamicByteArray out, Method method) {
+    ctx.exceptionChecker.thrown(method);
     String methodName = method.name.id();
     String clazzName = ctx.clazz.fqn('/');
     if (methodName.contains(".")) {

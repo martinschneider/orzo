@@ -24,6 +24,7 @@ import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.IfBlock;
 import io.github.martinschneider.orzo.parser.productions.IfStatement;
+import io.github.martinschneider.orzo.parser.productions.LoopStatement;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
@@ -33,7 +34,6 @@ import io.github.martinschneider.orzo.parser.productions.SwitchCase;
 import io.github.martinschneider.orzo.parser.productions.SwitchStatement;
 import io.github.martinschneider.orzo.parser.productions.ThrowStatement;
 import io.github.martinschneider.orzo.parser.productions.TryStatement;
-import io.github.martinschneider.orzo.parser.productions.WhileStatement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -192,8 +192,8 @@ public class MethodGenerator {
       return tryStatementAlwaysReturns((TryStatement) last);
     } else if (last instanceof SwitchStatement) {
       return switchStatementAlwaysReturns((SwitchStatement) last);
-    } else if (last instanceof WhileStatement) {
-      return whileStatementAlwaysReturns((WhileStatement) last);
+    } else if (last instanceof LoopStatement) {
+      return loopAlwaysReturns((LoopStatement) last);
     } else if (last instanceof Block) {
       // (a labeled block can be left by "break label;")
       Block block = (Block) last;
@@ -206,10 +206,11 @@ public class MethodGenerator {
     return alwaysReturns(body);
   }
 
-  // "while (true) { ... }" with no reachable "break" cannot complete normally (JLS 14.21), so
-  // javac requires no trailing return after it. Only the literal-"true" condition case is
-  // recognized - any other condition could exit normally and needs a real trailing return.
-  private static boolean whileStatementAlwaysReturns(WhileStatement stmt) {
+  // "while (true) { ... }" (also "do ... while (true)" and "for (;;)") with no reachable "break"
+  // cannot complete normally (JLS 14.21), so javac requires no trailing return after it. Only the
+  // literal-"true" condition case is recognized - any other condition could exit normally and needs
+  // a real trailing return.
+  private static boolean loopAlwaysReturns(LoopStatement stmt) {
     return isLiteralTrue(stmt.cond) && !containsBreak(stmt.body);
   }
 

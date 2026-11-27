@@ -507,13 +507,15 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
                     io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
           }
           markVarargs(args, c.isVarArgs());
-          return new Method(
-              jvmClassName.replace('/', '.'),
-              List.of(AccessFlag.ACC_PUBLIC),
-              "void",
-              io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
-              args,
-              null);
+          return withExceptions(
+              new Method(
+                  jvmClassName.replace('/', '.'),
+                  List.of(AccessFlag.ACC_PUBLIC),
+                  "void",
+                  io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
+                  args,
+                  null),
+              c.getExceptionTypes());
         }
       }
     } catch (ClassNotFoundException e) {
@@ -564,13 +566,15 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
                     io.github.martinschneider.orzo.lexer.tokens.Token.id(p.getName())));
           }
           markVarargs(args, c.isVarArgs());
-          return new Method(
-              jvmClassName.replace('/', '.'),
-              List.of(AccessFlag.ACC_PUBLIC),
-              "void",
-              io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
-              args,
-              null);
+          return withExceptions(
+              new Method(
+                  jvmClassName.replace('/', '.'),
+                  List.of(AccessFlag.ACC_PUBLIC),
+                  "void",
+                  io.github.martinschneider.orzo.lexer.tokens.Token.id("<init>"),
+                  args,
+                  null),
+              c.getExceptionTypes());
         }
       }
     } catch (ClassNotFoundException e) {
@@ -751,7 +755,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
           if (java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
             accFlags.add(AccessFlag.ACC_STATIC);
           }
-          return new Method(javaClassName, accFlags, returnType, Token.id(methodName), args, null);
+          return withExceptions(
+              new Method(javaClassName, accFlags, returnType, Token.id(methodName), args, null),
+              m.getExceptionTypes());
         }
       }
       // Fall back to bridge methods (e.g. StringBuilder.length() is a bridge on Java 21)
@@ -772,7 +778,9 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
         if (java.lang.reflect.Modifier.isStatic(bridgeCandidate.getModifiers())) {
           accFlags.add(AccessFlag.ACC_STATIC);
         }
-        return new Method(javaClassName, accFlags, returnType, Token.id(methodName), args, null);
+        return withExceptions(
+            new Method(javaClassName, accFlags, returnType, Token.id(methodName), args, null),
+            bridgeCandidate.getExceptionTypes());
       }
     } catch (ClassNotFoundException e) {
       // not on classpath, fall through
@@ -1001,13 +1009,22 @@ public class MethodCallGenerator implements StatementGenerator<MethodCall> {
     if (java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
       accFlags.add(AccessFlag.ACC_STATIC);
     }
-    return new Method(
-        javaClassName,
-        accFlags,
-        returnType,
-        io.github.martinschneider.orzo.lexer.tokens.Token.id(methodName),
-        args,
-        null);
+    return withExceptions(
+        new Method(
+            javaClassName,
+            accFlags,
+            returnType,
+            io.github.martinschneider.orzo.lexer.tokens.Token.id(methodName),
+            args,
+            null),
+        m.getExceptionTypes());
+  }
+
+  private static Method withExceptions(Method method, Class<?>[] exceptions) {
+    for (Class<?> exception : exceptions) {
+      method.exceptions.add(exception.getName());
+    }
+    return method;
   }
 
   private java.lang.reflect.Method[] getMethodsIncludingNonPublic(Class<?> clazz) {
