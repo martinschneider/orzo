@@ -255,6 +255,32 @@ public class CompileErrorTest {
   private static Stream<Arguments> classErrors() {
     return Stream.of(
         Arguments.of(
+            Map.of("A.java", "synchronized class A {}\n"),
+            "A.java:1:20: error: modifier synchronized not allowed here"),
+        Arguments.of(
+            Map.of("A.java", "enum A {\n  X;\n\n  public A() {}\n}\n"),
+            "A.java:4:3: error: modifier public not allowed here"),
+        Arguments.of(
+            Map.of("A.java", "interface A {\n  protected void m();\n}\n"),
+            "A.java:2:3: error: modifier protected not allowed here"),
+        Arguments.of(
+            Map.of("A.java", "class A {\n  abstract int x;\n}\n"),
+            "A.java:2:3: error: modifier abstract not allowed here"),
+        Arguments.of(
+            Map.of("A.java", "class A {\n  int x;\n  String x;\n}\n"),
+            "A.java:3:3: error: variable x is already defined in class A"),
+        Arguments.of(
+            Map.of(
+                "A.java",
+                "class A {\n  void m(int a) {}\n\n  int m(int b) {\n    return b;\n  }\n}\n"),
+            "A.java:4:3: error: method m(int) is already defined in class A"),
+        Arguments.of(
+            Map.of("A.java", "class A {\n  A() {}\n\n  A() {}\n}\n"),
+            "A.java:4:3: error: constructor A() is already defined in class A"),
+        Arguments.of(
+            Map.of("A.java", "class A {\n  class I {}\n\n  class I {}\n}\n"),
+            "A.java:4:9: error: class I is already defined in class A"),
+        Arguments.of(
             Map.of("A.java", "interface A extends B {}\n\ninterface B extends A {}\n"),
             "A.java:1:11: error: cyclic inheritance involving A"),
         Arguments.of(

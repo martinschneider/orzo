@@ -6,16 +6,23 @@ import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_P
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PROTECTED;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_PUBLIC;
 import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_STATIC;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_SYNCHRONIZED;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_TRANSIENT;
+import static io.github.martinschneider.orzo.parser.productions.AccessFlag.ACC_VOLATILE;
 
 import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Constructor;
+import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Checks the declarations of the classes before their code is generated: file names, cyclic
@@ -32,10 +39,22 @@ public class ClassChecker {
   }
 
   public void check() {
+    Set<String> names = new HashSet<>();
     for (Clazz clazz : clazzes) {
       errors.file = clazz.sourceFile;
       errors.position = errors.startTokens.get(clazz);
       checkFileName(clazz);
+      if (!names.add(clazz.fqn())) {
+        error(
+            clazz.outerName != null
+                ? "class "
+                    + clazz.name
+                    + " is already defined in class "
+                    + clazz.outerName.substring(clazz.outerName.lastIndexOf('$') + 1)
+                : "duplicate class: " + clazz.fqn());
+        continue;
+      }
+      checkDuplicateMembers(clazz);
       if (isCyclic(clazz)) {
         error("cyclic inheritance involving " + clazz.name);
         continue;
@@ -52,6 +71,39 @@ public class ClassChecker {
       checkAbstractMethodsImplemented(clazz);
     }
     errors.position = null;
+  }
+
+  // fields of the same name, methods with the same parameter types
+  private void checkDuplicateMembers(Clazz clazz) {
+    Set<String> fields = new HashSet<>();
+    for (ParallelDeclaration pDecl : clazz.fields) {
+      for (Declaration decl : pDecl.declarations) {
+        String name = decl.name.val.toString();
+        if (!fields.add(name)) {
+          errors.position = errors.startTokens.getOrDefault(pDecl, errors.position);
+          error("variable " + name + " is already defined in class " + clazz.name);
+        }
+      }
+    }
+    Set<String> signatures = new HashSet<>();
+    for (Method method : clazz.methods) {
+      String name = method.name.val.toString();
+      if (name.equals("<clinit>")) {
+        continue; // (one per static initializer)
+      }
+      String descr = TypeUtils.methodDescr(method, clazzes, clazz);
+      if (!signatures.add(name + descr.substring(0, descr.indexOf(')') + 1))) {
+        errors.position = errors.startTokens.getOrDefault(method, errors.position);
+        Overridable overridable = new Overridable(clazz, method, clazzes);
+        error(
+            (method instanceof Constructor ? "constructor " + clazz.name : "method " + name)
+                + "("
+                + overridable.params
+                + ") is already defined in class "
+                + clazz.name);
+      }
+    }
+    errors.position = errors.startTokens.get(clazz);
   }
 
   private void checkFileName(Clazz clazz) {
@@ -144,6 +196,28 @@ public class ClassChecker {
     if (clazz.modifiers.contains(ACC_ABSTRACT) && clazz.modifiers.contains(ACC_FINAL)) {
       error("illegal combination of modifiers: abstract and final");
     }
+    notAllowed(clazz.modifiers, List.of(ACC_SYNCHRONIZED, ACC_TRANSIENT, ACC_VOLATILE));
+    for (ParallelDeclaration pDecl : clazz.fields) {
+      errors.position = errors.startTokens.getOrDefault(pDecl, errors.position);
+      for (Declaration decl : pDecl.declarations) {
+        notAllowed(decl.accFlags, List.of(ACC_ABSTRACT, ACC_SYNCHRONIZED));
+        if (clazz.isInterface) {
+          notAllowed(
+              decl.accFlags, List.of(ACC_PRIVATE, ACC_PROTECTED, ACC_TRANSIENT, ACC_VOLATILE));
+        }
+        break; // (the same modifiers)
+      }
+    }
+    for (Method method : clazz.methods) {
+      errors.position = errors.startTokens.getOrDefault(method, errors.position);
+      notAllowed(method.accFlags, List.of(ACC_TRANSIENT, ACC_VOLATILE));
+      if (clazz.isInterface) {
+        notAllowed(method.accFlags, List.of(ACC_PROTECTED, ACC_FINAL, ACC_SYNCHRONIZED));
+      } else if (clazz.isEnum && method instanceof Constructor) {
+        notAllowed(method.accFlags, List.of(ACC_PUBLIC, ACC_PROTECTED));
+      }
+    }
+    errors.position = errors.startTokens.get(clazz);
     for (Method method : clazz.methods) {
       if (method.accFlags.contains(ACC_ABSTRACT)) {
         for (AccessFlag flag : List.of(ACC_PRIVATE, ACC_STATIC, ACC_FINAL)) {
@@ -337,6 +411,14 @@ public class ClassChecker {
 
   private static String accessName(int access) {
     return List.of("private", "package", "protected", "public").get(access);
+  }
+
+  private void notAllowed(List<AccessFlag> modifiers, List<AccessFlag> forbidden) {
+    for (AccessFlag flag : forbidden) {
+      if (modifiers.contains(flag)) {
+        error("modifier " + name(flag) + " not allowed here");
+      }
+    }
   }
 
   private static String name(AccessFlag flag) {
