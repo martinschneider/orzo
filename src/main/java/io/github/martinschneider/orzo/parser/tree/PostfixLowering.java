@@ -191,6 +191,7 @@ public class PostfixLowering {
       NewNode creation = (NewNode) first;
       ConstructorCall constructorCall = new ConstructorCall(creation.type, lower(creation.args));
       constructorCall.anonymousBody = creation.body;
+      constructorCall.outer = (creation.outer != null) ? lower(creation.outer) : null;
       links.add(constructorCall);
       kinds[links.size() - 1] = OTHER;
     } else if (first instanceof LiteralNode && ((LiteralNode) first).value instanceof Str) {

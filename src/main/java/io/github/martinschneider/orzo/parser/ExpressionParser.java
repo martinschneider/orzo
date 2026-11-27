@@ -462,7 +462,15 @@ public class ExpressionParser implements ProdParser<Expression> {
     while (true) {
       Token curr = tokens.curr();
       Token next = tokens.peekNext();
-      if (curr.eq(sym(DOT)) && next.eq(op(LESS))) {
+      if (curr.eq(sym(DOT)) && next.eq(keyword(NEW))) {
+        // a new instance of an inner class of an object, e.g. "outer.new Inner()"
+        tokens.next();
+        ExprNode creation = parseNew(tokens);
+        if (creation instanceof NewNode) {
+          ((NewNode) creation).outer = node;
+        }
+        node = creation;
+      } else if (curr.eq(sym(DOT)) && next.eq(op(LESS))) {
         // explicit type arguments of a call, e.g. "Foo.<String>bar()" (ignored)
         int idx = tokens.idx();
         tokens.next();

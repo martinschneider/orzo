@@ -9,6 +9,8 @@ public class NewNode extends ExprNode {
   public final List<ExprNode> args;
   // the members of an anonymous class, e.g. "new Runnable() { ... }" (null for none)
   public List<ClassMember> body;
+  // the enclosing instance of an inner class, e.g. "outer" in "outer.new Inner()" (null for none)
+  public ExprNode outer;
 
   public NewNode(String type, List<ExprNode> args) {
     this.type = type;

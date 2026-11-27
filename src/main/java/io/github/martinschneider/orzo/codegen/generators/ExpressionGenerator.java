@@ -2166,7 +2166,13 @@ public class ExpressionGenerator {
           new RuntimeException().getStackTrace());
       return className;
     }
-    if (constructorCall.anonymousBody != null) {
+    if (constructorCall.anonymousBody != null && constructorCall.outer != null) {
+      ctx.errors.addError(
+          "constructor call generator",
+          "anonymous subclasses of inner classes are not supported yet",
+          new RuntimeException().getStackTrace());
+      return className;
+    } else if (constructorCall.anonymousBody != null) {
       return generateAnonymousClass(out, classIdMap, constructorCall, jvmClassName);
     }
     Clazz source = TypeUtils.sourceClazz(jvmClassName.replace('/', '.'), ctx.allClazzes);
@@ -2192,7 +2198,16 @@ public class ExpressionGenerator {
     List<String> argTypes = new ArrayList<>();
     // (an inner class's constructors take its enclosing instance first)
     boolean inner = source != null && source.isInner;
-    if (inner && !pushEnclosingInstance(out, source)) {
+    if (constructorCall.outer != null && !inner) {
+      ctx.errors.addError(
+          "constructor call generator",
+          "qualified new of static class",
+          new RuntimeException().getStackTrace());
+      return className;
+    } else if (constructorCall.outer != null) {
+      // the given enclosing instance, e.g. "outer" in "outer.new Inner()"
+      eval(out, EnclosingInstances.outerOf(source, ctx.allClazzes).fqn(), constructorCall.outer);
+    } else if (inner && !pushEnclosingInstance(out, source)) {
       return className;
     }
     if (inner) {

@@ -19,7 +19,7 @@ About as large as javac's now (1.0x). Still:
 
 Failures of the last run of `compliance/jtreg.sh`, by cause (number of tests):
 
-1. **Nested classes**: `outer.new Inner()`, assignments to `Outer.this.field`, anonymous subclasses of inner classes
+1. **Nested classes**: assignments to `Outer.this.field`, anonymous subclasses of inner classes (`outer.new Inner() { ... }`)
 2. **Method references**: `super::m`, `field::m` and constructor references (`Foo::new`); `this::m` and references on local variables (`list::add`) work
 3. **Semantic checks**: invalid programs that compile (394 in the last run, growing as more programs parse), e.g. incompatible types (35), ambiguous calls (30), annotation rules (about 50), overriding methods throwing more checked exceptions (4). `DefiniteAssignment` checks local variables, `ExceptionChecker` checked exceptions. `ClassChecker` checks overrides, unimplemented abstract methods, duplicate members, blank final fields, modifiers, cyclic inheritance, supertypes (final, class or interface) and file names.
 4. `switch` expressions and `->` cases, `var`, records, sealed classes, `instanceof` patterns, `assert`, `synchronized`, text blocks

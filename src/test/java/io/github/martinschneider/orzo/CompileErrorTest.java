@@ -257,6 +257,11 @@ public class CompileErrorTest {
         Arguments.of(
             Map.of(
                 "A.java",
+                "class A {\n  static class S {}\n\n  Object m(A a) {\n    return a.new S();\n  }\n}\n"),
+            "A.java:5:5: error: qualified new of static class"),
+        Arguments.of(
+            Map.of(
+                "A.java",
                 "class A {\n  void m() {}\n}\n\nclass B extends A {\n"
                     + "  void m() throws Exception {}\n}\n"),
             "A.java:6:3: error: m() in B cannot override m() in A; overridden method does not throw"

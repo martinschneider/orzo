@@ -69,5 +69,10 @@ public class InnerClasses {
 
   public static void main(String[] args) {
     new InnerClasses().run();
+    // (an explicit enclosing instance)
+    InnerClasses outer = new InnerClasses();
+    InnerClasses.Counter counter = outer.new Counter(5);
+    counter.tick();
+    System.out.println(counter.hello() + " " + outer.count + " " + new InnerClasses().new Counter().step);
   }
 }

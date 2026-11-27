@@ -9,6 +9,8 @@ public class ConstructorCall extends Identifier implements Statement {
   public List<Expression> args;
   // the members of an anonymous class (null for none)
   public List<ClassMember> anonymousBody;
+  // the enclosing instance, e.g. "outer" in "outer.new Inner()" (null for none)
+  public Expression outer;
 
   public ConstructorCall(String type, List<Expression> args) {
     super(type);
