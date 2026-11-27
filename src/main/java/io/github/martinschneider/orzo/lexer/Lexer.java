@@ -9,7 +9,6 @@ import io.github.martinschneider.orzo.error.CompilerErrors;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.Keywords;
 import io.github.martinschneider.orzo.lexer.tokens.Scopes;
-import io.github.martinschneider.orzo.lexer.tokens.Symbols;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import java.io.*;
 import java.util.ArrayList;
@@ -308,10 +307,10 @@ public class Lexer {
       inputReader.unread(character);
       String str = buffer.toString();
       // keywords (but Orzo's own ones may be names in Java code, e.g. String.repeat())
-      boolean name = isName();
       for (Keywords keyword : Keywords.values()) {
         if (str.equals(keyword.name().toLowerCase())
-            && !(name && (keyword == Keywords.REPEAT || keyword == Keywords.UNLESS))) {
+            && (!(keyword == Keywords.REPEAT || keyword == Keywords.UNLESS)
+                || startsOrzoStatement())) {
           tokenList.add(keyword(str));
           buffer.setLength(0);
         }
@@ -666,17 +665,47 @@ public class Lexer {
     }
   }
 
-  // Whether the word just scanned is a name: it follows a "." or is followed by one of "=.;,)[:"
-  // (not the start of an Orzo statement, e.g. "repeat n { ... }")
-  private boolean isName() {
-    if (!tokenList.isEmpty() && tokenList.get(tokenList.size() - 1).eq(sym(Symbols.DOT))) {
-      return true;
+  // Whether the word just scanned ("repeat" or "unless") starts an Orzo statement, e.g.
+  // "repeat n { ... }", "repeat { ... }" or "unless (done) ...": it is at the start of a
+  // statement and followed by a name, a number, a "{" or a parenthesised expression that is not
+  // followed by a "(" or an operator ending a method call, like ";" or "." (otherwise it is a Java
+  // name, e.g. in "s.repeat(3)", "int repeat(int n)", "repeat(3);" or "repeat++")
+  private boolean startsOrzoStatement() {
+    if (!tokenList.isEmpty()) {
+      Token prev = tokenList.get(tokenList.size() - 1);
+      if (!(prev.eq(sym(SEMICOLON))
+          || prev.eq(sym(LBRACE))
+          || prev.eq(sym(RBRACE))
+          || prev.eq(sym(RPAREN))
+          || prev.eq(sym(COLON))
+          || prev.eq(keyword(Keywords.ELSE)))) {
+        return false;
+      }
     }
-    int i = inputReader.offset;
+    int i = skipWhitespace(inputReader.offset);
+    if (i >= source.length()) {
+      return false;
+    }
+    char next = source.charAt(i);
+    if (next != '(') {
+      return next == '{' || Character.isJavaIdentifierStart(next) || Character.isDigit(next);
+    }
+    for (int depth = 0; i < source.length(); i++) {
+      if (source.charAt(i) == '(') {
+        depth++;
+      } else if (source.charAt(i) == ')' && --depth == 0) {
+        i = skipWhitespace(i + 1);
+        return i < source.length() && ";.[),:?=".indexOf(source.charAt(i)) < 0;
+      }
+    }
+    return false;
+  }
+
+  private int skipWhitespace(int i) {
     while (i < source.length() && Character.isWhitespace(source.charAt(i))) {
       i++;
     }
-    return i < source.length() && "=.;,)[:".indexOf(source.charAt(i)) >= 0;
+    return i;
   }
 
   private int peek() throws IOException {

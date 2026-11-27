@@ -50,15 +50,38 @@ public class LexerTest {
         args("das ist ein test", new TokenList(list(id("das"), id("ist"), id("ein"), id("test")))),
         args("f1 f_1", new TokenList(list(id("f1"), id("f_1")))),
         args("_ _test", new TokenList(list(id("_"), id("_test")))),
-        // (Orzo's own keywords are names after a ".", e.g. String.repeat())
+        // (Orzo's own keywords are Java names unless they start an Orzo statement)
         args(
-            "s.repeat repeat",
+            "s.repeat; repeat {",
             new TokenList(
                 list(
                     id("s"),
                     sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT),
                     id("repeat"),
-                    keyword(io.github.martinschneider.orzo.lexer.tokens.Keywords.REPEAT)))),
+                    sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON),
+                    keyword(io.github.martinschneider.orzo.lexer.tokens.Keywords.REPEAT),
+                    sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE)))),
+        args(
+            "int repeat(int n) { repeat(3); unless (x) y",
+            new TokenList(
+                list(
+                    type("int"),
+                    id("repeat"),
+                    sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN),
+                    type("int"),
+                    id("n"),
+                    sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN),
+                    sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE),
+                    id("repeat"),
+                    sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN),
+                    integer(3),
+                    sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN),
+                    sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON),
+                    keyword(io.github.martinschneider.orzo.lexer.tokens.Keywords.UNLESS),
+                    sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN),
+                    id("x"),
+                    sym(io.github.martinschneider.orzo.lexer.tokens.Symbols.RPAREN),
+                    id("y")))),
         args("$x a$b", new TokenList(list(id("$x"), id("a$b")))),
         args(
             "12  13 15 17",

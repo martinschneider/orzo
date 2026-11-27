@@ -21,6 +21,8 @@ Orzo compiles a large subset of Java, enough to compile itself (see [Metrics](#m
 - [repeat](https://aroberge.github.io/ideas/docs/html/repeat.html), e.g. `repeat n { ... }` (`repeat { ... }` loops forever)
 - [unless](https://www.perltutorial.org/perl-unless/), e.g. `unless (done) { ... }`
 
+`repeat` and `unless` are keywords only at the start of a statement, so Java code can still use them as names (e.g. `s.repeat(3)`, `int repeat(int n)` or `int unless = 0;`).
+
 ## Java features that aren't supported (yet)
 
 Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md) for details):
@@ -83,6 +85,6 @@ Errors are reported as `File.java:line:column: error: message` (add `-v <n>` to 
 | Self-compilation | 100.0% |
 | [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | 56.4% (498 of 883) |
 | jtreg negative tests (must be rejected) | 53.1% (458 of 863) |
-| Compile time (Orzo's sources) | 1.4x javac (16.8 s vs. 11.7 s) |
-| Class size (Orzo's class files) | 1.0x javac (1118.6 KiB vs. 1089.6 KiB) |
+| Compile time (Orzo's sources) | 1.2x javac (16.4 s vs. 13.3 s) |
+| Class size (Orzo's class files) | 1.0x javac (1119.3 KiB vs. 1090.0 KiB) |
 <!-- metrics:end -->
