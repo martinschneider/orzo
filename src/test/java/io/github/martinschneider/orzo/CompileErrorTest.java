@@ -257,6 +257,13 @@ public class CompileErrorTest {
         Arguments.of(
             Map.of(
                 "A.java",
+                "class A {\n  void m() {}\n}\n\nclass B extends A {\n"
+                    + "  void m() throws Exception {}\n}\n"),
+            "A.java:6:3: error: m() in B cannot override m() in A; overridden method does not throw"
+                + " Exception"),
+        Arguments.of(
+            Map.of(
+                "A.java",
                 "class A {\n  static void io() throws java.io.IOException {}\n\n"
                     + "  static void m() {\n    io();\n  }\n}\n"),
             "A.java:5:5: error: unreported exception IOException; must be caught or declared to be"
@@ -355,8 +362,8 @@ public class CompileErrorTest {
             Map.of(
                 "A.java",
                 "class A {\n  int m() {\n    return 1;\n  }\n\n"
-                    + "  java.util.function.IntSupplier s() {\n    return this::m;\n  }\n}\n"),
-            "A.java:7:5: error: this::m is not supported yet"),
+                    + "  java.util.function.IntSupplier s() {\n    return super::hashCode;\n  }\n}\n"),
+            "A.java:7:5: error: super::hashCode is not supported yet"),
         Arguments.of(
             Map.of("B.java", "public class A {}\n"),
             "B.java:1:14: error: class A is public, should be declared in a file named A.java"),

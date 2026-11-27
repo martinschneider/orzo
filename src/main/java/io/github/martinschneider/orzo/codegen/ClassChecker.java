@@ -305,6 +305,19 @@ public class ClassChecker {
                 + accessName(overridden.access));
       } else if (!isReturnTypeSubstitutable(returnType, overriddenReturn)) {
         error(prefix + "; return type " + typeName(returnType) + " is not compatible");
+      } else {
+        // (no checked exceptions the overridden method doesn't declare)
+        for (String exception : method.exceptions) {
+          if (ExceptionChecker.isChecked(exception, clazzes)
+              && overridden.exceptions.stream()
+                  .noneMatch(e -> ExceptionChecker.isSubtype(exception, e, clazzes))) {
+            error(
+                prefix
+                    + "; overridden method does not throw "
+                    + ExceptionChecker.simpleName(exception));
+            break;
+          }
+        }
       }
       return;
     }
@@ -511,6 +524,7 @@ public class ClassChecker {
     boolean isAbstract;
     // (the declaring type has type parameters)
     boolean isGenericDeclarer;
+    List<String> exceptions = new ArrayList<>();
 
     Overridable(Clazz clazz, Method method, List<Clazz> clazzes) {
       name = method.name.val.toString();
@@ -523,12 +537,16 @@ public class ClassChecker {
       isPrivate = method.accFlags.contains(ACC_PRIVATE);
       isFinal = method.accFlags.contains(ACC_FINAL);
       isAbstract = method.accFlags.contains(ACC_ABSTRACT);
+      exceptions = method.exceptions;
       isGenericDeclarer = clazz.isGeneric;
     }
 
     Overridable(java.lang.reflect.Method method) {
       int mods = method.getModifiers();
       name = method.getName();
+      for (Class<?> exception : method.getExceptionTypes()) {
+        exceptions.add(exception.getName());
+      }
       List<String> types = new ArrayList<>();
       for (Class<?> type : method.getParameterTypes()) {
         types.add(type.getSimpleName());

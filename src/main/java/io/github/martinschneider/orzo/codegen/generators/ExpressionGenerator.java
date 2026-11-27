@@ -138,8 +138,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class ExpressionGenerator {
   private static final String LOGGER_NAME = "expression code generator";
@@ -1594,32 +1596,38 @@ public class ExpressionGenerator {
   // for a static method, "(a, b) -> a.method(b)" for an instance method of Owner, "(a, b) ->
   // owner.method(a, b)" for a local variable owner (null after an error)
   private LambdaExpr methodRefAsLambda(LambdaExpr ref, int arity) {
-    if (ref.methodRefOwner.equals("this") || ref.methodRefOwner.equals("super")) {
+    if (ref.methodRefOwner.equals("super")) {
       ctx.errors.addError(
           "lambda expression",
           ref.methodRefOwner + "::" + ref.methodRefName + " is not supported yet",
           new RuntimeException().getStackTrace());
       return null;
     }
-    boolean bound = ctx.classIdMap.variables.localMap.containsKey(ref.methodRefOwner);
-    boolean isStatic = true;
-    try {
-      Class<?> owner = Class.forName(resolveJvmClassName(ref.methodRefOwner).replace('/', '.'));
-      isStatic = false;
-      for (java.lang.reflect.Method m : owner.getMethods()) {
-        if (m.getName().equals(ref.methodRefName)
-            && m.getParameterCount() == arity
-            && java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
-          isStatic = true;
-        }
+    // (on a local variable or "this", whose methods a lambda may call, see usesEnclosingInstance())
+    boolean bound =
+        ref.methodRefOwner.equals("this")
+            || ctx.classIdMap.variables.localMap.containsKey(ref.methodRefOwner);
+    // static if the owner declares such a method with this arity: a class of this compilation run
+    // (also a private method) or one loaded by reflection
+    boolean isStatic = false;
+    List<Method> sourceMethods = ctx.methods(ref.methodRefOwner + "." + ref.methodRefName);
+    for (Method m : sourceMethods) {
+      if (m.args.size() == arity && m.accFlags.contains(AccessFlag.ACC_STATIC)) {
+        isStatic = true;
       }
-    } catch (ClassNotFoundException | LinkageError e) {
-      // a class of this compilation run: static if it declares such a method with this arity
-      isStatic = false;
-      for (Method m : ctx.methods(ref.methodRefOwner + "." + ref.methodRefName)) {
-        if (m.args.size() == arity && m.accFlags.contains(AccessFlag.ACC_STATIC)) {
-          isStatic = true;
+    }
+    if (sourceMethods.isEmpty()) {
+      try {
+        Class<?> owner = Class.forName(resolveJvmClassName(ref.methodRefOwner).replace('/', '.'));
+        for (java.lang.reflect.Method m : owner.getMethods()) {
+          if (m.getName().equals(ref.methodRefName)
+              && m.getParameterCount() == arity
+              && java.lang.reflect.Modifier.isStatic(m.getModifiers())) {
+            isStatic = true;
+          }
         }
+      } catch (ClassNotFoundException | LinkageError e) {
+        isStatic = true; // (e.g. an unknown class: reported when the call is generated)
       }
     }
     if (!bound && !isStatic && arity == 0) {
@@ -1629,13 +1637,30 @@ public class ExpressionGenerator {
           new RuntimeException().getStackTrace());
       return null;
     }
+    // (the arguments are cast to the parameter types of a static method of this compilation run,
+    // if there's only one: the functional interface's parameters may be erased, e.g. Object)
+    Method target = null;
+    for (Method m : sourceMethods) {
+      if (m.args.size() == arity && m.accFlags.contains(AccessFlag.ACC_STATIC) && !bound) {
+        target = (target == null) ? m : null;
+        if (target == null) {
+          break;
+        }
+      }
+    }
     isStatic = isStatic || bound;
     List<String> params = new ArrayList<>();
     List<Expression> args = new ArrayList<>();
     for (int i = 0; i < arity; i++) {
       params.add("$ref" + i);
       if (isStatic || i > 0) {
-        args.add(new Expression(new ArrayList<>(List.of(new Identifier("$ref" + i)))));
+        String type = (target != null) ? target.args.get(i).type : null;
+        args.add(
+            (type != null && !TypeUtils.isPrimitive(type) && !type.startsWith("["))
+                ? new Expression(
+                    new ArrayList<>(List.of(new Identifier("$ref" + i))),
+                    new io.github.martinschneider.orzo.lexer.tokens.Type(type))
+                : new Expression(new ArrayList<>(List.of(new Identifier("$ref" + i)))));
       }
     }
     String callee = (isStatic ? ref.methodRefOwner : params.get(0)) + "." + ref.methodRefName;
@@ -1691,11 +1716,13 @@ public class ExpressionGenerator {
       return targetType;
     }
 
-    String syntheticName = ctx.clazz.name + "$$Lambda$" + (++ctx.syntheticClassCounter);
-    String syntheticFqn =
-        (ctx.clazz.packageName == null || ctx.clazz.packageName.isEmpty())
-            ? syntheticName
-            : ctx.clazz.packageName + "." + syntheticName;
+    // (nested in the enclosing class, e.g. "Outer$$Lambda$1")
+    String syntheticName = "$Lambda$" + (++ctx.syntheticClassCounter);
+    String syntheticFqn = ctx.clazz.fqn() + "$" + syntheticName;
+    String outerName = ctx.clazz.fqn();
+    outerName = outerName.substring(outerName.lastIndexOf('.') + 1);
+    // (one using the enclosing instance, e.g. one of its fields, gets it like an inner class)
+    boolean inner = !isStaticContext() && usesEnclosingInstance(lambda);
     // The SAM's parameters are erased (e.g. Object for Function.apply); with the target's generic
     // type known, a parameter gets its real type via a casting local of the same name, e.g.
     // "Argument arg = (Argument) $lambda_arg;"
@@ -1707,12 +1734,13 @@ public class ExpressionGenerator {
     // Local variables of the enclosing method used in the lambda body are captured: they become
     // fields of the synthetic class, passed to its constructor.
     List<VariableInfo> captured = new ArrayList<>();
-    if (lambda.block != null) {
-      for (Expression expr : Statements.expressions(lambda.block)) {
-        visitLambdaBody(expr, lambda.params, captured);
+    List<Expression> bodyExprs =
+        (lambda.block != null) ? Statements.expressions(lambda.block) : List.of(lambda.body);
+    for (Expression expr : bodyExprs) {
+      visitLambdaBody(expr, lambda.params, captured);
+      if (inner) {
+        replaceThis(expr);
       }
-    } else {
-      visitLambdaBody(lambda.body, lambda.params, captured);
     }
     List<Argument> args = new ArrayList<>();
     List<Statement> body = new ArrayList<>();
@@ -1777,10 +1805,9 @@ public class ExpressionGenerator {
               new ArrayList<>(List.of(new Expression(List.of(new Identifier(var.name)))))));
     }
     Method ctor =
-        new Method(
+        new Constructor(
             syntheticFqn,
             List.of(AccessFlag.ACC_PUBLIC),
-            VOID,
             Token.id(Method.CONSTRUCTOR_NAME),
             ctorArgs,
             ctorBody);
@@ -1800,6 +1827,10 @@ public class ExpressionGenerator {
             List.of(ctor, samImpl),
             fields,
             ctx.clazz.sourceFile);
+    syntheticClazz.outerName = outerName;
+    if (inner) {
+      InnerClasses.makeInner(syntheticClazz, ctx.clazz);
+    }
     ctx.addSyntheticClazz(syntheticClazz);
 
     String jvmClassName = syntheticClazz.fqn('/');
@@ -1807,11 +1838,144 @@ public class ExpressionGenerator {
     ctx.invokeGen.newInstance(out, jvmClassName);
     out.write(DUP);
     ctx.opStack.push(REF);
+    if (inner && !pushEnclosingInstance(out, syntheticClazz)) {
+      return targetType;
+    }
     for (VariableInfo var : captured) {
       ctx.loadGen.load(out, var);
     }
     ctx.invokeGen.invokeSpecial(out, ctor);
     return targetType;
+  }
+
+  // "this" in a lambda body is the enclosing instance: the field this$0 of the lambda's class (not
+  // in nested lambdas)
+  private static void replaceThis(Expression expr) {
+    if (expr == null) {
+      return;
+    }
+    expr.tree = null; // (generated from the changed tokens)
+    for (Token token : expr.tokens) {
+      if (token instanceof TernaryExpression) {
+        replaceThis(((TernaryExpression) token).condition);
+        replaceThis(((TernaryExpression) token).trueBranch);
+        replaceThis(((TernaryExpression) token).falseBranch);
+      } else if (token instanceof Identifier) {
+        Identifier root = (Identifier) token;
+        if (root instanceof CastMethodCall) {
+          replaceThis(((CastMethodCall) root).innerExpr);
+        } else if (root instanceof MethodCall && ((MethodCall) root).name.startsWith("this.")) {
+          MethodCall call = (MethodCall) root;
+          call.name = InnerClasses.OUTER_INSTANCE + call.name.substring("this".length());
+          call.val = call.name;
+        } else if (!(root instanceof MethodCall)
+            && !(root instanceof ConstructorCall)
+            && "this".equals(root.val.toString())) {
+          root.val = InnerClasses.OUTER_INSTANCE;
+        }
+        for (Identifier link = root; link != null; link = link.next) {
+          if (link instanceof MethodCall) {
+            ((MethodCall) link).params.forEach(ExpressionGenerator::replaceThis);
+          } else if (link instanceof ConstructorCall) {
+            ((ConstructorCall) link).args.forEach(ExpressionGenerator::replaceThis);
+          }
+          if (link.arrSel != null) {
+            link.arrSel.exprs.forEach(ExpressionGenerator::replaceThis);
+          }
+        }
+      }
+    }
+  }
+
+  // Whether a lambda body uses the enclosing instance: "this", an instance field or method
+  private boolean usesEnclosingInstance(LambdaExpr lambda) {
+    Set<String> locals = new HashSet<>(lambda.params);
+    List<Expression> exprs = List.of(lambda.body);
+    if (lambda.block != null) {
+      locals.addAll(Statements.declaredNames(lambda.block));
+      exprs = Statements.expressions(lambda.block);
+    }
+    for (Expression expr : exprs) {
+      if (usesEnclosingInstance(expr, locals)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean usesEnclosingInstance(Expression expr, Set<String> locals) {
+    if (expr == null) {
+      return false;
+    }
+    for (Token token : expr.tokens) {
+      if (token instanceof TernaryExpression) {
+        TernaryExpression ternary = (TernaryExpression) token;
+        if (usesEnclosingInstance(ternary.condition, locals)
+            || usesEnclosingInstance(ternary.trueBranch, locals)
+            || usesEnclosingInstance(ternary.falseBranch, locals)) {
+          return true;
+        }
+      } else if (token instanceof LambdaExpr) {
+        if (usesEnclosingInstance((LambdaExpr) token)) {
+          return true;
+        }
+      } else if (token instanceof Identifier && usesEnclosingInstance((Identifier) token, locals)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // "this", "super" or an instance field (not a local variable)
+  private boolean isInstanceName(String name, Set<String> locals) {
+    if (name.equals("this") || name.equals("super")) {
+      return true;
+    }
+    VariableInfo field = ctx.classIdMap.variables.fieldMap.get(name);
+    return !locals.contains(name)
+        && !ctx.classIdMap.variables.localMap.containsKey(name)
+        && field != null
+        && !field.accFlags.contains(AccessFlag.ACC_STATIC);
+  }
+
+  private boolean usesEnclosingInstance(Identifier root, Set<String> locals) {
+    if (root instanceof CastMethodCall) {
+      return usesEnclosingInstance(((CastMethodCall) root).innerExpr, locals);
+    } else if (root instanceof MethodCall) {
+      String name = ((MethodCall) root).name;
+      if (name.contains(".")) {
+        // e.g. "this.m()" or "field.m()"
+        if (isInstanceName(name.substring(0, name.indexOf('.')), locals)) {
+          return true;
+        }
+      } else {
+        for (Method method : ctx.methods(name)) {
+          if (!method.accFlags.contains(AccessFlag.ACC_STATIC)
+              && !(method instanceof Constructor)) {
+            return true;
+          }
+        }
+      }
+    } else if (!(root instanceof ConstructorCall) && isInstanceName(root.val.toString(), locals)) {
+      return true;
+    }
+    for (Identifier link = root; link != null; link = link.next) {
+      List<Expression> nested = new ArrayList<>();
+      if (link instanceof MethodCall) {
+        nested.addAll(((MethodCall) link).params);
+      } else if (link instanceof ConstructorCall) {
+        nested.addAll(((ConstructorCall) link).args);
+      }
+      if (link.arrSel != null) {
+        nested.addAll(link.arrSel.exprs);
+      }
+      for (Expression expr : nested) {
+        if (usesEnclosingInstance(expr, locals)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   // Finds the enclosing method's local variables a lambda body uses (to be captured), and

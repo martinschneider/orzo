@@ -113,16 +113,8 @@ public class CodeGenerator {
     }
   }
 
-  // the outermost class enclosing a class (also a lambda's, e.g. "Outer$$Lambda$1"), null for a
-  // top-level class
+  // the outermost class enclosing a class, null for a top-level class
   private Clazz nestHost(Clazz clazz) {
-    String fqn = clazz.fqn();
-    int lambda = fqn.indexOf("$$Lambda$");
-    if (lambda > 0) {
-      Clazz owner = TypeUtils.sourceClazz(fqn.substring(0, lambda), clazzes);
-      Clazz host = (owner != null) ? nestHost(owner) : null;
-      return (host != null) ? host : owner;
-    }
     List<Clazz> outers = FieldProcessor.enclosingClasses(clazz, clazzes);
     return outers.isEmpty() ? null : outers.get(0);
   }

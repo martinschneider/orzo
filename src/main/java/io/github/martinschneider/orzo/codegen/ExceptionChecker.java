@@ -114,25 +114,33 @@ public class ExceptionChecker {
     }
   }
 
-  // a subclass of Throwable, but not of RuntimeException or Error
   private boolean isChecked(String type) {
-    List<String> supertypes = superclasses(type);
+    return isChecked(type, ctx.allClazzes);
+  }
+
+  private boolean isSubtype(String type, String of) {
+    return isSubtype(type, of, ctx.allClazzes);
+  }
+
+  /** A subclass of Throwable, but not of RuntimeException or Error. */
+  public static boolean isChecked(String type, List<Clazz> clazzes) {
+    List<String> supertypes = superclasses(type, clazzes);
     return supertypes.contains("java.lang.Throwable")
         && !supertypes.contains("java.lang.RuntimeException")
         && !supertypes.contains("java.lang.Error");
   }
 
-  private boolean isSubtype(String type, String of) {
-    return superclasses(type).contains(name(of));
+  public static boolean isSubtype(String type, String of, List<Clazz> clazzes) {
+    return superclasses(type, clazzes).contains(name(of));
   }
 
   // the class and its superclasses (of this compilation run or loaded by reflection)
-  private List<String> superclasses(String type) {
+  private static List<String> superclasses(String type, List<Clazz> clazzes) {
     List<String> supertypes = new ArrayList<>();
     String name = name(type);
     while (name != null && !supertypes.contains(name)) {
       supertypes.add(name);
-      Clazz source = TypeUtils.sourceClazz(name, ctx.allClazzes);
+      Clazz source = TypeUtils.sourceClazz(name, clazzes);
       if (source != null) {
         name = name(source.baseClass);
         continue;
@@ -159,7 +167,7 @@ public class ExceptionChecker {
     return type.replace('/', '.');
   }
 
-  private static String simpleName(String type) {
+  static String simpleName(String type) {
     return type.substring(type.lastIndexOf('.') + 1).replace('$', '.');
   }
 }
