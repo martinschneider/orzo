@@ -58,7 +58,8 @@ public class CodeGenerator {
           (short)
               (AccessFlag.ACC_INTERFACE.val
                   + AccessFlag.ACC_ABSTRACT.val
-                  + AccessFlag.ACC_PUBLIC.val);
+                  + AccessFlag.ACC_PUBLIC.val
+                  + (clazz.isAnnotation ? AccessFlag.ACC_ANNOTATION.val : 0));
     } else if (clazz.isEnum) {
       modifiers =
           (short)

@@ -14,6 +14,7 @@ import io.github.martinschneider.orzo.lexer.tokens.LambdaExpr;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import java.io.IOException;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -30,6 +31,16 @@ public class LambdaParserTest {
         // Not a valid untyped lambda param list - "a.b" is a dotted identifier chain, not a bare
         // name - so this isn't a lambda at all; must leave `tokens` untouched.
         args("(a.b, c) -> a", null));
+  }
+
+  // (the declared parameter types weren't kept when the body had another lambda)
+  @Test
+  public void declaredTypesWithLambdaInBody() throws IOException {
+    TokenList tokens =
+        new Lexer()
+            .getTokens("(Integer a, final String b) -> { Runnable r = () -> {}; return a; }");
+    LambdaExpr lambda = (LambdaExpr) target.parse(tokens).tokens.get(0);
+    assertEquals(list("Integer", "String"), lambda.paramTypes);
   }
 
   @ParameterizedTest

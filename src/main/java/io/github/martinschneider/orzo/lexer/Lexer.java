@@ -15,6 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Lexer {
+  // the text of the "interface" keyword of an annotation type declaration
+  public static final String ANNOTATION_TYPE = "@interface";
+
   private StringBuffer buffer;
   private char character;
   private final CompilerErrors errors;
@@ -200,7 +203,9 @@ public class Lexer {
     }
     if (name.toString().equals("interface")) {
       inputReader.unread(c);
-      tokenList.add(keyword(Keywords.INTERFACE));
+      Token annotationType = keyword(Keywords.INTERFACE);
+      annotationType.text = ANNOTATION_TYPE; // (an annotation type, see ClassParser)
+      tokenList.add(annotationType);
       return;
     }
     // (the arguments may follow on the next line)

@@ -1256,6 +1256,21 @@ public class ExpressionGenerator {
     return fromIdx >= 0 && toIdx > fromIdx && toIdx >= order.indexOf(LONG);
   }
 
+  // Whether the selectors after the "class" of a class literal are more than calls, e.g. an array
+  // element or "length"
+  private static boolean selectsBeyondCalls(Identifier curr, int classIdx) {
+    Identifier link = curr;
+    for (int i = 0; i <= classIdx; i++) {
+      link = link.next;
+    }
+    for (; link != null; link = link.next) {
+      if (!(link instanceof MethodCall) || link.arrSel != null) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private String handleStaticInstanceChain(DynamicByteArray out, Identifier curr, String type) {
     // Try to find the longest prefix that resolves to a static field
     List<String> identifierParts = new ArrayList<>();
@@ -1369,6 +1384,21 @@ public class ExpressionGenerator {
     // Class literal, e.g. "String.class" or "java.util.List.class", possibly followed by calls
     // ("Foo.class.getName()")
     int classIdx = identifierParts.indexOf("class");
+    if (classIdx > 0 && selectsBeyondCalls(curr, classIdx)) {
+      // e.g. "Foo.class.getMethods()[0].getName()" or "Foo.class.getMethods().length": the class
+      // literal as a receiver, like "(Foo.class).getMethods()[0].getName()"
+      Identifier literal = new Identifier(curr.val.toString());
+      Identifier last = literal;
+      Identifier link = curr.next;
+      for (int i = 1; i <= classIdx; i++, link = link.next) {
+        last.next = new Identifier(link.val.toString());
+        last = last.next;
+      }
+      CastMethodCall receiver =
+          new CastMethodCall(null, new Expression(new ArrayList<>(List.of(literal))));
+      receiver.next = link;
+      return eval(out, type, new Expression(new ArrayList<>(List.of(receiver)))).type;
+    }
     if (classIdx > 0) {
       String className = String.join(".", identifierParts.subList(0, classIdx));
       String wrapper = PRIMITIVE_WRAPPERS.get(className);
@@ -1834,11 +1864,11 @@ public class ExpressionGenerator {
     for (int i = 0; i < lambda.params.size(); i++) {
       String erased = sam.paramTypes.get(i);
       String typed = (i < typedParams.size()) ? typedParams.get(i) : null;
-      if (typed == null
-          && lambda.paramTypes != null
+      if (lambda.paramTypes != null
           && lambda.paramTypes.get(i) != null
           && !lambda.paramTypes.get(i).startsWith("[")) {
-        // a declared type, e.g. "(String s) -> ..."
+        // a declared type, e.g. "(String s) -> ..." (rather than the inferred one, which may be a
+        // type variable)
         typed = TypeUtils.resolveSimpleType(lambda.paramTypes.get(i), ctx.allClazzes, ctx.clazz);
       }
       String name = lambda.params.get(i);
@@ -1883,13 +1913,9 @@ public class ExpressionGenerator {
       boolean isArray = var.arrType != null;
       String type = isArray ? var.arrType : var.type;
       ctorArgs.add(new Argument(isArray ? "[" + type : type, new Identifier(var.name)));
+      // (package-private: a nested lambda's class reads it, too)
       Declaration field =
-          new Declaration(
-              List.of(AccessFlag.ACC_PRIVATE),
-              type,
-              isArray ? 1 : 0,
-              new Identifier(var.name),
-              null);
+          new Declaration(emptyList(), type, isArray ? 1 : 0, new Identifier(var.name), null);
       field.isField = true;
       field.genericType = var.genericType;
       fields.add(new ParallelDeclaration(new ArrayList<>(List.of(field))));

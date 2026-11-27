@@ -54,6 +54,8 @@ public class LambdaParser implements ProdParser<Expression> {
       tokens.setIdx(idx);
       return null;
     }
+    // (the field is overwritten by the lambdas in the body)
+    List<String> paramTypes = this.paramTypes;
     tokens.next(); // consume '->'
     if (tokens.curr().eq(sym(LBRACE))) {
       // a block body

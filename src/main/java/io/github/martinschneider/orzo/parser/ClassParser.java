@@ -130,6 +130,10 @@ public class ClassParser implements ProdParser<Clazz> {
     List<ClassMember> members = new ArrayList<>();
     List<String> interfaces = new ArrayList<>();
     String baseClass = JAVA_LANG_OBJECT;
+    boolean isAnnotation = isInterface && Lexer.ANNOTATION_TYPE.equals(tokens.curr().text);
+    if (isAnnotation) {
+      interfaces.add("java.lang.annotation.Annotation");
+    }
     tokens.next();
     Token nameToken = tokens.curr();
     if (tokens.curr() instanceof Identifier) {
@@ -232,6 +236,7 @@ public class ClassParser implements ProdParser<Clazz> {
             null,
             null);
     ctx.currClazz.outerName = outerName;
+    ctx.currClazz.isAnnotation = isAnnotation;
     ctx.currClazz.localPrefix = ctx.localPrefix;
     ctx.localPrefix = null;
     ctx.currClazz.isGeneric = isGeneric;

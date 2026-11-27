@@ -6,6 +6,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.LESS;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.RSHIFTU;
+import static io.github.martinschneider.orzo.lexer.tokens.Scopes.DEFAULT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COMMA;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.DOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
@@ -18,6 +19,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.id;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.scope;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 import static io.github.martinschneider.orzo.parser.productions.Method.CONSTRUCTOR_NAME;
 
@@ -272,6 +274,9 @@ public class MethodParser implements ProdParser<Method> {
     }
     tokens.next();
     skipThrowsClause(tokens);
+    if (isInterface && !hasBody && tokens.curr().eq(scope(DEFAULT))) {
+      skipDefaultValue(tokens);
+    }
     if (tokens.curr().eq(sym(SEMICOLON))) {
       tokens.next();
     }
@@ -290,6 +295,21 @@ public class MethodParser implements ProdParser<Method> {
     }
     for (String v : methodTypeVarsAdded) ctx.classTypeParams.remove(v);
     return null;
+  }
+
+  // The default value of an annotation type's element, e.g. "default {1, 2}" (ignored: annotations
+  // aren't compiled)
+  private static void skipDefaultValue(TokenList tokens) {
+    int depth = 0;
+    tokens.next();
+    while (!(tokens.curr() instanceof EOF) && (depth > 0 || !tokens.curr().eq(sym(SEMICOLON)))) {
+      if (tokens.curr().eq(sym(LBRACE)) || tokens.curr().eq(sym(LPAREN))) {
+        depth++;
+      } else if (tokens.curr().eq(sym(RBRACE)) || tokens.curr().eq(sym(RPAREN))) {
+        depth--;
+      }
+      tokens.next();
+    }
   }
 
   List<Argument> parseArgs(TokenList tokens) {

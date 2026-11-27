@@ -18,6 +18,7 @@ public enum AccessFlag {
   ACC_STRICT((short) 0x0800),
   ACC_SYNTHETIC((short) 0x1000),
   ACC_INTERFACE((short) 0x0200),
+  ACC_ANNOTATION((short) 0x2000),
   ACC_ENUM((short) 0x4000);
 
   public short val;

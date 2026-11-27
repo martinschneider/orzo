@@ -12,6 +12,8 @@ public class Clazz {
   public static final String JAVA_LANG_OBJECT = "java.lang.Object";
   public static final String JAVA_LANG_ENUM = "java.lang.Enum";
   public boolean isInterface;
+  // an annotation type ("@interface A { ... }")
+  public boolean isAnnotation;
   public boolean isEnum;
   public boolean isAbstract;
   // a non-static member class (see InnerClasses.makeInner())
