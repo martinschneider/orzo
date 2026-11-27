@@ -196,10 +196,9 @@ public class Orzo {
       strBuilder.append(clazz.packageName.replaceAll("\\.", File.separator));
     }
     strBuilder.append(File.separator);
-    if (clazz.outerName != null) {
-      strBuilder.append(clazz.outerName).append('$');
-    }
-    strBuilder.append(clazz.name);
+    // (the binary name, e.g. "Outer$1Local")
+    String fqn = clazz.fqn();
+    strBuilder.append(fqn.substring(fqn.lastIndexOf('.') + 1));
     strBuilder.append(".class");
     return strBuilder.toString();
   }

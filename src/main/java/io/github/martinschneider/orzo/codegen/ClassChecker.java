@@ -16,6 +16,7 @@ import io.github.martinschneider.orzo.parser.productions.Clazz;
 import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.Declaration;
 import io.github.martinschneider.orzo.parser.productions.Method;
+import io.github.martinschneider.orzo.parser.productions.MethodCall;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Modifier;
@@ -55,6 +56,7 @@ public class ClassChecker {
         continue;
       }
       checkDuplicateMembers(clazz);
+      checkBlankFinals(clazz);
       if (isCyclic(clazz)) {
         error("cyclic inheritance involving " + clazz.name);
         continue;
@@ -71,6 +73,52 @@ public class ClassChecker {
       checkAbstractMethodsImplemented(clazz);
     }
     errors.position = null;
+  }
+
+  // A final field without an initializer must be assigned: a static one in a static initializer, an
+  // instance one in an instance initializer or in every constructor (not calling "this(...)").
+  // (Only whether it is assigned at all, not on every path.)
+  private void checkBlankFinals(Clazz clazz) {
+    if (clazz.isInterface) {
+      return;
+    }
+    Set<String> staticAssigned = new HashSet<>();
+    for (Method method : clazz.methods) {
+      if (method.name.val.toString().equals("<clinit>")) {
+        staticAssigned.addAll(Statements.assignedNames(method.body));
+      }
+    }
+    Set<String> initAssigned = Statements.assignedNames(clazz.instanceInits);
+    for (ParallelDeclaration pDecl : clazz.fields) {
+      for (Declaration decl : pDecl.declarations) {
+        String name = decl.name.val.toString();
+        if (!decl.accFlags.contains(ACC_FINAL) || decl.val != null || decl.enumArgs != null) {
+          continue;
+        }
+        boolean assigned =
+            decl.accFlags.contains(ACC_STATIC)
+                ? staticAssigned.contains(name)
+                : initAssigned.contains(name) || assignedByConstructors(clazz, name);
+        if (!assigned) {
+          errors.position = errors.startTokens.getOrDefault(pDecl, errors.position);
+          error("variable " + name + " might not have been initialized");
+        }
+      }
+    }
+    errors.position = errors.startTokens.get(clazz);
+  }
+
+  private static boolean assignedByConstructors(Clazz clazz, String name) {
+    for (Method method : clazz.getConstructors()) {
+      boolean delegates =
+          !method.body.isEmpty()
+              && method.body.get(0) instanceof MethodCall
+              && ((MethodCall) method.body.get(0)).name.equals("this");
+      if (!delegates && !Statements.assignedNames(method.body).contains(name)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   // fields of the same name, methods with the same parameter types

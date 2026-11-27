@@ -220,6 +220,8 @@ public class ClassParser implements ProdParser<Clazz> {
             null,
             null);
     ctx.currClazz.outerName = outerName;
+    ctx.currClazz.localPrefix = ctx.localPrefix;
+    ctx.localPrefix = null;
     ctx.currClazz.isGeneric = isGeneric;
     ctx.errors.startTokens.put(ctx.currClazz, nameToken);
     if (isEnum) {
@@ -437,6 +439,13 @@ public class ClassParser implements ProdParser<Clazz> {
   // A local class ("class Foo { ... }" in a method body) is compiled like a nested class
   // ("Outer$Foo"); its statement makes it inner and captures the local variables it uses (see
   // LocalClassGenerator), before its class is generated (local classes come last).
+  // the binary name of a class without its package, e.g. "Outer$1Local"
+  private static String binaryName(Clazz clazz) {
+    return (clazz.outerName != null ? clazz.outerName + "$" : "")
+        + (clazz.localPrefix != null ? clazz.localPrefix : "")
+        + clazz.name;
+  }
+
   public LocalClassDeclaration parseLocalClass(TokenList tokens) {
     int idx = tokens.idx();
     List<AccessFlag> modifiers = ctx.modifiersParser.parse(tokens);
@@ -449,13 +458,23 @@ public class ClassParser implements ProdParser<Clazz> {
     }
     Clazz outer = ctx.currClazz;
     Map<String, String> outerTypeParams = new HashMap<>(ctx.classTypeParams);
-    String outerName = (outer.outerName != null ? outer.outerName + "$" : "") + outer.name;
+    String outerName = binaryName(outer);
     String name = tokens.peekNext().val.toString();
+    // numbered like javac's, e.g. "Outer$1Foo" and "Outer$2Foo" for two classes named Foo
+    int number = 1;
+    for (Clazz other : ctx.localClazzes) {
+      if (other.name.equals(name) && outerName.equals(other.outerName)) {
+        number++;
+      }
+    }
+    ctx.localPrefix = String.valueOf(number);
+    // (the name refers to this class from here on)
     ctx.importMap.put(
         name,
         ((outer.packageName != null && !outer.packageName.isEmpty()) ? outer.packageName + "." : "")
             + outerName
             + "$"
+            + number
             + name);
     Clazz local =
         parseClassDeclaration(
@@ -492,7 +511,7 @@ public class ClassParser implements ProdParser<Clazz> {
     Clazz outer = ctx.currClazz;
     boolean isInner = !isStatic && !isInterface && !isEnum && !outer.isInterface;
     Map<String, String> outerTypeParams = new HashMap<>(ctx.classTypeParams);
-    String outerName = (outer.outerName != null ? outer.outerName + "$" : "") + outer.name;
+    String outerName = binaryName(outer);
     Clazz nested =
         parseClassDeclaration(
             tokens, outer.packageName, outer.imports, scope, isInterface, isEnum, outerName);

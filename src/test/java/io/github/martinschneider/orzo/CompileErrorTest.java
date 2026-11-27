@@ -255,6 +255,14 @@ public class CompileErrorTest {
   private static Stream<Arguments> classErrors() {
     return Stream.of(
         Arguments.of(
+            Map.of("A.java", "class A {\n  static final int X;\n}\n"),
+            "A.java:2:3: error: variable X might not have been initialized"),
+        Arguments.of(
+            Map.of(
+                "A.java",
+                "class A {\n  final int x;\n\n  A() {}\n\n  A(int y) {\n    x = y;\n  }\n}\n"),
+            "A.java:2:3: error: variable x might not have been initialized"),
+        Arguments.of(
             Map.of(
                 "A.java",
                 "class A {\n  int m(boolean c) {\n    int y;\n    if (c) {\n      y = 1;\n    }\n"

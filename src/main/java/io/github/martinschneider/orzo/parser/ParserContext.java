@@ -15,6 +15,8 @@ public class ParserContext {
   public List<Clazz> nestedClazzes = new ArrayList<>();
   // (compiled after all other classes, see ClassParser.parseLocalClass())
   public List<Clazz> localClazzes = new ArrayList<>();
+  // the localPrefix of the local class being declared (see ClassParser.parseLocalClass())
+  public String localPrefix;
   // Maps simple class name → fully-qualified name, built from import statements
   public Map<String, String> importMap = new HashMap<>();
   // the packages of on-demand imports ("import java.io.*;")

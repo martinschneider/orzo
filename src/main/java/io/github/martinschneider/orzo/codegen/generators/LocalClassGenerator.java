@@ -20,6 +20,7 @@ public class LocalClassGenerator implements StatementGenerator<LocalClassDeclara
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, LocalClassDeclaration decl) {
     Clazz local = decl.clazz;
+    ctx.localClasses.put(local.name, local);
     // (local interfaces and enums are static; a statement may be generated more than once, e.g.
     // in a finally block)
     if (local.isInterface || local.isEnum || local.captured != null) {

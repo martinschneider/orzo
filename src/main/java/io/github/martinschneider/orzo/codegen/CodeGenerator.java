@@ -237,6 +237,7 @@ public class CodeGenerator {
     out.write((short) (methods.size() + bridges.size()));
     for (Method method : methods) {
       ctx.method = method;
+      ctx.localClasses.clear();
       ctx.classIdMap.variables.localMap.clear();
       ctx.classIdMap.variables.allLocalsBySlot.clear();
       ctx.classIdMap.variables.localSize = 0;

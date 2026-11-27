@@ -102,9 +102,19 @@ public class LocalClasses {
     return new Walker().walk();
   }
 
+  // (another local class named Square: "LocalClasses$2Square")
+  static String name() {
+    class Square {
+      String name() {
+        return "square";
+      }
+    }
+    return new Square().name();
+  }
+
   public static void main(String[] args) {
     System.out.println(new LocalClasses().run(3));
     System.out.println(statements(3, new int[] {1, 5}, "x"));
-    System.out.println(total(new double[] {1, 2, 3}));
+    System.out.println(total(new double[] {1, 2, 3}) + " " + name());
   }
 }

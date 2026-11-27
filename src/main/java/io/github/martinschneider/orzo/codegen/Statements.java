@@ -39,18 +39,29 @@ public class Statements {
    */
   public static List<Expression> expressions(List<Statement> statements) {
     List<Expression> exprs = new ArrayList<>();
-    addAll(statements, exprs, new HashSet<>());
+    addAll(statements, exprs, new HashSet<>(), new HashSet<>());
     return exprs;
   }
 
   /** The names of the variables the statements declare (also in nested ones). */
   public static Set<String> declaredNames(List<Statement> statements) {
     Set<String> names = new HashSet<>();
-    addAll(statements, new ArrayList<>(), names);
+    addAll(statements, new ArrayList<>(), names, new HashSet<>());
     return names;
   }
 
-  private static void addStatement(Statement stmt, List<Expression> exprs, Set<String> names) {
+  /**
+   * The names of the variables or fields the statements assign (also nested ones), e.g. "x" for "x
+   * = 1;" and "this.x = 1;".
+   */
+  public static Set<String> assignedNames(List<Statement> statements) {
+    Set<String> assigned = new HashSet<>();
+    addAll(statements, new ArrayList<>(), new HashSet<>(), assigned);
+    return assigned;
+  }
+
+  private static void addStatement(
+      Statement stmt, List<Expression> exprs, Set<String> names, Set<String> assigned) {
     if (stmt instanceof ParallelDeclaration) {
       for (Declaration decl : ((ParallelDeclaration) stmt).declarations) {
         names.add(decl.name.val.toString());
@@ -60,12 +71,14 @@ public class Statements {
       Assignment assignment = (Assignment) stmt;
       for (Identifier target : assignment.left) {
         addToken(target, exprs);
+        addAssigned(target, assigned);
       }
       for (Expression value : assignment.right) {
         addExpression(value, exprs);
       }
     } else if (stmt instanceof FieldAssignment) {
       addToken(((FieldAssignment) stmt).target, exprs);
+      addAssigned(((FieldAssignment) stmt).target, assigned);
       addExpression(((FieldAssignment) stmt).value, exprs);
     } else if (stmt instanceof MethodCall || stmt instanceof ConstructorCall) {
       addToken((Token) stmt, exprs);
@@ -84,50 +97,63 @@ public class Statements {
     } else if (stmt instanceof IfStatement) {
       for (IfBlock block : ((IfStatement) stmt).ifBlks) {
         addExpression(block.cond, exprs);
-        addAll(block.body, exprs, names);
+        addAll(block.body, exprs, names, assigned);
       }
     } else if (stmt instanceof ForStatement) {
       ForStatement loop = (ForStatement) stmt;
       if (loop.init != null) {
-        addStatement(loop.init, exprs, names);
+        addStatement(loop.init, exprs, names, assigned);
       }
       addExpression(loop.cond, exprs);
       if (loop.loopStmt != null) {
-        addStatement(loop.loopStmt, exprs, names);
+        addStatement(loop.loopStmt, exprs, names, assigned);
       }
-      addAll(loop.body, exprs, names);
+      addAll(loop.body, exprs, names, assigned);
     } else if (stmt instanceof LoopStatement) {
       addExpression(((LoopStatement) stmt).cond, exprs);
-      addAll(((LoopStatement) stmt).body, exprs, names);
+      addAll(((LoopStatement) stmt).body, exprs, names, assigned);
     } else if (stmt instanceof ForEachStatement) {
       names.add(((ForEachStatement) stmt).elemVar.val.toString());
       addExpression(((ForEachStatement) stmt).iterable, exprs);
-      addAll(((ForEachStatement) stmt).body, exprs, names);
+      addAll(((ForEachStatement) stmt).body, exprs, names, assigned);
     } else if (stmt instanceof SwitchStatement) {
       SwitchStatement switchStmt = (SwitchStatement) stmt;
       addExpression(switchStmt.switchExpr, exprs);
       for (SwitchCase switchCase : switchStmt.cases) {
-        addAll(switchCase.body, exprs, names);
+        addAll(switchCase.body, exprs, names, assigned);
       }
     } else if (stmt instanceof TryStatement) {
       TryStatement tryStmt = (TryStatement) stmt;
-      addAll(tryStmt.tryBody, exprs, names);
+      addAll(tryStmt.tryBody, exprs, names, assigned);
       for (CatchBlock catchBlock : tryStmt.catchBlocks) {
         names.add(catchBlock.varName);
-        addAll(catchBlock.body, exprs, names);
+        addAll(catchBlock.body, exprs, names, assigned);
       }
-      addAll(tryStmt.finallyBody, exprs, names);
+      addAll(tryStmt.finallyBody, exprs, names, assigned);
     } else if (stmt instanceof Block) {
-      addAll(((Block) stmt).body, exprs, names);
+      addAll(((Block) stmt).body, exprs, names, assigned);
     }
   }
 
   private static void addAll(
-      List<Statement> statements, List<Expression> exprs, Set<String> names) {
+      List<Statement> statements, List<Expression> exprs, Set<String> names, Set<String> assigned) {
     if (statements != null) {
       for (Statement stmt : statements) {
-        addStatement(stmt, exprs, names);
+        addStatement(stmt, exprs, names, assigned);
       }
+    }
+  }
+
+  // "x" or "this.x"
+  private static void addAssigned(Identifier target, Set<String> assigned) {
+    if (target.arrSel != null) {
+      return;
+    } else if (target.next == null) {
+      assigned.add(target.val.toString());
+    } else if ("this".equals(target.val.toString())
+        && target.next.next == null
+        && target.next.arrSel == null) {
+      assigned.add(target.next.val.toString());
     }
   }
 

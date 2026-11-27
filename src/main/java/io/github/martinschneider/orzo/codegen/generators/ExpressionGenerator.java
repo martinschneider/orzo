@@ -2322,6 +2322,10 @@ public class ExpressionGenerator {
       case "Short":
         return "java/lang/Short";
       default:
+        // (a local class of this method)
+        if (ctx.localClasses.containsKey(className)) {
+          return ctx.localClasses.get(className).fqn('/');
+        }
         // Check if it's a user-defined class in the current compilation unit
         for (io.github.martinschneider.orzo.parser.productions.Clazz clazz : ctx.allClazzes) {
           if (clazz.name.equals(className)) {

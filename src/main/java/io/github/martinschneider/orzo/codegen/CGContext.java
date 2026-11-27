@@ -42,6 +42,8 @@ public class CGContext {
   public Map<String, Method> methodMap;
   // the method whose code is being generated
   public Method method;
+  // the local classes declared so far in the method, by their names (see LocalClassGenerator)
+  public Map<String, Clazz> localClasses = new HashMap<>();
   // the methods of methodMap by their (possibly qualified) name, e.g. "foo" or "Clazz.foo"
   private Map<String, List<Method>> methodsByName;
   private Map<String, Method> indexedMethodMap;

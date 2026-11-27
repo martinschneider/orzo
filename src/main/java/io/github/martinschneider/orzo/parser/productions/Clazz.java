@@ -32,6 +32,8 @@ public class Clazz {
   public String name;
   // the enclosing class's binary name (e.g. "Outer" or "Outer$Inner") of a nested class
   public String outerName;
+  // the number of a local class in its binary name, e.g. "1" for "Outer$1Foo" (null for others)
+  public String localPrefix;
   public String packageName;
   public Scope scope;
   public String sourceFile;
@@ -89,6 +91,9 @@ public class Clazz {
     }
     if (outerName != null) {
       strBuilder.append(outerName).append('$');
+    }
+    if (localPrefix != null) {
+      strBuilder.append(localPrefix);
     }
     strBuilder.append(name);
     return strBuilder.toString();
