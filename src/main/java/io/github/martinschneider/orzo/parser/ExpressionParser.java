@@ -360,6 +360,12 @@ public class ExpressionParser implements ProdParser<Expression> {
       tokens.next();
       ExprNode inner = operand(tokens, parseTree(tokens)); // (also a lambda, e.g. "(x -> x)")
       expect(tokens, sym(RPAREN));
+      // "(i)++": the lexer took the "++" after the ")" for a prefix one (as in "if (x) ++y;")
+      if (tokens.curr().eq(op(PRE_INCREMENT)) || tokens.curr().eq(op(PRE_DECREMENT))) {
+        boolean increment = tokens.curr().eq(op(PRE_INCREMENT));
+        tokens.next();
+        return new UnaryNode(increment ? POST_INCREMENT : POST_DECREMENT, inner);
+      }
       return inner;
     } else if (curr.eq(sym(LFLOOR))) {
       // "⌊x⌋" is Math.round(Math.floor(x))

@@ -20,6 +20,7 @@ import io.github.martinschneider.orzo.parser.productions.IncrementStatement;
 import io.github.martinschneider.orzo.parser.productions.LocalClassDeclaration;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import io.github.martinschneider.orzo.parser.productions.MethodCall;
+import io.github.martinschneider.orzo.parser.productions.MonitorStatement;
 import io.github.martinschneider.orzo.parser.productions.ParallelDeclaration;
 import io.github.martinschneider.orzo.parser.productions.ReturnStatement;
 import io.github.martinschneider.orzo.parser.productions.Statement;
@@ -37,6 +38,7 @@ public class StatementDelegator {
   public void init() {
     reg.put(ParallelDeclaration.class, new DeclarationGenerator(ctx));
     reg.put(DoStatement.class, new DoGenerator(ctx));
+    reg.put(MonitorStatement.class, new MonitorGenerator(ctx));
     reg.put(ForEachStatement.class, new ForEachGenerator(ctx));
     reg.put(ForStatement.class, new ForGenerator(ctx));
     reg.put(IfStatement.class, new IfGenerator(ctx));

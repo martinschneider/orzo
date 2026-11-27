@@ -349,6 +349,8 @@ public class OrzoTest {
         args(list("tests/SyntaxCorners")),
         args(list("tests/LambdaCasts")),
         args(list("tests/LabeledStatements")),
+        args(list("tests/SynchronizedStatements")),
+        args(list("tests/StatementExpressions")),
         args(list("tests/LambdaBlocks")),
         args(list("tests/StaticFieldAssignment")),
         args(list("examples/Calculus")),

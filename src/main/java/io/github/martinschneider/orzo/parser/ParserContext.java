@@ -30,6 +30,7 @@ public class ParserContext {
   public boolean inCaseLabel;
   public ArrayDefParser arrayDefParser;
   public AssertParser assertParser;
+  public SynchronizedParser synchronizedParser;
   public ArrayInitParser arrayInitParser;
   public ArraySelectorParser arraySelectorParser;
   public AssignmentParser assignParser;
@@ -91,6 +92,7 @@ public class ParserContext {
     ctx.whileParser = new WhileParser(ctx);
     ctx.repeatParser = new RepeatParser(ctx);
     ctx.assertParser = new AssertParser(ctx);
+    ctx.synchronizedParser = new SynchronizedParser(ctx);
     ctx.switchParser = new SwitchParser(ctx);
     ctx.throwParser = new ThrowParser(ctx);
     ctx.tryParser = new TryParser(ctx);

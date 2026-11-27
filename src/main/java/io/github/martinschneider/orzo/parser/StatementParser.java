@@ -1,20 +1,24 @@
 package io.github.martinschneider.orzo.parser;
 
+import static io.github.martinschneider.orzo.lexer.tokens.Keywords.NEW;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.COLON;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.LPAREN;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.RBRACE;
 import static io.github.martinschneider.orzo.lexer.tokens.Symbols.SEMICOLON;
+import static io.github.martinschneider.orzo.lexer.tokens.Token.keyword;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.op;
 import static io.github.martinschneider.orzo.lexer.tokens.Token.sym;
 
 import io.github.martinschneider.orzo.lexer.TokenList;
 import io.github.martinschneider.orzo.lexer.tokens.EOF;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
+import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Token;
 import io.github.martinschneider.orzo.parser.productions.Block;
 import io.github.martinschneider.orzo.parser.productions.CastMethodCall;
+import io.github.martinschneider.orzo.parser.productions.ConstructorCall;
 import io.github.martinschneider.orzo.parser.productions.EmptyStatement;
 import io.github.martinschneider.orzo.parser.productions.Expression;
 import io.github.martinschneider.orzo.parser.productions.ExpressionStatement;
@@ -29,6 +33,14 @@ import io.github.martinschneider.orzo.parser.productions.Statement;
 import io.github.martinschneider.orzo.parser.productions.SwitchStatement;
 import io.github.martinschneider.orzo.parser.productions.TryStatement;
 import io.github.martinschneider.orzo.parser.productions.WhileStatement;
+import io.github.martinschneider.orzo.parser.tree.BinaryNode;
+import io.github.martinschneider.orzo.parser.tree.CallNode;
+import io.github.martinschneider.orzo.parser.tree.ExprNode;
+import io.github.martinschneider.orzo.parser.tree.IndexNode;
+import io.github.martinschneider.orzo.parser.tree.NameNode;
+import io.github.martinschneider.orzo.parser.tree.NewNode;
+import io.github.martinschneider.orzo.parser.tree.SelectNode;
+import io.github.martinschneider.orzo.parser.tree.UnaryNode;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -96,7 +108,9 @@ public class StatementParser implements ProdParser<Statement> {
 
   // A call chain none of the parsers above handle, e.g. "arr[i].append(x);"
   private Statement parseExpressionStatement(TokenList tokens) {
-    if (!(tokens.curr() instanceof Identifier) && !tokens.curr().eq(sym(LPAREN))) {
+    if (!(tokens.curr() instanceof Identifier)
+        && !tokens.curr().eq(sym(LPAREN))
+        && !tokens.curr().eq(keyword(NEW))) {
       return null; // (a parenthesized start, e.g. "((Foo) x).count = 1;")
     }
     int idx = tokens.idx();
@@ -107,7 +121,8 @@ public class StatementParser implements ProdParser<Statement> {
         && expr.tokens.size() >= 3
         && expr.tokens.get(expr.tokens.size() - 1).eq(op(ASSIGN))
         && (expr.tokens.get(0) instanceof MethodCall
-            || expr.tokens.get(0) instanceof CastMethodCall)
+            || expr.tokens.get(0) instanceof CastMethodCall
+            || expr.tokens.get(0) instanceof ConstructorCall)
         && tokens.curr().eq(sym(SEMICOLON))) {
       Identifier last = (Identifier) expr.tokens.get(0);
       while (last.next != null) {
@@ -133,8 +148,44 @@ public class StatementParser implements ProdParser<Statement> {
         return new ExpressionStatement(expr);
       }
     }
+    // any other statement expression, e.g. "outer.new Inner();", "(i)++;" or "(a) = (b) = 1;"
+    tokens.setIdx(idx);
+    ExprNode tree = ctx.exprParser.parseTree(tokens);
+    if (isStatementExpression(tree) && tokens.curr().eq(sym(SEMICOLON))) {
+      tokens.next();
+      return new ExpressionStatement(ctx.exprParser.lower(tree));
+    }
     tokens.setIdx(idx);
     return null;
+  }
+
+  // An assignment, increment, decrement, call or object creation (JLS 14.8). (A compound assignment
+  // or an increment of a field of a call's result, e.g. "f().i++", isn't supported.)
+  private static boolean isStatementExpression(ExprNode node) {
+    if (node instanceof BinaryNode) {
+      BinaryNode assignment = (BinaryNode) node;
+      // ("=", "+=", ...: the operators with the lowest precedence)
+      return assignment.op.getPrecedence() == Operators.ASSIGN.getPrecedence()
+          && (assignment.op == Operators.ASSIGN || isVariable(assignment.left));
+    } else if (node instanceof UnaryNode) {
+      Operators op = ((UnaryNode) node).op;
+      return (op == Operators.PRE_INCREMENT
+              || op == Operators.PRE_DECREMENT
+              || op == Operators.POST_INCREMENT
+              || op == Operators.POST_DECREMENT)
+          && isVariable(((UnaryNode) node).operand);
+    }
+    return node instanceof CallNode || node instanceof NewNode;
+  }
+
+  // a variable, field (of a variable) or array element, e.g. "a", "a.b" or "a[i]"
+  private static boolean isVariable(ExprNode node) {
+    if (node instanceof SelectNode) {
+      return isVariable(((SelectNode) node).target);
+    } else if (node instanceof IndexNode) {
+      return isVariable(((IndexNode) node).target);
+    }
+    return node instanceof NameNode;
   }
 
   /** A statement; one that doesn't end with a block (e.g. "x = 1;") must end with a ';'. */
@@ -235,6 +286,8 @@ public class StatementParser implements ProdParser<Statement> {
     if ((stmt = ctx.assertParser.parse(tokens)) != null) {
       return stmt;
     } else if ((stmt = ctx.switchParser.parseYield(tokens)) != null) {
+      return stmt;
+    } else if ((stmt = ctx.synchronizedParser.parse(tokens)) != null) {
       return stmt;
     } else if ((stmt = ctx.classParser.parseLocalClass(tokens)) != null) {
       return stmt;

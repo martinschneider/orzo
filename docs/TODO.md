@@ -22,7 +22,7 @@ Failures of the last run of `compliance/jtreg.sh`, by cause (number of tests):
 1. **Nested classes**: assignments to `Outer.this.field`, anonymous subclasses of inner classes (`outer.new Inner() { ... }`)
 2. **Method references**: `super::m`, `field::m`, array constructors (`int[]::new`)
 3. **Semantic checks**: invalid programs that compile (403 in the last run, growing as more programs parse), e.g. incompatible types (35), ambiguous calls (30), annotation rules (about 50), overriding methods throwing more checked exceptions (4). `DefiniteAssignment` checks local variables, `ExceptionChecker` checked exceptions. `ClassChecker` checks overrides, unimplemented abstract methods, duplicate members, blank final fields, modifiers, cyclic inheritance, supertypes (final, class or interface) and file names.
-4. Patterns in `switch` (`case String s ->`, `case null`), records, sealed classes, record patterns, `synchronized`, text blocks, selectors on array creations (`new int[2].length`)
+4. Patterns in `switch` (`case String s ->`, `case null`), records, sealed classes, record patterns, text blocks, compound assignments and increments of fields of calls (`f().i++`), selectors on array creations (`new int[2].length`)
 5. Multi-dimensional arrays
 
 ## 3. Compile time

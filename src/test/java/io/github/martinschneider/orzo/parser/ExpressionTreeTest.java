@@ -24,6 +24,8 @@ public class ExpressionTreeTest {
         Arguments.of("!a && b || c", "LOGICAL_OR(LOGICAL_AND(NEGATE(a), b), c)"),
         Arguments.of("a < b == c", "EQUAL(LESS(a, b), c)"),
         Arguments.of("i++ + ++j", "PLUS(POST_INCREMENT(i), PRE_INCREMENT(j))"),
+        // (lexed as a prefix "++")
+        Arguments.of("(i)++", "POST_INCREMENT(i)"),
         Arguments.of("c ? a : b ? x : y", "(c ? a : (b ? x : y))"),
         Arguments.of("x instanceof String && y", "LOGICAL_AND((x instanceof String), y)"),
         Arguments.of("a.b[i].f(x, 1).g()", "a.b[i].f(x, INT(1)).g()"),

@@ -34,7 +34,6 @@ Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md)
 - annotations aren't compiled (they are ignored; annotation types can be declared)
 - method references `super::m`
 - patterns in `switch` (`case String s ->`)
-- `synchronized`
 
 ## Notes
 
