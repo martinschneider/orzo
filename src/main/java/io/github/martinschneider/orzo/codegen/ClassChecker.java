@@ -40,6 +40,7 @@ public class ClassChecker {
         error("cyclic inheritance involving " + clazz.name);
         continue;
       }
+      checkSupertypes(clazz);
       checkModifiers(clazz);
       for (Method method : clazz.methods) {
         if (isOverridable(method)) {
@@ -63,15 +64,73 @@ public class ClassChecker {
     }
   }
 
+  // A class depending on itself through its superclass or superinterfaces (also by naming a class
+  // nested in it, e.g. "class A implements A.Named")
   private boolean isCyclic(Clazz clazz) {
+    List<Clazz> todo = new ArrayList<>(supertypes(clazz));
     List<Clazz> seen = new ArrayList<>();
-    for (Clazz c = clazz; c != null; c = TypeUtils.sourceClazz(c.baseClass, clazzes)) {
-      if (seen.contains(c)) {
-        return c == clazz;
+    while (!todo.isEmpty()) {
+      Clazz c = todo.remove(todo.size() - 1);
+      if (c == clazz || FieldProcessor.enclosingClasses(c, clazzes).contains(clazz)) {
+        return true;
+      } else if (!seen.contains(c)) {
+        seen.add(c);
+        todo.addAll(supertypes(c));
       }
-      seen.add(c);
     }
     return false;
+  }
+
+  // the direct supertypes of this compilation run
+  private List<Clazz> supertypes(Clazz clazz) {
+    List<Clazz> supertypes = new ArrayList<>();
+    List<String> names = new ArrayList<>(clazz.interfaces);
+    names.add(clazz.baseClass);
+    for (String name : names) {
+      Clazz supertype = TypeUtils.sourceClazz(name, clazzes);
+      if (supertype != null) {
+        supertypes.add(supertype);
+      }
+    }
+    return supertypes;
+  }
+
+  // not a final class (or an enum) as the superclass, not an interface as the superclass and not a
+  // class as a superinterface
+  private void checkSupertypes(Clazz clazz) {
+    if (clazz.baseClass != null && !Clazz.JAVA_LANG_OBJECT.equals(clazz.baseClass)) {
+      Clazz base = TypeUtils.sourceClazz(clazz.baseClass, clazzes);
+      Class<?> reflected = (base == null) ? reflect(clazz.baseClass) : null;
+      String name = clazz.baseClass.substring(clazz.baseClass.lastIndexOf('.') + 1);
+      if ((base != null && (base.modifiers.contains(ACC_FINAL) || base.isEnum))
+          || (reflected != null
+              && !reflected.isInterface()
+              && Modifier.isFinal(reflected.getModifiers()))) {
+        error("cannot inherit from final " + name.substring(name.lastIndexOf('$') + 1));
+      } else if (!clazz.isInterface
+          && ((base != null && base.isInterface)
+              || (reflected != null && reflected.isInterface()))) {
+        error("no interface expected here");
+      }
+    }
+    if (!clazz.isInterface) {
+      for (String name : clazz.interfaces) {
+        Clazz iface = TypeUtils.sourceClazz(name, clazzes);
+        Class<?> reflected = (iface == null) ? reflect(name) : null;
+        if ((iface != null && !iface.isInterface)
+            || (reflected != null && !reflected.isInterface())) {
+          error("interface expected here");
+        }
+      }
+    }
+  }
+
+  private static Class<?> reflect(String name) {
+    try {
+      return Class.forName(name.replace('/', '.'));
+    } catch (ClassNotFoundException | LinkageError e) {
+      return null;
+    }
   }
 
   private void checkModifiers(Clazz clazz) {

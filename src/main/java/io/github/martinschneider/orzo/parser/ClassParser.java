@@ -68,6 +68,28 @@ public class ClassParser implements ProdParser<Clazz> {
     ctx.importMap.clear();
     ctx.onDemandImports.clear();
     List<Import> imports = parseImports(tokens);
+    Clazz first = parseTopLevelClass(tokens, packageDeclaration, imports);
+    // further classes of the file (compiled like nested classes, see ParserContext.nestedClazzes)
+    while (first != null && !(tokens.curr() instanceof EOF)) {
+      if (tokens.curr().eq(sym(SEMICOLON))) {
+        tokens.next();
+        continue;
+      }
+      Clazz next = parseTopLevelClass(tokens, packageDeclaration, imports);
+      if (next == null) {
+        ctx.errors.addError(
+            LOG_NAME,
+            "expected a class, interface or enum but found " + tokens.curr().display(),
+            new RuntimeException().getStackTrace());
+        break;
+      }
+      ctx.nestedClazzes.add(next);
+    }
+    return first;
+  }
+
+  private Clazz parseTopLevelClass(
+      TokenList tokens, String packageDeclaration, List<Import> imports) {
     List<AccessFlag> modifiers = ctx.modifiersParser.parse(tokens);
     Scope scope = ModifiersParser.scope(modifiers);
     boolean isInterface = false;
@@ -271,7 +293,10 @@ public class ClassParser implements ProdParser<Clazz> {
   // A supertype, e.g. "Foo" or "java.util.AbstractList<T>" (the type arguments are erased), or null
   // if there is none
   private String parseSupertype(TokenList tokens, String packageDeclaration) {
-    if (!(tokens.curr() instanceof Identifier)) {
+    if (tokens.curr() instanceof Type && ((Type) tokens.curr()).name.equals("String")) {
+      tokens.next(); // (e.g. "extends String": an error, see ClassChecker)
+      return "java.lang.String";
+    } else if (!(tokens.curr() instanceof Identifier)) {
       return null;
     }
     StringBuilder name = new StringBuilder(((Identifier) tokens.curr()).id());
@@ -491,7 +516,10 @@ public class ClassParser implements ProdParser<Clazz> {
   List<ClassMember> parseClassBody(TokenList tokens, boolean isInterface) {
     List<ClassMember> classBody = new ArrayList<>();
     while (!tokens.curr().eq(sym(RBRACE)) && !(tokens.curr() instanceof EOF)) {
-      if (parseNestedClass(tokens)) {
+      if (tokens.curr().eq(sym(SEMICOLON))) {
+        tokens.next(); // an empty declaration
+        continue;
+      } else if (parseNestedClass(tokens)) {
         continue;
       }
       int start = tokens.idx();

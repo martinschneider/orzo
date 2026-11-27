@@ -325,6 +325,7 @@ public class OrzoTest {
         args(list("tests/GenericMethods")),
         args(list("tests/ForClauses")),
         args(list("tests/BoxedValues")),
+        args(list("tests/TopLevelClasses")),
         args(list("tests/LambdaBlocks")),
         args(list("tests/StaticFieldAssignment")),
         args(list("examples/Calculus")),

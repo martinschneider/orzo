@@ -255,6 +255,27 @@ public class CompileErrorTest {
   private static Stream<Arguments> classErrors() {
     return Stream.of(
         Arguments.of(
+            Map.of("A.java", "interface A extends B {}\n\ninterface B extends A {}\n"),
+            "A.java:1:11: error: cyclic inheritance involving A"),
+        Arguments.of(
+            Map.of("A.java", "class A implements A.I {\n  interface I {}\n}\n"),
+            "A.java:1:7: error: cyclic inheritance involving A"),
+        Arguments.of(
+            Map.of("A.java", "final class F {}\n\nclass A extends F {}\n"),
+            "A.java:3:7: error: cannot inherit from final F"),
+        Arguments.of(
+            Map.of("A.java", "class A extends String {}\n"),
+            "A.java:1:7: error: cannot inherit from final String"),
+        Arguments.of(
+            Map.of("A.java", "class A {\n  enum E { X }\n\n  static class B extends E {}\n}\n"),
+            "A.java:4:16: error: cannot inherit from final E"),
+        Arguments.of(
+            Map.of("A.java", "class A extends Runnable {}\n"),
+            "A.java:1:7: error: no interface expected here"),
+        Arguments.of(
+            Map.of("A.java", "class A implements Object {}\n"),
+            "A.java:1:7: error: interface expected here"),
+        Arguments.of(
             Map.of("A.java", "class A {\n  int i = 3000000000;\n}\n"),
             "A.java:2:11: error: integer number too large"),
         Arguments.of(
