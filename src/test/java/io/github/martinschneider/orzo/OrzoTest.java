@@ -347,6 +347,8 @@ public class OrzoTest {
         args(list("tests/RecursiveTypeBounds")),
         args(list("tests/BooleanArrays")),
         args(list("tests/SyntaxCorners")),
+        args(list("tests/LambdaCasts")),
+        args(list("tests/LabeledStatements")),
         args(list("tests/LambdaBlocks")),
         args(list("tests/StaticFieldAssignment")),
         args(list("examples/Calculus")),

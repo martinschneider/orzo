@@ -223,6 +223,11 @@ public class StatementParser implements ProdParser<Statement> {
       } else if (stmt instanceof ForEachStatement) {
         ((ForEachStatement) stmt).label = label;
         return stmt;
+      } else if (stmt != null) {
+        // any other statement, e.g. "out: switch (x) { ... break out; ... }": a labeled block
+        Block block = new Block(new ArrayList<>(List.of(stmt)));
+        block.label = label;
+        return block;
       }
       tokens.setIdx(idx);
     }

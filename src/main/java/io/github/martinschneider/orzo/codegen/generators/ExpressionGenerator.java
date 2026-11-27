@@ -413,6 +413,12 @@ public class ExpressionGenerator {
     if (type == null) {
       type = new NumExprTypeDecider(ctx).getType(ctx.classIdMap, expr);
     }
+    if (expr != null
+        && expr.cast != null
+        && expr.tokens.size() == 1
+        && expr.tokens.get(0) instanceof LambdaExpr) {
+      type = expr.cast.name; // (the lambda's target type, e.g. "(Runnable) () -> {}")
+    }
     Object val = null;
     if (expr == null) {
       return null;
@@ -875,7 +881,12 @@ public class ExpressionGenerator {
             (castCall.castType != null)
                 ? new NumExprTypeDecider(ctx).getType(classIdMap, castCall.innerExpr)
                 : null;
-        ExpressionResult innerResult = eval(out, null, castCall.innerExpr);
+        boolean lambda =
+            castCall.innerExpr.tokens.size() == 1
+                && castCall.innerExpr.tokens.get(0) instanceof LambdaExpr;
+        // (a lambda's target type is the cast type, e.g. in "((Runnable) () -> {}).run()")
+        ExpressionResult innerResult =
+            eval(out, lambda ? castCall.castType : null, castCall.innerExpr);
         if (castCall.castType != null) {
           ctx.basicGen.checkCastable(decided, innerResult.type, castCall.castType);
           ctx.basicGen.convert(out, innerResult.type, castCall.castType);
@@ -1795,6 +1806,14 @@ public class ExpressionGenerator {
     return lambda;
   }
 
+  // the interfaces of a lambda's class: its functional interface (and those of an intersection
+  // cast, e.g. Serializable)
+  private static List<String> interfaces(String functional, List<String> markers) {
+    List<String> interfaces = new ArrayList<>(List.of(functional));
+    interfaces.addAll(markers);
+    return interfaces;
+  }
+
   // A lambda is a synthetic class implementing the target type's single abstract method (see
   // ctx.addSyntheticClazz()), instantiated here. Captured variables are constructor arguments.
   private String generateLambda(DynamicByteArray out, String targetType, LambdaExpr lambda) {
@@ -1954,7 +1973,7 @@ public class ExpressionGenerator {
             syntheticName,
             false,
             false,
-            List.of(ifaceName),
+            interfaces(ifaceName, lambda.markerInterfaces),
             Clazz.JAVA_LANG_OBJECT,
             List.of(ctor, samImpl),
             fields,

@@ -22,6 +22,9 @@ public class LambdaExpr extends Token {
   public List<Statement> block;
   // the declared parameter types, e.g. "String" for "(String s) -> ..." (null for inferred ones)
   public List<String> paramTypes;
+  // further interfaces of an intersection cast, e.g. Serializable for "(Runnable & Serializable)
+  // () -> {}" (empty for none)
+  public List<String> markerInterfaces = new java.util.ArrayList<>();
   // a method reference, e.g. "Math::min" (owner "Math", method "min"): expanded into a lambda once
   // the target functional interface's arity is known (params and body are empty until then)
   public String methodRefOwner;

@@ -81,6 +81,10 @@ public class CGContext {
   // (innermost first), the targets of break and continue
   public java.util.Deque<io.github.martinschneider.orzo.parser.productions.Statement> jumpTargets =
       new java.util.ArrayDeque<>();
+  // the number of finally blocks enclosing each jump target (a break or continue runs those
+  // between it and its target)
+  public Map<io.github.martinschneider.orzo.parser.productions.Statement, Integer> finallyDepths =
+      new java.util.IdentityHashMap<>();
 
   // a statement's label, e.g. "outer" for "outer: for (...)" (null if it has none)
   public static String label(io.github.martinschneider.orzo.parser.productions.Statement stmt) {

@@ -33,7 +33,6 @@ About as fast as javac now (1.1x). Profile (JFR) Orzo compiling its own sources 
 
 ## Other known issues
 
-- `finally` isn't run when `break` or `continue` leave the `try` block.
 - for-each only takes the array path for a local array variable (`ForEachGenerator.isArrayIterable()`).
 - Generics: the type arguments of own generic classes and the generic return types of own methods aren't tracked.
 - Static nested classes have no `InnerClasses`/`NestHost` attributes.

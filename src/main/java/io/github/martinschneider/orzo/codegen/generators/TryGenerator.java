@@ -187,6 +187,23 @@ public class TryGenerator implements StatementGenerator<TryStatement> {
     return out;
   }
 
+  // Generates copies of the finally blocks between a break or continue statement and its target
+  // (innermost first), each without itself on the finally stack (see inlineFinally)
+  static void runFinallyBlocks(
+      CGContext ctx, DynamicByteArray out, Method method, Statement jumpTarget) {
+    int count = ctx.finallyStack.size() - ctx.finallyDepths.getOrDefault(jumpTarget, 0);
+    List<List<Statement>> pending = new ArrayList<>(ctx.finallyStack);
+    for (int i = 0; i < count; i++) {
+      ctx.finallyStack.pop();
+      for (Statement s : pending.get(i)) {
+        ctx.delegator.generate(out, method, s);
+      }
+    }
+    for (int i = count - 1; i >= 0; i--) {
+      ctx.finallyStack.push(pending.get(i));
+    }
+  }
+
   // Generates a copy of the finally block (if any) at the current position, e.g. at the end of the
   // try body. Its own returns must not run it again, so it's taken off the finally stack meanwhile.
   private void inlineFinally(DynamicByteArray out, Method method, List<Statement> finallyBody) {

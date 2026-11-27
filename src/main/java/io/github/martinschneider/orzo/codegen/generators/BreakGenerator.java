@@ -25,15 +25,16 @@ public class BreakGenerator implements StatementGenerator<Break> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, Break stmt) {
-    boolean valid = false;
+    Statement jumpTarget = null;
     for (Statement target : ctx.jumpTargets) {
-      if ((stmt.label != null)
-          ? stmt.label.equals(CGContext.label(target))
-          : CGContext.isLoop(target) || target instanceof SwitchStatement) {
-        valid = true;
+      if (jumpTarget == null
+          && ((stmt.label != null)
+              ? stmt.label.equals(CGContext.label(target))
+              : CGContext.isLoop(target) || target instanceof SwitchStatement)) {
+        jumpTarget = target;
       }
     }
-    if (!valid) {
+    if (jumpTarget == null) {
       ctx.errors.addError(
           "break code generator",
           (stmt.label != null)
@@ -42,6 +43,7 @@ public class BreakGenerator implements StatementGenerator<Break> {
           new RuntimeException().getStackTrace());
       return out;
     }
+    TryGenerator.runFinallyBlocks(ctx, out, method, jumpTarget);
     if (stmt.label != null) {
       out.labeledBreaks
           .computeIfAbsent(stmt.label, k -> new java.util.ArrayList<>())

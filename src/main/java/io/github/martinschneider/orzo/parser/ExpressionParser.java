@@ -6,6 +6,7 @@ import static io.github.martinschneider.orzo.lexer.tokens.Keywords.INSTANCEOF;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.NEW;
 import static io.github.martinschneider.orzo.lexer.tokens.Keywords.SWITCH;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.ASSIGN;
+import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_AND;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.BITWISE_NOT;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.CAST;
 import static io.github.martinschneider.orzo.lexer.tokens.Operators.GREATER;
@@ -44,6 +45,7 @@ import io.github.martinschneider.orzo.lexer.tokens.FPLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Identifier;
 import io.github.martinschneider.orzo.lexer.tokens.IntLiteral;
 import io.github.martinschneider.orzo.lexer.tokens.Keyword;
+import io.github.martinschneider.orzo.lexer.tokens.LambdaExpr;
 import io.github.martinschneider.orzo.lexer.tokens.Operator;
 import io.github.martinschneider.orzo.lexer.tokens.Operators;
 import io.github.martinschneider.orzo.lexer.tokens.Str;
@@ -274,6 +276,18 @@ public class ExpressionParser implements ProdParser<Expression> {
     if (curr.eq(sym(LPAREN))) {
       String castType = parseCastType(tokens);
       if (castType != null) {
+        List<String> types = new ArrayList<>(intersection);
+        Expression lambda = ctx.lambdaParser.parse(tokens); // e.g. "(Runnable) () -> {}"
+        if (lambda != null) {
+          String functional = functionalType(castType, types);
+          for (String type : types) {
+            String resolved = resolveCastType(type);
+            if (!resolved.equals(functional) && lambda.tokens.get(0) instanceof LambdaExpr) {
+              ((LambdaExpr) lambda.tokens.get(0)).markerInterfaces.add(resolved);
+            }
+          }
+          return new CastNode(functional, new OpaqueNode(lambda));
+        }
         return new CastNode(castType, operand(tokens, parseUnary(tokens)));
       }
     }
@@ -344,7 +358,7 @@ public class ExpressionParser implements ProdParser<Expression> {
       return new NameNode(name, true);
     } else if (curr.eq(sym(LPAREN))) {
       tokens.next();
-      ExprNode inner = operand(tokens, parseBinary(tokens, 0));
+      ExprNode inner = operand(tokens, parseTree(tokens)); // (also a lambda, e.g. "(x -> x)")
       expect(tokens, sym(RPAREN));
       return inner;
     } else if (curr.eq(sym(LFLOOR))) {
@@ -608,6 +622,22 @@ public class ExpressionParser implements ProdParser<Expression> {
       if (end > 0) {
         tokens.setIdx(end); // erased
       }
+      // an intersection type, e.g. "(Runnable & Serializable)": its first type (for a lambda, its
+      // functional interface, see functionalType())
+      intersection.clear();
+      while (type != null
+          && tokens.curr().eq(op(BITWISE_AND))
+          && tokens.peekNext() instanceof Identifier) {
+        tokens.next();
+        intersection.add(qualifiedName(tokens));
+        end = typeArgumentsEnd(tokens, tokens.idx());
+        if (end > 0) {
+          tokens.setIdx(end);
+        }
+      }
+      if (!intersection.isEmpty()) {
+        intersection.add(0, type);
+      }
     }
     // (an array type, e.g. "(int[]) o")
     int dims = 0;
@@ -635,6 +665,21 @@ public class ExpressionParser implements ProdParser<Expression> {
 
   // Whether the current token can start the operand of a cast. A "+" or "-" only after a cast to a
   // primitive type: "(a) - b" is a subtraction.
+  // the types of the last intersection cast parsed, e.g. [Runnable, Serializable]
+  private final List<String> intersection = new ArrayList<>();
+
+  // The functional interface of an intersection type, e.g. Runnable for "Serializable & Runnable"
+  // (the type that isn't a marker interface)
+  private String functionalType(String castType, List<String> types) {
+    for (String type : types) {
+      String simple = type.substring(type.lastIndexOf('.') + 1);
+      if (!simple.equals("Serializable") && !simple.equals("Cloneable")) {
+        return resolveCastType(type);
+      }
+    }
+    return castType;
+  }
+
   private static boolean startsCastOperand(TokenList tokens, boolean primitive) {
     Token curr = tokens.curr();
     if (curr instanceof Operator) {
@@ -673,6 +718,14 @@ public class ExpressionParser implements ProdParser<Expression> {
       return "java.lang." + name;
     } catch (ClassNotFoundException e) {
       // not in java.lang
+    }
+    for (String pkg : ctx.onDemandImports) { // e.g. "import java.util.function.*;"
+      try {
+        Class.forName(pkg + "." + name);
+        return pkg + "." + name;
+      } catch (ClassNotFoundException | LinkageError e) {
+        // not in this package
+      }
     }
     if (ctx.currClazz != null
         && ctx.currClazz.packageName != null

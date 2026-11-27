@@ -72,6 +72,7 @@ public class StatementDelegator {
         CGContext.isLoop(stmt) || stmt instanceof SwitchStatement || CGContext.label(stmt) != null;
     if (jumpTarget) {
       ctx.jumpTargets.push(stmt);
+      ctx.finallyDepths.put(stmt, ctx.finallyStack.size());
     }
     try {
       return reg.get(stmt.getClass()).generate(out, method, stmt);

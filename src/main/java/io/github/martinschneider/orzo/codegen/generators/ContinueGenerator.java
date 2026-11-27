@@ -25,21 +25,23 @@ public class ContinueGenerator implements StatementGenerator<Continue> {
 
   @Override
   public HasOutput generate(DynamicByteArray out, Method method, Continue stmt) {
-    boolean valid = false;
+    Statement jumpTarget = null;
     for (Statement target : ctx.jumpTargets) {
-      if ((stmt.label != null)
-          ? stmt.label.equals(CGContext.label(target)) && CGContext.isLoop(target)
-          : CGContext.isLoop(target)) {
-        valid = true;
+      if (jumpTarget == null
+          && ((stmt.label != null)
+              ? stmt.label.equals(CGContext.label(target)) && CGContext.isLoop(target)
+              : CGContext.isLoop(target))) {
+        jumpTarget = target;
       }
     }
-    if (!valid) {
+    if (jumpTarget == null) {
       ctx.errors.addError(
           "continue code generator",
           (stmt.label != null) ? "undefined label: " + stmt.label : "continue outside of a loop",
           new RuntimeException().getStackTrace());
       return out;
     }
+    TryGenerator.runFinallyBlocks(ctx, out, method, jumpTarget);
     if (stmt.label != null) {
       out.labeledContinues
           .computeIfAbsent(stmt.label, k -> new java.util.ArrayList<>())

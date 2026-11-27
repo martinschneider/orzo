@@ -35,7 +35,6 @@ Everything else works like in Java, except for (see [docs/TODO.md](docs/TODO.md)
 - method references `super::m`
 - patterns in `switch` (`case String s ->`)
 - `synchronized`
-- `finally` isn't run when `break` or `continue` leave the `try` block
 
 ## Notes
 
