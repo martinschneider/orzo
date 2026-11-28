@@ -14,8 +14,10 @@ import static io.github.martinschneider.orzo.codegen.OpCodes.POP2;
 import static io.github.martinschneider.orzo.codegen.OpCodes.PUTFIELD;
 import static io.github.martinschneider.orzo.codegen.OpCodes.RETURN;
 import static java.util.Collections.emptyList;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +32,52 @@ public class StackMapTableBuilderTest {
   public void setUp() {
     CGContext ctx = new CGContext();
     constPool = new MockConstantPool(ctx, emptyList());
+  }
+
+  // each frame in its most compact form, relative to the previous one (the first relative to the
+  // initial frame of the method's parameters)
+  @Test
+  public void testCompactFrames() {
+    MockConstantPool constPool =
+        new MockConstantPool(
+            new CGContext(), List.of(MockConstantPool.constant("StackMapTable", 1)));
+    StackMapTableBuilder builder = new StackMapTableBuilder();
+    builder.initialLocals.add("I");
+    builder.addFrame(5, List.of("Z"), List.of()); // same (int and boolean are both int)
+    builder.addFrame(10, List.of("I", "J"), List.of()); // append (one long)
+    builder.addFrame(100, List.of("I", "J"), List.of("I")); // same_locals_1_stack_item_extended
+    builder.addFrame(101, Arrays.asList("I", null, null), List.of()); // chop (trailing tops)
+    builder.addFrame(102, List.of("F"), List.of("I", "I")); // full
+    byte[] attribute = builder.build(constPool);
+    byte[] content = Arrays.copyOfRange(attribute, 6, attribute.length);
+    assertArrayEquals(
+        new byte[] {
+          0,
+          5, // number_of_entries
+          5, // same_frame, offset 5
+          (byte) 252,
+          0,
+          4,
+          4, // append_frame (1 local), offset_delta 4, Long
+          (byte) 247,
+          0,
+          89,
+          1, // same_locals_1_stack_item_frame_extended, delta 89, Integer
+          (byte) 250,
+          0,
+          0, // chop_frame (1 local), delta 0
+          (byte) 255,
+          0,
+          0,
+          0,
+          1,
+          2,
+          0,
+          2,
+          1,
+          1 // full_frame: locals [Float], stack [Integer x2]
+        },
+        content);
   }
 
   @Test

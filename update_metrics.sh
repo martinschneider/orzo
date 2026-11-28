@@ -55,7 +55,7 @@ table=$(
 | [jtreg](https://openjdk.org/jtreg/) positive tests (must compile and run) | $(compliance positive) |
 | jtreg negative tests (must be rejected) | $(compliance negative) |
 | Compile time (Orzo's sources) | $time_row |
-| Class size (Orzo's class files) | $size_row |
+| Class size (Orzo's class files)<sup>1</sup> | $size_row |
 <!-- metrics:end -->
 EOF
 )

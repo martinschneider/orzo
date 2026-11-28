@@ -3,7 +3,7 @@
 Prioritized for three goals (see the metrics in README.md), and a fourth one, native backends
 (parked: jtreg work continues later):
 
-1. Smaller class files (1.0x javac)
+1. Smaller class files (1.06x javac)
 2. Pass all jtreg tests (65% of the positive, 48% of the negative tests)
 3. Faster compilation (1.1x javac)
 4. Native backends for x86-64 and AArch64 (planned, see [NATIVE.md](NATIVE.md))
@@ -13,10 +13,22 @@ Within each goal, the items are ordered by expected impact.
 
 ## 1. Class file size
 
-About as large as javac's now (1.0x). Still:
+1.06x javac (`javac -g:source`, i.e. no debug information except the SourceFile attribute, like
+Orzo): 990 KiB vs. 931 KiB for Orzo's own sources. The difference by class file part (KiB):
 
-1. **Compact stack map frames.** `StackMapTableBuilder` only writes full frames; javac mostly writes `same`, `append` and `chop` frames.
-2. **Only add the constants a class uses.** `ConstantPoolProcessor` adds references to all of the class's own methods and fields, `CodeGenerator.supportPrint()` adds `System.out` to every class (34,821 constant pool entries for Orzo's sources vs. javac's 29,960).
+|                  Part                   | javac | Orzo |
+|-----------------------------------------|-------|------|
+| Constant pool                           | 659   | 679  |
+| Bytecode                                | 175   | 192  |
+| StackMapTable                           | 36    | 62   |
+| Lambda classes (javac: `invokedynamic`) | 2     | 23   |
+
+1. **Conditions as values**: Orzo turns many conditions into 0/1 values and then branches on them (`iconst_0`, `goto`, `iconst_1`, `ifeq`: 2,300 more `goto`s than javac), which also needs two more stack map frames each (10,311 frames vs. javac's 5,870). Branch on conditions directly; `ifnull`/`ifnonnull` instead of `aconst_null` and `if_acmpeq`.
+2. **Inline constants**: `static final` primitive and String constants with a constant initializer are read with `getstatic` (2,000 more than javac) instead of `ldc`/`bipush`/`iconst`, which also costs a Fieldref (and its NameAndType) in the constant pool.
+3. **Only add the constants a class uses.** `ConstantPoolProcessor` adds references to all of the class's own methods and fields, `CodeGenerator.supportPrint()` adds `System.out` to every class.
+4. **Lambdas as `invokedynamic`** (`LambdaMetafactory`) instead of a class per lambda (30 classes, 23 KiB).
+5. Smaller: full stack map frames where javac writes compact ones (1,030 vs. 464: locals changing in the middle, Top locals), superfluous `i2b`/`i2s`/`i2c` (+700) and `checkcast` (+370), string concatenation with `String.concat()` instead of `invokedynamic` (`StringConcatFactory`).
+6. **LineNumberTable**: write line numbers (stack traces), then compare with `javac -g:source,lines`.
 
 ## 2. jtreg
 

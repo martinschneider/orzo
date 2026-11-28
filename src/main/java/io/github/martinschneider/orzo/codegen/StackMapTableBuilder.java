@@ -209,6 +209,7 @@ import io.github.martinschneider.orzo.codegen.constants.ConstantPool;
 import io.github.martinschneider.orzo.codegen.identifier.VariableInfo;
 import io.github.martinschneider.orzo.parser.productions.AccessFlag;
 import io.github.martinschneider.orzo.parser.productions.Argument;
+import io.github.martinschneider.orzo.parser.productions.Constructor;
 import io.github.martinschneider.orzo.parser.productions.Method;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -226,9 +227,9 @@ import java.util.TreeSet;
  * Builds the StackMapTable attribute for a method.
  *
  * <p>Records branch targets and associated local variable types during code generation, then
- * serializes them into the StackMapTable attribute format (JVM spec §4.7.4). Every frame uses
- * full_frame (tag 255) with an empty operand stack, which is always true for branch targets in
- * Orzo's structured-control-flow output.
+ * serializes them into the StackMapTable attribute format (JVM spec §4.7.4), each frame in its most
+ * compact form relative to the previous one (same_frame, same_locals_1_stack_item, chop_frame,
+ * append_frame, full_frame as the last resort; the first relative to the method's initial frame).
  */
 public class StackMapTableBuilder {
   // Stack type of an object created by NEW whose constructor hasn't run yet:
@@ -249,9 +250,13 @@ public class StackMapTableBuilder {
 
   // sorted map: absolute bytecode offset → frame (locals + operand stack types)
   private final TreeMap<Integer, Frame> frames = new TreeMap<>();
+  // the locals of the method's implicit initial frame: "this" and the parameters
+  List<String> initialLocals = new ArrayList<>();
+  // (the type of "this" in a constructor's initial frame: it doesn't match any other type)
+  private static final String UNINITIALIZED_THIS = "uninitializedThis";
 
   /** Record a stack-map frame at the given absolute bytecode offset within the method. */
-  private void addFrame(int offset, List<String> localTypes, List<String> stackTypes) {
+  void addFrame(int offset, List<String> localTypes, List<String> stackTypes) {
     if (offset >= 0) {
       frames.put(offset, new Frame(new ArrayList<>(localTypes), new ArrayList<>(stackTypes)));
     }
@@ -288,22 +293,56 @@ public class StackMapTableBuilder {
     content.write((short) frames.size()); // number_of_entries
 
     int previousOffset = -1;
+    List<String> previous = withoutTrailingTops(initialLocals);
     for (Map.Entry<Integer, Frame> entry : frames.entrySet()) {
       int offset = entry.getKey();
       Frame frame = entry.getValue();
       int offsetDelta = (previousOffset == -1) ? offset : (offset - previousOffset - 1);
-
-      content.write((byte) 255); // full_frame tag
-      content.write((short) offsetDelta); // offset_delta
-      content.write((short) frame.locals.size()); // number_of_locals
-      for (String localType : frame.locals) {
-        writeVerificationType(content, localType, constPool);
+      List<String> locals = withoutTrailingTops(frame.locals);
+      int common = commonPrefix(previous, locals);
+      boolean sameLocals = common == previous.size() && common == locals.size();
+      if (sameLocals && frame.stack.isEmpty()) {
+        if (offsetDelta < 64) {
+          content.write((byte) offsetDelta); // same_frame
+        } else {
+          content.write((byte) 251); // same_frame_extended
+          content.write((short) offsetDelta);
+        }
+      } else if (sameLocals && frame.stack.size() == 1) {
+        if (offsetDelta < 64) {
+          content.write((byte) (64 + offsetDelta)); // same_locals_1_stack_item_frame
+        } else {
+          content.write((byte) 247); // same_locals_1_stack_item_frame_extended
+          content.write((short) offsetDelta);
+        }
+        writeVerificationType(content, frame.stack.get(0), constPool);
+      } else if (frame.stack.isEmpty()
+          && common == locals.size()
+          && previous.size() - common <= 3) {
+        content.write((byte) (251 - (previous.size() - common))); // chop_frame
+        content.write((short) offsetDelta);
+      } else if (frame.stack.isEmpty()
+          && common == previous.size()
+          && locals.size() - common <= 3
+          && !locals.subList(common, locals.size()).contains(null)) {
+        content.write((byte) (251 + (locals.size() - common))); // append_frame
+        content.write((short) offsetDelta);
+        for (String localType : locals.subList(common, locals.size())) {
+          writeVerificationType(content, localType, constPool);
+        }
+      } else {
+        content.write((byte) 255); // full_frame tag
+        content.write((short) offsetDelta); // offset_delta
+        content.write((short) locals.size()); // number_of_locals
+        for (String localType : locals) {
+          writeVerificationType(content, localType, constPool);
+        }
+        content.write((short) frame.stack.size()); // number_of_stack_items
+        for (String stackType : frame.stack) {
+          writeVerificationType(content, stackType, constPool);
+        }
       }
-      content.write((short) frame.stack.size()); // number_of_stack_items
-      for (String stackType : frame.stack) {
-        writeVerificationType(content, stackType, constPool);
-      }
-
+      previous = locals;
       previousOffset = offset;
     }
 
@@ -638,6 +677,19 @@ public class StackMapTableBuilder {
 
     // Build frames
     StackMapTableBuilder builder = new StackMapTableBuilder();
+    // the initial frame: "this" (uninitialized in a constructor) and the parameters
+    if (!isStatic) {
+      builder.initialLocals.add(
+          (method instanceof Constructor) ? UNINITIALIZED_THIS : "L" + ctx.clazz.fqn('/') + ";");
+    }
+    for (int slot = isStatic ? 0 : 1; slot < paramSlots; slot++) {
+      VariableInfo var = slotToVar.get(slot);
+      String desc = (var != null) ? TypeUtils.descr(var) : null;
+      builder.initialLocals.add(desc);
+      if ("J".equals(desc) || "D".equals(desc)) {
+        slot++;
+      }
+    }
     for (int target : targets) {
       List<String> targetLocals = new ArrayList<>();
       if (!isStatic) {
@@ -1815,6 +1867,46 @@ public class StackMapTableBuilder {
             | ((code[base + 6] & 0xFF) << 8)
             | (code[base + 7] & 0xFF);
     return 1 + padding + 8 + npairs * 8;
+  }
+
+  // (locals after the last one aren't listed: they are Top anyway)
+  private static List<String> withoutTrailingTops(List<String> locals) {
+    int size = locals.size();
+    while (size > 0 && locals.get(size - 1) == null) {
+      size--;
+    }
+    return locals.subList(0, size);
+  }
+
+  // the number of leading locals of the same verification type, e.g. "I" and "Z" are both int
+  private static int commonPrefix(List<String> a, List<String> b) {
+    int i = 0;
+    while (i < a.size()
+        && i < b.size()
+        && verificationType(a.get(i)).equals(verificationType(b.get(i)))) {
+      i++;
+    }
+    return i;
+  }
+
+  // a type's verification type (see writeVerificationType()), e.g. "I" for "Z" and
+  // "java/lang/String" for "Ljava/lang/String;"
+  private static String verificationType(String type) {
+    if (type == null) {
+      return "top";
+    }
+    if (type.equals("Z") || type.equals("B") || type.equals("C") || type.equals("S")) {
+      return "I";
+    } else if (type.startsWith("L") && type.endsWith(";")) {
+      return type.substring(1, type.length() - 1);
+    } else if (type.length() == 1 // (I, F, D, J)
+        || type.startsWith("[")
+        || type.equals(NULL)
+        || type.equals(UNINITIALIZED_THIS)
+        || type.startsWith(UNINITIALIZED)) {
+      return type;
+    }
+    return type.replace('.', '/');
   }
 
   private void writeVerificationType(DynamicByteArray out, String type, ConstantPool constPool) {
